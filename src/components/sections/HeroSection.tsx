@@ -1,10 +1,8 @@
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 import heroImage from "@/assets/hero-breakfast.jpg";
 
 const HeroSection = () => {
-  const scrollToNapiAjanlat = () => {
-    document.getElementById('napi-ajanlat')?.scrollIntoView({ behavior: 'smooth' });
-  };
 
   return (
     <section className="relative min-h-[70vh] md:min-h-[80vh] flex items-center justify-center">
@@ -32,21 +30,21 @@ const HeroSection = () => {
           Friss levesek, kiadós főételek, gyors átvétel Zuglóban.
         </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in">
               <Button 
-                onClick={scrollToNapiAjanlat}
+                asChild
                 size="lg"
-                className="bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm text-primary-foreground font-semibold px-8"
+                className="bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm text-primary-foreground font-semibold px-8 hover-scale"
               >
-                Mai ajánlat
+                <Link to="/etlap">Mai ajánlat</Link>
               </Button>
               <Button 
                 variant="outline" 
                 size="lg"
                 asChild
-                className="border-2 border-white text-white hover:bg-white hover:text-foreground font-semibold backdrop-blur-sm px-8"
+                className="border-2 border-white text-white hover:bg-white hover:text-foreground font-semibold backdrop-blur-sm px-8 hover-scale"
               >
-                <a href="/etlap">Teljes étlap</a>
+                <Link to="/etlap">Teljes étlap</Link>
               </Button>
             </div>
       </div>

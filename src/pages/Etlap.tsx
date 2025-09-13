@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import Navigation from "@/components/Navigation";
+import ModernNavigation from "@/components/ModernNavigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -138,9 +138,9 @@ const Etlap = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
+      <ModernNavigation />
       
-      <div className="pt-20 pb-24">
+      <div className="pt-32 pb-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="text-center mb-8">
@@ -177,18 +177,18 @@ const Etlap = () => {
 
           {/* Menu Items Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {filteredItems.map((item) => (
-              <Card key={item.id} className="group hover:shadow-lg transition-shadow">
+            {filteredItems.map((item, index) => (
+              <Card key={item.id} className="group hover:shadow-lg transition-all duration-300 hover-scale animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
                 <CardContent className="p-0">
                   <div className="aspect-[4/3] bg-muted rounded-t-lg overflow-hidden">
                     {item.image_url ? (
                       <img 
                         src={item.image_url} 
                         alt={item.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-6xl">
+                      <div className="w-full h-full flex items-center justify-center text-6xl bg-gradient-to-br from-primary/10 to-warmth/10">
                         🍽️
                       </div>
                     )}
@@ -214,7 +214,7 @@ const Etlap = () => {
                     </div>
                     <Button 
                       onClick={() => addToCart(item)}
-                      className="w-full bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm"
+                      className="w-full bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm transition-all duration-300 hover-scale"
                     >
                       Kosárba
                     </Button>
@@ -227,14 +227,14 @@ const Etlap = () => {
       </div>
 
       {/* Floating Cart Button */}
-      <div className="fixed bottom-4 right-4 z-50">
+      <div className="fixed bottom-4 right-4 z-40">
         <Button
           onClick={() => setIsCartOpen(true)}
-          className="rounded-full h-14 w-14 bg-primary hover:bg-primary/90 relative"
+          className="rounded-full h-14 w-14 bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm relative transition-all duration-300 hover-scale animate-bounce"
         >
           <ShoppingCart className="h-6 w-6" />
           {getCartItemCount() > 0 && (
-            <Badge className="absolute -top-2 -right-2 bg-warmth text-white min-w-[20px] h-5 flex items-center justify-center text-xs">
+            <Badge className="absolute -top-2 -right-2 bg-warmth text-white min-w-[20px] h-5 flex items-center justify-center text-xs animate-pulse">
               {getCartItemCount()}
             </Badge>
           )}

@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Link } from "react-router-dom";
 
 const DailyMenuSection = () => {
   const today = new Date().toLocaleDateString('hu-HU', { 
@@ -46,10 +47,10 @@ const DailyMenuSection = () => {
             <div className="flex justify-end pt-4">
               <Button 
                 variant="outline" 
-                className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                className="border-primary text-primary hover:bg-primary hover:text-primary-foreground hover-scale"
                 asChild
               >
-                <a href="/etlap">Részletek az étlapon</a>
+                <Link to="/etlap">Részletek az étlapon</Link>
               </Button>
             </div>
           </CardContent>

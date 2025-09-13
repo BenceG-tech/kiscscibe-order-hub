@@ -1,5 +1,4 @@
-import Navigation from "@/components/Navigation";
-import TopOrderBar from "@/components/TopOrderBar";
+import ModernNavigation from "@/components/ModernNavigation";
 import HeroSection from "@/components/sections/HeroSection";
 import DailyMenuSection from "@/components/sections/DailyMenuSection";
 import FavoritesSection from "@/components/sections/FavoritesSection";
@@ -18,9 +17,8 @@ import StickyMobileCTA from "@/components/StickyMobileCTA";
 const Index = () => {
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
-      <TopOrderBar />
-      <main>
+      <ModernNavigation />
+      <main className="pt-20">
         <HeroSection />
         <div className="bg-primary/5">
           <DailyMenuSection />
