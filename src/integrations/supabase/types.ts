@@ -38,6 +38,69 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_menu_items: {
+        Row: {
+          daily_menu_id: string | null
+          id: string
+          item_id: string | null
+        }
+        Insert: {
+          daily_menu_id?: string | null
+          id?: string
+          item_id?: string | null
+        }
+        Update: {
+          daily_menu_id?: string | null
+          id?: string
+          item_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_menu_items_daily_menu_id_fkey"
+            columns: ["daily_menu_id"]
+            isOneToOne: false
+            referencedRelation: "daily_menus"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_menu_items_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      daily_menus: {
+        Row: {
+          created_at: string | null
+          date: string
+          id: string
+          max_portions: number | null
+          note: string | null
+          price_huf: number | null
+          remaining_portions: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          id?: string
+          max_portions?: number | null
+          note?: string | null
+          price_huf?: number | null
+          remaining_portions?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          id?: string
+          max_portions?: number | null
+          note?: string | null
+          price_huf?: number | null
+          remaining_portions?: number | null
+        }
+        Relationships: []
+      }
       daily_offer_items: {
         Row: {
           daily_offer_id: string | null
@@ -76,22 +139,28 @@ export type Database = {
           created_at: string | null
           date: string
           id: string
+          max_portions: number | null
           note: string | null
           price_huf: number | null
+          remaining_portions: number | null
         }
         Insert: {
           created_at?: string | null
           date: string
           id?: string
+          max_portions?: number | null
           note?: string | null
           price_huf?: number | null
+          remaining_portions?: number | null
         }
         Update: {
           created_at?: string | null
           date?: string
           id?: string
+          max_portions?: number | null
           note?: string | null
           price_huf?: number | null
+          remaining_portions?: number | null
         }
         Relationships: []
       }
