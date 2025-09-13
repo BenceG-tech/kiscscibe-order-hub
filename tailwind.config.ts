@@ -47,6 +47,9 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        warmth: "hsl(var(--warmth))",
+        comfort: "hsl(var(--comfort))",
+        fresh: "hsl(var(--fresh))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
@@ -62,6 +65,11 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      boxShadow: {
+        'warm': 'var(--shadow-warm)',
+        'cozy': 'var(--shadow-cozy)', 
+        'soft': 'var(--shadow-soft)',
       },
       keyframes: {
         "accordion-down": {

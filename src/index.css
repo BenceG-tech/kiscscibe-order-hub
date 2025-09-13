@@ -2,39 +2,64 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Hungarian Restaurant Design System - Kiscscibe Reggeliző */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Base colors - warm and welcoming */
+    --background: 48 95% 97%;
+    --foreground: 24 35% 15%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    /* Cards and containers */
+    --card: 48 100% 99%;
+    --card-foreground: 24 35% 15%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 48 100% 99%;
+    --popover-foreground: 24 35% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary - warm golden yellow from restaurant branding */
+    --primary: 45 95% 55%;
+    --primary-foreground: 24 35% 15%;
+    --primary-glow: 45 100% 65%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Secondary - warm cream tones */
+    --secondary: 48 85% 92%;
+    --secondary-foreground: 24 35% 15%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Muted - subtle warm grays */
+    --muted: 48 25% 88%;
+    --muted-foreground: 24 15% 45%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Accent - warm brown for highlights */
+    --accent: 35 45% 65%;
+    --accent-foreground: 48 100% 99%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 48 100% 99%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Borders and inputs */
+    --border: 48 35% 85%;
+    --input: 48 35% 85%;
+    --ring: 45 95% 55%;
+
+    /* Restaurant-specific colors */
+    --warmth: 35 85% 75%;
+    --comfort: 25 65% 85%;
+    --fresh: 115 35% 65%;
+    
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
+    --gradient-warm: linear-gradient(180deg, hsl(var(--warmth)), hsl(var(--comfort)));
+    --gradient-subtle: linear-gradient(180deg, hsl(var(--background)), hsl(var(--secondary)));
+
+    /* Shadows with warm tones */
+    --shadow-warm: 0 10px 30px -10px hsl(var(--primary) / 0.2);
+    --shadow-cozy: 0 4px 20px -4px hsl(var(--warmth) / 0.3);
+    --shadow-soft: 0 2px 10px -2px hsl(var(--muted) / 0.4);
+
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
     --radius: 0.5rem;
 
@@ -56,33 +81,39 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    /* Dark mode with warm evening restaurant vibes */
+    --background: 24 25% 8%;
+    --foreground: 48 85% 92%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 24 30% 12%;
+    --card-foreground: 48 85% 92%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 24 30% 12%;
+    --popover-foreground: 48 85% 92%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 45 95% 55%;
+    --primary-foreground: 24 35% 15%;
+    --primary-glow: 45 100% 65%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 24 20% 18%;
+    --secondary-foreground: 48 85% 92%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 24 15% 22%;
+    --muted-foreground: 48 25% 65%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 35 45% 55%;
+    --accent-foreground: 48 85% 92%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 50%;
+    --destructive-foreground: 48 85% 92%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --border: 24 20% 20%;
+    --input: 24 20% 20%;
+    --ring: 45 95% 55%;
+
+    --warmth: 35 75% 55%;
+    --comfort: 25 55% 65%;
+    --fresh: 115 25% 45%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
