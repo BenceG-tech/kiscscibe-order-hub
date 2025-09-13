@@ -2,6 +2,7 @@ import { Link, useLocation, Outlet } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/contexts/AuthContext";
 import { 
   Package, 
   Calendar, 
@@ -10,11 +11,18 @@ import {
   BarChart3, 
   Settings,
   ArrowLeft,
-  Bell
+  Bell,
+  LogOut,
+  User
 } from "lucide-react";
 
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
+  const { profile, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
 
   const adminNavItems = [
     { href: "/admin/orders", label: "Rendelések", icon: ShoppingBag, color: "text-blue-600" },
@@ -41,12 +49,17 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
             </div>
             
             <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon">
-                <Bell className="h-5 w-5" />
+              {profile && (
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  <span className="text-sm font-medium">{profile.full_name || profile.email}</span>
+                  <Badge variant="secondary">{profile.role}</Badge>
+                </div>
+              )}
+              <Button variant="ghost" size="sm" onClick={handleSignOut}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Kijelentkezés
               </Button>
-              <Badge variant="secondary" className="bg-green-100 text-green-800">
-                Online
-              </Badge>
             </div>
           </div>
         </div>

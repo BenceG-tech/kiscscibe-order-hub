@@ -47,6 +47,14 @@ const HeroSection = () => {
                 <Link to="/etlap">Teljes étlap</Link>
               </Button>
             </div>
+            
+            <div className="mt-8">
+              <Button asChild variant="link" className="text-white/80 hover:text-white">
+                <Link to="/auth">
+                  Admin bejelentkezés
+                </Link>
+              </Button>
+            </div>
       </div>
     </section>
   );

@@ -44,27 +44,47 @@ const OrderConfirmation = () => {
     if (!orderCode) return;
 
     try {
-      // Fetch order details
+      setLoading(true);
+      
+      // For security, we need phone number to access order details
+      const phone = prompt('Kérem adja meg a telefonszámát a rendelés ellenőrzéséhez:');
+      if (!phone) {
+        setLoading(false);
+        return;
+      }
+
+      // Use secure customer order lookup function
       const { data: orderData, error: orderError } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('code', orderCode)
-        .single();
+        .rpc('get_customer_order', {
+          order_code: orderCode,
+          customer_phone: phone
+        });
 
-      if (orderError) throw orderError;
+      if (orderError || !orderData || orderData.length === 0) {
+        console.error('Error fetching order or order not found:', orderError);
+        setOrder(null);
+        setLoading(false);
+        return;
+      }
 
+      const order = orderData[0];
+      setOrder(order);
+      
       // Fetch order items
       const { data: itemsData, error: itemsError } = await supabase
         .from('order_items')
         .select('*')
-        .eq('order_id', orderData.id);
+        .eq('order_id', order.id);
 
-      if (itemsError) throw itemsError;
+      if (itemsError) {
+        console.error('Error fetching order items:', itemsError);
+        return;
+      }
 
-      setOrder(orderData);
       setOrderItems(itemsData || []);
     } catch (error) {
       console.error('Error fetching order:', error);
+      setOrder(null);
     } finally {
       setLoading(false);
     }

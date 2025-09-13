@@ -346,6 +346,36 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id?: string
+          role?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       settings: {
         Row: {
           key: string
@@ -387,6 +417,29 @@ export type Database = {
       gen_order_code: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_customer_order: {
+        Args: { customer_phone: string; order_code: string }
+        Returns: {
+          code: string
+          created_at: string
+          id: string
+          name: string
+          notes: string
+          payment_method: string
+          phone: string
+          pickup_time: string
+          status: string
+          total_huf: number
+        }[]
+      }
+      get_user_role: {
+        Args: { check_user_id?: string }
+        Returns: string
+      }
+      is_admin: {
+        Args: { check_user_id?: string }
+        Returns: boolean
       }
     }
     Enums: {
