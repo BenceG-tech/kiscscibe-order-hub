@@ -14,13 +14,380 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      capacity_slots: {
+        Row: {
+          booked_orders: number
+          date: string
+          id: string
+          max_orders: number
+          timeslot: string
+        }
+        Insert: {
+          booked_orders?: number
+          date: string
+          id?: string
+          max_orders?: number
+          timeslot: string
+        }
+        Update: {
+          booked_orders?: number
+          date?: string
+          id?: string
+          max_orders?: number
+          timeslot?: string
+        }
+        Relationships: []
+      }
+      daily_offer_items: {
+        Row: {
+          daily_offer_id: string | null
+          id: string
+          item_id: string | null
+        }
+        Insert: {
+          daily_offer_id?: string | null
+          id?: string
+          item_id?: string | null
+        }
+        Update: {
+          daily_offer_id?: string | null
+          id?: string
+          item_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_offer_items_daily_offer_id_fkey"
+            columns: ["daily_offer_id"]
+            isOneToOne: false
+            referencedRelation: "daily_offers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_offer_items_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      daily_offers: {
+        Row: {
+          created_at: string | null
+          date: string
+          id: string
+          note: string | null
+          price_huf: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          id?: string
+          note?: string | null
+          price_huf?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          id?: string
+          note?: string | null
+          price_huf?: number | null
+        }
+        Relationships: []
+      }
+      item_modifier_options: {
+        Row: {
+          id: string
+          is_default: boolean
+          label: string
+          modifier_id: string | null
+          price_delta_huf: number
+          sort: number
+        }
+        Insert: {
+          id?: string
+          is_default?: boolean
+          label: string
+          modifier_id?: string | null
+          price_delta_huf?: number
+          sort?: number
+        }
+        Update: {
+          id?: string
+          is_default?: boolean
+          label?: string
+          modifier_id?: string | null
+          price_delta_huf?: number
+          sort?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_modifier_options_modifier_id_fkey"
+            columns: ["modifier_id"]
+            isOneToOne: false
+            referencedRelation: "item_modifiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      item_modifiers: {
+        Row: {
+          id: string
+          item_id: string | null
+          name: string
+          required: boolean
+          sort: number
+          type: string
+        }
+        Insert: {
+          id?: string
+          item_id?: string | null
+          name: string
+          required?: boolean
+          sort?: number
+          type: string
+        }
+        Update: {
+          id?: string
+          item_id?: string | null
+          name?: string
+          required?: boolean
+          sort?: number
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_modifiers_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      menu_categories: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          sort: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          sort?: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          sort?: number
+        }
+        Relationships: []
+      }
+      menu_items: {
+        Row: {
+          allergens: string[] | null
+          category_id: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          is_featured: boolean
+          name: string
+          price_huf: number
+        }
+        Insert: {
+          allergens?: string[] | null
+          category_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          is_featured?: boolean
+          name: string
+          price_huf: number
+        }
+        Update: {
+          allergens?: string[] | null
+          category_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          is_featured?: boolean
+          name?: string
+          price_huf?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_items_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "menu_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_item_options: {
+        Row: {
+          id: string
+          label_snapshot: string
+          order_item_id: string | null
+          price_delta_huf: number
+        }
+        Insert: {
+          id?: string
+          label_snapshot: string
+          order_item_id?: string | null
+          price_delta_huf?: number
+        }
+        Update: {
+          id?: string
+          label_snapshot?: string
+          order_item_id?: string | null
+          price_delta_huf?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_item_options_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "order_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_items: {
+        Row: {
+          id: string
+          item_id: string | null
+          line_total_huf: number
+          name_snapshot: string
+          order_id: string | null
+          qty: number
+          unit_price_huf: number
+        }
+        Insert: {
+          id?: string
+          item_id?: string | null
+          line_total_huf: number
+          name_snapshot: string
+          order_id?: string | null
+          qty?: number
+          unit_price_huf: number
+        }
+        Update: {
+          id?: string
+          item_id?: string | null
+          line_total_huf?: number
+          name_snapshot?: string
+          order_id?: string | null
+          qty?: number
+          unit_price_huf?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          payment_method: string
+          phone: string
+          pickup_time: string | null
+          status: string
+          total_huf: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          payment_method?: string
+          phone: string
+          pickup_time?: string | null
+          status?: string
+          total_huf?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          payment_method?: string
+          phone?: string
+          pickup_time?: string | null
+          status?: string
+          total_huf?: number
+        }
+        Relationships: []
+      }
+      settings: {
+        Row: {
+          key: string
+          value_json: Json
+        }
+        Insert: {
+          key: string
+          value_json: Json
+        }
+        Update: {
+          key?: string
+          value_json?: Json
+        }
+        Relationships: []
+      }
+      subscribers: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      gen_order_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
