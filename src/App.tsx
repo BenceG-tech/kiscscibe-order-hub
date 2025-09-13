@@ -14,6 +14,7 @@ import OrderConfirmation from "./pages/OrderConfirmation";
 import AdminOrders from "./pages/admin/Orders";
 import AdminMenu from "./pages/admin/Menu";
 import AdminMenuSchedule from "./pages/admin/MenuSchedule";
+import AdminDailyMenu from "./pages/admin/DailyMenu";
 import AdminCapacity from "./pages/admin/Capacity";
 import NotFound from "./pages/NotFound";
 
@@ -41,6 +42,11 @@ const App = () => (
             <Route path="/admin/menu" element={
               <ProtectedRoute requireAdmin>
                 <AdminMenu />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/daily-menu" element={
+              <ProtectedRoute requireAdmin>
+                <AdminDailyMenu />
               </ProtectedRoute>
             } />
             <Route path="/admin/menu-schedule" element={

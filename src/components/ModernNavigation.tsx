@@ -8,7 +8,7 @@ import { Menu, X, Phone, ShoppingCart } from "lucide-react";
 const ModernNavigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(true);
   const location = useLocation();
 
   useEffect(() => {

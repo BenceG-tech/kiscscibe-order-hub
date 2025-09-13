@@ -27,6 +27,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   const adminNavItems = [
     { href: "/admin/orders", label: "Rendelések", icon: ShoppingBag, color: "text-blue-600" },
     { href: "/admin/menu", label: "Étlap kezelés", icon: Package, color: "text-green-600" },
+    { href: "/admin/daily-menu", label: "Napi menü", icon: Calendar, color: "text-yellow-600" },
     { href: "/admin/menu-schedule", label: "Ütemezés", icon: Calendar, color: "text-purple-600" },
     { href: "/admin/capacity", label: "Kapacitás", icon: Users, color: "text-orange-600" },
   ];
@@ -67,7 +68,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
           {adminNavItems.map((item) => (
             <Link key={item.href} to={item.href}>
               <Card className="hover:shadow-md transition-all duration-300 hover-scale">
