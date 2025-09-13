@@ -32,23 +32,23 @@ const HeroSection = () => {
           Friss levesek, kiadós főételek, gyors átvétel Zuglóban.
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
-          <Button 
-            size="lg" 
-            onClick={scrollToNapiAjanlat}
-            className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground text-lg px-8 py-3 min-h-[44px]"
-          >
-            Mai ajánlat
-          </Button>
-          <Button 
-            size="lg" 
-            variant="outline" 
-            className="w-full sm:w-auto border-white text-white hover:bg-white hover:text-foreground text-lg px-8 py-3 min-h-[44px]"
-            asChild
-          >
-            <a href="/etlap">Teljes étlap</a>
-          </Button>
-        </div>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button 
+                onClick={scrollToNapiAjanlat}
+                size="lg"
+                className="bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm text-primary-foreground font-semibold px-8"
+              >
+                Mai ajánlat
+              </Button>
+              <Button 
+                variant="outline" 
+                size="lg"
+                asChild
+                className="border-2 border-white text-white hover:bg-white hover:text-foreground font-semibold backdrop-blur-sm px-8"
+              >
+                <a href="/etlap">Teljes étlap</a>
+              </Button>
+            </div>
       </div>
     </section>
   );

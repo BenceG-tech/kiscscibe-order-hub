@@ -22,17 +22,29 @@ const Index = () => {
       <TopOrderBar />
       <main>
         <HeroSection />
-        <DailyMenuSection />
+        <div className="bg-primary/5">
+          <DailyMenuSection />
+        </div>
         <FavoritesSection />
-        <WeeklyMenuSection />
+        <div className="bg-primary/5">
+          <WeeklyMenuSection />
+        </div>
         <USPSection />
-        <ReviewsSection />
+        <div className="bg-primary/5">
+          <ReviewsSection />
+        </div>
         <GallerySection />
-        <PromoSection />
+        <div className="bg-primary/5">
+          <PromoSection />
+        </div>
         <AllergenSection />
-        <MapSection />
+        <div className="bg-primary/5">
+          <MapSection />
+        </div>
         <FAQSection />
-        <NewsletterSection />
+        <div className="bg-primary/5">
+          <NewsletterSection />
+        </div>
       </main>
       <StickyMobileCTA />
       

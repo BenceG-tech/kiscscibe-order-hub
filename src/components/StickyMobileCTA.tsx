@@ -7,11 +7,11 @@ const StickyMobileCTA = () => {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border shadow-lg md:hidden">
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border shadow-lg md:hidden pb-safe">
       <div className="flex p-3 gap-3">
         <Button 
           onClick={scrollToNapiAjanlat}
-          className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold min-h-[44px]"
+          className="flex-1 bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm text-primary-foreground font-semibold min-h-[44px]"
         >
           Rendelj most
         </Button>

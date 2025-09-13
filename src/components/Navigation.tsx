@@ -1,9 +1,14 @@
 import { Button } from "@/components/ui/button";
-import { Menu, X, ShoppingCart } from "lucide-react";
+import { Menu, X, ShoppingCart, Phone } from "lucide-react";
 import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
 
 const Navigation = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+
+  const scrollToNapiAjanlat = () => {
+    document.getElementById('napi-ajanlat')?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   return (
     <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
@@ -14,68 +19,95 @@ const Navigation = () => {
             <h1 className="text-xl md:text-2xl font-bold text-primary">Kiscsibe Reggeliző</h1>
           </div>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:block">
-            <div className="ml-10 flex items-baseline space-x-4">
-              <a href="/" className="text-foreground hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                Főoldal
-              </a>
-              <a href="/etlap" className="text-muted-foreground hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                Étlap
-              </a>
-              <a href="/rolunk" className="text-muted-foreground hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                Rólunk
-              </a>
-              <a href="/kapcsolat" className="text-muted-foreground hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                Kapcsolat
-              </a>
-              <Button size="sm" className="ml-4 bg-primary hover:bg-primary/90 text-primary-foreground">
-                Rendelj most
-              </Button>
-            </div>
+          {/* Desktop Menu */}
+          <div className="hidden md:flex items-center space-x-6">
+            <a href="/" className="text-foreground hover:text-primary transition-colors">
+              Főoldal
+            </a>
+            <a href="/etlap" className="text-foreground hover:text-primary transition-colors">
+              Étlap
+            </a>
+            <a href="/rolunk" className="text-foreground hover:text-primary transition-colors">
+              Rólunk
+            </a>
+            <a href="/kapcsolat" className="text-foreground hover:text-primary transition-colors">
+              Kapcsolat
+            </a>
+            <Button 
+              onClick={scrollToNapiAjanlat}
+              className="bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm text-primary-foreground font-semibold"
+            >
+              Rendelj most
+            </Button>
+            
+            {/* Kosár ikon - csak akkor mutass badge-et, ha van tétel */}
+            <Button variant="ghost" size="icon" className="relative">
+              <ShoppingCart className="h-5 w-5" />
+              {/* Badge csak akkor jelenik meg, ha cartItems > 0 - itt placeholder logika */}
+              {false && (
+                <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs bg-primary">
+                  0
+                </Badge>
+              )}
+            </Button>
           </div>
 
-          {/* Cart Icon */}
-          <div className="flex items-center space-x-4">
-            <div className="relative">
-              <ShoppingCart className="h-6 w-6 text-foreground" />
-              <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full text-xs h-5 w-5 flex items-center justify-center font-semibold">
-                0
-              </span>
-            </div>
-
-            {/* Mobile menu button */}
-            <div className="md:hidden">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="text-foreground"
-              >
-                {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-              </Button>
-            </div>
+          {/* Mobile menu button */}
+          <div className="md:hidden">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsOpen(!isOpen)}
+              className="text-foreground"
+            >
+              {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </Button>
           </div>
         </div>
 
-        {/* Mobile Navigation */}
-        {isMenuOpen && (
-          <div className="md:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-background border-t border-border">
-              <a href="/" className="text-foreground hover:text-primary block px-3 py-2 rounded-md text-base font-medium">
-                Főoldal
-              </a>
-              <a href="/etlap" className="text-muted-foreground hover:text-primary block px-3 py-2 rounded-md text-base font-medium">
-                Étlap
-              </a>
-              <a href="/rolunk" className="text-muted-foreground hover:text-primary block px-3 py-2 rounded-md text-base font-medium">
-                Rólunk
-              </a>
-              <a href="/kapcsolat" className="text-muted-foreground hover:text-primary block px-3 py-2 rounded-md text-base font-medium">
-                Kapcsolat
-              </a>
-              <div className="pt-2">
-                <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-lg py-3">
+        {/* Mobile Menu */}
+        {isOpen && (
+          <div className="md:hidden absolute top-full left-0 right-0 bg-background border-t border-border shadow-lg z-40">
+            <div className="p-4 space-y-4">
+              {/* Menu links */}
+              <div className="space-y-3">
+                <a 
+                  href="/" 
+                  className="block text-foreground hover:text-primary transition-colors py-2"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Főoldal
+                </a>
+                <a 
+                  href="/etlap" 
+                  className="block text-foreground hover:text-primary transition-colors py-2"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Étlap
+                </a>
+                <a 
+                  href="/rolunk" 
+                  className="block text-foreground hover:text-primary transition-colors py-2"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Rólunk
+                </a>
+                <a 
+                  href="/kapcsolat" 
+                  className="block text-foreground hover:text-primary transition-colors py-2"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Kapcsolat
+                </a>
+                
+                {/* Kiemelt rendelés gomb */}
+                <Button 
+                  onClick={() => {
+                    scrollToNapiAjanlat();
+                    setIsOpen(false);
+                  }}
+                  className="w-full bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm text-primary-foreground font-semibold mt-4"
+                >
                   Rendelj most
                 </Button>
               </div>
