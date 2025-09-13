@@ -27,17 +27,19 @@ const Navigation = () => {
             <a href="/etlap" className="text-foreground hover:text-primary transition-colors">
               Étlap
             </a>
-            <a href="/rolunk" className="text-foreground hover:text-primary transition-colors">
+            <a href="/about" className="text-foreground hover:text-primary transition-colors">
               Rólunk
             </a>
-            <a href="/kapcsolat" className="text-foreground hover:text-primary transition-colors">
+            <a href="/contact" className="text-foreground hover:text-primary transition-colors">
               Kapcsolat
             </a>
             <Button 
-              onClick={scrollToNapiAjanlat}
+              asChild
               className="bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm text-primary-foreground font-semibold"
             >
-              Rendelj most
+              <a href="/etlap">
+                Rendelj most
+              </a>
             </Button>
             
             {/* Kosár ikon - csak akkor mutass badge-et, ha van tétel */}
@@ -86,14 +88,14 @@ const Navigation = () => {
                   Étlap
                 </a>
                 <a 
-                  href="/rolunk" 
+                  href="/about" 
                   className="block text-foreground hover:text-primary transition-colors py-2"
                   onClick={() => setIsOpen(false)}
                 >
                   Rólunk
                 </a>
                 <a 
-                  href="/kapcsolat" 
+                  href="/contact" 
                   className="block text-foreground hover:text-primary transition-colors py-2"
                   onClick={() => setIsOpen(false)}
                 >
@@ -102,13 +104,12 @@ const Navigation = () => {
                 
                 {/* Kiemelt rendelés gomb */}
                 <Button 
-                  onClick={() => {
-                    scrollToNapiAjanlat();
-                    setIsOpen(false);
-                  }}
+                  asChild
                   className="w-full bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm text-primary-foreground font-semibold mt-4"
                 >
-                  Rendelj most
+                  <a href="/etlap" onClick={() => setIsOpen(false)}>
+                    Rendelj most
+                  </a>
                 </Button>
               </div>
             </div>
