@@ -42,7 +42,7 @@ const HeroSection = () => {
                 variant="outline" 
                 size="lg"
                 asChild
-                className="border-2 border-white text-white hover:bg-white hover:text-foreground font-semibold backdrop-blur-sm px-8 hover-scale"
+                className="border-2 border-white/90 text-white bg-white/10 hover:bg-white hover:text-gray-900 font-semibold backdrop-blur-md px-8 hover-scale shadow-lg"
               >
                 <Link to="/etlap">Teljes étlap</Link>
               </Button>

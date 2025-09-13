@@ -8,11 +8,28 @@ import { Menu, X, Phone, ShoppingCart } from "lucide-react";
 const ModernNavigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [visible, setVisible] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
+    let lastScrollY = window.scrollY;
+    
     const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
+      const currentScrollY = window.scrollY;
+      
+      // Show header when scrolling down past 100px or when scrolling up
+      if (currentScrollY > 100) {
+        if (currentScrollY < lastScrollY || currentScrollY < 200) {
+          setVisible(true);
+        } else if (currentScrollY > lastScrollY && currentScrollY > 200) {
+          setVisible(false);
+        }
+      } else {
+        setVisible(false);
+      }
+      
+      setScrolled(currentScrollY > 20);
+      lastScrollY = currentScrollY;
     };
 
     window.addEventListener('scroll', handleScroll);
@@ -29,10 +46,14 @@ const ModernNavigation = () => {
   ];
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-in-out transform ${
+      visible 
+        ? "translate-y-0 opacity-100" 
+        : "-translate-y-full opacity-0"
+    } ${
       scrolled 
         ? "bg-background/95 backdrop-blur-md shadow-lg border-b border-border" 
-        : "bg-background/80 backdrop-blur-sm"
+        : "bg-background/90 backdrop-blur-sm"
     }`}>
       {/* Top info bar */}
       <div className={`bg-primary/10 border-b border-primary/20 transition-all duration-300 ${
