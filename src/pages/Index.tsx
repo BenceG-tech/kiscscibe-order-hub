@@ -13,7 +13,7 @@ import MapSection from "@/components/sections/MapSection";
 import FAQSection from "@/components/sections/FAQSection";
 import NewsletterSection from "@/components/sections/NewsletterSection";
 import StickyMobileCTA from "@/components/StickyMobileCTA";
-import { Toaster } from "@/components/ui/toaster";
+
 
 const Index = () => {
   return (
@@ -35,7 +35,7 @@ const Index = () => {
         <NewsletterSection />
       </main>
       <StickyMobileCTA />
-      <Toaster />
+      
       {/* Mobil sticky CTA-hoz helykitöltés */}
       <div className="h-20 md:h-0"></div>
     </div>
