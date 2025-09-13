@@ -2,18 +2,16 @@ import { Button } from "@/components/ui/button";
 import { Phone } from "lucide-react";
 
 const StickyMobileCTA = () => {
-  const scrollToNapiAjanlat = () => {
-    document.getElementById('napi-ajanlat')?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border shadow-lg md:hidden pb-safe">
       <div className="flex p-3 gap-3">
         <Button 
-          onClick={scrollToNapiAjanlat}
+          asChild
           className="flex-1 bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm text-primary-foreground font-semibold min-h-[44px]"
         >
-          Rendelj most
+          <a href="/etlap">
+            Rendelj most
+          </a>
         </Button>
         <Button 
           variant="outline" 
