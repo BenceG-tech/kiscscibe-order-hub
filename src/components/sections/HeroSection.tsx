@@ -32,11 +32,11 @@ const HeroSection = () => {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in">
               <Button 
-                asChild
                 size="lg"
                 className="bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm text-primary-foreground font-semibold px-8 hover-scale"
+                onClick={() => document.getElementById('napi-ajanlat')?.scrollIntoView({ behavior: 'smooth' })}
               >
-                <Link to="/etlap">Mai ajánlat</Link>
+                Mai ajánlat
               </Button>
               <Button 
                 variant="outline" 

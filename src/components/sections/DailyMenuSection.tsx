@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/ui/loading";
 import { Link } from "react-router-dom";
+import menuImage from "@/assets/daily-menu-example.jpeg";
 
 interface MenuItem {
   id: string;
@@ -86,6 +87,15 @@ const DailyMenuSection = () => {
     return (
       <section id="napi-ajanlat" className="py-12 md:py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Menu Image */}
+          <div className="mb-8 max-w-2xl mx-auto">
+            <img 
+              src={menuImage} 
+              alt="Napi menü példa"
+              className="w-full rounded-xl shadow-lg border border-primary/20"
+            />
+          </div>
+          
           <Card className="rounded-2xl shadow-md border-primary/20">
             <CardHeader className="pb-4">
               <CardTitle className="text-2xl md:text-3xl font-bold text-foreground">
@@ -116,6 +126,15 @@ const DailyMenuSection = () => {
   return (
     <section id="napi-ajanlat" className="py-12 md:py-16">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Menu Image */}
+        <div className="mb-8 max-w-2xl mx-auto">
+          <img 
+            src={menuImage} 
+            alt="Napi menü példa"
+            className="w-full rounded-xl shadow-lg border border-primary/20"
+          />
+        </div>
+        
         <Card className="rounded-2xl shadow-md border-primary/20">
           <CardHeader className="pb-4">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

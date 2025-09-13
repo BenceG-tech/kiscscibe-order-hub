@@ -19,6 +19,7 @@ import {
   CheckCircle,
   X
 } from "lucide-react";
+import menuImage from "@/assets/daily-menu-example.jpeg";
 
 interface DailyOffer {
   id: string;
@@ -344,6 +345,34 @@ const DailyMenuManagement = () => {
             </DialogContent>
           </Dialog>
         </div>
+
+        {/* Menu Image Reference */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Menü példa referencia</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <img 
+              src={menuImage} 
+              alt="Napi menü példa"
+              className="w-full max-w-md rounded-lg shadow-md border border-primary/20"
+            />
+          </CardContent>
+        </Card>
+
+        {/* Menu Reference Image */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Menü példa referencia</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <img 
+              src={menuImage} 
+              alt="Napi menü példa"
+              className="w-full max-w-md rounded-lg shadow-md border border-primary/20"
+            />
+          </CardContent>
+        </Card>
 
         <div className="grid gap-6">
           {dailyOffers.map((offer) => (

@@ -414,6 +414,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      bootstrap_first_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       gen_order_code: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -438,7 +442,7 @@ export type Database = {
         Returns: string
       }
       is_admin: {
-        Args: { check_user_id?: string }
+        Args: Record<PropertyKey, never> | { check_user_id?: string }
         Returns: boolean
       }
     }

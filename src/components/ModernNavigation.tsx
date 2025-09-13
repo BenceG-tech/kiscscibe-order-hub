@@ -17,17 +17,8 @@ const ModernNavigation = () => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
       
-      // Show header when scrolling down past 100px or when scrolling up
-      if (currentScrollY > 100) {
-        if (currentScrollY < lastScrollY || currentScrollY < 200) {
-          setVisible(true);
-        } else if (currentScrollY > lastScrollY && currentScrollY > 200) {
-          setVisible(false);
-        }
-      } else {
-        setVisible(false);
-      }
-      
+      // Always keep header visible, just adjust styles based on scroll
+      setVisible(true);
       setScrolled(currentScrollY > 20);
       lastScrollY = currentScrollY;
     };
@@ -55,25 +46,25 @@ const ModernNavigation = () => {
         ? "bg-background/95 backdrop-blur-md shadow-lg border-b border-border" 
         : "bg-background/90 backdrop-blur-sm"
     }`}>
-      {/* Top info bar */}
+      {/* Top info bar - Thinner */}
       <div className={`bg-primary/10 border-b border-primary/20 transition-all duration-300 ${
-        scrolled ? "py-2" : "py-3"
+        scrolled ? "py-1.5" : "py-2"
       }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-2">
-            <div className={`text-sm text-foreground font-medium text-center md:text-left transition-all duration-300 ${
-              scrolled ? "text-xs" : ""
+          <div className="flex flex-col md:flex-row items-center justify-between gap-1.5">
+            <div className={`text-foreground font-medium text-center md:text-left transition-all duration-300 ${
+              scrolled ? "text-xs" : "text-sm"
             }`}>
               Ma nyitva: H–P 7:00–15:00 • Szo 8:00–14:00
             </div>
             
             <div className="flex items-center gap-2">
               <Button 
-                asChild
+                onClick={() => document.getElementById('napi-ajanlat')?.scrollIntoView({ behavior: 'smooth' })}
                 size={scrolled ? "sm" : "default"}
                 className="bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm text-primary-foreground font-semibold transition-all duration-300"
               >
-                <Link to="/etlap">Rendelj most</Link>
+                Rendelj most
               </Button>
               
               <Button 

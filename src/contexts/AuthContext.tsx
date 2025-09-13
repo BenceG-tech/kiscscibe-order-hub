@@ -54,6 +54,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       setProfile(data || null);
+      
+      // Bootstrap first admin if needed
+      if (data) {
+        await supabase.rpc('bootstrap_first_admin');
+      }
     } catch (error) {
       console.error('Error fetching profile:', error);
     }
