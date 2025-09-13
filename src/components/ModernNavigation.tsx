@@ -34,7 +34,7 @@ const ModernNavigation = () => {
     { href: "/etlap", label: "Étlap" },
     { href: "/about", label: "Rólunk" },
     { href: "/contact", label: "Kapcsolat" },
-    { href: "/auth", label: "Admin" },
+    { href: "/admin/daily-menu", label: "Admin" },
   ];
 
   return (
