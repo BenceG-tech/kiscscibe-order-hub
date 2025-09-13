@@ -14,7 +14,7 @@ const HeroSection = () => {
           className="w-full h-full object-cover"
           loading="eager"
         />
-        <div className="absolute inset-0 bg-black/40" />
+        <div className="absolute inset-0 bg-black/40 pointer-events-none" />
       </div>
 
       {/* Content */}
