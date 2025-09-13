@@ -162,18 +162,7 @@ export default {
         "enter": "fade-in 0.6s ease-out, scale-in 0.4s ease-out",
         "exit": "fade-out 0.3s ease-out, scale-out 0.2s ease-out"
       },
-      },
-      // Add utility classes
     },
-    // Add interactive classes
-    ".hover-scale": {
-      "@apply": "transition-transform duration-200 hover:scale-105"
-    },
-    ".story-link": {
-      "*": {
-        "@apply": "relative inline-block after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-0.5 after:bottom-0 after:left-0 after:bg-primary after:origin-bottom-right after:transition-transform after:duration-300 hover:after:scale-x-100 hover:after:origin-bottom-left"
-      }
-    }
   },
   plugins: [require("tailwindcss-animate")],
 } satisfies Config;
