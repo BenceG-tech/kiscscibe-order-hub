@@ -6,21 +6,21 @@
 
 @layer base {
   :root {
-    /* Base colors - warm and welcoming */
-    --background: 48 95% 97%;
-    --foreground: 24 35% 15%;
+    /* Kiscsibe Reggeliző Brand Colors */
+    --background: 48 95% 97%; /* #FFF8E6 világos háttér */
+    --foreground: 0 0% 16%; /* #2A2A2A sötétszürke szöveg */
 
     /* Cards and containers */
     --card: 48 100% 99%;
-    --card-foreground: 24 35% 15%;
+    --card-foreground: 0 0% 16%;
 
     --popover: 48 100% 99%;
-    --popover-foreground: 24 35% 15%;
+    --popover-foreground: 0 0% 16%;
 
-    /* Primary - warm golden yellow from restaurant branding */
-    --primary: 45 95% 55%;
-    --primary-foreground: 24 35% 15%;
-    --primary-glow: 45 100% 65%;
+    /* Primary - brand sárga #F6C22D */
+    --primary: 46 96% 57%; /* #F6C22D */
+    --primary-foreground: 0 0% 16%;
+    --primary-glow: 46 100% 67%;
 
     /* Secondary - warm cream tones */
     --secondary: 48 85% 92%;
