@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { LoadingSpinner } from "@/components/ui/loading";
-import { format, isToday, isBefore, startOfTomorrow } from "date-fns";
+import { format, isToday, isBefore, startOfTomorrow, getDay } from "date-fns";
 import { hu } from "date-fns/locale";
 import { CalendarDays, Clock, Package, Coffee, AlertCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -200,6 +200,11 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
     return hasOfferOnDate(date) || hasMenuOnDate(date);
   };
 
+  const isWeekend = (date: Date) => {
+    const day = getDay(date);
+    return day === 0 || day === 6; // Sunday = 0, Saturday = 6
+  };
+
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
       setCurrentDate(date);
@@ -248,17 +253,29 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
             </div>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="offers" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-4">
-                <TabsTrigger value="offers" className="flex items-center gap-2">
-                  <Package className="h-4 w-4" />
-                  Ajánlatok
-                </TabsTrigger>
-                <TabsTrigger value="menus" className="flex items-center gap-2">
-                  <Coffee className="h-4 w-4" />
-                  Menük
-                </TabsTrigger>
-              </TabsList>
+            {isWeekend(currentDate) ? (
+              <div className="text-center py-8">
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <p className="text-muted-foreground text-lg font-medium mb-2">
+                    Hétvégén zárva
+                  </p>
+                  <p className="text-muted-foreground/70 text-sm">
+                    A vendéglő szombaton és vasárnap zárva tart
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <Tabs defaultValue="offers" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-4">
+                  <TabsTrigger value="offers" className="flex items-center gap-2">
+                    <Package className="h-4 w-4" />
+                    Ajánlatok
+                  </TabsTrigger>
+                  <TabsTrigger value="menus" className="flex items-center gap-2">
+                    <Coffee className="h-4 w-4" />
+                    Menük
+                  </TabsTrigger>
+                </TabsList>
               
               <TabsContent value="offers">
                 {currentOffers.length > 0 ? (
@@ -310,6 +327,7 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
                 )}
               </TabsContent>
             </Tabs>
+            )}
           </CardContent>
         </Card>
 
@@ -338,7 +356,8 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
               locale={hu}
               className="rounded-md border-0 p-0 w-full [&_table]:w-full [&_td]:p-2 [&_button]:h-12 [&_button]:w-full"
             modifiers={{
-              hasContent: (date) => hasAnyOnDate(date)
+              hasContent: (date) => hasAnyOnDate(date),
+              weekend: (date) => isWeekend(date)
             }}
             modifiersStyles={{
               hasContent: {
@@ -346,12 +365,25 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
                 color: 'hsl(var(--primary-foreground))',
                 fontWeight: 'bold',
                 borderRadius: '8px'
+              },
+              weekend: {
+                backgroundColor: 'hsl(var(--muted))',
+                color: 'hsl(var(--muted-foreground))',
+                textDecoration: 'line-through',
+                opacity: 0.6,
+                borderRadius: '8px'
               }
             }}
             />
-            <div className="mt-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-              <span className="w-4 h-4 bg-primary rounded-md"></span>
-              Ajánlat vagy menü elérhető
+            <div className="mt-4 space-y-2 text-sm text-muted-foreground">
+              <div className="flex items-center justify-center gap-2">
+                <span className="w-4 h-4 bg-primary rounded-md"></span>
+                Ajánlat vagy menü elérhető
+              </div>
+              <div className="flex items-center justify-center gap-2">
+                <span className="w-4 h-4 bg-muted rounded-md"></span>
+                Hétvége - zárva
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -386,7 +418,8 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
                 locale={hu}
                 className="rounded-md border-0 p-0"
                 modifiers={{
-                  hasContent: (date) => hasAnyOnDate(date)
+                  hasContent: (date) => hasAnyOnDate(date),
+                  weekend: (date) => isWeekend(date)
                 }}
                 modifiersStyles={{
                   hasContent: {
@@ -394,12 +427,25 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
                     color: 'hsl(var(--primary-foreground))',
                     fontWeight: 'bold',
                     borderRadius: '6px'
+                  },
+                  weekend: {
+                    backgroundColor: 'hsl(var(--muted))',
+                    color: 'hsl(var(--muted-foreground))',
+                    textDecoration: 'line-through',
+                    opacity: 0.6,
+                    borderRadius: '6px'
                   }
                 }}
               />
-              <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
-                <span className="w-4 h-4 bg-primary rounded"></span>
-                Ajánlat vagy menü elérhető
+              <div className="mt-6 space-y-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <span className="w-4 h-4 bg-primary rounded"></span>
+                  Ajánlat vagy menü elérhető
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-4 h-4 bg-muted rounded"></span>
+                  Hétvége - zárva
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -419,17 +465,29 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
               </div>
             </CardHeader>
             <CardContent>
-              <Tabs defaultValue="offers" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-6">
-                  <TabsTrigger value="offers" className="flex items-center gap-2">
-                    <Package className="h-4 w-4" />
-                    Napi ajánlatok
-                  </TabsTrigger>
-                  <TabsTrigger value="menus" className="flex items-center gap-2">
-                    <Coffee className="h-4 w-4" />
-                    Napi menük
-                  </TabsTrigger>
-                </TabsList>
+              {isWeekend(currentDate) ? (
+                <div className="text-center py-12">
+                  <div className="p-6 bg-muted/50 rounded-lg">
+                    <p className="text-muted-foreground text-xl font-medium mb-2">
+                      Hétvégén zárva
+                    </p>
+                    <p className="text-muted-foreground/70 text-sm">
+                      A vendéglő szombaton és vasárnap zárva tart
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <Tabs defaultValue="offers" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 mb-6">
+                    <TabsTrigger value="offers" className="flex items-center gap-2">
+                      <Package className="h-4 w-4" />
+                      Napi ajánlatok
+                    </TabsTrigger>
+                    <TabsTrigger value="menus" className="flex items-center gap-2">
+                      <Coffee className="h-4 w-4" />
+                      Napi menük
+                    </TabsTrigger>
+                  </TabsList>
                 
                 <TabsContent value="offers">
                   {currentOffers.length > 0 ? (
@@ -489,6 +547,7 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
                   )}
                 </TabsContent>
               </Tabs>
+              )}
             </CardContent>
           </Card>
         </div>

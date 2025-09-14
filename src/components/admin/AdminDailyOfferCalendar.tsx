@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { LoadingSpinner } from "@/components/ui/loading";
-import { format } from "date-fns";
+import { format, getDay } from "date-fns";
 import { hu } from "date-fns/locale";
 import { Plus, Edit, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -82,7 +82,16 @@ const AdminDailyOfferCalendar = ({ onCreateOffer, onEditOffer }: AdminDailyOffer
     return getOffersForDate(date).length > 0;
   };
 
+  const isWeekend = (date: Date) => {
+    const day = getDay(date);
+    return day === 0 || day === 6; // Sunday = 0, Saturday = 6
+  };
+
   const handleCreateOffer = () => {
+    if (isWeekend(selectedDate)) {
+      toast.error('Hétvégén a vendéglő zárva tart');
+      return;
+    }
     const dateString = format(selectedDate, 'yyyy-MM-dd');
     onCreateOffer(dateString);
   };
@@ -144,21 +153,32 @@ const AdminDailyOfferCalendar = ({ onCreateOffer, onEditOffer }: AdminDailyOffer
             locale={hu}
             className="rounded-md border-0 p-0"
             modifiers={{
-              hasOffer: (date) => hasOfferOnDate(date)
+              hasOffer: (date) => hasOfferOnDate(date),
+              weekend: (date) => isWeekend(date)
             }}
             modifiersStyles={{
               hasOffer: {
                 backgroundColor: 'hsl(var(--primary))',
                 color: 'hsl(var(--primary-foreground))',
                 fontWeight: 'bold'
+              },
+              weekend: {
+                backgroundColor: 'hsl(var(--muted))',
+                color: 'hsl(var(--muted-foreground))',
+                textDecoration: 'line-through',
+                opacity: 0.6
               }
             }}
           />
-          <div className="mt-4 text-sm text-muted-foreground">
+          <div className="mt-4 text-sm text-muted-foreground space-y-2">
             <span className="inline-flex items-center gap-2">
               <span className="w-4 h-4 bg-primary rounded"></span>
               Napi ajánlat beállítva
             </span>
+            <div className="inline-flex items-center gap-2">
+              <span className="w-4 h-4 bg-muted rounded"></span>
+              Hétvége - zárva
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -174,14 +194,26 @@ const AdminDailyOfferCalendar = ({ onCreateOffer, onEditOffer }: AdminDailyOffer
               onClick={handleCreateOffer}
               className="bg-primary hover:bg-primary/90"
               size="sm"
+              disabled={isWeekend(selectedDate)}
             >
               <Plus className="h-4 w-4 mr-2" />
-              Új ajánlat
+              {isWeekend(selectedDate) ? 'Zárva' : 'Új ajánlat'}
             </Button>
           </div>
         </CardHeader>
         <CardContent>
-          {selectedDateOffers.length > 0 ? (
+          {isWeekend(selectedDate) ? (
+            <div className="text-center py-8">
+              <div className="p-6 bg-muted/50 rounded-lg">
+                <p className="text-muted-foreground text-lg font-medium mb-2">
+                  Hétvégén zárva
+                </p>
+                <p className="text-muted-foreground/70 text-sm">
+                  A vendéglő szombaton és vasárnap zárva tart
+                </p>
+              </div>
+            </div>
+          ) : selectedDateOffers.length > 0 ? (
             <div className="space-y-4">
               {selectedDateOffers.map((offer) => (
                 <div key={offer.id} className="p-4 border rounded-lg border-border">

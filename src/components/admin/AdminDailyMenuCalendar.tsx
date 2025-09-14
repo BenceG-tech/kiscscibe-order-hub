@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { LoadingSpinner } from "@/components/ui/loading";
-import { format } from "date-fns";
+import { format, getDay } from "date-fns";
 import { hu } from "date-fns/locale";
 import { Plus, Edit, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -84,7 +84,16 @@ const AdminDailyMenuCalendar = ({ onCreateMenu, onEditMenu }: AdminDailyMenuCale
     return getMenusForDate(date).length > 0;
   };
 
+  const isWeekend = (date: Date) => {
+    const day = getDay(date);
+    return day === 0 || day === 6; // Sunday = 0, Saturday = 6
+  };
+
   const handleCreateMenu = () => {
+    if (isWeekend(selectedDate)) {
+      toast.error('Hétvégén a vendéglő zárva tart');
+      return;
+    }
     const dateString = format(selectedDate, 'yyyy-MM-dd');
     onCreateMenu(dateString);
   };
@@ -146,21 +155,32 @@ const AdminDailyMenuCalendar = ({ onCreateMenu, onEditMenu }: AdminDailyMenuCale
             locale={hu}
             className="rounded-md border-0 p-0"
             modifiers={{
-              hasMenu: (date) => hasMenuOnDate(date)
+              hasMenu: (date) => hasMenuOnDate(date),
+              weekend: (date) => isWeekend(date)
             }}
             modifiersStyles={{
               hasMenu: {
                 backgroundColor: 'hsl(var(--secondary))',
                 color: 'hsl(var(--secondary-foreground))',
                 fontWeight: 'bold'
+              },
+              weekend: {
+                backgroundColor: 'hsl(var(--muted))',
+                color: 'hsl(var(--muted-foreground))',
+                textDecoration: 'line-through',
+                opacity: 0.6
               }
             }}
           />
-          <div className="mt-4 text-sm text-muted-foreground">
+          <div className="mt-4 text-sm text-muted-foreground space-y-2">
             <span className="inline-flex items-center gap-2">
               <span className="w-4 h-4 bg-secondary rounded"></span>
               Napi menü beállítva
             </span>
+            <div className="inline-flex items-center gap-2">
+              <span className="w-4 h-4 bg-muted rounded"></span>
+              Hétvége - zárva
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -176,14 +196,26 @@ const AdminDailyMenuCalendar = ({ onCreateMenu, onEditMenu }: AdminDailyMenuCale
               onClick={handleCreateMenu}
               className="bg-secondary hover:bg-secondary/90"
               size="sm"
+              disabled={isWeekend(selectedDate)}
             >
               <Plus className="h-4 w-4 mr-2" />
-              Új menü
+              {isWeekend(selectedDate) ? 'Zárva' : 'Új menü'}
             </Button>
           </div>
         </CardHeader>
         <CardContent>
-          {selectedDateMenus.length > 0 ? (
+          {isWeekend(selectedDate) ? (
+            <div className="text-center py-8">
+              <div className="p-6 bg-muted/50 rounded-lg">
+                <p className="text-muted-foreground text-lg font-medium mb-2">
+                  Hétvégén zárva
+                </p>
+                <p className="text-muted-foreground/70 text-sm">
+                  A vendéglő szombaton és vasárnap zárva tart
+                </p>
+              </div>
+            </div>
+          ) : selectedDateMenus.length > 0 ? (
             <div className="space-y-4">
               {selectedDateMenus.map((menu) => (
                 <div key={menu.id} className="p-4 border rounded-lg border-border">

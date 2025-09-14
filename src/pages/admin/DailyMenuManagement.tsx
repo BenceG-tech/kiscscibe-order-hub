@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EnhancedItemSelection } from "@/components/admin/EnhancedItemSelection";
+import { getDay } from "date-fns";
 import { 
   Plus, 
   Edit, 
@@ -94,6 +95,13 @@ const DailyMenuManagement = () => {
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  
+  // Helper function to check if date is weekend
+  const isWeekend = (dateString: string) => {
+    const date = new Date(dateString);
+    const day = getDay(date);
+    return day === 0 || day === 6; // Sunday = 0, Saturday = 6
+  };
   
   // Dialog states
   const [isOfferDialogOpen, setIsOfferDialogOpen] = useState(false);
@@ -272,6 +280,15 @@ const DailyMenuManagement = () => {
   };
 
   const saveOffer = async () => {
+    if (isWeekend(offerForm.date)) {
+      toast({
+        title: "Hiba",
+        description: "Hétvégén a vendéglő zárva tart, nem lehet ajánlatot beállítani",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setSaving(true);
     try {
       const offerData = {
@@ -373,6 +390,15 @@ const DailyMenuManagement = () => {
   };
 
   const saveMenu = async () => {
+    if (isWeekend(menuForm.date)) {
+      toast({
+        title: "Hiba",
+        description: "Hétvégén a vendéglő zárva tart, nem lehet menüt beállítani",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setSaving(true);
     try {
       const menuData = {
@@ -633,8 +659,23 @@ const DailyMenuManagement = () => {
                   <Input
                     type="date"
                     value={offerForm.date}
-                    onChange={(e) => setOfferForm({...offerForm, date: e.target.value})}
+                    onChange={(e) => {
+                      if (isWeekend(e.target.value)) {
+                        toast({
+                          title: "Figyelem",
+                          description: "Hétvégén a vendéglő zárva tart",
+                          variant: "destructive"
+                        });
+                      }
+                      setOfferForm({...offerForm, date: e.target.value});
+                    }}
+                    className={isWeekend(offerForm.date) ? "border-destructive" : ""}
                   />
+                  {isWeekend(offerForm.date) && (
+                    <p className="text-sm text-destructive mt-1">
+                      Hétvégén zárva - válassz hétköznapi dátumot
+                    </p>
+                  )}
                 </div>
                 
                 <div>
@@ -694,13 +735,13 @@ const DailyMenuManagement = () => {
               </div>
               
               <div className="flex gap-2 pt-4">
-                <Button onClick={saveOffer} className="flex-1" disabled={saving}>
+                <Button onClick={saveOffer} className="flex-1" disabled={saving || isWeekend(offerForm.date)}>
                   {saving ? (
                     <LoadingSpinner className="h-4 w-4 mr-2" />
                   ) : (
                     <Save className="h-4 w-4 mr-2" />
                   )}
-                  {saving ? "Mentés..." : "Mentés"}
+                  {saving ? "Mentés..." : isWeekend(offerForm.date) ? "Hétvégén zárva" : "Mentés"}
                 </Button>
                 <Button variant="outline" onClick={() => setIsOfferDialogOpen(false)} disabled={saving}>
                   Mégse
@@ -727,8 +768,23 @@ const DailyMenuManagement = () => {
                   <Input
                     type="date"
                     value={menuForm.date}
-                    onChange={(e) => setMenuForm({...menuForm, date: e.target.value})}
+                    onChange={(e) => {
+                      if (isWeekend(e.target.value)) {
+                        toast({
+                          title: "Figyelem",
+                          description: "Hétvégén a vendéglő zárva tart",
+                          variant: "destructive"
+                        });
+                      }
+                      setMenuForm({...menuForm, date: e.target.value});
+                    }}
+                    className={isWeekend(menuForm.date) ? "border-destructive" : ""}
                   />
+                  {isWeekend(menuForm.date) && (
+                    <p className="text-sm text-destructive mt-1">
+                      Hétvégén zárva - válassz hétköznapi dátumot
+                    </p>
+                  )}
                 </div>
                 
                 <div>
@@ -788,13 +844,13 @@ const DailyMenuManagement = () => {
               </div>
               
               <div className="flex gap-2 pt-4">
-                <Button onClick={saveMenu} className="flex-1" disabled={saving}>
+                <Button onClick={saveMenu} className="flex-1" disabled={saving || isWeekend(menuForm.date)}>
                   {saving ? (
                     <LoadingSpinner className="h-4 w-4 mr-2" />
                   ) : (
                     <Save className="h-4 w-4 mr-2" />
                   )}
-                  {saving ? "Mentés..." : "Mentés"}
+                  {saving ? "Mentés..." : isWeekend(menuForm.date) ? "Hétvégén zárva" : "Mentés"}
                 </Button>
                 <Button variant="outline" onClick={() => setIsMenuDialogOpen(false)} disabled={saving}>
                   Mégse
