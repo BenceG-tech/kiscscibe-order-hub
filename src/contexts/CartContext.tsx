@@ -13,6 +13,10 @@ interface CartItem {
   quantity: number;
   modifiers: CartModifier[];
   image_url?: string;
+  // Daily item specific fields
+  daily_type?: 'offer' | 'menu';
+  daily_date?: string; // YYYY-MM-DD format
+  daily_id?: string; // daily_offer_id or daily_menu_id
 }
 
 interface CartState {
@@ -52,7 +56,10 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
     case "ADD_ITEM":
       const existingItemIndex = state.items.findIndex(item => 
         item.id === action.payload.id && 
-        JSON.stringify(item.modifiers) === JSON.stringify(action.payload.modifiers)
+        JSON.stringify(item.modifiers) === JSON.stringify(action.payload.modifiers) &&
+        item.daily_type === action.payload.daily_type &&
+        item.daily_date === action.payload.daily_date &&
+        item.daily_id === action.payload.daily_id
       );
       
       if (existingItemIndex > -1) {
@@ -109,6 +116,31 @@ interface CartContextType {
   updateQuantity: (id: string, quantity: number) => void;
   removeItem: (id: string) => void;
   clearCart: () => void;
+  addDailyOffer: (offer: DailyOffer) => void;
+  addDailyMenu: (menu: DailyMenu) => void;
+}
+
+// Daily item interfaces for adding to cart
+interface DailyOffer {
+  id: string;
+  date: string;
+  price_huf: number;
+  daily_offer_items?: Array<{
+    menu_items?: {
+      name: string;
+    };
+  }>;
+}
+
+interface DailyMenu {
+  id: string;
+  date: string;
+  price_huf: number;
+  daily_menu_items?: Array<{
+    menu_items?: {
+      name: string;
+    };
+  }>;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -155,6 +187,34 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const clearCart = () => {
     dispatch({ type: "CLEAR_CART" });
   };
+
+  const addDailyOffer = (offer: DailyOffer) => {
+    const itemNames = offer.daily_offer_items?.map(item => item.menu_items?.name).filter(Boolean).join(', ') || 'Napi ajánlat';
+    
+    addItem({
+      id: `daily_offer_${offer.id}`,
+      name: `Napi ajánlat - ${itemNames}`,
+      price_huf: offer.price_huf,
+      modifiers: [],
+      daily_type: 'offer',
+      daily_date: offer.date,
+      daily_id: offer.id,
+    });
+  };
+
+  const addDailyMenu = (menu: DailyMenu) => {
+    const itemNames = menu.daily_menu_items?.map(item => item.menu_items?.name).filter(Boolean).join(', ') || 'Napi menü';
+    
+    addItem({
+      id: `daily_menu_${menu.id}`,
+      name: `Napi menü - ${itemNames}`,
+      price_huf: menu.price_huf,
+      modifiers: [],
+      daily_type: 'menu',
+      daily_date: menu.date,
+      daily_id: menu.id,
+    });
+  };
   
   return (
     <CartContext.Provider value={{
@@ -163,6 +223,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       updateQuantity,
       removeItem,
       clearCart,
+      addDailyOffer,
+      addDailyMenu,
     }}>
       {children}
     </CartContext.Provider>

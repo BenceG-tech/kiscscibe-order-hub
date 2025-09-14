@@ -18,6 +18,10 @@ interface OrderItem {
   qty: number;
   unit_price_huf: number;
   modifiers: OrderModifier[];
+  // Daily item specific fields
+  daily_type?: 'offer' | 'menu';
+  daily_date?: string;
+  daily_id?: string;
 }
 
 interface CustomerInfo {
@@ -65,43 +69,117 @@ serve(async (req) => {
     }
 
     // Begin transaction by getting current menu item prices for validation
-    const menuItemIds = items.map(item => item.item_id);
-    const { data: menuItems, error: menuError } = await supabase
-      .from('menu_items')
-      .select('id, name, price_huf, is_active')
-      .in('id', menuItemIds);
+    const regularItems = items.filter(item => !item.daily_type);
+    const dailyItems = items.filter(item => item.daily_type);
 
-    if (menuError) {
-      console.error('Menu items fetch error:', menuError);
-      throw new Error('Hiba az étlap betöltése során');
-    }
-
-    // Validate all items are active and recalculate total
     let calculatedTotal = 0;
     const validatedItems: any[] = [];
 
-    for (const item of items) {
-      const menuItem = menuItems?.find(m => m.id === item.item_id);
-      if (!menuItem) {
-        throw new Error(`Étel nem található: ${item.name_snapshot}`);
-      }
-      
-      if (!menuItem.is_active) {
-        throw new Error(`Étel már nem elérhető: ${menuItem.name}`);
+    // Handle regular menu items
+    if (regularItems.length > 0) {
+      const menuItemIds = regularItems.map(item => item.item_id);
+      const { data: menuItems, error: menuError } = await supabase
+        .from('menu_items')
+        .select('id, name, price_huf, is_active')
+        .in('id', menuItemIds);
+
+      if (menuError) {
+        console.error('Menu items fetch error:', menuError);
+        throw new Error('Hiba az étlap betöltése során');
       }
 
-      // Use current price from database (not client-submitted price)
-      const currentPrice = menuItem.price_huf;
-      const modifiersTotal = item.modifiers.reduce((sum, mod) => sum + mod.price_delta_huf, 0);
-      const lineTotal = (currentPrice + modifiersTotal) * item.qty;
-      
-      calculatedTotal += lineTotal;
-      
-      validatedItems.push({
-        ...item,
-        unit_price_huf: currentPrice, // Use server-side price
-        line_total_huf: lineTotal
-      });
+      // Validate regular items
+      for (const item of regularItems) {
+        const menuItem = menuItems?.find(m => m.id === item.item_id);
+        if (!menuItem) {
+          throw new Error(`Étel nem található: ${item.name_snapshot}`);
+        }
+        
+        if (!menuItem.is_active) {
+          throw new Error(`Étel már nem elérhető: ${menuItem.name}`);
+        }
+
+        // Use current price from database (not client-submitted price)
+        const currentPrice = menuItem.price_huf;
+        const modifiersTotal = item.modifiers.reduce((sum, mod) => sum + mod.price_delta_huf, 0);
+        const lineTotal = (currentPrice + modifiersTotal) * item.qty;
+        
+        calculatedTotal += lineTotal;
+        
+        validatedItems.push({
+          ...item,
+          unit_price_huf: currentPrice, // Use server-side price
+          line_total_huf: lineTotal
+        });
+      }
+    }
+
+    // Handle daily items (offers and menus)
+    if (dailyItems.length > 0) {
+      for (const item of dailyItems) {
+        let dailyItemData = null;
+        let tableName = '';
+        
+        if (item.daily_type === 'offer') {
+          tableName = 'daily_offers';
+        } else if (item.daily_type === 'menu') {
+          tableName = 'daily_menus';
+        } else {
+          throw new Error(`Ismeretlen napi tétel típus: ${item.daily_type}`);
+        }
+
+        // Check if daily item exists and has available portions
+        const { data: dailyData, error: dailyError } = await supabase
+          .from(tableName)
+          .select('id, price_huf, remaining_portions, date')
+          .eq('id', item.daily_id)
+          .single();
+
+        if (dailyError || !dailyData) {
+          throw new Error(`Napi tétel nem található: ${item.name_snapshot}`);
+        }
+
+        // Check if ordering is still allowed (before midnight cutoff)
+        const itemDate = new Date(dailyData.date);
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(0, 0, 0, 0);
+
+        // If it's for tomorrow and it's past midnight, reject
+        if (itemDate.toDateString() === tomorrow.toDateString() && today >= tomorrow) {
+          throw new Error('A rendelési határidő lejárt ehhez a naphoz');
+        }
+
+        if (dailyData.remaining_portions < item.qty) {
+          throw new Error(`Nincs elég adag: ${item.name_snapshot} (maradt: ${dailyData.remaining_portions})`);
+        }
+
+        // Use current price from database
+        const currentPrice = dailyData.price_huf;
+        const lineTotal = currentPrice * item.qty;
+        
+        calculatedTotal += lineTotal;
+        
+        validatedItems.push({
+          ...item,
+          unit_price_huf: currentPrice,
+          line_total_huf: lineTotal
+        });
+
+        // Decrement remaining portions
+        const { error: updateError } = await supabase
+          .from(tableName)
+          .update({ 
+            remaining_portions: dailyData.remaining_portions - item.qty 
+          })
+          .eq('id', item.daily_id);
+
+        if (updateError) {
+          console.error('Failed to update daily item portions:', updateError);
+          throw new Error('Hiba a készlet frissítése során');
+        }
+      }
     }
 
     console.log('Server-calculated total:', calculatedTotal);
@@ -184,11 +262,12 @@ serve(async (req) => {
 
     // Insert order items
     for (const item of validatedItems) {
+      // For regular items, use existing item_id mapping
       const { data: orderItemData, error: itemError } = await supabase
         .from('order_items')
         .insert({
           order_id: orderId,
-          item_id: item.item_id,
+          item_id: item.daily_type ? null : item.item_id, // null for daily items
           name_snapshot: item.name_snapshot,
           qty: item.qty,
           unit_price_huf: item.unit_price_huf,
@@ -202,19 +281,37 @@ serve(async (req) => {
         throw new Error('Rendelési tétel mentési hiba');
       }
 
-      // Insert modifiers for this item
-      for (const modifier of item.modifiers) {
-        const { error: modError } = await supabase
+      // Store daily item metadata if applicable
+      if (item.daily_type && item.daily_id) {
+        const { error: dailyError } = await supabase
           .from('order_item_options')
           .insert({
             order_item_id: orderItemData.id,
-            label_snapshot: modifier.label_snapshot,
-            price_delta_huf: modifier.price_delta_huf
+            label_snapshot: `daily_${item.daily_type}_${item.daily_id}`,
+            price_delta_huf: 0
           });
+        
+        if (dailyError) {
+          console.error('Daily item metadata insert error:', dailyError);
+          // Don't fail the whole order for metadata errors
+        }
+      }
 
-        if (modError) {
-          console.error('Modifier insert error:', modError);
-          // Don't fail the whole order for modifier errors
+      // Insert modifiers for this item (only for regular items)
+      if (!item.daily_type) {
+        for (const modifier of item.modifiers) {
+          const { error: modError } = await supabase
+            .from('order_item_options')
+            .insert({
+              order_item_id: orderItemData.id,
+              label_snapshot: modifier.label_snapshot,
+              price_delta_huf: modifier.price_delta_huf
+            });
+
+          if (modError) {
+            console.error('Modifier insert error:', modError);
+            // Don't fail the whole order for modifier errors
+          }
         }
       }
     }
