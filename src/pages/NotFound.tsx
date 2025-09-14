@@ -1,4 +1,4 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -32,10 +32,10 @@ const NotFound = () => {
               asChild
               className="bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm"
             >
-              <a href="/">
+              <Link to="/">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Vissza a főoldalra
-              </a>
+              </Link>
             </Button>
           </CardContent>
         </Card>
