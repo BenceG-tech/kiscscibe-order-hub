@@ -49,20 +49,66 @@ const Checkout = () => {
       return;
     }
     
+    // Auto-select scheduled pickup if cart has daily items
+    if (getDailyItemDates().length > 0 && formData.pickup_type === "asap") {
+      setFormData(prev => ({ ...prev, pickup_type: "scheduled" }));
+    }
+    
     fetchTimeSlots();
   }, [cart.items.length, navigate]);
   
+  // Extract daily item dates from cart
+  const getDailyItemDates = () => {
+    const dailyItems = cart.items.filter(item => item.daily_date);
+    const uniqueDates = [...new Set(dailyItems.map(item => item.daily_date))];
+    return uniqueDates.filter(Boolean) as string[];
+  };
+
+  // Check if cart has mixed daily items from different dates
+  const hasMultipleDailyDates = () => {
+    const dailyDates = getDailyItemDates();
+    return dailyDates.length > 1;
+  };
+
+  // Get the constraint message for pickup time
+  const getPickupConstraint = () => {
+    const dailyDates = getDailyItemDates();
+    if (dailyDates.length === 0) return null;
+    
+    if (dailyDates.length === 1) {
+      const date = new Date(dailyDates[0]);
+      return `Napi ajánlat/menü miatt csak ${date.toLocaleDateString("hu-HU", { 
+        year: "numeric", 
+        month: "long", 
+        day: "numeric" 
+      })}-án lehet átvenni`;
+    }
+    
+    return "Különböző dátumú napi ajánlatok/menük miatt korlátozott időpontok";
+  };
+
   const fetchTimeSlots = async () => {
     setLoading(true);
     try {
+      const dailyDates = getDailyItemDates();
       const today = new Date();
       const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
       
-      const { data, error } = await supabase
+      let query = supabase
         .from("capacity_slots")
-        .select("date, timeslot, max_orders, booked_orders")
-        .gte("date", today.toISOString().split("T")[0])
-        .lte("date", nextWeek.toISOString().split("T")[0])
+        .select("date, timeslot, max_orders, booked_orders");
+      
+      // If cart has daily items, filter slots to only those dates
+      if (dailyDates.length > 0) {
+        query = query.in("date", dailyDates);
+      } else {
+        // Regular behavior for non-daily items
+        query = query
+          .gte("date", today.toISOString().split("T")[0])
+          .lte("date", nextWeek.toISOString().split("T")[0]);
+      }
+      
+      const { data, error } = await query
         .order("date")
         .order("timeslot");
       
@@ -112,6 +158,16 @@ const Checkout = () => {
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Prevent submission if cart has multiple daily dates
+    if (hasMultipleDailyDates()) {
+      toast({
+        title: "Hiba",
+        description: "Különböző dátumú napi ajánlatok/menük nem rendelhetőek egyszerre",
+        variant: "destructive"
+      });
+      return;
+    }
     
     // Validate pickup time is not in the past
     if (formData.pickup_type === 'scheduled' && formData.pickup_time) {
@@ -339,6 +395,24 @@ const Checkout = () => {
                       Átvételi idő
                     </Label>
                     
+                    {/* Show pickup constraint for daily items */}
+                    {getPickupConstraint() && (
+                      <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg p-3">
+                        <p className="text-sm text-orange-800 dark:text-orange-200 font-medium">
+                          ℹ️ {getPickupConstraint()}
+                        </p>
+                      </div>
+                    )}
+                    
+                    {/* Show warning for multiple daily dates */}
+                    {hasMultipleDailyDates() && (
+                      <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
+                        <p className="text-sm text-red-800 dark:text-red-200 font-medium">
+                          ⚠️ A kosárban különböző dátumú napi ajánlatok/menük vannak. Kérjük távolítsa el az egyiket.
+                        </p>
+                      </div>
+                    )}
+                    
                     <RadioGroup
                       value={formData.pickup_type}
                       onValueChange={(value: "asap" | "scheduled") => 
@@ -346,11 +420,18 @@ const Checkout = () => {
                       }
                     >
                       <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="asap" id="asap" disabled={!canOrderToday} />
-                        <Label htmlFor="asap" className={!canOrderToday ? "text-muted-foreground" : ""}>
+                        <RadioGroupItem 
+                          value="asap" 
+                          id="asap" 
+                          disabled={!canOrderToday || getDailyItemDates().length > 0} 
+                        />
+                        <Label htmlFor="asap" className={(!canOrderToday || getDailyItemDates().length > 0) ? "text-muted-foreground" : ""}>
                           Minél hamarabb (15-20 perc)
                           {!canOrderToday && (
                             <Badge variant="secondary" className="ml-2">Zárva</Badge>
+                          )}
+                          {getDailyItemDates().length > 0 && (
+                            <Badge variant="secondary" className="ml-2">Csak ütemezetten</Badge>
                           )}
                         </Label>
                       </div>
@@ -427,7 +508,11 @@ const Checkout = () => {
                   <Button
                     type="submit"
                     className="w-full bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm"
-                    disabled={isSubmitting || (formData.pickup_type === "scheduled" && (!formData.pickup_date || !formData.pickup_time))}
+                    disabled={
+                      isSubmitting || 
+                      hasMultipleDailyDates() ||
+                      (formData.pickup_type === "scheduled" && (!formData.pickup_date || !formData.pickup_time))
+                    }
                   >
                     {isSubmitting ? (
                       <>
