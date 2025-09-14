@@ -7,10 +7,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { LoadingSpinner } from "@/components/ui/loading";
 import { format, isToday, isBefore, startOfTomorrow } from "date-fns";
 import { hu } from "date-fns/locale";
-import { CalendarDays, Clock, Package, Coffee, ShoppingCart, AlertCircle } from "lucide-react";
+import { CalendarDays, Clock, Package, Coffee, AlertCircle, ShoppingCart } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "sonner";
+import DailyItemSelector from "./DailyItemSelector";
 
 interface MenuItem {
   id: string;
@@ -65,8 +66,6 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
     const today = new Date();
     return today;
   });
-
-  const { addDailyOffer, addDailyMenu } = useCart();
 
   // Helper function to check if ordering is allowed for a given date
   const canOrderForDate = (date: Date) => {
@@ -214,44 +213,6 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
     onDateSelect?.(today);
   };
 
-  const handleOfferOrder = async (offer: DailyOffer) => {
-    if (!canOrderForDate(new Date(offer.date))) {
-      toast.error('A rendelési határidő lejárt');
-      return;
-    }
-
-    if (offer.remaining_portions <= 0) {
-      toast.error('Nincs több adag');
-      return;
-    }
-
-    try {
-      addDailyOffer(offer);
-      toast.success('Napi ajánlat hozzáadva a kosárhoz!');
-    } catch (error) {
-      toast.error('Hiba történt a kosárhoz adás során');
-    }
-  };
-
-  const handleMenuOrder = async (menu: DailyMenu) => {
-    if (!canOrderForDate(new Date(menu.date))) {
-      toast.error('A rendelési határidő lejárt');
-      return;
-    }
-
-    if (menu.remaining_portions <= 0) {
-      toast.error('Nincs több adag');
-      return;
-    }
-
-    try {
-      addDailyMenu(menu);
-      toast.success('Napi menü hozzáadva a kosárhoz!');
-    } catch (error) {
-      toast.error('Hiba történt a kosárhoz adás során');
-    }
-  };
-
   const currentOffers = getOffersForDate(currentDate);
   const currentMenus = getMenusForDate(currentDate);
 
@@ -346,15 +307,11 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
                               </li>
                             ))}
                           </ul>
-                          <Button 
-                            onClick={() => handleOfferOrder(offer)}
-                            disabled={!canOrderForDate(new Date(offer.date)) || offer.remaining_portions <= 0}
-                            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-                            size="lg"
-                          >
-                            <ShoppingCart className="h-4 w-4 mr-2" />
-                            {offer.remaining_portions <= 0 ? 'Elfogyott' : 'Kosárba'}
-                          </Button>
+                          <DailyItemSelector 
+                            type="offer"
+                            data={offer}
+                            canOrder={canOrderForDate(new Date(offer.date))}
+                          />
                       </div>
                     ))}
                   </div>
@@ -416,15 +373,11 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
                               </li>
                             ))}
                           </ul>
-                          <Button 
-                            onClick={() => handleMenuOrder(menu)}
-                            disabled={!canOrderForDate(new Date(menu.date)) || menu.remaining_portions <= 0}
-                            className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground"
-                            size="lg"
-                          >
-                            <ShoppingCart className="h-4 w-4 mr-2" />
-                            {menu.remaining_portions <= 0 ? 'Elfogyott' : 'Kosárba'}
-                          </Button>
+                          <DailyItemSelector 
+                            type="menu"
+                            data={menu}
+                            canOrder={canOrderForDate(new Date(menu.date))}
+                          />
                       </div>
                     ))}
                   </div>
@@ -607,15 +560,11 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
                                 </li>
                               ))}
                             </ul>
-                            <Button 
-                              onClick={() => handleOfferOrder(offer)}
-                              disabled={!canOrderForDate(new Date(offer.date)) || offer.remaining_portions <= 0}
-                              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-                              size="lg"
-                            >
-                              <ShoppingCart className="h-5 w-5 mr-2" />
-                              {offer.remaining_portions <= 0 ? 'Elfogyott' : 'Kosárba'}
-                            </Button>
+                            <DailyItemSelector 
+                              type="offer"
+                              data={offer}
+                              canOrder={canOrderForDate(new Date(offer.date))}
+                            />
                         </div>
                       ))}
                     </div>
@@ -681,15 +630,11 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
                                 </li>
                               ))}
                             </ul>
-                            <Button 
-                              onClick={() => handleMenuOrder(menu)}
-                              disabled={!canOrderForDate(new Date(menu.date)) || menu.remaining_portions <= 0}
-                              className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground"
-                              size="lg"
-                            >
-                              <ShoppingCart className="h-5 w-5 mr-2" />
-                              {menu.remaining_portions <= 0 ? 'Elfogyott' : 'Kosárba'}
-                            </Button>
+                            <DailyItemSelector 
+                              type="menu"
+                              data={menu}
+                              canOrder={canOrderForDate(new Date(menu.date))}
+                            />
                         </div>
                       ))}
                     </div>

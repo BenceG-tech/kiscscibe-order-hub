@@ -1,0 +1,226 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { ShoppingCart, Package, Coffee } from "lucide-react";
+import { useCart } from "@/contexts/CartContext";
+import { toast } from "sonner";
+
+interface MenuItem {
+  id: string;
+  name: string;
+  description: string;
+  price_huf: number;
+  image_url?: string;
+}
+
+interface DailyOfferItem {
+  id: string;
+  menu_items?: MenuItem;
+}
+
+interface DailyMenuItems {
+  id: string;
+  menu_items?: MenuItem;
+}
+
+interface DailyOffer {
+  id: string;
+  date: string;
+  price_huf: number;
+  note?: string;
+  max_portions: number;
+  remaining_portions: number;
+  daily_offer_items?: DailyOfferItem[];
+}
+
+interface DailyMenu {
+  id: string;
+  date: string;
+  price_huf: number;
+  note?: string;
+  max_portions: number;
+  remaining_portions: number;
+  daily_menu_items?: DailyMenuItems[];
+}
+
+interface DailyItemSelectorProps {
+  type: 'offer' | 'menu';
+  data: DailyOffer | DailyMenu;
+  canOrder: boolean;
+}
+
+const DailyItemSelector = ({ type, data, canOrder }: DailyItemSelectorProps) => {
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const { addItem } = useCart();
+
+  const items = type === 'offer' 
+    ? (data as DailyOffer).daily_offer_items || []
+    : (data as DailyMenu).daily_menu_items || [];
+
+  const allItemIds = items.map(item => item.id);
+  const allSelected = selectedItems.length === items.length && selectedItems.length > 0;
+  
+  // Calculate pricing
+  const calculatePrice = () => {
+    if (allSelected) {
+      // If all items selected, use package price
+      return data.price_huf;
+    } else {
+      // If partial selection, use individual item prices
+      return selectedItems.reduce((total, itemId) => {
+        const item = items.find(i => i.id === itemId);
+        return total + (item?.menu_items?.price_huf || 0);
+      }, 0);
+    }
+  };
+
+  const handleItemToggle = (itemId: string) => {
+    setSelectedItems(prev => 
+      prev.includes(itemId) 
+        ? prev.filter(id => id !== itemId)
+        : [...prev, itemId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (allSelected) {
+      setSelectedItems([]);
+    } else {
+      setSelectedItems(allItemIds);
+    }
+  };
+
+  const handleAddToCart = () => {
+    if (selectedItems.length === 0) {
+      toast.error('Válassz legalább egy tételt!');
+      return;
+    }
+
+    try {
+      if (allSelected) {
+        // Add as complete package
+        const itemNames = items.map(item => item.menu_items?.name).filter(Boolean).join(', ');
+        const packageName = type === 'offer' ? 'Napi ajánlat' : 'Napi menü';
+        
+        addItem({
+          id: `daily_${type}_${data.id}`,
+          name: `${packageName} - ${itemNames}`,
+          price_huf: data.price_huf,
+          modifiers: [],
+          daily_type: type,
+          daily_date: data.date,
+          daily_id: data.id,
+        });
+      } else {
+        // Add selected items individually
+        selectedItems.forEach(itemId => {
+          const item = items.find(i => i.id === itemId);
+          if (item?.menu_items) {
+            addItem({
+              id: item.menu_items.id,
+              name: item.menu_items.name,
+              price_huf: item.menu_items.price_huf,
+              modifiers: [],
+              image_url: item.menu_items.image_url,
+            });
+          }
+        });
+      }
+
+      toast.success('Tételek hozzáadva a kosárhoz!');
+      setSelectedItems([]);
+    } catch (error) {
+      toast.error('Hiba történt a kosárhoz adás során');
+    }
+  };
+
+  const totalPrice = calculatePrice();
+  const savings = allSelected ? items.reduce((sum, item) => sum + (item.menu_items?.price_huf || 0), 0) - data.price_huf : 0;
+
+  return (
+    <Card className="border-2 border-dashed border-primary/20 bg-gradient-to-br from-background to-primary/5">
+      <CardContent className="p-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {type === 'offer' ? <Package className="h-5 w-5 text-primary" /> : <Coffee className="h-5 w-5 text-secondary" />}
+            <span className="font-semibold">Válaszd ki, mit szeretnél:</span>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSelectAll}
+            className="text-xs"
+          >
+            {allSelected ? 'Egyik sem' : 'Mind'}
+          </Button>
+        </div>
+
+        <div className="space-y-3">
+          {items.map((item, index) => (
+            <div key={item.id} className="flex items-start gap-3 p-3 rounded-lg border border-primary/10 hover:border-primary/20 transition-colors">
+              <Checkbox
+                id={item.id}
+                checked={selectedItems.includes(item.id)}
+                onCheckedChange={() => handleItemToggle(item.id)}
+                className="mt-1"
+              />
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="flex-shrink-0 w-6 h-6 bg-primary/10 text-primary rounded-full flex items-center justify-center text-sm font-bold">
+                    {index + 1}
+                  </span>
+                  <label 
+                    htmlFor={item.id}
+                    className="font-medium cursor-pointer flex-1"
+                  >
+                    {item.menu_items?.name}
+                  </label>
+                  <Badge variant="outline" className="text-xs">
+                    {item.menu_items?.price_huf} Ft
+                  </Badge>
+                </div>
+                {item.menu_items?.description && (
+                  <p className="text-muted-foreground text-sm mt-1 ml-8">
+                    {item.menu_items.description}
+                  </p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {selectedItems.length > 0 && (
+          <div className="border-t pt-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="font-semibold">Összesen:</span>
+              <div className="text-right">
+                <div className="font-bold text-lg">
+                  {totalPrice.toLocaleString()} Ft
+                </div>
+                {savings > 0 && (
+                  <div className="text-sm text-green-600">
+                    Megtakarítás: {savings.toLocaleString()} Ft
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <Button 
+              onClick={handleAddToCart}
+              disabled={!canOrder || data.remaining_portions <= 0}
+              className={`w-full ${type === 'offer' ? 'bg-primary hover:bg-primary/90' : 'bg-secondary hover:bg-secondary/90'}`}
+              size="lg"
+            >
+              <ShoppingCart className="h-4 w-4 mr-2" />
+              {data.remaining_portions <= 0 ? 'Elfogyott' : 'Kosárba'}
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+export default DailyItemSelector;
