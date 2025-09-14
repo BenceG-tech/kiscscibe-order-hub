@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,55 +42,16 @@ const Checkout = () => {
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Redirect if cart is empty
-  useEffect(() => {
-    if (cart.items.length === 0) {
-      navigate("/etlap");
-      return;
-    }
-    
-    // Auto-select scheduled pickup if cart has daily items
-    if (getDailyItemDates().length > 0 && formData.pickup_type === "asap") {
-      setFormData(prev => ({ ...prev, pickup_type: "scheduled" }));
-    }
-    
-    fetchTimeSlots();
-  }, [cart.items.length, navigate]);
-  
-  // Extract daily item dates from cart
-  const getDailyItemDates = () => {
+  // Extract daily item dates from cart with useMemo for efficiency
+  const dailyDates = useMemo(() => {
     const dailyItems = cart.items.filter(item => item.daily_date);
     const uniqueDates = [...new Set(dailyItems.map(item => item.daily_date))];
     return uniqueDates.filter(Boolean) as string[];
-  };
+  }, [cart.items]);
 
-  // Check if cart has mixed daily items from different dates
-  const hasMultipleDailyDates = () => {
-    const dailyDates = getDailyItemDates();
-    return dailyDates.length > 1;
-  };
-
-  // Get the constraint message for pickup time
-  const getPickupConstraint = () => {
-    const dailyDates = getDailyItemDates();
-    if (dailyDates.length === 0) return null;
-    
-    if (dailyDates.length === 1) {
-      const date = new Date(dailyDates[0]);
-      return `Napi ajánlat/menü miatt csak ${date.toLocaleDateString("hu-HU", { 
-        year: "numeric", 
-        month: "long", 
-        day: "numeric" 
-      })}-án lehet átvenni`;
-    }
-    
-    return "Különböző dátumú napi ajánlatok/menük miatt korlátozott időpontok";
-  };
-
-  const fetchTimeSlots = async () => {
+  const fetchTimeSlots = useCallback(async () => {
     setLoading(true);
     try {
-      const dailyDates = getDailyItemDates();
       const today = new Date();
       const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
       
@@ -118,7 +79,17 @@ const Checkout = () => {
         date: slot.date,
         timeslot: slot.timeslot,
         available_capacity: slot.max_orders - slot.booked_orders
-      })).filter(slot => slot.available_capacity > 0) || [];
+      }))
+      .filter(slot => {
+        // Filter out slots with no capacity
+        if (slot.available_capacity <= 0) return false;
+        
+        // Filter out Sunday slots (getDay() === 0)
+        const slotDate = new Date(slot.date);
+        if (slotDate.getDay() === 0) return false; // Sunday = 0
+        
+        return true;
+      }) || [];
       
       setTimeSlots(slots);
     } catch (error) {
@@ -131,7 +102,48 @@ const Checkout = () => {
     } finally {
       setLoading(false);
     }
+  }, [dailyDates, toast]);
+
+  // Redirect if cart is empty and handle initial setup
+  useEffect(() => {
+    if (cart.items.length === 0) {
+      navigate("/etlap");
+      return;
+    }
+    
+    // Auto-select scheduled pickup if cart has daily items
+    if (dailyDates.length > 0 && formData.pickup_type === "asap") {
+      setFormData(prev => ({ ...prev, pickup_type: "scheduled" }));
+    }
+    
+    fetchTimeSlots();
+  }, [cart.items.length, navigate, dailyDates, fetchTimeSlots, formData.pickup_type]);
+
+  const getDailyItemDates = () => dailyDates;
+
+  // Check if cart has mixed daily items from different dates
+  const hasMultipleDailyDates = () => {
+    const dailyDates = getDailyItemDates();
+    return dailyDates.length > 1;
   };
+
+  // Get the constraint message for pickup time
+  const getPickupConstraint = () => {
+    const dailyDates = getDailyItemDates();
+    if (dailyDates.length === 0) return null;
+    
+    if (dailyDates.length === 1) {
+      const date = new Date(dailyDates[0]);
+      return `Napi ajánlat/menü miatt csak ${date.toLocaleDateString("hu-HU", { 
+        year: "numeric", 
+        month: "long", 
+        day: "numeric" 
+      })}-án lehet átvenni`;
+    }
+    
+    return "Különböző dátumú napi ajánlatok/menük miatt korlátozott időpontok";
+  };
+
   
   const isBusinessHours = () => {
     const now = new Date();
@@ -170,8 +182,8 @@ const Checkout = () => {
     }
     
     // Validate pickup time is not in the past
-    if (formData.pickup_type === 'scheduled' && formData.pickup_time) {
-      const selectedTime = new Date(formData.pickup_time);
+    if (formData.pickup_type === 'scheduled' && formData.pickup_date && formData.pickup_time) {
+      const selectedTime = new Date(`${formData.pickup_date}T${formData.pickup_time}`);
       const now = new Date();
       
       if (selectedTime < now) {
