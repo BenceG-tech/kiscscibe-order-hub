@@ -4,12 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu, X, Phone, ShoppingCart } from "lucide-react";
+import { useCart } from "@/contexts/CartContext";
 
 const ModernNavigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [visible, setVisible] = useState(true);
   const location = useLocation();
+  const { state: cart } = useCart();
 
   useEffect(() => {
     let lastScrollY = window.scrollY;
@@ -64,8 +66,9 @@ const ModernNavigation = () => {
                 onClick={() => document.getElementById('napi-ajanlat')?.scrollIntoView({ behavior: 'smooth' })}
                 size={scrolled ? "sm" : "default"}
                 className="bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm text-primary-foreground font-semibold transition-all duration-300"
+                asChild
               >
-                Rendelj most
+                <a href="/etlap">Rendelj most</a>
               </Button>
               
               <Button 
@@ -119,6 +122,13 @@ const ModernNavigation = () => {
               <Link to="/etlap" className="relative group">
                 <Button variant="ghost" size="icon" className="hover:bg-primary/10">
                   <ShoppingCart className="h-5 w-5" />
+                  {cart.itemCount > 0 && (
+                    <Badge 
+                      className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 bg-primary text-primary-foreground text-xs"
+                    >
+                      {cart.itemCount}
+                    </Badge>
+                  )}
                 </Button>
               </Link>
             </div>
@@ -161,7 +171,7 @@ const ModernNavigation = () => {
                       className="w-full bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm mb-3"
                       onClick={closeMenu}
                     >
-                      <Link to="/etlap">Rendelj most</Link>
+                      <a href="/etlap">Rendelj most</a>
                     </Button>
                     
                     <Button 

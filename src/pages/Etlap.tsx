@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import ModernNavigation from "@/components/ModernNavigation";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
+import { useCart } from "@/contexts/CartContext";
 import { ShoppingCart, Plus, Minus, Search } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -36,14 +38,14 @@ interface CartItem {
 
 const Etlap = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { state: cart, addItem, updateQuantity, removeItem } = useCart();
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
-  const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
   useEffect(() => {
     fetchCategories();
@@ -93,24 +95,14 @@ const Etlap = () => {
     return matchesCategory && matchesSearch;
   });
 
-  const addToCart = (item: MenuItem, quantity = 1) => {
-    const existingItem = cart.find(cartItem => cartItem.id === item.id);
-    
-    if (existingItem) {
-      setCart(cart.map(cartItem => 
-        cartItem.id === item.id 
-          ? { ...cartItem, quantity: cartItem.quantity + quantity }
-          : cartItem
-      ));
-    } else {
-      setCart([...cart, {
-        id: item.id,
-        name: item.name,
-        price: item.price_huf,
-        quantity: quantity,
-        modifiers: []
-      }]);
-    }
+  const handleAddToCart = (item: MenuItem, quantity = 1) => {
+    addItem({
+      id: item.id,
+      name: item.name,
+      price_huf: item.price_huf,
+      modifiers: [],
+      image_url: item.image_url
+    });
     
     toast({
       title: "Kosárba tetve",
@@ -118,22 +110,16 @@ const Etlap = () => {
     });
   };
 
-  const updateCartQuantity = (id: string, change: number) => {
-    setCart(cart.map(item => {
-      if (item.id === id) {
-        const newQuantity = Math.max(0, item.quantity + change);
-        return newQuantity === 0 ? null : { ...item, quantity: newQuantity };
+  const handleUpdateCartQuantity = (id: string, change: number) => {
+    const item = cart.items.find(item => item.id === id);
+    if (item) {
+      const newQuantity = item.quantity + change;
+      if (newQuantity <= 0) {
+        removeItem(id);
+      } else {
+        updateQuantity(id, newQuantity);
       }
-      return item;
-    }).filter(Boolean) as CartItem[]);
-  };
-
-  const getCartTotal = () => {
-    return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
-  };
-
-  const getCartItemCount = () => {
-    return cart.reduce((total, item) => total + item.quantity, 0);
+    }
   };
 
   return (
@@ -213,7 +199,7 @@ const Etlap = () => {
                       )}
                     </div>
                     <Button 
-                      onClick={() => addToCart(item)}
+                      onClick={() => handleAddToCart(item)}
                       className="w-full bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm transition-all duration-300 hover-scale"
                     >
                       Kosárba
@@ -227,19 +213,19 @@ const Etlap = () => {
       </div>
 
       {/* Floating Cart Button */}
-      <div className="fixed bottom-4 right-4 z-40">
-        <Button
-          onClick={() => setIsCartOpen(true)}
-          className="rounded-full h-14 w-14 bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm relative transition-all duration-300 hover-scale animate-bounce"
-        >
-          <ShoppingCart className="h-6 w-6" />
-          {getCartItemCount() > 0 && (
+      {cart.itemCount > 0 && (
+        <div className="fixed bottom-4 right-4 z-40">
+          <Button
+            onClick={() => setIsCartOpen(true)}
+            className="rounded-full h-14 w-14 bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm relative transition-all duration-300 hover-scale animate-bounce"
+          >
+            <ShoppingCart className="h-6 w-6" />
             <Badge className="absolute -top-2 -right-2 bg-warmth text-white min-w-[20px] h-5 flex items-center justify-center text-xs animate-pulse">
-              {getCartItemCount()}
+              {cart.itemCount}
             </Badge>
-          )}
-        </Button>
-      </div>
+          </Button>
+        </div>
+      )}
 
       {/* Cart Dialog */}
       <Dialog open={isCartOpen} onOpenChange={setIsCartOpen}>
@@ -248,25 +234,25 @@ const Etlap = () => {
             <DialogTitle>Kosár</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            {cart.length === 0 ? (
+            {cart.items.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">
                 A kosár üres
               </p>
             ) : (
               <>
-                {cart.map((item) => (
+                {cart.items.map((item) => (
                   <div key={item.id} className="flex items-center justify-between py-2 border-b">
                     <div className="flex-1">
                       <h4 className="font-medium">{item.name}</h4>
                       <p className="text-sm text-muted-foreground">
-                        {item.price} Ft / db
+                        {item.price_huf} Ft / db
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => updateCartQuantity(item.id, -1)}
+                        onClick={() => handleUpdateCartQuantity(item.id, -1)}
                       >
                         <Minus className="h-3 w-3" />
                       </Button>
@@ -274,7 +260,7 @@ const Etlap = () => {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => updateCartQuantity(item.id, 1)}
+                        onClick={() => handleUpdateCartQuantity(item.id, 1)}
                       >
                         <Plus className="h-3 w-3" />
                       </Button>
@@ -284,13 +270,13 @@ const Etlap = () => {
                 <div className="border-t pt-4">
                   <div className="flex justify-between items-center text-lg font-bold">
                     <span>Összesen:</span>
-                    <span>{getCartTotal()} Ft</span>
+                    <span>{cart.total} Ft</span>
                   </div>
                   <Button 
                     className="w-full mt-4 bg-gradient-to-r from-primary to-primary-glow"
                     onClick={() => {
                       setIsCartOpen(false);
-                      setIsCheckoutOpen(true);
+                      navigate("/checkout");
                     }}
                   >
                     Tovább a fizetéshez
@@ -298,26 +284,6 @@ const Etlap = () => {
                 </div>
               </>
             )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Checkout Dialog */}
-      <Dialog open={isCheckoutOpen} onOpenChange={setIsCheckoutOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Rendelés leadása</DialogTitle>
-          </DialogHeader>
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">
-              A rendelési funkció hamarosan elérhető lesz!
-            </p>
-            <Button 
-              onClick={() => setIsCheckoutOpen(false)}
-              className="mt-4"
-            >
-              Vissza
-            </Button>
           </div>
         </DialogContent>
       </Dialog>
