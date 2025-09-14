@@ -5,11 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu, X, Phone, ShoppingCart } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
+import { CartDialog } from "@/components/CartDialog";
 
 const ModernNavigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [visible, setVisible] = useState(true);
+  const [isCartOpen, setIsCartOpen] = useState(false);
   const location = useLocation();
   const { state: cart } = useCart();
 
@@ -119,8 +121,13 @@ const ModernNavigation = () => {
               ))}
               
               {/* Cart icon for desktop */}
-              <Link to="/etlap" className="relative group">
-                <Button variant="ghost" size="icon" className="hover:bg-primary/10">
+              <div className="relative group">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="hover:bg-primary/10"
+                  onClick={() => setIsCartOpen(true)}
+                >
                   <ShoppingCart className="h-5 w-5" />
                   {cart.itemCount > 0 && (
                     <Badge 
@@ -130,7 +137,7 @@ const ModernNavigation = () => {
                     </Badge>
                   )}
                 </Button>
-              </Link>
+              </div>
             </div>
 
             {/* Mobile Menu Button */}
@@ -191,6 +198,9 @@ const ModernNavigation = () => {
           </div>
         </div>
       </div>
+      
+      {/* Cart Dialog */}
+      <CartDialog open={isCartOpen} onOpenChange={setIsCartOpen} />
     </nav>
   );
 };
