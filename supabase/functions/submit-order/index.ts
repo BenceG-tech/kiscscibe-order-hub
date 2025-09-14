@@ -406,9 +406,9 @@ serve(async (req) => {
       `;
 
       await resend.emails.send({
-        from: 'Kiscsibe Étterem <onboarding@resend.dev>',
+        from: 'Kiscsibe Étterem <rendeles@kiscsibe-etterem.hu>',
         to: [customer.email],
-        bcc: ['rendelesek@kiscsibe.hu'], // Optional admin copy
+        bcc: ['kiscsibeetterem@gmail.com'], // Optional admin copy
         subject: `Kiscsibe – rendelés visszaigazolás #${orderCode}`,
         html: emailHtml,
         text: emailText,
