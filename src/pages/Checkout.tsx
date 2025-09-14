@@ -123,14 +123,32 @@ const Checkout = () => {
         return true;
       }) || [];
       
-      // If we have daily dates but no slots from database, generate fallback slots
-      if (dailyDates.length > 0) {
-        const existingDates = new Set(slots.map(slot => slot.date));
-        
-        for (const dailyDate of dailyDates) {
-          if (!existingDates.has(dailyDate)) {
+      // Generate fallback slots if no database slots found
+      if (slots.length === 0) {
+        if (dailyDates.length > 0) {
+          // For daily items, generate slots for their specific dates
+          for (const dailyDate of dailyDates) {
             const fallbackSlots = generateFallbackTimeSlots(dailyDate);
             slots = [...slots, ...fallbackSlots];
+          }
+        } else {
+          // For regular items, generate slots for next 5 business days
+          const currentDate = new Date(today);
+          let daysAdded = 0;
+          const maxDays = 10; // Prevent infinite loop
+          
+          while (daysAdded < 5 && maxDays > 0) {
+            const dateStr = currentDate.toISOString().split("T")[0];
+            const dayOfWeek = currentDate.getDay();
+            
+            // Skip Sundays and generate slots for business days
+            if (dayOfWeek !== 0) {
+              const fallbackSlots = generateFallbackTimeSlots(dateStr);
+              slots = [...slots, ...fallbackSlots];
+              daysAdded++;
+            }
+            
+            currentDate.setDate(currentDate.getDate() + 1);
           }
         }
         
@@ -145,8 +163,8 @@ const Checkout = () => {
       
       setTimeSlots(slots);
       
-      // Auto-select first available slot if daily items exist and no slot is selected
-      if (dailyDates.length > 0 && slots.length > 0 && !formData.pickup_time) {
+      // Auto-select first available slot if no slot is selected
+      if (slots.length > 0 && !formData.pickup_time) {
         const firstSlot = slots[0];
         setFormData(prev => ({
           ...prev,
@@ -164,7 +182,7 @@ const Checkout = () => {
     } finally {
       setLoading(false);
     }
-  }, [dailyDates, toast]);
+  }, [dailyDates, toast, formData.pickup_time]);
 
   // Redirect if cart is empty and handle initial setup
   useEffect(() => {
