@@ -219,15 +219,59 @@ serve(async (req) => {
         }
       }
 
-      // Atomically update capacity slot
-      const { data: capacityData, error: capacityError } = await supabase
+      // Atomically update capacity slot or create if it doesn't exist
+      let { data: capacityData, error: capacityError } = await supabase
         .from('capacity_slots')
         .select('max_orders, booked_orders')
         .eq('date', date)
         .eq('timeslot', time)
         .single();
 
-      if (capacityError) {
+      // If capacity slot doesn't exist, try to create it
+      if (capacityError && capacityError.code === 'PGRST116') {
+        console.log('Capacity slot not found, creating fallback slot for:', date, time);
+        
+        // Validate business hours before creating
+        const slotDate = new Date(date);
+        const dayOfWeek = slotDate.getDay();
+        const [hours, minutes] = time.split(':').map(Number);
+        
+        // Check if it's Sunday (closed)
+        if (dayOfWeek === 0) {
+          throw new Error('Vasárnap zárva tartunk');
+        }
+        
+        // Check business hours
+        let isValidTime = false;
+        if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Monday-Friday
+          isValidTime = hours >= 7 && hours < 15;
+        } else if (dayOfWeek === 6) { // Saturday
+          isValidTime = hours >= 8 && hours < 14;
+        }
+        
+        if (!isValidTime) {
+          throw new Error('A kiválasztott időpont nyitvatartási időn kívül esik');
+        }
+        
+        // Create the capacity slot
+        const { data: newCapacityData, error: createError } = await supabase
+          .from('capacity_slots')
+          .insert({
+            date,
+            timeslot: `${time}:00`, // Add seconds
+            max_orders: 8,
+            booked_orders: 0
+          })
+          .select('max_orders, booked_orders')
+          .single();
+        
+        if (createError) {
+          console.error('Capacity slot creation error:', createError);
+          throw new Error('Hiba az időpont létrehozásakor');
+        }
+        
+        capacityData = newCapacityData;
+      } else if (capacityError) {
         console.error('Capacity check error:', capacityError);
         throw new Error('Időpont nem elérhető');
       }
@@ -243,7 +287,7 @@ serve(async (req) => {
           booked_orders: capacityData.booked_orders + 1 
         })
         .eq('date', date)
-        .eq('timeslot', time);
+        .eq('timeslot', `${time}:00`); // Add seconds for consistency
 
       if (updateError) {
         console.error('Capacity update error:', updateError);

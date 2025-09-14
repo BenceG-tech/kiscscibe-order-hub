@@ -49,6 +49,38 @@ const Checkout = () => {
     return uniqueDates.filter(Boolean) as string[];
   }, [cart.items]);
 
+  const generateFallbackTimeSlots = (date: string): TimeSlot[] => {
+    const slotDate = new Date(date);
+    const dayOfWeek = slotDate.getDay();
+    
+    // Skip Sundays (0)
+    if (dayOfWeek === 0) return [];
+    
+    const slots: TimeSlot[] = [];
+    let startHour = 7;
+    let endHour = 15;
+    
+    // Saturday has different hours
+    if (dayOfWeek === 6) {
+      startHour = 8;
+      endHour = 14;
+    }
+    
+    // Generate 30-minute slots
+    for (let hour = startHour; hour < endHour; hour++) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:00`;
+        slots.push({
+          date,
+          timeslot: timeString,
+          available_capacity: 8 // Default capacity
+        });
+      }
+    }
+    
+    return slots;
+  };
+
   const fetchTimeSlots = useCallback(async () => {
     setLoading(true);
     try {
@@ -75,7 +107,7 @@ const Checkout = () => {
       
       if (error) throw error;
       
-      const slots = data?.map(slot => ({
+      let slots = data?.map(slot => ({
         date: slot.date,
         timeslot: slot.timeslot,
         available_capacity: slot.max_orders - slot.booked_orders
@@ -91,7 +123,37 @@ const Checkout = () => {
         return true;
       }) || [];
       
+      // If we have daily dates but no slots from database, generate fallback slots
+      if (dailyDates.length > 0) {
+        const existingDates = new Set(slots.map(slot => slot.date));
+        
+        for (const dailyDate of dailyDates) {
+          if (!existingDates.has(dailyDate)) {
+            const fallbackSlots = generateFallbackTimeSlots(dailyDate);
+            slots = [...slots, ...fallbackSlots];
+          }
+        }
+        
+        // Sort slots by date and time
+        slots.sort((a, b) => {
+          if (a.date !== b.date) {
+            return a.date.localeCompare(b.date);
+          }
+          return a.timeslot.localeCompare(b.timeslot);
+        });
+      }
+      
       setTimeSlots(slots);
+      
+      // Auto-select first available slot if daily items exist and no slot is selected
+      if (dailyDates.length > 0 && slots.length > 0 && !formData.pickup_time) {
+        const firstSlot = slots[0];
+        setFormData(prev => ({
+          ...prev,
+          pickup_date: firstSlot.date,
+          pickup_time: firstSlot.timeslot
+        }));
+      }
     } catch (error) {
       console.error("Error fetching time slots:", error);
       toast({
