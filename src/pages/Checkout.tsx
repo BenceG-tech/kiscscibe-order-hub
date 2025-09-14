@@ -112,8 +112,55 @@ const Checkout = () => {
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
     
+    // Validate pickup time is not in the past
+    if (formData.pickup_type === 'scheduled' && formData.pickup_time) {
+      const selectedTime = new Date(formData.pickup_time);
+      const now = new Date();
+      
+      if (selectedTime < now) {
+        toast({
+          title: "Hiba",
+          description: "Múltbeli időpontra nem lehet rendelni",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Check business hours
+      const dayOfWeek = selectedTime.getDay();
+      const hour = selectedTime.getHours();
+      
+      // Check if it's Sunday (closed)
+      if (dayOfWeek === 0) {
+        toast({
+          title: "Hiba", 
+          description: "Vasárnap zárva tartunk",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Check opening hours
+      let isValidTime = false;
+      if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Monday-Friday
+        isValidTime = hour >= 7 && hour < 15;
+      } else if (dayOfWeek === 6) { // Saturday
+        isValidTime = hour >= 8 && hour < 14;
+      }
+      
+      if (!isValidTime) {
+        toast({
+          title: "Hiba",
+          description: "A kiválasztott időpont nyitvatartási időn kívül esik",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
+    setIsSubmitting(true);
+
     try {
       // Call the submit-order edge function
       const { data, error } = await supabase.functions.invoke("submit-order", {

@@ -55,7 +55,7 @@ const OrderConfirmation = () => {
 
       // Use secure customer order lookup function
       const { data: orderData, error: orderError } = await supabase
-        .rpc('get_customer_order', {
+        .rpc('get_customer_order_secure', {
           order_code: orderCode,
           customer_phone: phone
         });

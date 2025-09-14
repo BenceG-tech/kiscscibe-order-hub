@@ -280,6 +280,19 @@ const DailyMenuManagement = () => {
   };
 
   const saveOffer = async () => {
+    const selectedDate = new Date(offerForm.date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (selectedDate < today) {
+      toast({
+        title: "Hiba", 
+        description: "Múltbeli dátumra nem lehet ajánlatot beállítani",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     if (isWeekend(offerForm.date)) {
       toast({
         title: "Hiba",
@@ -654,29 +667,43 @@ const DailyMenuManagement = () => {
             
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium">Dátum</label>
-                  <Input
-                    type="date"
-                    value={offerForm.date}
-                    onChange={(e) => {
-                      if (isWeekend(e.target.value)) {
-                        toast({
-                          title: "Figyelem",
-                          description: "Hétvégén a vendéglő zárva tart",
-                          variant: "destructive"
-                        });
-                      }
-                      setOfferForm({...offerForm, date: e.target.value});
-                    }}
-                    className={isWeekend(offerForm.date) ? "border-destructive" : ""}
-                  />
-                  {isWeekend(offerForm.date) && (
-                    <p className="text-sm text-destructive mt-1">
-                      Hétvégén zárva - válassz hétköznapi dátumot
-                    </p>
-                  )}
-                </div>
+                  <div>
+                    <label className="text-sm font-medium">Dátum</label>
+                    <Input
+                      type="date"
+                      value={offerForm.date}
+                      min={new Date().toISOString().split('T')[0]} // Prevent past dates
+                      onChange={(e) => {
+                        const selectedDate = new Date(e.target.value);
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        
+                        if (selectedDate < today) {
+                          toast({
+                            title: "Hiba",
+                            description: "Múltbeli dátumra nem lehet ajánlatot létrehozni",
+                            variant: "destructive"
+                          });
+                          return;
+                        }
+                        
+                        if (isWeekend(e.target.value)) {
+                          toast({
+                            title: "Figyelem",
+                            description: "Hétvégén a vendéglő zárva tart",
+                            variant: "destructive"
+                          });
+                        }
+                        setOfferForm({...offerForm, date: e.target.value});
+                      }}
+                      className={isWeekend(offerForm.date) ? "border-destructive" : ""}
+                    />
+                    {isWeekend(offerForm.date) && (
+                      <p className="text-sm text-destructive mt-1">
+                        Hétvégén zárva - válassz hétköznapi dátumot
+                      </p>
+                    )}
+                  </div>
                 
                 <div>
                   <label className="text-sm font-medium">Ár (Ft)</label>

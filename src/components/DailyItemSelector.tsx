@@ -153,7 +153,7 @@ const DailyItemSelector = ({ type, data, canOrder, showDetails = false, deadline
               <div className="flex gap-2 text-xs">
                 <Badge variant="outline">Max: {data.max_portions}</Badge>
                 <Badge variant={data.remaining_portions > 0 ? "default" : "destructive"}>
-                  Maradt: {data.remaining_portions}
+                  {data.remaining_portions > 0 ? `Maradt: ${data.remaining_portions}` : 'Elfogyott'}
                 </Badge>
               </div>
             </div>

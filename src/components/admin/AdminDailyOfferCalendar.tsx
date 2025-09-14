@@ -88,6 +88,15 @@ const AdminDailyOfferCalendar = ({ onCreateOffer, onEditOffer }: AdminDailyOffer
   };
 
   const handleCreateOffer = () => {
+    const selectedDateObj = new Date(selectedDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time for accurate comparison
+    
+    if (selectedDateObj < today) {
+      toast.error('Múltbeli dátumra nem lehet ajánlatot létrehozni');
+      return;
+    }
+    
     if (isWeekend(selectedDate)) {
       toast.error('Hétvégén a vendéglő zárva tart');
       return;
@@ -194,10 +203,11 @@ const AdminDailyOfferCalendar = ({ onCreateOffer, onEditOffer }: AdminDailyOffer
               onClick={handleCreateOffer}
               className="bg-primary hover:bg-primary/90"
               size="sm"
-              disabled={isWeekend(selectedDate)}
+              disabled={isWeekend(selectedDate) || selectedDate < new Date()}
             >
               <Plus className="h-4 w-4 mr-2" />
-              {isWeekend(selectedDate) ? 'Zárva' : 'Új ajánlat'}
+              {isWeekend(selectedDate) ? 'Zárva' : 
+               selectedDate < new Date() ? 'Múltbeli dátum' : 'Új ajánlat'}
             </Button>
           </div>
         </CardHeader>
@@ -263,9 +273,10 @@ const AdminDailyOfferCalendar = ({ onCreateOffer, onEditOffer }: AdminDailyOffer
                 onClick={handleCreateOffer}
                 variant="outline"
                 className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                disabled={selectedDate < new Date()}
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Napi ajánlat létrehozása
+                {selectedDate < new Date() ? 'Múltbeli dátum' : 'Napi ajánlat létrehozása'}
               </Button>
             </div>
           )}

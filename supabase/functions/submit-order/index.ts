@@ -139,16 +139,14 @@ serve(async (req) => {
           throw new Error(`Napi tétel nem található: ${item.name_snapshot}`);
         }
 
-        // Check if ordering is still allowed (before midnight cutoff)
-        const itemDate = new Date(dailyData.date);
+        // Check if ordering is still allowed - prevent past dates
+        const itemDate = new Date(dailyData.date + 'T00:00:00.000Z');
         const today = new Date();
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        tomorrow.setHours(0, 0, 0, 0);
-
-        // If it's for tomorrow and it's past midnight, reject
-        if (itemDate.toDateString() === tomorrow.toDateString() && today >= tomorrow) {
-          throw new Error('A rendelési határidő lejárt ehhez a naphoz');
+        today.setHours(0, 0, 0, 0); // Reset time to start of day for comparison
+        
+        // Reject if trying to order for a past date
+        if (itemDate < today) {
+          throw new Error(`Múltbeli dátumra nem lehet rendelni: ${dailyData.date}`);
         }
 
         if (dailyData.remaining_portions < item.qty) {
@@ -167,17 +165,17 @@ serve(async (req) => {
           line_total_huf: lineTotal
         });
 
-        // Decrement remaining portions
-        const { error: updateError } = await supabase
-          .from(tableName)
-          .update({ 
-            remaining_portions: dailyData.remaining_portions - item.qty 
-          })
-          .eq('id', item.daily_id);
+        // Use race-safe atomic portion update function
+        const { data: updateSuccess, error: updateError } = await supabase
+          .rpc('update_daily_portions', {
+            table_name: tableName,
+            daily_id: item.daily_id,
+            quantity_needed: item.qty
+          });
 
-        if (updateError) {
+        if (updateError || !updateSuccess) {
           console.error('Failed to update daily item portions:', updateError);
-          throw new Error('Hiba a készlet frissítése során');
+          throw new Error(updateError?.message || 'Hiba a készlet frissítése során - nincs elég adag');
         }
       }
     }
@@ -408,7 +406,7 @@ serve(async (req) => {
       await resend.emails.send({
         from: 'Kiscsibe Étterem <rendeles@kiscsibe-etterem.hu>',
         to: [customer.email],
-        bcc: ['gataibence@gmail.com'], // Testing - admin copy
+        bcc: ['kiscsibeetterem@gmail.com'], // Admin copy
         subject: `Kiscsibe – rendelés visszaigazolás #${orderCode}`,
         html: emailHtml,
         text: emailText,

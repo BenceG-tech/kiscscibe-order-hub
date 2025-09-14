@@ -35,12 +35,12 @@ const Contact = () => {
   };
 
   const openingHours = [
-    { day: "Hétfő", hours: "7:00–16:00", isOpen: true },
-    { day: "Kedd", hours: "7:00–16:00", isOpen: true },
-    { day: "Szerda", hours: "7:00–16:00", isOpen: true },
-    { day: "Csütörtök", hours: "7:00–16:00", isOpen: true },
-    { day: "Péntek", hours: "7:00–16:00", isOpen: true },
-    { day: "Szombat", hours: "Zárva", isOpen: false },
+    { day: "Hétfő", hours: "7:00 - 15:00", isOpen: true },
+    { day: "Kedd", hours: "7:00 - 15:00", isOpen: true },
+    { day: "Szerda", hours: "7:00 - 15:00", isOpen: true },
+    { day: "Csütörtök", hours: "7:00 - 15:00", isOpen: true },
+    { day: "Péntek", hours: "7:00 - 15:00", isOpen: true },
+    { day: "Szombat", hours: "8:00 - 14:00", isOpen: true },
     { day: "Vasárnap", hours: "Zárva", isOpen: false }
   ];
 
@@ -79,7 +79,7 @@ const Contact = () => {
                     <MapPin className="h-5 w-5 text-primary mt-0.5" />
                     <div>
                       <p className="font-semibold">Kiscsibe Reggeliző & Étterem</p>
-                      <p className="text-muted-foreground">1141 Budapest, Vezér u. 110.</p>
+                      <p className="text-muted-foreground">1145 Budapest, Vezér utca 12.</p>
                     </div>
                   </div>
                   
@@ -92,8 +92,8 @@ const Contact = () => {
                   
                   <div className="flex items-center gap-3">
                     <Mail className="h-5 w-5 text-primary" />
-                    <a href="mailto:info@kiscsibe-etterem.hu" className="hover:text-primary transition-colors">
-                      info@kiscsibe-etterem.hu
+                    <a href="mailto:kiscsibeetterem@gmail.com" className="hover:text-primary transition-colors">
+                      kiscsibeetterem@gmail.com
                     </a>
                   </div>
                 </CardContent>
@@ -155,7 +155,7 @@ const Contact = () => {
                 asChild
               >
                 <a 
-                  href="https://maps.google.com/?q=1141+Budapest,+Vezér+u.+110" 
+                  href="https://maps.google.com/?q=1145+Budapest+Vezér+utca+12" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2"
