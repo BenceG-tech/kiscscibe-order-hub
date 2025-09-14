@@ -50,7 +50,7 @@ const HeroSection = () => {
             
             <div className="mt-8">
               <Button asChild variant="link" className="text-white/80 hover:text-white">
-                <Link to="/admin/daily-menu">
+                <Link to="/auth" state={{ adminIntent: true }}>
                   Admin bejelentkezés
                 </Link>
               </Button>

@@ -129,7 +129,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await supabase.auth.signOut();
   };
 
-  const isAdmin = profile?.role === 'admin';
+  // Temporary fallback for admin access during RLS issues
+  const isAdmin = profile?.role === 'admin' || user?.email === 'gataibence@gmail.com';
 
   const value = {
     user,
