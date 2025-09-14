@@ -509,6 +509,21 @@ export type Database = {
           total_huf: number
         }[]
       }
+      get_customer_order_secure: {
+        Args: { customer_phone: string; order_code: string }
+        Returns: {
+          code: string
+          created_at: string
+          id: string
+          name: string
+          notes: string
+          payment_method: string
+          phone: string
+          pickup_time: string
+          status: string
+          total_huf: number
+        }[]
+      }
       get_user_role: {
         Args: { check_user_id?: string }
         Returns: string
@@ -517,8 +532,20 @@ export type Database = {
         Args: Record<PropertyKey, never> | { check_user_id?: string }
         Returns: boolean
       }
+      is_date_in_past: {
+        Args: { check_date: string }
+        Returns: boolean
+      }
       is_weekend: {
         Args: { check_date: string }
+        Returns: boolean
+      }
+      update_daily_portions: {
+        Args: { daily_id: string; quantity_needed: number; table_name: string }
+        Returns: boolean
+      }
+      validate_pickup_time: {
+        Args: { pickup_datetime: string }
         Returns: boolean
       }
     }
