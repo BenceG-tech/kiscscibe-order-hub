@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, Package, Coffee } from "lucide-react";
+import { ShoppingCart, Package, Coffee, Clock, AlertCircle } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "sonner";
 
@@ -49,9 +49,11 @@ interface DailyItemSelectorProps {
   type: 'offer' | 'menu';
   data: DailyOffer | DailyMenu;
   canOrder: boolean;
+  showDetails?: boolean;
+  deadlineText?: string | null;
 }
 
-const DailyItemSelector = ({ type, data, canOrder }: DailyItemSelectorProps) => {
+const DailyItemSelector = ({ type, data, canOrder, showDetails = false, deadlineText }: DailyItemSelectorProps) => {
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const { addItem } = useCart();
 
@@ -140,8 +142,35 @@ const DailyItemSelector = ({ type, data, canOrder }: DailyItemSelectorProps) => 
   const savings = allSelected ? items.reduce((sum, item) => sum + (item.menu_items?.price_huf || 0), 0) - data.price_huf : 0;
 
   return (
-    <Card className="border-2 border-dashed border-primary/20 bg-gradient-to-br from-background to-primary/5">
+    <Card className={`${showDetails ? 'border-2 border-primary/30 bg-gradient-to-br from-background to-primary/5 shadow-lg' : 'border-2 border-dashed border-primary/20 bg-gradient-to-br from-background to-primary/5'}`}>
       <CardContent className="p-4 space-y-4">
+        {showDetails && (
+          <div className="space-y-4 mb-6">
+            <div className="flex items-center justify-between">
+              <Badge className={`${type === 'offer' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'} text-base px-4 py-2 rounded-full font-bold shadow-md`}>
+                {data.price_huf} Ft
+              </Badge>
+              <div className="flex gap-2 text-xs">
+                <Badge variant="outline">Max: {data.max_portions}</Badge>
+                <Badge variant={data.remaining_portions > 0 ? "default" : "destructive"}>
+                  Maradt: {data.remaining_portions}
+                </Badge>
+              </div>
+            </div>
+            {deadlineText && (
+              <div className="flex items-center gap-2 p-2 bg-orange-500/10 rounded-lg border border-orange-500/20">
+                <AlertCircle className="h-4 w-4 text-orange-500" />
+                <p className="text-orange-500 text-sm font-medium">{deadlineText}</p>
+              </div>
+            )}
+            {data.note && (
+              <div className={`flex items-center gap-2 p-3 ${type === 'offer' ? 'bg-primary/10' : 'bg-secondary/10'} rounded-lg`}>
+                <Clock className={`h-4 w-4 ${type === 'offer' ? 'text-primary' : 'text-secondary'}`} />
+                <p className={`${type === 'offer' ? 'text-primary' : 'text-secondary'} text-sm font-medium`}>{data.note}</p>
+              </div>
+            )}
+          </div>
+        )}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {type === 'offer' ? <Package className="h-5 w-5 text-primary" /> : <Coffee className="h-5 w-5 text-secondary" />}

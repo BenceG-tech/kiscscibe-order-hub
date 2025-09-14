@@ -264,55 +264,14 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
                 {currentOffers.length > 0 ? (
                   <div className="space-y-4">
                     {currentOffers.map((offer) => (
-                      <div key={offer.id} className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <Badge className="bg-primary text-primary-foreground text-base px-4 py-2 rounded-full font-bold shadow-md">
-                            {offer.price_huf} Ft
-                          </Badge>
-                          <div className="flex gap-2 text-xs">
-                            <Badge variant="outline">Max: {offer.max_portions}</Badge>
-                            <Badge variant={offer.remaining_portions > 0 ? "default" : "destructive"}>
-                              Maradt: {offer.remaining_portions}
-                            </Badge>
-                          </div>
-                        </div>
-                        {getDeadlineText(new Date(offer.date)) && (
-                          <div className="flex items-center gap-2 p-2 bg-orange-500/10 rounded-lg border border-orange-500/20">
-                            <AlertCircle className="h-4 w-4 text-orange-500" />
-                            <p className="text-orange-500 text-sm font-medium">{getDeadlineText(new Date(offer.date))}</p>
-                          </div>
-                        )}
-                        {offer.note && (
-                          <div className="flex items-center gap-2 p-3 bg-primary/10 rounded-lg">
-                            <Clock className="h-4 w-4 text-primary" />
-                            <p className="text-primary text-sm font-medium">{offer.note}</p>
-                          </div>
-                        )}
-                        <ul className="space-y-3">
-                          {offer.daily_offer_items?.map((offerItem, index) => (
-                            <li key={offerItem.id} className="flex items-start gap-3 p-3 bg-background/50 rounded-lg border border-primary/10">
-                              <span className="flex-shrink-0 w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold mt-0.5">
-                                {index + 1}
-                              </span>
-                              <div className="flex-1">
-                                <span className="text-foreground font-medium text-base leading-relaxed">
-                                  {offerItem.menu_items?.name}
-                                </span>
-                                {offerItem.menu_items?.description && (
-                                  <p className="text-muted-foreground text-sm mt-1">
-                                    {offerItem.menu_items.description}
-                                  </p>
-                                )}
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                        <DailyItemSelector 
-                          type="offer"
-                          data={offer}
-                          canOrder={canOrderForDate(new Date(offer.date))}
-                        />
-                      </div>
+                      <DailyItemSelector 
+                        key={offer.id}
+                        type="offer"
+                        data={offer}
+                        canOrder={canOrderForDate(new Date(offer.date))}
+                        showDetails={true}
+                        deadlineText={getDeadlineText(new Date(offer.date))}
+                      />
                     ))}
                   </div>
                 ) : (
@@ -330,55 +289,14 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
                 {currentMenus.length > 0 ? (
                   <div className="space-y-4">
                     {currentMenus.map((menu) => (
-                      <div key={menu.id} className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <Badge className="bg-secondary text-secondary-foreground text-base px-4 py-2 rounded-full font-bold shadow-md">
-                            {menu.price_huf} Ft
-                          </Badge>
-                          <div className="flex gap-2 text-xs">
-                            <Badge variant="outline">Max: {menu.max_portions}</Badge>
-                            <Badge variant={menu.remaining_portions > 0 ? "default" : "destructive"}>
-                              Maradt: {menu.remaining_portions}
-                            </Badge>
-                          </div>
-                        </div>
-                        {getDeadlineText(new Date(menu.date)) && (
-                          <div className="flex items-center gap-2 p-2 bg-orange-500/10 rounded-lg border border-orange-500/20">
-                            <AlertCircle className="h-4 w-4 text-orange-500" />
-                            <p className="text-orange-500 text-sm font-medium">{getDeadlineText(new Date(menu.date))}</p>
-                          </div>
-                        )}
-                        {menu.note && (
-                          <div className="flex items-center gap-2 p-3 bg-secondary/10 rounded-lg">
-                            <Clock className="h-4 w-4 text-secondary" />
-                            <p className="text-secondary text-sm font-medium">{menu.note}</p>
-                          </div>
-                        )}
-                        <ul className="space-y-3">
-                          {menu.daily_menu_items?.map((menuItem, index) => (
-                            <li key={menuItem.id} className="flex items-start gap-3 p-3 bg-background/50 rounded-lg border border-secondary/10">
-                              <span className="flex-shrink-0 w-6 h-6 bg-secondary text-secondary-foreground rounded-full flex items-center justify-center text-sm font-bold mt-0.5">
-                                {index + 1}
-                              </span>
-                              <div className="flex-1">
-                                <span className="text-foreground font-medium text-base leading-relaxed">
-                                  {menuItem.menu_items?.name}
-                                </span>
-                                {menuItem.menu_items?.description && (
-                                  <p className="text-muted-foreground text-sm mt-1">
-                                    {menuItem.menu_items.description}
-                                  </p>
-                                )}
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                        <DailyItemSelector 
-                          type="menu"
-                          data={menu}
-                          canOrder={canOrderForDate(new Date(menu.date))}
-                        />
-                      </div>
+                      <DailyItemSelector 
+                        key={menu.id}
+                        type="menu"
+                        data={menu}
+                        canOrder={canOrderForDate(new Date(menu.date))}
+                        showDetails={true}
+                        deadlineText={getDeadlineText(new Date(menu.date))}
+                      />
                     ))}
                   </div>
                 ) : (
@@ -517,55 +435,14 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
                   {currentOffers.length > 0 ? (
                     <div className="space-y-6">
                       {currentOffers.map((offer) => (
-                        <div key={offer.id} className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <Badge className="bg-primary text-primary-foreground text-lg px-6 py-2 rounded-full font-bold shadow-lg">
-                              {offer.price_huf} Ft
-                            </Badge>
-                            <div className="flex gap-2">
-                              <Badge variant="outline">Max: {offer.max_portions} adag</Badge>
-                              <Badge variant={offer.remaining_portions > 0 ? "default" : "destructive"}>
-                                Maradt: {offer.remaining_portions}
-                              </Badge>
-                            </div>
-                          </div>
-                          {getDeadlineText(new Date(offer.date)) && (
-                            <div className="flex items-center gap-3 p-3 bg-orange-500/10 rounded-lg border border-orange-500/20">
-                              <AlertCircle className="h-5 w-5 text-orange-500" />
-                              <p className="text-orange-500 font-medium">{getDeadlineText(new Date(offer.date))}</p>
-                            </div>
-                          )}
-                          {offer.note && (
-                            <div className="flex items-center gap-3 p-4 bg-primary/10 rounded-lg border border-primary/20">
-                              <Clock className="h-5 w-5 text-primary" />
-                              <p className="text-primary font-medium">{offer.note}</p>
-                            </div>
-                          )}
-                          <ul className="space-y-4">
-                            {offer.daily_offer_items?.map((offerItem, index) => (
-                              <li key={offerItem.id} className="flex items-start gap-4 p-4 bg-background/70 rounded-lg border border-primary/10 hover:border-primary/20 transition-colors">
-                                <span className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold">
-                                  {index + 1}
-                                </span>
-                                <div className="flex-1">
-                                  <span className="text-foreground font-semibold text-lg leading-relaxed block">
-                                    {offerItem.menu_items?.name}
-                                  </span>
-                                  {offerItem.menu_items?.description && (
-                                    <p className="text-muted-foreground mt-2">
-                                      {offerItem.menu_items.description}
-                                    </p>
-                                  )}
-                                </div>
-                              </li>
-                            ))}
-                          </ul>
-                          <DailyItemSelector 
-                            type="offer"
-                            data={offer}
-                            canOrder={canOrderForDate(new Date(offer.date))}
-                          />
-                        </div>
+                        <DailyItemSelector 
+                          key={offer.id}
+                          type="offer"
+                          data={offer}
+                          canOrder={canOrderForDate(new Date(offer.date))}
+                          showDetails={true}
+                          deadlineText={getDeadlineText(new Date(offer.date))}
+                        />
                       ))}
                     </div>
                   ) : (
@@ -587,55 +464,14 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
                   {currentMenus.length > 0 ? (
                     <div className="space-y-6">
                       {currentMenus.map((menu) => (
-                        <div key={menu.id} className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <Badge className="bg-secondary text-secondary-foreground text-lg px-6 py-2 rounded-full font-bold shadow-lg">
-                              {menu.price_huf} Ft
-                            </Badge>
-                            <div className="flex gap-2">
-                              <Badge variant="outline">Max: {menu.max_portions} adag</Badge>
-                              <Badge variant={menu.remaining_portions > 0 ? "default" : "destructive"}>
-                                Maradt: {menu.remaining_portions}
-                              </Badge>
-                            </div>
-                          </div>
-                          {getDeadlineText(new Date(menu.date)) && (
-                            <div className="flex items-center gap-3 p-3 bg-orange-500/10 rounded-lg border border-orange-500/20">
-                              <AlertCircle className="h-5 w-5 text-orange-500" />
-                              <p className="text-orange-500 font-medium">{getDeadlineText(new Date(menu.date))}</p>
-                            </div>
-                          )}
-                          {menu.note && (
-                            <div className="flex items-center gap-3 p-4 bg-secondary/10 rounded-lg border border-secondary/20">
-                              <Clock className="h-5 w-5 text-secondary" />
-                              <p className="text-secondary font-medium">{menu.note}</p>
-                            </div>
-                          )}
-                          <ul className="space-y-4">
-                            {menu.daily_menu_items?.map((menuItem, index) => (
-                              <li key={menuItem.id} className="flex items-start gap-4 p-4 bg-background/70 rounded-lg border border-secondary/10 hover:border-secondary/20 transition-colors">
-                                <span className="flex-shrink-0 w-8 h-8 bg-secondary text-secondary-foreground rounded-full flex items-center justify-center font-bold">
-                                  {index + 1}
-                                </span>
-                                <div className="flex-1">
-                                  <span className="text-foreground font-semibold text-lg leading-relaxed block">
-                                    {menuItem.menu_items?.name}
-                                  </span>
-                                  {menuItem.menu_items?.description && (
-                                    <p className="text-muted-foreground mt-2">
-                                      {menuItem.menu_items.description}
-                                    </p>
-                                  )}
-                                </div>
-                              </li>
-                            ))}
-                          </ul>
-                          <DailyItemSelector 
-                            type="menu"
-                            data={menu}
-                            canOrder={canOrderForDate(new Date(menu.date))}
-                          />
-                        </div>
+                        <DailyItemSelector 
+                          key={menu.id}
+                          type="menu"
+                          data={menu}
+                          canOrder={canOrderForDate(new Date(menu.date))}
+                          showDetails={true}
+                          deadlineText={getDeadlineText(new Date(menu.date))}
+                        />
                       ))}
                     </div>
                   ) : (

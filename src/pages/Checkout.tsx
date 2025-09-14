@@ -132,6 +132,9 @@ const Checkout = () => {
             name_snapshot: item.name,
             qty: item.quantity,
             unit_price_huf: item.price_huf,
+            daily_type: item.daily_type,
+            daily_date: item.daily_date,
+            daily_id: item.daily_id,
             modifiers: item.modifiers.map(mod => ({
               label_snapshot: mod.label,
               price_delta_huf: mod.price_delta_huf
