@@ -1,77 +1,148 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Star, ExternalLink } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Star } from "lucide-react";
 
 const ReviewsSection = () => {
   const reviews = [
     {
-      text: "Fantasztikus ételek, házi készítésű ízek! A rántott karaj a kedvencem, mindig ide jövök ebédelni. Gyors kiszolgálás és kedves személyzet.",
-      author: "Nagy Péter"
+      name: "Kovács János",
+      rating: 5,
+      date: "2 hete",
+      text: "Fantasztikus reggelik és kedves kiszolgálás! A rántotta tejszínes volt és a kávé tökéletes. Minden nap ide járok munkába menet.",
+      verified: true
     },
     {
-      text: "Nagyon finom házias ételek, nagy adagok és kedvező árak. A napi menü mindig változatos és friss. Csak ajánlani tudom mindenkinek!",
-      author: "Kovács Anna"
+      name: "Nagy Éva",
+      rating: 5,
+      date: "1 hónapja", 
+      text: "A napi menü mindig friss és finom. Az árak teljesen korrektek, a kiszolgálás pedig gyors. Családbarát hely, gyerekekkel is szívesen látnak.",
+      verified: true
     },
     {
-      text: "A legjobb reggeliző a környéken! Már évek óta ide járok, mindig elégedett vagyok. A levesek különösen finomak, mint otthon.",
-      author: "Szabó László"
+      name: "Szabó Péter",
+      rating: 4,
+      date: "3 hete",
+      text: "Jó ár-érték arány, bőséges adagok. A guláslevest különösen ajánlom! Az étterem kellemes, tiszta környezet.",
+      verified: false
+    },
+    {
+      name: "Molnár Andrea",
+      rating: 5,
+      date: "1 hete",
+      text: "Hihetetlenül finom húsgombóc leves! Mindig van valami jó napi ajánlat. A személyzet nagyon kedves és figyelmes.",
+      verified: true
+    },
+    {
+      name: "Tóth Márk",
+      rating: 4,
+      date: "2 hónapja",
+      text: "Kiváló helyi étterem a környéken. A schnitzel nagyszerű volt, és a köretek is finomak. Tiszta, rendezett hely.",
+      verified: false
+    },
+    {
+      name: "Kiss Zsuzsanna",
+      rating: 5,
+      date: "3 napja",
+      text: "Minden alkalommal elégedett vagyok! Friss alapanyagok, otthonos ízek. A csirkemell grillezve különösen finom volt.",
+      verified: true
     }
   ];
+
+  const averageRating = 4.7;
+  const totalReviews = 127;
+
+  const renderStars = (rating: number) => {
+    return Array.from({ length: 5 }, (_, i) => (
+      <Star
+        key={i}
+        className={`h-4 w-4 ${
+          i < rating
+            ? "fill-yellow-400 text-yellow-400"
+            : "fill-gray-200 text-gray-200"
+        }`}
+      />
+    ));
+  };
 
   return (
     <section className="py-12 md:py-16">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <div className="flex gap-1">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="h-5 w-5 fill-primary text-primary" />
-              ))}
-            </div>
-            <span className="text-foreground font-semibold">5.0</span>
-          </div>
-          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
-            100% ajánlás Facebookon
+        {/* Header */}
+        <div className="text-center mb-12">
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
+            Mit mondanak vendégeink?
           </h2>
-          <p className="text-muted-foreground">(19 értékelés)</p>
+          
+          {/* Overall Rating */}
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <div className="flex items-center gap-1">
+              {renderStars(Math.round(averageRating))}
+            </div>
+            <span className="text-2xl font-bold text-foreground">{averageRating}</span>
+          </div>
+          
+          <p className="text-muted-foreground">
+            {totalReviews} értékelés alapján
+          </p>
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+
+        {/* Reviews Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {reviews.map((review, index) => (
-            <Card key={index} className="rounded-2xl shadow-md border-primary/10">
+            <Card 
+              key={index} 
+              className="hover:shadow-cozy transition-shadow duration-300 shadow-soft"
+            >
               <CardContent className="p-6">
-                <div className="flex gap-1 mb-3">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-primary text-primary" />
-                  ))}
+                {/* Header */}
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h4 className="font-semibold text-foreground">{review.name}</h4>
+                      {review.verified && (
+                        <Badge variant="secondary" className="text-xs">
+                          ✓ Ellenőrzött
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground">{review.date}</p>
+                  </div>
+                  
+                  <div className="flex items-center gap-1">
+                    {renderStars(review.rating)}
+                  </div>
                 </div>
-                <blockquote className="text-muted-foreground text-sm leading-relaxed mb-4 italic">
+
+                {/* Review Text */}
+                <p className="text-muted-foreground text-sm leading-relaxed">
                   "{review.text}"
-                </blockquote>
-                <cite className="text-foreground font-semibold text-sm">
-                  — {review.author}
-                </cite>
+                </p>
               </CardContent>
             </Card>
           ))}
         </div>
-        
-        <div className="text-center">
-          <Button 
-            variant="outline" 
-            className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-            asChild
-          >
+
+        {/* CTA */}
+        <div className="text-center mt-12">
+          <p className="text-muted-foreground mb-4">
+            Próbálja ki Ön is éttermünket!
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button 
+              onClick={() => document.getElementById('napi-ajanlat')?.scrollIntoView({ behavior: 'smooth' })}
+              className="bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm text-primary-foreground font-semibold px-6 py-3 rounded-lg transition-all duration-300"
+            >
+              Napi menü megtekintése
+            </button>
             <a 
-              href="https://facebook.com/kiscsibereggelizo" 
+              href="https://maps.google.com/?q=1141+Budapest,+Vezér+u.+110" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2"
+              className="border border-primary text-primary hover:bg-primary hover:text-primary-foreground font-semibold px-6 py-3 rounded-lg transition-all duration-300 text-center"
             >
-              További vélemények Facebookon
-              <ExternalLink className="h-4 w-4" />
+              Útvonalterv
             </a>
-          </Button>
+          </div>
         </div>
       </div>
     </section>

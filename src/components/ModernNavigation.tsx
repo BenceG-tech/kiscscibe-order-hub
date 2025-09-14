@@ -58,7 +58,7 @@ const ModernNavigation = () => {
             <div className={`text-foreground font-medium text-center md:text-left transition-all duration-300 ${
               scrolled ? "text-xs" : "text-sm"
             }`}>
-              Ma nyitva: H–P 7:00–15:00 • Szo 8:00–14:00
+              Ma nyitva: H–P 7:00–16:00 • Szo-V Zárva
             </div>
             
             <div className="flex items-center gap-2">

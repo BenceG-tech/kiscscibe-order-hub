@@ -12,7 +12,7 @@ const TopOrderBar = () => {
         <div className="flex flex-col md:flex-row items-center justify-between gap-3">
           {/* Nyitvatartás */}
           <div className="text-sm text-foreground font-medium text-center md:text-left">
-            Ma nyitva: H–P 7:00–15:00 • Szo 8:00–14:00
+            Ma nyitva: H–P 7:00–16:00 • Szo-V Zárva
           </div>
           
           {/* Rendelési gomb - teljes szélesség mobilon */}

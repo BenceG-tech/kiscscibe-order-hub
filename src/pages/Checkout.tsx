@@ -92,10 +92,9 @@ const Checkout = () => {
     const currentHour = now.getHours();
     const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
     
-    // Monday-Friday: 7:00-15:00, Saturday: 8:00-14:00, Sunday: closed
-    if (currentDay === 0) return false; // Sunday closed
-    if (currentDay === 6) return currentHour >= 8 && currentHour < 14; // Saturday
-    return currentHour >= 7 && currentHour < 15; // Monday-Friday
+    // Monday-Friday: 7:00-16:00, Saturday-Sunday: closed
+    if (currentDay === 0 || currentDay === 6) return false; // Weekend closed
+    return currentHour >= 7 && currentHour < 16; // Monday-Friday
   };
   
   const formatTimeSlot = (date: string, time: string) => {

@@ -14,8 +14,8 @@ const MapSection = () => {
           {/* Térkép */}
           <div className="relative">
             <div className="rounded-2xl overflow-hidden shadow-lg">
-              <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2695.4692819165434!2d19.076325715603!3d47.517200779177!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x4741dc1f3c6b5b5b%3A0x8b8b8b8b8b8b8b8b!2sBudapest%2C%20Zugló!5e0!3m2!1shu!2shu!4v1642782234567!5m2!1shu!2shu"
+                <iframe
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2695.4692819165434!2d19.1213!3d47.5597!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNDfCsDMzJzM1LjAiTiAxOcKwMDcnMTYuNyJF!5e0!3m2!1shu!2shu!4v1642782234567!5m2!1shu!2shu"
                 width="100%"
                 height="300"
                 style={{ border: 0 }}
@@ -34,14 +34,14 @@ const MapSection = () => {
                 <MapPin className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
                 <div>
                   <h3 className="font-bold text-foreground text-lg mb-2">Kiscsibe Reggeliző</h3>
-                  <p className="text-muted-foreground mb-1">1051 Budapest</p>
-                  <p className="text-muted-foreground mb-4">Példa utca 12.</p>
+                  <p className="text-muted-foreground mb-1">1141 Budapest</p>
+                  <p className="text-muted-foreground mb-4">Vezér u. 110.</p>
                 </div>
               </div>
               
               <div className="mb-6">
                 <p className="text-foreground leading-relaxed">
-                  Zugló szíve – könnyű parkolás a környező utcákban, 7-es busz 3 perc.
+                  XIV. kerület szíve – könnyű parkolás a környező utcákban, 7-es busz megállója 2 percre.
                 </p>
               </div>
               
@@ -50,7 +50,7 @@ const MapSection = () => {
                 asChild
               >
                 <a 
-                  href="https://maps.google.com/?q=Budapest,+Zugló" 
+                  href="https://maps.google.com/?q=1141+Budapest,+Vezér+u.+110" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2"

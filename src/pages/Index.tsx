@@ -1,7 +1,7 @@
 import ModernNavigation from "@/components/ModernNavigation";
 import HeroSection from "@/components/sections/HeroSection";
 import DailyMenuSection from "@/components/sections/DailyMenuSection";
-import WeeklyMenuSection from "@/components/sections/WeeklyMenuSection";
+
 import USPSection from "@/components/sections/USPSection";
 import ReviewsSection from "@/components/sections/ReviewsSection";
 import GallerySection from "@/components/sections/GallerySection";
@@ -21,9 +21,6 @@ const Index = () => {
         <HeroSection />
         <div className="bg-primary/5">
           <DailyMenuSection />
-        </div>
-        <div className="bg-primary/5">
-          <WeeklyMenuSection />
         </div>
         <USPSection />
         <div className="bg-primary/5">

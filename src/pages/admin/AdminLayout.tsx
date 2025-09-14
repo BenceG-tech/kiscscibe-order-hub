@@ -67,26 +67,6 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
-          {adminNavItems.map((item) => (
-            <Link key={item.href} to={item.href}>
-              <Card className="hover:shadow-md transition-all duration-300 hover-scale">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg bg-primary/10`}>
-                      <item.icon className={`h-6 w-6 ${item.color}`} />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-lg">{item.label}</h3>
-                      <p className="text-sm text-muted-foreground">Kezelés</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
 
         {/* Admin Navigation */}
         <div className="bg-card rounded-lg border shadow-sm p-1 mb-8">
