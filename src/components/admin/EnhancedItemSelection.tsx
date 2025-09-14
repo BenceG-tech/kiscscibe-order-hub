@@ -321,18 +321,27 @@ export const EnhancedItemSelection: React.FC<EnhancedItemSelectionProps> = ({
                     <div>
                       <h4 className="font-medium text-sm text-muted-foreground mb-2">EGYEDI ELEMEK</h4>
                       <div className="space-y-2">
-                        {customItems.map(item => {
-                          const category = categories.find(c => c.id === item.category_id);
-                          return (
-                            <div key={item.tempId} className="flex items-center justify-between p-2 border rounded">
-                              <div>
-                                <div className="font-medium">{item.name}</div>
-                                <Badge variant="outline" className="text-xs">{category?.name}</Badge>
-                              </div>
-                              <div className="text-sm font-medium">{item.price_huf} Ft</div>
-                            </div>
-                          );
-                        })}
+                         {customItems.map(item => {
+                           const category = categories.find(c => c.id === item.category_id);
+                           return (
+                             <div key={item.tempId} className="flex items-center justify-between p-2 border rounded">
+                               <div className="flex items-center gap-3">
+                                 {item.image_url && (
+                                   <img 
+                                     src={item.image_url} 
+                                     alt={item.name}
+                                     className="w-10 h-10 object-cover rounded"
+                                   />
+                                 )}
+                                 <div>
+                                   <div className="font-medium">{item.name}</div>
+                                   <Badge variant="outline" className="text-xs">{category?.name}</Badge>
+                                 </div>
+                               </div>
+                               <div className="text-sm font-medium">{item.price_huf} Ft</div>
+                             </div>
+                           );
+                         })}
                       </div>
                     </div>
                   )}

@@ -15,7 +15,7 @@ const MapSection = () => {
           <div className="relative">
             <div className="rounded-2xl overflow-hidden shadow-lg">
                 <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2695.4692819165434!2d19.1213!3d47.5597!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNDfCsDMzJzM1LjAiTiAxOcKwMDcnMTYuNyJF!5e0!3m2!1shu!2shu!4v1642782234567!5m2!1shu!2shu"
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2695.1543623456789!2d19.0971234!3d47.5635678!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x474061e6e5d3f123%3A0x123456789abcdef0!2sBudapest%2C%20Vez%C3%A9r%20u.%20110%2C%201141%20Hungary!5e0!3m2!1shu!2shu!4v1642782234567!5m2!1shu!2shu"
                 width="100%"
                 height="300"
                 style={{ border: 0 }}

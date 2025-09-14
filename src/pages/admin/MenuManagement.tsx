@@ -10,6 +10,7 @@ import { LoadingSpinner } from "@/components/ui/loading";
 import { useToast } from "@/components/ui/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import ImageUpload from "@/components/admin/ImageUpload";
 import { 
   Plus, 
   Edit, 
@@ -52,6 +53,7 @@ const MenuManagement = () => {
     price_huf: "",
     category_id: "",
     allergens: "",
+    image_url: "",
     is_active: true,
     is_featured: false
   });
@@ -98,6 +100,7 @@ const MenuManagement = () => {
         price_huf: item.price_huf.toString(),
         category_id: item.category_id,
         allergens: item.allergens.join(', '),
+        image_url: item.image_url || "",
         is_active: item.is_active,
         is_featured: item.is_featured
       });
@@ -109,6 +112,7 @@ const MenuManagement = () => {
         price_huf: "",
         category_id: "",
         allergens: "",
+        image_url: "",
         is_active: true,
         is_featured: false
       });
@@ -128,6 +132,7 @@ const MenuManagement = () => {
       price_huf: parseInt(itemForm.price_huf),
       category_id: itemForm.category_id,
       allergens: allergensArray,
+      image_url: itemForm.image_url || null,
       is_active: itemForm.is_active,
       is_featured: itemForm.is_featured
     };
@@ -288,6 +293,16 @@ const MenuManagement = () => {
                   />
                 </div>
                 
+                <div>
+                  <label className="text-sm font-medium">Kép</label>
+                  <ImageUpload
+                    currentImageUrl={itemForm.image_url}
+                    onImageUploaded={(url) => setItemForm({...itemForm, image_url: url})}
+                    onImageRemoved={() => setItemForm({...itemForm, image_url: ""})}
+                    bucketName="menu-images"
+                  />
+                </div>
+                
                 <div className="flex gap-4">
                   <label className="flex items-center gap-2">
                     <input
@@ -340,10 +355,17 @@ const MenuManagement = () => {
                 <CardContent>
                   <div className="grid gap-3">
                     {categoryItems.map((item) => (
-                      <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3">
-                            <h4 className="font-medium">{item.name}</h4>
+                       <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                         <div className="flex-1">
+                           <div className="flex items-center gap-3">
+                             {item.image_url && (
+                               <img 
+                                 src={item.image_url} 
+                                 alt={item.name}
+                                 className="w-12 h-12 object-cover rounded-lg"
+                               />
+                             )}
+                             <h4 className="font-medium">{item.name}</h4>
                             <div className="flex gap-2">
                               {!item.is_active && (
                                 <Badge variant="secondary">Inaktív</Badge>
