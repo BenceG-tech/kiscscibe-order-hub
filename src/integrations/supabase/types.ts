@@ -105,17 +105,23 @@ export type Database = {
         Row: {
           daily_offer_id: string | null
           id: string
+          is_menu_part: boolean
           item_id: string | null
+          menu_role: string | null
         }
         Insert: {
           daily_offer_id?: string | null
           id?: string
+          is_menu_part?: boolean
           item_id?: string | null
+          menu_role?: string | null
         }
         Update: {
           daily_offer_id?: string | null
           id?: string
+          is_menu_part?: boolean
           item_id?: string | null
+          menu_role?: string | null
         }
         Relationships: [
           {
@@ -130,6 +136,44 @@ export type Database = {
             columns: ["item_id"]
             isOneToOne: false
             referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      daily_offer_menus: {
+        Row: {
+          created_at: string
+          daily_offer_id: string
+          id: string
+          max_portions: number
+          menu_price_huf: number
+          remaining_portions: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          daily_offer_id: string
+          id?: string
+          max_portions?: number
+          menu_price_huf: number
+          remaining_portions?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          daily_offer_id?: string
+          id?: string
+          max_portions?: number
+          menu_price_huf?: number
+          remaining_portions?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_offer_menus_daily_offer_id_fkey"
+            columns: ["daily_offer_id"]
+            isOneToOne: true
+            referencedRelation: "daily_offers"
             referencedColumns: ["id"]
           },
         ]
@@ -542,6 +586,10 @@ export type Database = {
       }
       update_daily_portions: {
         Args: { daily_id: string; quantity_needed: number; table_name: string }
+        Returns: boolean
+      }
+      validate_menu_composition: {
+        Args: { offer_id: string }
         Returns: boolean
       }
       validate_pickup_time: {
