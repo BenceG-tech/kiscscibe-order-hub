@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Phone } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const StickyMobileCTA = () => {
   return (
@@ -9,9 +10,9 @@ const StickyMobileCTA = () => {
           asChild
           className="flex-1 bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm text-primary-foreground font-semibold min-h-[44px]"
         >
-          <a href="/etlap">
-            Rendelj most
-          </a>
+            <Link to="/etlap">
+              Rendelj most
+            </Link>
         </Button>
         <Button 
           variant="outline" 

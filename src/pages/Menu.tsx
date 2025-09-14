@@ -1,4 +1,4 @@
-import Navigation from "@/components/Navigation";
+import ModernNavigation from "@/components/ModernNavigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
@@ -6,7 +6,7 @@ import { ArrowLeft } from "lucide-react";
 const Menu = () => {
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
+      <ModernNavigation />
       
       <div className="pt-20 pb-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">

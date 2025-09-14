@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import Navigation from "@/components/Navigation";
+import ModernNavigation from "@/components/ModernNavigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -126,7 +126,7 @@ const OrderConfirmation = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <Navigation />
+        <ModernNavigation />
         <div className="pt-20 pb-12">
           <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <div className="animate-pulse">
@@ -142,7 +142,7 @@ const OrderConfirmation = () => {
   if (!order) {
     return (
       <div className="min-h-screen bg-background">
-        <Navigation />
+        <ModernNavigation />
         <div className="pt-20 pb-12">
           <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <Card className="shadow-soft border-primary/20">
@@ -171,7 +171,7 @@ const OrderConfirmation = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
+      <ModernNavigation />
       
       <div className="pt-20 pb-12">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -68,7 +68,7 @@ const ModernNavigation = () => {
                 className="bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm text-primary-foreground font-semibold transition-all duration-300"
                 asChild
               >
-                <a href="/etlap">Rendelj most</a>
+                <Link to="/etlap">Rendelj most</Link>
               </Button>
               
               <Button 
@@ -171,7 +171,7 @@ const ModernNavigation = () => {
                       className="w-full bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm mb-3"
                       onClick={closeMenu}
                     >
-                      <a href="/etlap">Rendelj most</a>
+                       <Link to="/etlap">Rendelj most</Link>
                     </Button>
                     
                     <Button 
