@@ -517,6 +517,10 @@ export type Database = {
         Args: Record<PropertyKey, never> | { check_user_id?: string }
         Returns: boolean
       }
+      is_weekend: {
+        Args: { check_date: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
