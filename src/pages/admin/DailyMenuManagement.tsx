@@ -9,6 +9,7 @@ import { LoadingSpinner } from "@/components/ui/loading";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { EnhancedItemSelection } from "@/components/admin/EnhancedItemSelection";
 import { 
   Plus, 
   Edit, 
@@ -53,6 +54,22 @@ interface MenuItem {
   category_id: string;
   is_active: boolean;
   image_url?: string;
+  is_temporary?: boolean;
+}
+
+interface MenuCategory {
+  id: string;
+  name: string;
+  sort: number;
+}
+
+interface CustomItem {
+  tempId: string;
+  name: string;
+  description: string;
+  price_huf: number;
+  category_id: string;
+  image_url?: string;
 }
 
 interface DailyOfferItem {
@@ -74,6 +91,7 @@ const DailyMenuManagement = () => {
   const [dailyOffers, setDailyOffers] = useState<DailyOffer[]>([]);
   const [dailyMenus, setDailyMenus] = useState<DailyMenu[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
@@ -92,7 +110,8 @@ const DailyMenuManagement = () => {
     note: "",
     max_portions: "50",
     remaining_portions: "50",
-    selectedItems: [] as string[]
+    selectedItems: [] as string[],
+    customItems: [] as CustomItem[]
   });
 
   const [menuForm, setMenuForm] = useState({
@@ -101,7 +120,8 @@ const DailyMenuManagement = () => {
     note: "",
     max_portions: "30",
     remaining_portions: "30",
-    selectedItems: [] as string[]
+    selectedItems: [] as string[],
+    customItems: [] as CustomItem[]
   });
 
   useEffect(() => {
@@ -109,7 +129,7 @@ const DailyMenuManagement = () => {
   }, []);
 
   const fetchData = async () => {
-    const [offersResult, menusResult, itemsResult] = await Promise.all([
+    const [offersResult, menusResult, itemsResult, categoriesResult] = await Promise.all([
       supabase
         .from('daily_offers')
         .select(`
@@ -147,8 +167,11 @@ const DailyMenuManagement = () => {
       supabase
         .from('menu_items')
         .select('*')
-        .eq('is_active', true)
-        .order('name')
+        .order('name'),
+      supabase
+        .from('menu_categories')
+        .select('*')
+        .order('sort', { ascending: true })
     ]);
 
     if (offersResult.error) {
@@ -181,6 +204,16 @@ const DailyMenuManagement = () => {
       setMenuItems(itemsResult.data || []);
     }
 
+    if (categoriesResult.error) {
+      toast({
+        title: "Hiba", 
+        description: "Nem sikerült betölteni a kategóriákat",
+        variant: "destructive"
+      });
+    } else {
+      setCategories(categoriesResult.data || []);
+    }
+
     setLoading(false);
   };
 
@@ -193,7 +226,8 @@ const DailyMenuManagement = () => {
         note: offer.note || "",
         max_portions: offer.max_portions?.toString() || "50",
         remaining_portions: offer.remaining_portions?.toString() || "50",
-        selectedItems: offer.daily_offer_items?.map((item: any) => item.item_id) || []
+        selectedItems: offer.daily_offer_items?.map((item: any) => item.item_id) || [],
+        customItems: []
       });
     } else {
       setEditingOffer(null);
@@ -203,7 +237,8 @@ const DailyMenuManagement = () => {
         note: "",
         max_portions: "50",
         remaining_portions: "50",
-        selectedItems: []
+        selectedItems: [],
+        customItems: []
       });
     }
     setIsOfferDialogOpen(true);
@@ -218,7 +253,8 @@ const DailyMenuManagement = () => {
         note: menu.note || "",
         max_portions: menu.max_portions?.toString() || "30",
         remaining_portions: menu.remaining_portions?.toString() || "30",
-        selectedItems: menu.daily_menu_items?.map((item: any) => item.item_id) || []
+        selectedItems: menu.daily_menu_items?.map((item: any) => item.item_id) || [],
+        customItems: []
       });
     } else {
       setEditingMenu(null);
@@ -228,7 +264,8 @@ const DailyMenuManagement = () => {
         note: "",
         max_portions: "30",
         remaining_portions: "30",
-        selectedItems: []
+        selectedItems: [],
+        customItems: []
       });
     }
     setIsMenuDialogOpen(true);
@@ -267,6 +304,30 @@ const DailyMenuManagement = () => {
         throw result.error;
       }
 
+      // First create custom items as temporary menu items
+      const createdCustomItemIds: string[] = [];
+      for (const customItem of offerForm.customItems) {
+        const { data: menuItemData, error: menuItemError } = await supabase
+          .from('menu_items')
+          .insert({
+            name: customItem.name,
+            description: customItem.description,
+            price_huf: customItem.price_huf,
+            category_id: customItem.category_id,
+            image_url: customItem.image_url,
+            is_temporary: true,
+            is_active: true
+          })
+          .select()
+          .single();
+
+        if (menuItemError) {
+          throw menuItemError;
+        }
+
+        createdCustomItemIds.push(menuItemData.id);
+      }
+
       // Delete existing items for this offer
       if (editingOffer) {
         await supabase
@@ -275,9 +336,10 @@ const DailyMenuManagement = () => {
           .eq('daily_offer_id', offerId);
       }
 
-      // Insert new items
-      if (offerForm.selectedItems.length > 0) {
-        const itemsToInsert = offerForm.selectedItems.map(itemId => ({
+      // Insert new items (both permanent and custom)
+      const allItemIds = [...offerForm.selectedItems, ...createdCustomItemIds];
+      if (allItemIds.length > 0) {
+        const itemsToInsert = allItemIds.map(itemId => ({
           daily_offer_id: offerId,
           item_id: itemId
         }));
@@ -343,6 +405,30 @@ const DailyMenuManagement = () => {
         throw result.error;
       }
 
+      // First create custom items as temporary menu items
+      const createdCustomItemIds: string[] = [];
+      for (const customItem of menuForm.customItems) {
+        const { data: menuItemData, error: menuItemError } = await supabase
+          .from('menu_items')
+          .insert({
+            name: customItem.name,
+            description: customItem.description,
+            price_huf: customItem.price_huf,
+            category_id: customItem.category_id,
+            image_url: customItem.image_url,
+            is_temporary: true,
+            is_active: true
+          })
+          .select()
+          .single();
+
+        if (menuItemError) {
+          throw menuItemError;
+        }
+
+        createdCustomItemIds.push(menuItemData.id);
+      }
+
       // Delete existing items for this menu
       if (editingMenu) {
         await supabase
@@ -351,9 +437,10 @@ const DailyMenuManagement = () => {
           .eq('daily_menu_id', menuId);
       }
 
-      // Insert new items
-      if (menuForm.selectedItems.length > 0) {
-        const itemsToInsert = menuForm.selectedItems.map(itemId => ({
+      // Insert new items (both permanent and custom)
+      const allItemIds = [...menuForm.selectedItems, ...createdCustomItemIds];
+      if (allItemIds.length > 0) {
+        const itemsToInsert = allItemIds.map(itemId => ({
           daily_menu_id: menuId,
           item_id: itemId
         }));
@@ -431,6 +518,56 @@ const DailyMenuManagement = () => {
       selectedItems: prev.selectedItems.includes(itemId)
         ? prev.selectedItems.filter(id => id !== itemId)
         : [...prev.selectedItems, itemId]
+    }));
+  };
+
+  // Custom item handlers for offers
+  const handleOfferCustomItemAdd = (item: Omit<CustomItem, 'tempId'>) => {
+    const tempId = `temp-${Date.now()}-${Math.random()}`;
+    setOfferForm(prev => ({
+      ...prev,
+      customItems: [...prev.customItems, { ...item, tempId }]
+    }));
+  };
+
+  const handleOfferCustomItemRemove = (tempId: string) => {
+    setOfferForm(prev => ({
+      ...prev,
+      customItems: prev.customItems.filter(item => item.tempId !== tempId)
+    }));
+  };
+
+  const handleOfferCustomItemUpdate = (tempId: string, updates: Partial<CustomItem>) => {
+    setOfferForm(prev => ({
+      ...prev,
+      customItems: prev.customItems.map(item => 
+        item.tempId === tempId ? { ...item, ...updates } : item
+      )
+    }));
+  };
+
+  // Custom item handlers for menus
+  const handleMenuCustomItemAdd = (item: Omit<CustomItem, 'tempId'>) => {
+    const tempId = `temp-${Date.now()}-${Math.random()}`;
+    setMenuForm(prev => ({
+      ...prev,
+      customItems: [...prev.customItems, { ...item, tempId }]
+    }));
+  };
+
+  const handleMenuCustomItemRemove = (tempId: string) => {
+    setMenuForm(prev => ({
+      ...prev,
+      customItems: prev.customItems.filter(item => item.tempId !== tempId)
+    }));
+  };
+
+  const handleMenuCustomItemUpdate = (tempId: string, updates: Partial<CustomItem>) => {
+    setMenuForm(prev => ({
+      ...prev,
+      customItems: prev.customItems.map(item => 
+        item.tempId === tempId ? { ...item, ...updates } : item
+      )
     }));
   };
 
@@ -543,37 +680,17 @@ const DailyMenuManagement = () => {
               </div>
               
               <div>
-                <label className="text-sm font-medium mb-3 block">Ételek kiválasztása</label>
-                <div className="max-h-60 overflow-y-auto border rounded-lg p-3 space-y-2">
-                  {menuItems.map((item) => (
-                    <div 
-                      key={item.id} 
-                      className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors ${
-                        offerForm.selectedItems.includes(item.id) 
-                          ? "bg-primary/10 border border-primary" 
-                          : "bg-muted/50 hover:bg-muted"
-                      }`}
-                      onClick={() => toggleOfferItemSelection(item.id)}
-                    >
-                      <div className="flex items-center gap-3 flex-1">
-                        {item.image_url && (
-                          <img 
-                            src={item.image_url} 
-                            alt={item.name}
-                            className="w-12 h-12 object-cover rounded-lg"
-                          />
-                        )}
-                        <div className="flex-1">
-                          <h4 className="font-medium">{item.name}</h4>
-                          <p className="text-sm text-muted-foreground">{item.description}</p>
-                        </div>
-                      </div>
-                      {offerForm.selectedItems.includes(item.id) && (
-                        <CheckCircle className="h-5 w-5 text-primary" />
-                      )}
-                    </div>
-                  ))}
-                </div>
+                <label className="text-sm font-medium mb-3 block">Ételek és italok kezelése</label>
+                <EnhancedItemSelection
+                  menuItems={menuItems}
+                  categories={categories}
+                  selectedItems={offerForm.selectedItems}
+                  customItems={offerForm.customItems}
+                  onItemToggle={toggleOfferItemSelection}
+                  onCustomItemAdd={handleOfferCustomItemAdd}
+                  onCustomItemRemove={handleOfferCustomItemRemove}
+                  onCustomItemUpdate={handleOfferCustomItemUpdate}
+                />
               </div>
               
               <div className="flex gap-2 pt-4">
@@ -657,37 +774,17 @@ const DailyMenuManagement = () => {
               </div>
               
               <div>
-                <label className="text-sm font-medium mb-3 block">Ételek kiválasztása</label>
-                <div className="max-h-60 overflow-y-auto border rounded-lg p-3 space-y-2">
-                  {menuItems.map((item) => (
-                    <div 
-                      key={item.id} 
-                      className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors ${
-                        menuForm.selectedItems.includes(item.id) 
-                          ? "bg-secondary/10 border border-secondary" 
-                          : "bg-muted/50 hover:bg-muted"
-                      }`}
-                      onClick={() => toggleMenuItemSelection(item.id)}
-                    >
-                      <div className="flex items-center gap-3 flex-1">
-                        {item.image_url && (
-                          <img 
-                            src={item.image_url} 
-                            alt={item.name}
-                            className="w-12 h-12 object-cover rounded-lg"
-                          />
-                        )}
-                        <div className="flex-1">
-                          <h4 className="font-medium">{item.name}</h4>
-                          <p className="text-sm text-muted-foreground">{item.description}</p>
-                        </div>
-                      </div>
-                      {menuForm.selectedItems.includes(item.id) && (
-                        <CheckCircle className="h-5 w-5 text-secondary" />
-                      )}
-                    </div>
-                  ))}
-                </div>
+                <label className="text-sm font-medium mb-3 block">Ételek és italok kezelése</label>
+                <EnhancedItemSelection
+                  menuItems={menuItems}
+                  categories={categories}
+                  selectedItems={menuForm.selectedItems}
+                  customItems={menuForm.customItems}
+                  onItemToggle={toggleMenuItemSelection}
+                  onCustomItemAdd={handleMenuCustomItemAdd}
+                  onCustomItemRemove={handleMenuCustomItemRemove}
+                  onCustomItemUpdate={handleMenuCustomItemUpdate}
+                />
               </div>
               
               <div className="flex gap-2 pt-4">

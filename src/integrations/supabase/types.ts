@@ -265,6 +265,7 @@ export type Database = {
           image_url: string | null
           is_active: boolean
           is_featured: boolean
+          is_temporary: boolean
           name: string
           price_huf: number
         }
@@ -277,6 +278,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean
           is_featured?: boolean
+          is_temporary?: boolean
           name: string
           price_huf: number
         }
@@ -289,6 +291,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean
           is_featured?: boolean
+          is_temporary?: boolean
           name?: string
           price_huf?: number
         }
