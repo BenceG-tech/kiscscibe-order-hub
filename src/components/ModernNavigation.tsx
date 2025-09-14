@@ -98,7 +98,7 @@ const ModernNavigation = () => {
               to="/" 
               className="font-bold text-xl md:text-2xl text-primary hover:text-primary/80 transition-all duration-300"
             >
-              Kiscsibe Reggelizo es Etterem
+              Kiscsibe Reggeliző & Étterem
             </Link>
 
             {/* Desktop Menu */}
@@ -154,7 +154,7 @@ const ModernNavigation = () => {
               <SheetContent side="right" className="w-[300px]">
                 <div className="flex flex-col space-y-4 mt-8">
                   <div className="pb-4 border-b">
-                    <h2 className="font-bold text-lg text-primary">Kiscsibe Reggelizo es Etterem</h2>
+                    <h2 className="font-bold text-lg text-primary">Kiscsibe Reggeliző & Étterem</h2>
                   </div>
                   
                   {navLinks.map((link) => (

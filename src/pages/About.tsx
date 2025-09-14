@@ -60,7 +60,7 @@ const About = () => {
               Rólunk
             </h1>
             <p className="text-xl text-muted-foreground leading-relaxed">
-              A Kiscsibe Reggelizo es Etterem családi vállalkozásként indult, és azóta is 
+              A Kiscsibe Reggeliző & Étterem családi vállalkozásként indult, és azóta is 
               a hagyományos magyar ízeket képviseljük a XIV. kerületben.
             </p>
           </div>
