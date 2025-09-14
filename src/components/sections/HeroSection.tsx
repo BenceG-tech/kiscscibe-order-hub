@@ -10,7 +10,7 @@ const HeroSection = () => {
       <div className="absolute inset-0">
         <img
           src={heroImage}
-          alt="Kiscsibe Reggeliző friss ételek"
+          alt="Kiscsibe Reggelizo es Etterem friss ételek"
           className="w-full h-full object-cover"
           loading="eager"
         />
@@ -20,7 +20,7 @@ const HeroSection = () => {
       {/* Content */}
       <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
         <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
-          Kiscsibe Reggeliző
+          Kiscsibe Reggelizo es Etterem
           <span className="block text-2xl md:text-4xl lg:text-5xl mt-2 text-primary">
             házias ízek minden nap
           </span>

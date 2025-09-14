@@ -22,7 +22,7 @@ const MapSection = () => {
                 allowFullScreen
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
-                title="Kiscsibe Reggeliző helye"
+                title="Kiscsibe Reggelizo es Etterem helye"
               />
             </div>
           </div>
@@ -33,7 +33,7 @@ const MapSection = () => {
               <div className="flex items-start gap-3 mb-4">
                 <MapPin className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
                 <div>
-                  <h3 className="font-bold text-foreground text-lg mb-2">Kiscsibe Reggeliző</h3>
+                  <h3 className="font-bold text-foreground text-lg mb-2">Kiscsibe Reggelizo es Etterem</h3>
                   <p className="text-muted-foreground mb-1">1141 Budapest</p>
                   <p className="text-muted-foreground mb-4">Vezér u. 110.</p>
                 </div>

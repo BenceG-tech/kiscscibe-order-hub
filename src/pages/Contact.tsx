@@ -78,7 +78,7 @@ const Contact = () => {
                   <div className="flex items-start gap-3">
                     <MapPin className="h-5 w-5 text-primary mt-0.5" />
                     <div>
-                      <p className="font-semibold">Kiscsibe Reggeliző & Étterem</p>
+                      <p className="font-semibold">Kiscsibe Reggelizo es Etterem</p>
                       <p className="text-muted-foreground">1145 Budapest, Vezér utca 12.</p>
                     </div>
                   </div>
@@ -249,7 +249,7 @@ const Contact = () => {
                 allowFullScreen
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
-                title="Kiscsibe Reggeliző térképe"
+                title="Kiscsibe Reggelizo es Etterem térképe"
               />
             </div>
           </div>
