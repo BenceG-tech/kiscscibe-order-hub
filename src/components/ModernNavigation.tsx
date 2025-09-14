@@ -196,3 +196,4 @@ const ModernNavigation = () => {
 };
 
 export default ModernNavigation;
+export { ModernNavigation };
