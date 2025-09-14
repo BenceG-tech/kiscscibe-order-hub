@@ -14,9 +14,14 @@ interface CartItem {
   modifiers: CartModifier[];
   image_url?: string;
   // Daily item specific fields
-  daily_type?: 'offer' | 'menu';
+  daily_type?: 'offer' | 'menu' | 'complete_menu';
   daily_date?: string; // YYYY-MM-DD format
   daily_id?: string; // daily_offer_id or daily_menu_id
+  menu_id?: string; // For complete menus
+  components?: {
+    soup: { id: string; name: string; };
+    main: { id: string; name: string; };
+  };
 }
 
 interface CartState {
@@ -59,7 +64,8 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
         JSON.stringify(item.modifiers) === JSON.stringify(action.payload.modifiers) &&
         item.daily_type === action.payload.daily_type &&
         item.daily_date === action.payload.daily_date &&
-        item.daily_id === action.payload.daily_id
+        item.daily_id === action.payload.daily_id &&
+        item.menu_id === action.payload.menu_id
       );
       
       if (existingItemIndex > -1) {
@@ -118,6 +124,7 @@ interface CartContextType {
   clearCart: () => void;
   addDailyOffer: (offer: DailyOffer) => void;
   addDailyMenu: (menu: DailyMenu) => void;
+  addCompleteMenu: (menu: CompleteMenu) => void;
 }
 
 // Daily item interfaces for adding to cart
@@ -141,6 +148,25 @@ interface DailyMenu {
       name: string;
     };
   }>;
+}
+
+interface CompleteMenu {
+  id: string;
+  date: string;
+  price_huf: number;
+  soup: {
+    id: string;
+    name: string;
+    description: string;
+    price_huf: number;
+  };
+  main: {
+    id: string;
+    name: string;
+    description: string;
+    price_huf: number;
+  };
+  remaining_portions: number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -215,6 +241,22 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       daily_id: menu.id,
     });
   };
+
+  const addCompleteMenu = (menu: CompleteMenu) => {
+    addItem({
+      id: `complete_menu_${menu.id}_${Date.now()}`,
+      name: `Napi menü - ${menu.soup.name} + ${menu.main.name}`,
+      price_huf: menu.price_huf,
+      modifiers: [],
+      daily_type: 'complete_menu',
+      daily_date: menu.date,
+      menu_id: menu.id,
+      components: {
+        soup: { id: menu.soup.id, name: menu.soup.name },
+        main: { id: menu.main.id, name: menu.main.name }
+      }
+    });
+  };
   
   return (
     <CartContext.Provider value={{
@@ -225,6 +267,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       clearCart,
       addDailyOffer,
       addDailyMenu,
+      addCompleteMenu,
     }}>
       {children}
     </CartContext.Provider>

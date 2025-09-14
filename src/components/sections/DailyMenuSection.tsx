@@ -1,24 +1,4 @@
-import DailyOfferCalendar from "@/components/DailyOfferCalendar";
-
-interface MenuItem {
-  id: string;
-  name: string;
-  description: string;
-  price_huf: number;
-}
-
-interface DailyOfferItem {
-  id: string;
-  menu_items?: MenuItem;
-}
-
-interface DailyOffer {
-  id: string;
-  date: string;
-  price_huf: number;
-  note?: string;
-  daily_offer_items?: DailyOfferItem[];
-}
+import UnifiedDailySection from "@/components/UnifiedDailySection";
 
 const DailyMenuSection = () => {
   return (
@@ -32,7 +12,7 @@ const DailyMenuSection = () => {
             Válassz napot és tekintsd meg a napi menüt
           </p>
         </div>
-        <DailyOfferCalendar />
+        <UnifiedDailySection />
       </div>
     </section>
   );

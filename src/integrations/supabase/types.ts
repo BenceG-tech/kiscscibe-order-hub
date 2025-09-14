@@ -568,6 +568,22 @@ export type Database = {
           total_huf: number
         }[]
       }
+      get_daily_data: {
+        Args: { target_date: string }
+        Returns: {
+          items: Json
+          menu_id: string
+          menu_max_portions: number
+          menu_price_huf: number
+          menu_remaining_portions: number
+          offer_date: string
+          offer_id: string
+          offer_max_portions: number
+          offer_note: string
+          offer_price_huf: number
+          offer_remaining_portions: number
+        }[]
+      }
       get_user_role: {
         Args: { check_user_id?: string }
         Returns: string
