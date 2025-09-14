@@ -29,45 +29,45 @@ const App = () => (
         <TooltipProvider>
           <Sonner />
           <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/menu" element={<Menu />} />
-            <Route path="/etlap" element={<Etlap />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/checkout" element={<Checkout />} />
-            <Route path="/order-confirmation" element={<OrderConfirmation />} />
-            <Route path="/admin/orders" element={
-              <ProtectedRoute requireAdmin>
-                <AdminOrders />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/menu" element={
-              <ProtectedRoute requireAdmin>
-                <AdminMenu />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/daily-menu" element={
-              <ProtectedRoute requireAdmin>
-                <AdminDailyMenu />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/menu-schedule" element={
-              <ProtectedRoute requireAdmin>
-                <AdminMenuSchedule />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/capacity" element={
-              <ProtectedRoute requireAdmin>
-                <AdminCapacity />
-              </ProtectedRoute>
-            } />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/menu" element={<Menu />} />
+              <Route path="/etlap" element={<Etlap />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/order-confirmation" element={<OrderConfirmation />} />
+              <Route path="/admin/orders" element={
+                <ProtectedRoute requireAdmin>
+                  <AdminOrders />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/menu" element={
+                <ProtectedRoute requireAdmin>
+                  <AdminMenu />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/daily-menu" element={
+                <ProtectedRoute requireAdmin>
+                  <AdminDailyMenu />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/menu-schedule" element={
+                <ProtectedRoute requireAdmin>
+                  <AdminMenuSchedule />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/capacity" element={
+                <ProtectedRoute requireAdmin>
+                  <AdminCapacity />
+                </ProtectedRoute>
+              } />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
       </CartProvider>
     </AuthProvider>
   </QueryClientProvider>
