@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import DailyOffersPanel from "@/components/DailyOffersPanel";
 import DailyMenuPanel from "@/components/DailyMenuPanel";
 import { supabase } from "@/integrations/supabase/client";
-import { format, isToday, isPast, isSunday } from "date-fns";
+import { format, isToday, isPast, isSunday, getDay } from "date-fns";
 import { hu } from "date-fns/locale";
 
 interface MenuItem {
@@ -166,20 +166,20 @@ const UnifiedDailySection = () => {
   }, [selectedDate]);
 
   const handleDateSelect = (date: Date | undefined) => {
-    if (date && !isPast(date) && !isSunday(date)) {
+    if (date && !isPast(date) && getDay(date) !== 0 && getDay(date) !== 6) {
       setSelectedDate(date);
     }
   };
 
   const handleTodayClick = () => {
     const today = new Date();
-    if (!isPast(today) && !isSunday(today)) {
+    if (!isPast(today) && getDay(today) !== 0 && getDay(today) !== 6) {
       setSelectedDate(today);
     }
   };
 
   const isDateDisabled = (date: Date) => {
-    return isPast(date) || isSunday(date);
+    return isPast(date) || getDay(date) === 0 || getDay(date) === 6;
   };
 
   const hasContentOnDate = (date: Date) => {
@@ -199,7 +199,7 @@ const UnifiedDailySection = () => {
               variant="outline"
               size="sm"
               onClick={handleTodayClick}
-              disabled={isPast(new Date()) || isSunday(new Date())}
+              disabled={isPast(new Date()) || getDay(new Date()) === 0 || getDay(new Date()) === 6}
             >
               Ma
             </Button>
@@ -215,7 +215,7 @@ const UnifiedDailySection = () => {
                 locale={hu}
                 modifiers={{
                   hasContent: hasContentOnDate,
-                  weekend: (date: Date) => isSunday(date),
+                  weekend: (date: Date) => getDay(date) === 0 || getDay(date) === 6,
                   today: isToday
                 }}
                 modifiersStyles={{
@@ -242,7 +242,7 @@ const UnifiedDailySection = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 bg-muted-foreground/20 rounded"></div>
-                  <span>Zárva (vasárnap)</span>
+                  <span>Zárva (hétvége)</span>
                 </div>
               </div>
             </CardContent>
@@ -251,6 +251,13 @@ const UnifiedDailySection = () => {
 
         {/* Content Section */}
         <div className="space-y-6">
+          {/* Daily Offers Panel */}
+          <DailyOffersPanel 
+            date={selectedDate}
+            data={dailyData}
+            loading={loading}
+          />
+
           {/* Daily Menu Panel */}
           <div className="lg:hidden block">
             <DailyMenuPanel 
@@ -259,13 +266,6 @@ const UnifiedDailySection = () => {
               loading={loading}
             />
           </div>
-
-          {/* Daily Offers Panel */}
-          <DailyOffersPanel 
-            date={selectedDate}
-            data={dailyData}
-            loading={loading}
-          />
         </div>
 
         {/* Desktop Menu Panel */}

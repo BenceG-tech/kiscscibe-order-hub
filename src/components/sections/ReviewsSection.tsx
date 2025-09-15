@@ -88,7 +88,7 @@ const ReviewsSection = () => {
 
         {/* Reviews Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {reviews.map((review, index) => (
+          {reviews.slice(0, 3).map((review, index) => (
             <Card 
               key={index} 
               className="hover:shadow-cozy transition-shadow duration-300 shadow-soft"
