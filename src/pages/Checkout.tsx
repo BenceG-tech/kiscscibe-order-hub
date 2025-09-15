@@ -361,7 +361,7 @@ const Checkout = () => {
       
       // Clear cart and redirect to confirmation
       clearCart();
-      navigate(`/order-confirmation?code=${data.order_code}`);
+      navigate(`/order-confirmation?code=${data.order_code}&phone=${encodeURIComponent(formData.phone)}&email=${encodeURIComponent(formData.email)}`);
       
     } catch (error: any) {
       console.error("Order submission error:", error);

@@ -18,6 +18,14 @@ import {
   Package
 } from "lucide-react";
 
+interface OrderItem {
+  id: string;
+  name_snapshot: string;
+  qty: number;
+  unit_price_huf: number;
+  line_total_huf: number;
+}
+
 interface Order {
   id: string;
   code: string;
@@ -29,6 +37,7 @@ interface Order {
   pickup_time: string;
   created_at: string;
   notes?: string;
+  items?: OrderItem[];
 }
 
 const OrdersManagement = () => {
@@ -90,12 +99,12 @@ const OrdersManagement = () => {
   }, [toast]);
 
   const fetchOrders = async () => {
-    const { data, error } = await supabase
+    const { data: ordersData, error: ordersError } = await supabase
       .from('orders')
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (error) {
+    if (ordersError) {
       toast({
         title: "Hiba",
         description: "Nem sikerült betölteni a rendeléseket",
@@ -104,7 +113,22 @@ const OrdersManagement = () => {
       return;
     }
 
-    setOrders(data || []);
+    // Fetch order items for each order
+    const ordersWithItems = await Promise.all(
+      (ordersData || []).map(async (order) => {
+        const { data: itemsData } = await supabase
+          .from('order_items')
+          .select('id, name_snapshot, qty, unit_price_huf, line_total_huf')
+          .eq('order_id', order.id);
+        
+        return {
+          ...order,
+          items: itemsData || []
+        };
+      })
+    );
+
+    setOrders(ordersWithItems);
     setLoading(false);
   };
 
@@ -265,6 +289,24 @@ const OrdersManagement = () => {
                             </div>
                           )}
                         </div>
+
+                        {/* Order Items */}
+                        {order.items && order.items.length > 0 && (
+                          <div className="mb-4">
+                            <h4 className="font-semibold mb-2">Rendelt tételek:</h4>
+                            <div className="bg-muted/50 p-3 rounded space-y-2">
+                              {order.items.map((item) => (
+                                <div key={item.id} className="flex justify-between items-center text-sm">
+                                  <div>
+                                    <span className="font-medium">{item.name_snapshot}</span>
+                                    <span className="text-muted-foreground ml-2">× {item.qty}</span>
+                                  </div>
+                                  <span className="font-medium">{item.line_total_huf} Ft</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
 
                         <div className="flex gap-2 flex-wrap">
                           {order.status === 'new' && (

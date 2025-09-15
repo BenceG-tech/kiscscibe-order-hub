@@ -46,9 +46,10 @@ const OrderConfirmation = () => {
     try {
       setLoading(true);
       
-      // For security, we need phone number to access order details
-      const phone = prompt('Kérem adja meg a telefonszámát a rendelés ellenőrzéséhez:');
+      // Get phone from URL parameters - no need to prompt again
+      const phone = searchParams.get('phone');
       if (!phone) {
+        console.error('Phone number missing from URL parameters');
         setLoading(false);
         return;
       }
