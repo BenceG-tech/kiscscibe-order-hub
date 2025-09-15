@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCart } from "@/contexts/CartContext";
 import { UtensilsCrossed } from "lucide-react";
 import { toast } from "sonner";
+import { format } from "date-fns";
 
 interface MenuItem {
   id: string;
@@ -49,7 +50,7 @@ const DailyMenuPanel = ({ date, menuData, loading }: DailyMenuPanelProps) => {
     try {
       addCompleteMenu({
         id: menuData.menu_id,
-        date: date.toISOString().split('T')[0],
+        date: format(date, 'yyyy-MM-dd'),
         price_huf: menuData.menu_price_huf,
         soup: {
           id: menuData.soup.item_id,

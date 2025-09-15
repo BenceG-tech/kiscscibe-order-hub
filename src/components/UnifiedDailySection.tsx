@@ -56,7 +56,7 @@ const UnifiedDailySection = () => {
       const { addCompleteMenu } = require("@/contexts/CartContext");
       addCompleteMenu({
         id: menuData.menu_id,
-        date: selectedDate.toISOString().split('T')[0],
+        date: format(selectedDate, 'yyyy-MM-dd'),
         price_huf: menuData.menu_price_huf,
         soup: {
           id: menuData.soup.item_id,
