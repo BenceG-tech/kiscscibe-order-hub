@@ -2,11 +2,12 @@ import { useState, useEffect } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import DailyItemSelector from "@/components/DailyItemSelector";
-import DailyMenuPanel from "@/components/DailyMenuPanel";
+import DailyOffersWithMenuBadges from "@/components/DailyOffersWithMenuBadges";
+import DailyMenuShowcase from "@/components/DailyMenuShowcase";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isToday, isPast, isSunday, getDay } from "date-fns";
 import { hu } from "date-fns/locale";
+import { useCart } from "@/contexts/CartContext";
 
 interface MenuItem {
   id: string;
@@ -48,12 +49,12 @@ const UnifiedDailySection = () => {
   const [loading, setLoading] = useState(false);
   const [availableDates, setAvailableDates] = useState<Date[]>([]);
 
+  const { addCompleteMenu } = useCart();
+
   const handleAddMenuToCart = () => {
     if (!menuData || !menuData.soup || !menuData.main) return;
     
     try {
-      // This would be called from the sticky CTA
-      const { addCompleteMenu } = require("@/contexts/CartContext");
       addCompleteMenu({
         id: menuData.menu_id,
         date: selectedDate.toISOString().split('T')[0],
@@ -251,7 +252,6 @@ const UnifiedDailySection = () => {
 
         {/* Content Section */}
         <div className="space-y-6">
-          {/* Daily Offers - Interactive Selector */}
           {loading ? (
             <Card>
               <CardContent className="p-6">
@@ -262,62 +262,39 @@ const UnifiedDailySection = () => {
               </CardContent>
             </Card>
           ) : dailyData && dailyData.items.length > 0 ? (
-            <div>
-              <h3 className="text-xl font-semibold mb-4">
-                {format(selectedDate, "MMMM d. (EEEE)", { locale: hu })} - Mai ajánlatok
-              </h3>
-              <DailyItemSelector 
-                type="offer"
-                data={{
-                  id: dailyData.offer_id,
-                  date: dailyData.offer_date,
-                  price_huf: dailyData.offer_price_huf || 0,
-                  note: dailyData.offer_note,
-                  max_portions: dailyData.offer_max_portions || 0,
-                  remaining_portions: dailyData.offer_remaining_portions || 0,
-                  daily_offer_items: dailyData.items.map(item => ({
-                    id: item.id,
-                    menu_items: {
-                      id: item.item_id,
-                      name: item.item_name,
-                      description: item.item_description || '',
-                      price_huf: item.item_price_huf,
-                      image_url: item.item_image_url
-                    }
-                  }))
-                }}
-                canOrder={true}
-                showDetails={true}
-              />
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-xl font-semibold mb-4">
+                  {format(selectedDate, "MMMM d. (EEEE)", { locale: hu })}
+                </h3>
+                <DailyOffersWithMenuBadges 
+                  data={dailyData}
+                  canOrder={!isPast(selectedDate) && getDay(selectedDate) !== 0}
+                />
+              </div>
+
+              {/* Daily Menu Showcase */}
+              {menuData && menuData.soup && menuData.main && (
+                <div>
+                  <h3 className="text-xl font-semibold mb-4">Napi menü</h3>
+                  <DailyMenuShowcase
+                    menuData={menuData}
+                    date={selectedDate}
+                    canOrder={!isPast(selectedDate) && getDay(selectedDate) !== 0}
+                  />
+                </div>
+              )}
             </div>
           ) : (
             <Card>
               <CardContent className="p-6">
                 <h3 className="text-xl font-semibold mb-2">
-                  {format(selectedDate, "MMMM d. (EEEE)", { locale: hu })} - Mai ajánlatok
+                  {format(selectedDate, "MMMM d. (EEEE)", { locale: hu })}
                 </h3>
                 <p className="text-muted-foreground">Még nincs felvéve ajánlat erre a napra.</p>
               </CardContent>
             </Card>
           )}
-
-          {/* Daily Menu Panel */}
-          <div className="lg:hidden block">
-            <DailyMenuPanel 
-              date={selectedDate}
-              menuData={menuData}
-              loading={loading}
-            />
-          </div>
-        </div>
-
-        {/* Desktop Menu Panel */}
-        <div className="hidden lg:block lg:col-span-2">
-          <DailyMenuPanel 
-            date={selectedDate}
-            menuData={menuData}
-            loading={loading}
-          />
         </div>
       </div>
 

@@ -124,16 +124,50 @@ serve(async (req) => {
           tableName = 'daily_offers';
         } else if (item.daily_type === 'menu') {
           tableName = 'daily_menus';
+        } else if (item.daily_type === 'complete_menu') {
+          // Complete menu orders use the daily_offer_menus table
+          tableName = 'daily_offer_menus';
         } else {
           throw new Error(`Ismeretlen napi tétel típus: ${item.daily_type}`);
         }
 
         // Check if daily item exists and has available portions
-        const { data: dailyData, error: dailyError } = await supabase
-          .from(tableName)
-          .select('id, price_huf, remaining_portions, date')
-          .eq('id', item.daily_id)
-          .single();
+        let dailyData, dailyError;
+        
+        if (item.daily_type === 'complete_menu') {
+          // For complete menus, use menu_id and get associated offer date
+          const { data: menuData, error: menuErr } = await supabase
+            .from('daily_offer_menus')
+            .select(`
+              id, 
+              menu_price_huf, 
+              remaining_portions,
+              daily_offers!inner(date)
+            `)
+            .eq('id', item.menu_id || item.daily_id)
+            .single();
+          
+          if (menuErr || !menuData) {
+            throw new Error(`Napi menü nem található: ${item.name_snapshot}`);
+          }
+          
+          dailyData = {
+            id: menuData.id,
+            price_huf: menuData.menu_price_huf,
+            remaining_portions: menuData.remaining_portions,
+            date: menuData.daily_offers.date
+          };
+          dailyError = null;
+        } else {
+          const result = await supabase
+            .from(tableName)
+            .select('id, price_huf, remaining_portions, date')
+            .eq('id', item.daily_id)
+            .single();
+          
+          dailyData = result.data;
+          dailyError = result.error;
+        }
 
         if (dailyError || !dailyData) {
           throw new Error(`Napi tétel nem található: ${item.name_snapshot}`);
@@ -166,12 +200,28 @@ serve(async (req) => {
         });
 
         // Use race-safe atomic portion update function
-        const { data: updateSuccess, error: updateError } = await supabase
-          .rpc('update_daily_portions', {
-            table_name: tableName,
-            daily_id: item.daily_id,
-            quantity_needed: item.qty
-          });
+        let updateSuccess, updateError;
+        
+        if (item.daily_type === 'complete_menu') {
+          // For complete menus, update daily_offer_menus table
+          const { data: success, error: err } = await supabase
+            .rpc('update_daily_portions', {
+              table_name: 'daily_offer_menus',
+              daily_id: item.menu_id || item.daily_id,
+              quantity_needed: item.qty
+            });
+          updateSuccess = success;
+          updateError = err;
+        } else {
+          const { data: success, error: err } = await supabase
+            .rpc('update_daily_portions', {
+              table_name: tableName,
+              daily_id: item.daily_id,
+              quantity_needed: item.qty
+            });
+          updateSuccess = success;
+          updateError = err;
+        }
 
         if (updateError || !updateSuccess) {
           console.error('Failed to update daily item portions:', updateError);
