@@ -65,18 +65,21 @@ const DailyItemSelector = ({ type, data, canOrder, showDetails = false, deadline
     ? (data as DailyOffer).daily_offer_items || []
     : (data as DailyMenu).daily_menu_items || [];
 
-  // Group items by category
+  // Group items by category (exclude items without proper category)
   const groupedItems = items.reduce((groups, item) => {
-    const categoryName = item.menu_items?.category_name || 'Egyéb';
+    const categoryName = item.menu_items?.category_name;
     const categorySort = item.menu_items?.category_sort || 999;
     
-    if (!groups[categoryName]) {
-      groups[categoryName] = {
-        items: [],
-        sort: categorySort
-      };
+    // Only include items that have a proper category name
+    if (categoryName) {
+      if (!groups[categoryName]) {
+        groups[categoryName] = {
+          items: [],
+          sort: categorySort
+        };
+      }
+      groups[categoryName].items.push(item);
     }
-    groups[categoryName].items.push(item);
     return groups;
   }, {} as Record<string, { items: typeof items; sort: number }>);
 
@@ -257,45 +260,10 @@ const DailyItemSelector = ({ type, data, canOrder, showDetails = false, deadline
         <div className="space-y-6">
           {sortedCategories.map(([categoryName, categoryData]) => (
             <div key={categoryName} className="space-y-3">
-              {/* Category Header */}
-              <div className="flex items-center justify-between py-2 border-b border-primary/20">
-                <div className="flex items-center gap-2">
-                  {getCategoryIcon(categoryName)}
-                  <h4 className="font-semibold text-lg text-primary">{categoryName}</h4>
-                  <Badge variant="secondary" className="text-xs">
-                    {categoryData.items.length} tétel
-                  </Badge>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    const categoryItemIds = categoryData.items.map(item => item.id);
-                    const allCategorySelected = categoryItemIds.every(id => selectedItems.includes(id));
-                    
-                    if (allCategorySelected) {
-                      // Deselect all in category
-                      setSelectedItems(prev => prev.filter(id => !categoryItemIds.includes(id)));
-                      setQuantities(prev => {
-                        const newQty = { ...prev };
-                        categoryItemIds.forEach(id => delete newQty[id]);
-                        return newQty;
-                      });
-                    } else {
-                      // Select all in category
-                      setSelectedItems(prev => [...new Set([...prev, ...categoryItemIds])]);
-                      const newQuantities: Record<string, number> = {};
-                      categoryItemIds.forEach(id => {
-                        newQuantities[id] = quantities[id] || 1;
-                      });
-                      setQuantities(prev => ({ ...prev, ...newQuantities }));
-                    }
-                  }}
-                  className="text-xs"
-                >
-                  {categoryData.items.every(item => selectedItems.includes(item.id)) ? 'Egyik sem' : 'Mind'}
-                </Button>
-              </div>
+              {/* Simple Category Header */}
+              <h3 className="font-semibold text-base text-foreground border-b border-border pb-1">
+                {categoryName}
+              </h3>
 
               {/* Category Items */}
               <div className="space-y-2">
