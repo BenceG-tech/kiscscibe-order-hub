@@ -237,16 +237,29 @@ serve(async (req) => {
     let date: string;
     let time: string;
     
+    // Helper function to normalize time string to HH:MM:SS format
+    const normalizeTimeString = (timeStr: string): string => {
+      if (timeStr.includes(':')) {
+        const parts = timeStr.split(':');
+        if (parts.length === 2) {
+          return `${parts[0]}:${parts[1]}:00`; // Add seconds
+        } else if (parts.length === 3) {
+          return timeStr; // Already has seconds
+        }
+      }
+      return timeStr;
+    };
+    
     if (pickup_date && pickup_time_slot) {
       // New format: use date and time strings directly
       date = pickup_date;
-      time = pickup_time_slot;
+      time = normalizeTimeString(pickup_time_slot);
       console.log('Updating capacity for (new format):', date, time);
     } else if (pickup_time) {
       // Legacy format: parse ISO string
       const pickupDate = new Date(pickup_time);
       date = pickupDate.toISOString().split('T')[0];
-      time = pickupDate.toTimeString().split(' ')[0].slice(0, 5); // HH:MM format
+      time = normalizeTimeString(pickupDate.toTimeString().split(' ')[0].slice(0, 5)); // HH:MM format
       console.log('Updating capacity for (legacy format):', date, time);
     }
     
@@ -308,7 +321,7 @@ serve(async (req) => {
           .from('capacity_slots')
           .insert({
             date,
-            timeslot: `${time}:00`, // Add seconds
+            timeslot: time, // Already normalized to HH:MM:SS
             max_orders: 8,
             booked_orders: 0
           })
@@ -337,7 +350,7 @@ serve(async (req) => {
           booked_orders: capacityData.booked_orders + 1 
         })
         .eq('date', date)
-        .eq('timeslot', `${time}:00`); // Add seconds for consistency
+        .eq('timeslot', time); // Already normalized to HH:MM:SS
 
       if (updateError) {
         console.error('Capacity update error:', updateError);
@@ -355,7 +368,7 @@ serve(async (req) => {
         total_huf: calculatedTotal,
         status: 'new',
         payment_method,
-        pickup_time: pickup_time || (date && time ? new Date(`${date}T${time}`).toISOString() : null),
+        pickup_time: pickup_time || (date && time ? new Date(`${date}T${time.slice(0, 5)}`).toISOString() : null),
         notes: customer.notes || null
       })
       .select('id')

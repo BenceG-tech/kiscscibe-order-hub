@@ -145,10 +145,13 @@ const Checkout = () => {
             slots = [...slots, ...fallbackSlots];
           }
         } else {
-          // For regular items, generate slots for next 5 business days
+          // For regular items, generate slots starting from tomorrow for next 5 business days
           const currentDate = new Date(today);
+          currentDate.setDate(currentDate.getDate() + 1); // Start from tomorrow
           let daysAdded = 0;
-          const maxDays = 10; // Prevent infinite loop
+          let maxDays = 10; // Prevent infinite loop
+          
+          console.log('Generating fallback slots starting from tomorrow:', currentDate.toDateString());
           
           while (daysAdded < 5 && maxDays > 0) {
             // Use local date formatting to avoid timezone issues
@@ -158,14 +161,18 @@ const Checkout = () => {
             const dateStr = `${year}-${month}-${day}`;
             const dayOfWeek = currentDate.getDay();
             
+            console.log(`Checking date ${dateStr}, day of week: ${dayOfWeek}`);
+            
             // Skip Sundays and generate slots for business days
             if (dayOfWeek !== 0) {
               const fallbackSlots = generateFallbackTimeSlots(dateStr);
+              console.log(`Generated ${fallbackSlots.length} slots for ${dateStr}`);
               slots = [...slots, ...fallbackSlots];
               daysAdded++;
             }
             
             currentDate.setDate(currentDate.getDate() + 1);
+            maxDays--;
           }
         }
         
