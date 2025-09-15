@@ -132,6 +132,7 @@ export const EnhancedItemSelection: React.FC<EnhancedItemSelectionProps> = ({
             categories={categories}
             selectedItems={selectedItems}
             onItemToggle={onItemToggle}
+            onRefreshData={onRefreshData}
           />
         </TabsContent>
 

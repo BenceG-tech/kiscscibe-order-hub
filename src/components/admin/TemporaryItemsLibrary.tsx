@@ -3,9 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, Check, Clock, Star } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Search, Check, Clock, Star, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { LoadingSpinner } from '@/components/ui/loading';
+import { useToast } from '@/hooks/use-toast';
 
 interface MenuItem {
   id: string;
@@ -28,17 +30,21 @@ interface TemporaryItemsLibraryProps {
   categories: MenuCategory[];
   selectedItems: string[];
   onItemToggle: (itemId: string) => void;
+  onRefreshData?: () => void;
 }
 
 export const TemporaryItemsLibrary: React.FC<TemporaryItemsLibraryProps> = ({
   categories,
   selectedItems,
-  onItemToggle
+  onItemToggle,
+  onRefreshData
 }) => {
+  const { toast } = useToast();
   const [temporaryItems, setTemporaryItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchTemporaryItems();
@@ -68,6 +74,40 @@ export const TemporaryItemsLibrary: React.FC<TemporaryItemsLibraryProps> = ({
     const matchesCategory = selectedCategory === 'all' || item.category_id === selectedCategory;
     return matchesSearch && matchesCategory;
   });
+
+  const handleDeleteItem = async (itemId: string) => {
+    setDeletingItemId(itemId);
+    try {
+      const { error } = await supabase
+        .from('menu_items')
+        .update({ is_active: false })
+        .eq('id', itemId);
+
+      if (error) throw error;
+
+      // Optimistically update local state
+      setTemporaryItems(prev => prev.filter(item => item.id !== itemId));
+      
+      toast({
+        title: "Siker",
+        description: "Az ideiglenes elem sikeresen törölve"
+      });
+
+      // Refresh parent data if callback provided
+      if (onRefreshData) {
+        onRefreshData();
+      }
+    } catch (error) {
+      console.error('Error deleting temporary item:', error);
+      toast({
+        title: "Hiba",
+        description: "Nem sikerült törölni az ideiglenes elemet",
+        variant: "destructive"
+      });
+    } finally {
+      setDeletingItemId(null);
+    }
+  };
 
   const groupedItems = categories.reduce((acc, category) => {
     acc[category.id] = filteredItems.filter(item => item.category_id === category.id);
@@ -145,18 +185,20 @@ export const TemporaryItemsLibrary: React.FC<TemporaryItemsLibraryProps> = ({
                       {categoryItems.map(item => (
                         <div
                           key={item.id}
-                          className={`flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                          className={`flex items-center space-x-3 p-3 rounded-lg border transition-colors ${
                             selectedItems.includes(item.id)
                               ? 'border-primary bg-primary/5'
                               : 'border-border hover:bg-muted/50'
                           }`}
-                          onClick={() => onItemToggle(item.id)}
                         >
-                          <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
-                            selectedItems.includes(item.id)
-                              ? 'border-primary bg-primary'
-                              : 'border-muted-foreground'
-                          }`}>
+                          <div 
+                            className={`w-4 h-4 rounded border-2 flex items-center justify-center cursor-pointer ${
+                              selectedItems.includes(item.id)
+                                ? 'border-primary bg-primary'
+                                : 'border-muted-foreground'
+                            }`}
+                            onClick={() => onItemToggle(item.id)}
+                          >
                             {selectedItems.includes(item.id) && (
                               <Check className="w-3 h-3 text-primary-foreground" />
                             )}
@@ -170,7 +212,7 @@ export const TemporaryItemsLibrary: React.FC<TemporaryItemsLibraryProps> = ({
                             />
                           )}
                           
-                          <div className="flex-1">
+                          <div className="flex-1" onClick={() => onItemToggle(item.id)} style={{ cursor: 'pointer' }}>
                             <div className="flex items-start justify-between">
                               <div>
                                 <div className="font-medium">{item.name}</div>
@@ -191,6 +233,41 @@ export const TemporaryItemsLibrary: React.FC<TemporaryItemsLibraryProps> = ({
                               </div>
                             </div>
                           </div>
+
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                disabled={deletingItemId === item.id}
+                              >
+                                {deletingItemId === item.id ? (
+                                  <LoadingSpinner className="h-4 w-4" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Ideiglenes elem törlése</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Biztosan törölni szeretné a(z) "{item.name}" ideiglenes elemet?
+                                  Ez a művelet nem vonható vissza.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Mégse</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteItem(item.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Törlés
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       ))}
                     </div>

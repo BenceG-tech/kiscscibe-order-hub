@@ -14,9 +14,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { LoadingSpinner } from "@/components/ui/loading";
 import { format, getDay } from "date-fns";
 import { hu } from "date-fns/locale";
-import { Plus, Save, Trash2, Coffee, Utensils, Package, X, Clock, Sparkles, Users, Minus, ChefHat, AlertCircle } from "lucide-react";
+import { Plus, Save, Trash2, Coffee, Utensils, Package, X, Clock, Sparkles, Users, Minus, ChefHat, AlertCircle, Info, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { TemporaryItemCreator } from "./TemporaryItemCreator";
 import { TemporaryItemsLibrary } from "./TemporaryItemsLibrary";
 
@@ -834,23 +835,68 @@ const StreamlinedDailyOffers = () => {
                       <div className="flex items-center gap-2">
                         <Utensils className="h-5 w-5 text-secondary" />
                         <h3 className="text-lg font-semibold">Menü beállításai</h3>
-                        {!isValidMenu && (
-                          <Badge variant="destructive" className="ml-2">
-                            Hibás összeállítás
+                        {!isValidMenu ? (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="destructive" className="ml-2 cursor-help">
+                                  <AlertCircle className="h-3 w-3 mr-1" />
+                                  Hibás összeállítás
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>A menühöz pontosan 1 leves és 1 főétel szükséges</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        ) : (
+                          <Badge variant="secondary" className="ml-2">
+                            <Check className="h-3 w-3 mr-1" />
+                            Érvényes
                           </Badge>
                         )}
                       </div>
 
                       {!isValidMenu && (
-                        <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-                          <p className="text-sm text-destructive">
-                            A menühöz pontosan 1 leves és 1 főétel szükséges. 
-                            Jelenleg: {soupItems.length} leves, {mainItems.length} főétel
-                          </p>
-                        </div>
-                      )}
+                        <div className="p-4 bg-destructive/10 border border-destructive/30 rounded-lg">
+                          <div className="flex items-start gap-3">
+                            <AlertCircle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
+                            <div className="space-y-2">
+                              <p className="text-sm font-medium text-destructive">
+                                Menü validációs hiba
+                              </p>
+                              <p className="text-xs text-destructive/80">
+                                A menühöz pontosan 1 leves és 1 főétel szükséges a helyes működéshez.
+                              </p>
+                              <p className="text-xs text-destructive/80">
+                                Jelenleg: {soupItems.length} leves, {mainItems.length} főétel
+                              </p>
+                              {soupItems.length === 0 && (
+                                <p className="text-xs text-amber-600">
+                                  • Válasszon ki egy levest és jelölje be "Menü része" opcióval
+                                </p>
+                              )}
+                              {mainItems.length === 0 && (
+                                <p className="text-xs text-amber-600">
+                                  • Válasszon ki egy főételt és jelölje be "Menü része" opcióval
+                                </p>
+                              )}
+                              {soupItems.length > 1 && (
+                                <p className="text-xs text-amber-600">
+                                  • Csak egy leves lehet a menü része
+                                </p>
+                              )}
+                              {mainItems.length > 1 && (
+                                <p className="text-xs text-amber-600">
+                                  • Csak egy főétel lehet a menü része
+                                </p>
+                              )}
+                             </div>
+                           </div>
+                         </div>
+                       )}
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                           <div className="space-y-2">
                             <Label className="text-sm font-medium">Ár (Ft)</Label>
                             <Input
