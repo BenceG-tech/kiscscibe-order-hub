@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import DailyOffersPanel from "@/components/DailyOffersPanel";
+import DailyItemSelector from "@/components/DailyItemSelector";
 import DailyMenuPanel from "@/components/DailyMenuPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isToday, isPast, isSunday, getDay } from "date-fns";
@@ -251,12 +251,55 @@ const UnifiedDailySection = () => {
 
         {/* Content Section */}
         <div className="space-y-6">
-          {/* Daily Offers Panel */}
-          <DailyOffersPanel 
-            date={selectedDate}
-            data={dailyData}
-            loading={loading}
-          />
+          {/* Daily Offers - Interactive Selector */}
+          {loading ? (
+            <Card>
+              <CardContent className="p-6">
+                <div className="animate-pulse space-y-4">
+                  <div className="h-4 bg-muted rounded w-3/4"></div>
+                  <div className="h-4 bg-muted rounded w-1/2"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : dailyData && dailyData.items.length > 0 ? (
+            <div>
+              <h3 className="text-xl font-semibold mb-4">
+                {format(selectedDate, "MMMM d. (EEEE)", { locale: hu })} - Mai ajánlatok
+              </h3>
+              <DailyItemSelector 
+                type="offer"
+                data={{
+                  id: dailyData.offer_id,
+                  date: dailyData.offer_date,
+                  price_huf: dailyData.offer_price_huf || 0,
+                  note: dailyData.offer_note,
+                  max_portions: dailyData.offer_max_portions || 0,
+                  remaining_portions: dailyData.offer_remaining_portions || 0,
+                  daily_offer_items: dailyData.items.map(item => ({
+                    id: item.id,
+                    menu_items: {
+                      id: item.item_id,
+                      name: item.item_name,
+                      description: item.item_description || '',
+                      price_huf: item.item_price_huf,
+                      image_url: item.item_image_url
+                    }
+                  }))
+                }}
+                canOrder={true}
+                showDetails={true}
+              />
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="p-6">
+                <h3 className="text-xl font-semibold mb-2">
+                  {format(selectedDate, "MMMM d. (EEEE)", { locale: hu })} - Mai ajánlatok
+                </h3>
+                <p className="text-muted-foreground">Még nincs felvéve ajánlat erre a napra.</p>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Daily Menu Panel */}
           <div className="lg:hidden block">
