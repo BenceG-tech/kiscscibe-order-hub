@@ -3,6 +3,7 @@ import { useCart } from "@/contexts/CartContext";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, Minus } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface CartDialogProps {
   open: boolean;
@@ -11,7 +12,8 @@ interface CartDialogProps {
 
 export const CartDialog = ({ open, onOpenChange }: CartDialogProps) => {
   const navigate = useNavigate();
-  const { state: cart, updateQuantity, removeItem } = useCart();
+  const { state: cart, updateQuantity, removeItem, validateCartSides } = useCart();
+  const { toast } = useToast();
 
   const handleUpdateCartQuantity = (id: string, change: number) => {
     const item = cart.items.find(item => item.id === id);
@@ -23,6 +25,22 @@ export const CartDialog = ({ open, onOpenChange }: CartDialogProps) => {
         updateQuantity(id, newQuantity);
       }
     }
+  };
+
+  const handleCheckout = async () => {
+    // Validate side dish requirements
+    const validation = await validateCartSides();
+    if (!validation.valid) {
+      toast({
+        variant: "destructive",
+        title: "Köret választása hiányzik",
+        description: validation.errors.join('\n')
+      });
+      return;
+    }
+
+    onOpenChange(false);
+    navigate("/checkout");
   };
 
   return (
@@ -45,6 +63,11 @@ export const CartDialog = ({ open, onOpenChange }: CartDialogProps) => {
                     <p className="text-sm text-muted-foreground">
                       {item.price_huf} Ft / db
                     </p>
+                    {item.sides && item.sides.length > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        Köret: {item.sides.map(side => side.name).join(', ')}
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
@@ -72,10 +95,7 @@ export const CartDialog = ({ open, onOpenChange }: CartDialogProps) => {
                 </div>
                 <Button 
                   className="w-full mt-4 bg-gradient-to-r from-primary to-primary-glow"
-                  onClick={() => {
-                    onOpenChange(false);
-                    navigate("/checkout");
-                  }}
+                  onClick={handleCheckout}
                 >
                   Tovább a fizetéshez
                 </Button>

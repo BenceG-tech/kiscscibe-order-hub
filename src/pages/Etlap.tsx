@@ -11,6 +11,7 @@ import { useCart } from "@/contexts/CartContext";
 import { ShoppingCart, Search } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CartDialog } from "@/components/CartDialog";
+import { SidePickerModal } from "@/components/SidePickerModal";
 
 interface MenuCategory {
   id: string;
@@ -39,13 +40,15 @@ interface CartItem {
 const Etlap = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { state: cart, addItem, updateQuantity, removeItem } = useCart();
+  const { state: cart, addItem, addItemWithSides } = useCart();
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [sidePickerOpen, setSidePickerOpen] = useState(false);
+  const [selectedMainItem, setSelectedMainItem] = useState<MenuItem | null>(null);
 
   useEffect(() => {
     fetchCategories();
@@ -95,19 +98,69 @@ const Etlap = () => {
     return matchesCategory && matchesSearch;
   });
 
-  const handleAddToCart = (item: MenuItem, quantity = 1) => {
-    addItem({
-      id: item.id,
-      name: item.name,
-      price_huf: item.price_huf,
-      modifiers: [],
-      image_url: item.image_url
-    });
+  const checkSideRequirement = async (item: MenuItem) => {
+    try {
+      const { data: sideConfigs, error } = await supabase
+        .from('menu_item_sides')
+        .select('*')
+        .eq('main_item_id', item.id);
+
+      if (error) {
+        console.error('Error checking side requirement:', error);
+        return false;
+      }
+
+      return sideConfigs && sideConfigs.length > 0;
+    } catch (error) {
+      console.error('Error in checkSideRequirement:', error);
+      return false;
+    }
+  };
+
+  const handleAddToCart = async (item: MenuItem) => {
+    const requiresSides = await checkSideRequirement(item);
     
-    toast({
-      title: "Kosárba tetve",
-      description: `${item.name} hozzáadva a kosárhoz`
-    });
+    if (requiresSides) {
+      setSelectedMainItem(item);
+      setSidePickerOpen(true);
+    } else {
+      addItem({
+        id: item.id,
+        name: item.name,
+        price_huf: item.price_huf,
+        modifiers: [],
+        sides: [],
+        image_url: item.image_url
+      });
+      
+      toast({
+        title: "Kosárba tetve",
+        description: `${item.name} hozzáadva a kosárhoz`
+      });
+    }
+  };
+
+  const handleSideSelected = (selectedSides: any[]) => {
+    if (selectedMainItem) {
+      const sides = selectedSides.map(side => ({
+        id: side.id,
+        name: side.name,
+        price_huf: 0 // Sides are currently free
+      }));
+
+      addItemWithSides({
+        id: selectedMainItem.id,
+        name: selectedMainItem.name,
+        price_huf: selectedMainItem.price_huf,
+        modifiers: [],
+        image_url: selectedMainItem.image_url
+      }, sides);
+      
+      toast({
+        title: "Kosárba tetve",
+        description: `${selectedMainItem.name} hozzáadva a kosárhoz ${sides.map(s => s.name).join(', ')} körettel`
+      });
+    }
   };
 
 
@@ -218,6 +271,17 @@ const Etlap = () => {
 
       {/* Cart Dialog */}
       <CartDialog open={isCartOpen} onOpenChange={setIsCartOpen} />
+      
+      {/* Side Picker Modal */}
+      {selectedMainItem && (
+        <SidePickerModal
+          open={sidePickerOpen}
+          onOpenChange={setSidePickerOpen}
+          mainItemId={selectedMainItem.id}
+          mainItemName={selectedMainItem.name}
+          onSideSelected={handleSideSelected}
+        />
+      )}
     </div>
   );
 };

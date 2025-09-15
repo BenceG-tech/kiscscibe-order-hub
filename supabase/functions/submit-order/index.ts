@@ -12,12 +12,19 @@ interface OrderModifier {
   price_delta_huf: number;
 }
 
+interface OrderSide {
+  id: string;
+  name: string;
+  price_huf: number;
+}
+
 interface OrderItem {
   item_id: string;
   name_snapshot: string;
   qty: number;
   unit_price_huf: number;
   modifiers: OrderModifier[];
+  sides: OrderSide[];
   // Daily item specific fields
   daily_type?: 'offer' | 'menu';
   daily_date?: string;
@@ -82,6 +89,30 @@ serve(async (req) => {
     let calculatedTotal = 0;
     const validatedItems: any[] = [];
 
+    // Validate side dish requirements for regular items
+    for (const item of regularItems) {
+      const { data: sideConfigs, error: sideError } = await supabase
+        .from('menu_item_sides')
+        .select('is_required, min_select, max_select')
+        .eq('main_item_id', item.item_id);
+
+      if (sideError) {
+        console.error('Error checking side requirements:', sideError);
+        continue;
+      }
+
+      if (sideConfigs && sideConfigs.length > 0) {
+        const config = sideConfigs[0];
+        if (config.is_required && item.sides.length < config.min_select) {
+          throw new Error(`${item.name_snapshot} - köret választása kötelező. Legalább ${config.min_select} köretet kell választani.`);
+        }
+        
+        if (item.sides.length > config.max_select) {
+          throw new Error(`${item.name_snapshot} - túl sok köret választva. Maximum ${config.max_select} köretet lehet választani.`);
+        }
+      }
+    }
+
     // Handle regular menu items
     if (regularItems.length > 0) {
       const menuItemIds = regularItems.map(item => item.item_id);
@@ -109,7 +140,8 @@ serve(async (req) => {
         // Use current price from database (not client-submitted price)
         const currentPrice = menuItem.price_huf;
         const modifiersTotal = item.modifiers.reduce((sum, mod) => sum + mod.price_delta_huf, 0);
-        const lineTotal = (currentPrice + modifiersTotal) * item.qty;
+        const sidesTotal = item.sides.reduce((sum, side) => sum + side.price_huf, 0);
+        const lineTotal = (currentPrice + modifiersTotal + sidesTotal) * item.qty;
         
         calculatedTotal += lineTotal;
         
@@ -430,7 +462,7 @@ serve(async (req) => {
         }
       }
 
-      // Insert modifiers for this item (only for regular items)
+      // Insert modifiers and sides for this item (only for regular items)
       if (!item.daily_type) {
         for (const modifier of item.modifiers) {
           const { error: modError } = await supabase
@@ -438,12 +470,30 @@ serve(async (req) => {
             .insert({
               order_item_id: orderItemData.id,
               label_snapshot: modifier.label_snapshot,
-              price_delta_huf: modifier.price_delta_huf
+              price_delta_huf: modifier.price_delta_huf,
+              option_type: 'modifier'
             });
 
           if (modError) {
             console.error('Modifier insert error:', modError);
             // Don't fail the whole order for modifier errors
+          }
+        }
+
+        for (const side of item.sides) {
+          const { error: sideError } = await supabase
+            .from('order_item_options')
+            .insert({
+              order_item_id: orderItemData.id,
+              label_snapshot: `Köret: ${side.name}`,
+              price_delta_huf: side.price_huf,
+              option_type: 'side',
+              side_item_id: side.id
+            });
+
+          if (sideError) {
+            console.error('Side insert error:', sideError);
+            // Don't fail the whole order for side errors
           }
         }
       }

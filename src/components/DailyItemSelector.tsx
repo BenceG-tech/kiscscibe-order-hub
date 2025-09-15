@@ -142,6 +142,7 @@ const DailyItemSelector = ({ type, data, canOrder, showDetails = false, deadline
             name: `${packageName} - ${itemNames}`,
             price_huf: data.price_huf,
             modifiers: [],
+            sides: [],
             daily_type: type,
             daily_date: data.date,
             daily_id: data.id,
@@ -159,6 +160,7 @@ const DailyItemSelector = ({ type, data, canOrder, showDetails = false, deadline
                 name: item.menu_items.name,
                 price_huf: item.menu_items.price_huf,
                 modifiers: [],
+                sides: [],
                 image_url: item.menu_items.image_url,
               });
             }

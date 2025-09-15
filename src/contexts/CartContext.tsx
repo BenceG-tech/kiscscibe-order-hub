@@ -1,9 +1,16 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CartModifier {
   id: string;
   label: string;
   price_delta_huf: number;
+}
+
+interface CartSide {
+  id: string;
+  name: string;
+  price_huf: number;
 }
 
 interface CartItem {
@@ -12,6 +19,7 @@ interface CartItem {
   price_huf: number;
   quantity: number;
   modifiers: CartModifier[];
+  sides: CartSide[];
   image_url?: string;
   // Daily item specific fields
   daily_type?: 'offer' | 'menu' | 'complete_menu';
@@ -45,7 +53,9 @@ const initialState: CartState = {
 
 const calculateTotals = (items: CartItem[]): { total: number; itemCount: number } => {
   const total = items.reduce((sum, item) => {
-    const itemTotal = item.price_huf + item.modifiers.reduce((modSum, mod) => modSum + mod.price_delta_huf, 0);
+    const modifiersTotal = item.modifiers.reduce((modSum, mod) => modSum + mod.price_delta_huf, 0);
+    const sidesTotal = item.sides.reduce((sideSum, side) => sideSum + side.price_huf, 0);
+    const itemTotal = item.price_huf + modifiersTotal + sidesTotal;
     return sum + (itemTotal * item.quantity);
   }, 0);
   
@@ -62,6 +72,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       const existingItemIndex = state.items.findIndex(item => 
         item.id === action.payload.id && 
         JSON.stringify(item.modifiers) === JSON.stringify(action.payload.modifiers) &&
+        JSON.stringify(item.sides) === JSON.stringify(action.payload.sides) &&
         item.daily_type === action.payload.daily_type &&
         item.daily_date === action.payload.daily_date &&
         item.daily_id === action.payload.daily_id &&
@@ -119,12 +130,14 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 interface CartContextType {
   state: CartState;
   addItem: (item: Omit<CartItem, "quantity">) => void;
+  addItemWithSides: (item: Omit<CartItem, "quantity" | "sides">, sides: CartSide[]) => void;
   updateQuantity: (id: string, quantity: number) => void;
   removeItem: (id: string) => void;
   clearCart: () => void;
   addDailyOffer: (offer: DailyOffer) => void;
   addDailyMenu: (menu: DailyMenu) => void;
   addCompleteMenu: (menu: CompleteMenu) => void;
+  validateCartSides: () => Promise<{ valid: boolean; errors: string[] }>;
 }
 
 // Daily item interfaces for adding to cart
@@ -199,7 +212,13 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   }, [state.items]);
   
   const addItem = (item: Omit<CartItem, "quantity">) => {
-    dispatch({ type: "ADD_ITEM", payload: item });
+    const itemWithSides = { ...item, sides: item.sides || [] };
+    dispatch({ type: "ADD_ITEM", payload: itemWithSides });
+  };
+
+  const addItemWithSides = (item: Omit<CartItem, "quantity" | "sides">, sides: CartSide[]) => {
+    const itemWithSides = { ...item, sides };
+    dispatch({ type: "ADD_ITEM", payload: itemWithSides });
   };
   
   const updateQuantity = (id: string, quantity: number) => {
@@ -222,6 +241,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       name: `Napi ajánlat - ${itemNames}`,
       price_huf: offer.price_huf,
       modifiers: [],
+      sides: [],
       daily_type: 'offer',
       daily_date: offer.date,
       daily_id: offer.id,
@@ -236,6 +256,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       name: `Napi menü - ${itemNames}`,
       price_huf: menu.price_huf,
       modifiers: [],
+      sides: [],
       daily_type: 'menu',
       daily_date: menu.date,
       daily_id: menu.id,
@@ -248,6 +269,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       name: `Napi menü - ${menu.soup.name} + ${menu.main.name}`,
       price_huf: menu.price_huf,
       modifiers: [],
+      sides: [],
       daily_type: 'complete_menu',
       daily_date: menu.date,
       menu_id: menu.id,
@@ -257,17 +279,46 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       }
     });
   };
+
+  const validateCartSides = async (): Promise<{ valid: boolean; errors: string[] }> => {
+    const errors: string[] = [];
+    
+    for (const item of state.items) {
+      // Skip daily items and items that already have sides
+      if (item.daily_type || item.sides.length > 0) continue;
+      
+      try {
+        const { data: sideConfigs } = await supabase
+          .from('menu_item_sides')
+          .select('is_required, min_select, max_select')
+          .eq('main_item_id', item.id.replace(/^menu_/, ''));
+          
+        if (sideConfigs && sideConfigs.length > 0) {
+          const config = sideConfigs[0];
+          if (config.is_required && item.sides.length < config.min_select) {
+            errors.push(`${item.name} - köret választása kötelező`);
+          }
+        }
+      } catch (error) {
+        console.error('Error validating sides for item:', item.id, error);
+      }
+    }
+    
+    return { valid: errors.length === 0, errors };
+  };
   
   return (
     <CartContext.Provider value={{
       state,
       addItem,
+      addItemWithSides,
       updateQuantity,
       removeItem,
       clearCart,
       addDailyOffer,
       addDailyMenu,
       addCompleteMenu,
+      validateCartSides,
     }}>
       {children}
     </CartContext.Provider>

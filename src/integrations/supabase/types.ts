@@ -353,6 +353,54 @@ export type Database = {
         }
         Relationships: []
       }
+      menu_item_sides: {
+        Row: {
+          created_at: string
+          id: string
+          is_default: boolean
+          is_required: boolean
+          main_item_id: string
+          max_select: number
+          min_select: number
+          side_item_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          is_required?: boolean
+          main_item_id: string
+          max_select?: number
+          min_select?: number
+          side_item_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          is_required?: boolean
+          main_item_id?: string
+          max_select?: number
+          min_select?: number
+          side_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_item_sides_main_item_id_fkey"
+            columns: ["main_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menu_item_sides_side_item_id_fkey"
+            columns: ["side_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       menu_items: {
         Row: {
           allergens: string[] | null
@@ -407,20 +455,26 @@ export type Database = {
         Row: {
           id: string
           label_snapshot: string
+          option_type: string | null
           order_item_id: string | null
           price_delta_huf: number
+          side_item_id: string | null
         }
         Insert: {
           id?: string
           label_snapshot: string
+          option_type?: string | null
           order_item_id?: string | null
           price_delta_huf?: number
+          side_item_id?: string | null
         }
         Update: {
           id?: string
           label_snapshot?: string
+          option_type?: string | null
           order_item_id?: string | null
           price_delta_huf?: number
+          side_item_id?: string | null
         }
         Relationships: [
           {
@@ -428,6 +482,13 @@ export type Database = {
             columns: ["order_item_id"]
             isOneToOne: false
             referencedRelation: "order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_item_options_side_item_id_fkey"
+            columns: ["side_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
             referencedColumns: ["id"]
           },
         ]
