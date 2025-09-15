@@ -41,6 +41,9 @@ interface OrderRequest {
 }
 
 serve(async (req) => {
+  const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  console.log(`[${requestId}] Starting order submission...`);
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -61,7 +64,7 @@ serve(async (req) => {
       items
     }: OrderRequest = await req.json();
 
-    console.log('Processing order for:', customer.name, 'with', items.length, 'items');
+    console.log(`[${requestId}] Processing order for:`, customer.name, 'with', items.length, 'items');
 
     // Validate required fields
     if (!customer.name || !customer.phone || !customer.email) {
@@ -318,7 +321,7 @@ serve(async (req) => {
         }
         
         if (!isValidTime) {
-          console.error(`Rejected: Invalid business hours for dayOfWeek=${dayOfWeek}, hours=${hours}`);
+          console.error(`[${requestId}] Rejected: Invalid business hours for dayOfWeek=${dayOfWeek}, hours=${hours}`);
           throw new Error('A kiválasztott időpont nyitvatartási időn kívül esik');
         }
         
@@ -453,6 +456,8 @@ serve(async (req) => {
 
     // Send confirmation email to customer
     try {
+      console.log(`[${requestId}] Preparing confirmation email for ${customer.email}`);
+      
       const itemsHtml = validatedItems.map(item => {
         const modifiersHtml = item.modifiers.length > 0 
           ? `<br><small style="color: #666;">+ ${item.modifiers.map(mod => mod.label_snapshot).join(', ')}</small>`
@@ -544,17 +549,20 @@ serve(async (req) => {
         text: emailText,
       });
 
-      console.log('Confirmation email sent to:', customer.email);
+      console.log(`[${requestId}] Confirmation email sent to:`, customer.email);
     } catch (emailError) {
-      console.error('Email sending failed:', emailError);
+      console.error(`[${requestId}] Email sending failed:`, emailError);
       // Don't fail the order if email sending fails
     }
 
+    console.log(`[${requestId}] Order completed successfully:`, orderCode);
+    
     return new Response(
       JSON.stringify({
         success: true,
         order_code: orderCode,
-        total_huf: calculatedTotal
+        total_huf: calculatedTotal,
+        request_id: requestId
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -563,15 +571,28 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    console.error('Submit order error:', error);
+    console.error(`[${requestId}] Submit order error:`, error);
+    
+    // Determine appropriate HTTP status code based on error type
+    let statusCode = 400;
+    if (error.message.includes('betelt') || error.message.includes('elfogyott')) {
+      statusCode = 409; // Conflict
+    } else if (error.message.includes('nyitvatartási') || error.message.includes('múltbeli')) {
+      statusCode = 400; // Bad Request
+    } else if (error.message.includes('nem található')) {
+      statusCode = 404; // Not Found
+    } else if (error.message.includes('Ismeretlen hiba')) {
+      statusCode = 500; // Internal Server Error
+    }
     
     return new Response(
       JSON.stringify({
-        error: error.message || 'Ismeretlen hiba történt'
+        error: error.message || 'Ismeretlen hiba történt',
+        request_id: requestId
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
+        status: statusCode,
       }
     );
   }

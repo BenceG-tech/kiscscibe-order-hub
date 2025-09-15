@@ -49,8 +49,15 @@ const Checkout = () => {
     return uniqueDates.filter(Boolean) as string[];
   }, [cart.items]);
 
+  // Safe date creation to avoid timezone issues
+  const makeDate = (dateStr: string): Date => {
+    // Create date using local timezone to avoid UTC conversion issues
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  };
+
   const generateBusinessHourSlots = (date: string): TimeSlot[] => {
-    const slotDate = new Date(date);
+    const slotDate = makeDate(date);
     const dayOfWeek = slotDate.getDay();
     
     // Skip Sundays (0)
@@ -175,11 +182,14 @@ const Checkout = () => {
             return false;
           }
           
-          // Filter out past slots
-          const slotDateTime = new Date(`${slot.date}T${slot.timeslot}`);
+          // Filter out past slots using safe date construction
+          const slotDate = makeDate(slot.date);
+          const [hours, minutes] = slot.timeslot.split(':').map(Number);
+          slotDate.setHours(hours, minutes, 0, 0);
+          
           const now = new Date();
-          if (slotDateTime <= now) {
-            console.log(`Filtered out slot ${slot.date} ${slot.timeslot} - in the past`);
+          if (slotDate <= now) {
+            console.log(`Filtered out slot ${slot.date} ${slot.timeslot} - in the past (${slotDate.toISOString()} <= ${now.toISOString()})`);
             return false;
           }
           
@@ -199,6 +209,15 @@ const Checkout = () => {
       });
       
       setTimeSlots(finalSlots);
+      
+      // DEBUG: Log additional debug info
+      console.log('=== CHECKOUT DEBUG INFO ===');
+      console.log('Target dates:', targetDates);
+      console.log('Generated business slots:', allSlots.length);
+      console.log('DB capacity data:', capacityData?.length || 0);
+      console.log('Final available slots:', finalSlots.length);
+      console.log('Current time:', new Date().toISOString());
+      console.log('===========================');
       
       // Auto-select first available slot if no slot is selected
       if (finalSlots.length > 0 && !formData.pickup_time) {
@@ -450,6 +469,34 @@ const Checkout = () => {
           
           <div className="grid lg:grid-cols-2 gap-8">
             {/* Order Summary */}
+            {/* Temporary Debug Panel */}
+            {process.env.NODE_ENV === 'development' && (
+              <Card className="mb-6 border-orange-200 bg-orange-50">
+                <CardHeader>
+                  <CardTitle className="text-orange-800 text-sm">🔍 Debug Panel</CardTitle>
+                </CardHeader>
+                <CardContent className="text-xs space-y-2">
+                  <div><strong>Target dates:</strong> {dailyDates.length > 0 ? dailyDates.join(', ') : 'Regular items (next 5 days)'}</div>
+                  <div><strong>Available slots:</strong> {timeSlots.length}</div>
+                  <div><strong>Selected:</strong> {formData.pickup_date} {formData.pickup_time}</div>
+                  <div><strong>Daily constraint:</strong> {getPickupConstraint() || 'None'}</div>
+                  {timeSlots.length > 0 && (
+                    <details>
+                      <summary className="cursor-pointer text-orange-700">Show all slots</summary>
+                      <div className="mt-2 space-y-1">
+                        {timeSlots.slice(0, 10).map(slot => (
+                          <div key={`${slot.date}-${slot.timeslot}`} className="text-xs">
+                            {slot.date} {slot.timeslot} ({slot.available_capacity} free)
+                          </div>
+                        ))}
+                        {timeSlots.length > 10 && <div className="text-xs italic">...and {timeSlots.length - 10} more</div>}
+                      </div>
+                    </details>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+            
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -624,8 +671,14 @@ const Checkout = () => {
                             </SelectTrigger>
                             <SelectContent>
                               {timeSlots.length === 0 ? (
-                                <div className="p-3 text-sm text-muted-foreground">
-                                  Nincs elérhető időpont ehhez a rendeléshez.
+                                <div className="p-3 text-sm text-muted-foreground space-y-2">
+                                  <p>Nincs elérhető időpont ehhez a rendeléshez.</p>
+                                  {loading && <p className="text-xs">Betöltés...</p>}
+                                  {!loading && (
+                                    <p className="text-xs">
+                                      Próbálja újra később, vagy válasszon másik napra.
+                                    </p>
+                                  )}
                                 </div>
                               ) : (
                                 timeSlots.map((slot) => (
