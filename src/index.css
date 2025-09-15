@@ -4,6 +4,15 @@
 
 /* Hungarian Restaurant Design System - Kiscscibe Reggeliző */
 
+/* Sofia Regular Font */
+@font-face {
+  font-family: 'Sofia Regular';
+  src: url('/fonts/Sofia-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 @layer base {
   :root {
     /* Kiscsibe Reggeliző Brand Colors */

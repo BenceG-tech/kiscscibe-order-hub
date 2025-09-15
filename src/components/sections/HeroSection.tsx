@@ -19,9 +19,9 @@ const HeroSection = () => {
 
       {/* Content */}
       <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
-        <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
+        <h1 className="text-3xl md:text-5xl lg:text-6xl font-sofia font-bold mb-6 leading-tight">
           Kiscsibe Reggeliző & Étterem
-          <span className="block text-2xl md:text-4xl lg:text-5xl mt-2 text-primary">
+          <span className="block text-2xl md:text-4xl lg:text-5xl mt-2 text-primary font-sofia">
             házias ízek minden nap
           </span>
         </h1>
@@ -33,7 +33,7 @@ const HeroSection = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in">
               <Button 
                 size="lg"
-                className="bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm text-primary-foreground font-semibold px-8 hover-scale"
+                className="bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm text-primary-foreground font-sofia font-bold px-8 hover-scale"
                 onClick={() => document.getElementById('napi-ajanlat')?.scrollIntoView({ behavior: 'smooth' })}
               >
                 Mai ajánlat
@@ -42,7 +42,7 @@ const HeroSection = () => {
                 variant="outline" 
                 size="lg"
                 asChild
-                className="border-2 border-white/90 text-white bg-white/10 hover:bg-white hover:text-gray-900 font-semibold backdrop-blur-md px-8 hover-scale shadow-lg"
+                className="border-2 border-white/90 text-white bg-white/10 hover:bg-white hover:text-gray-900 font-sofia font-bold backdrop-blur-md px-8 hover-scale shadow-lg"
               >
                 <Link to="/etlap">Teljes étlap</Link>
               </Button>

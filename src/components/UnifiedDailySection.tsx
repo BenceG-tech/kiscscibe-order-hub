@@ -194,7 +194,7 @@ const UnifiedDailySection = () => {
         {/* Calendar Section */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-xl font-semibold">Napi ajánlatok naptára</h3>
+            <h3 className="text-xl font-sofia font-semibold">Napi ajánlatok naptára</h3>
             <Button
               variant="outline"
               size="sm"
@@ -263,7 +263,7 @@ const UnifiedDailySection = () => {
             </Card>
           ) : dailyData && dailyData.items.length > 0 ? (
             <div>
-              <h3 className="text-xl font-semibold mb-4">
+              <h3 className="text-xl font-sofia font-semibold mb-4">
                 {format(selectedDate, "MMMM d. (EEEE)", { locale: hu })} - Mai ajánlatok
               </h3>
               <DailyItemSelector 
@@ -293,7 +293,7 @@ const UnifiedDailySection = () => {
           ) : (
             <Card>
               <CardContent className="p-6">
-                <h3 className="text-xl font-semibold mb-2">
+                <h3 className="text-xl font-sofia font-semibold mb-2">
                   {format(selectedDate, "MMMM d. (EEEE)", { locale: hu })} - Mai ajánlatok
                 </h3>
                 <p className="text-muted-foreground">Még nincs felvéve ajánlat erre a napra.</p>

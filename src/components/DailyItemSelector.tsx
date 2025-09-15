@@ -210,13 +210,13 @@ const DailyItemSelector = ({ type, data, canOrder, showDetails = false, deadline
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {type === 'offer' ? <Package className="h-5 w-5 text-primary" /> : <Coffee className="h-5 w-5 text-secondary" />}
-            <span className="font-semibold">Válaszd ki, mit szeretnél:</span>
+            <span className="font-sofia font-semibold">Válaszd ki, mit szeretnél:</span>
           </div>
           <Button
             variant="outline"
             size="sm"
             onClick={handleSelectAll}
-            className="text-xs"
+            className="text-xs font-sofia font-bold"
           >
             {allSelected ? 'Egyik sem' : 'Mind'}
           </Button>
@@ -238,7 +238,7 @@ const DailyItemSelector = ({ type, data, canOrder, showDetails = false, deadline
                   </span>
                   <label 
                     htmlFor={item.id}
-                    className="font-medium cursor-pointer flex-1"
+                    className="font-sofia font-medium cursor-pointer flex-1"
                   >
                     {item.menu_items?.name}
                   </label>
@@ -307,7 +307,7 @@ const DailyItemSelector = ({ type, data, canOrder, showDetails = false, deadline
             <Button 
               onClick={handleAddToCart}
               disabled={!canOrder || data.remaining_portions <= 0}
-              className={`w-full ${type === 'offer' ? 'bg-primary hover:bg-primary/90' : 'bg-secondary hover:bg-secondary/90'}`}
+              className={`w-full font-sofia font-bold ${type === 'offer' ? 'bg-primary hover:bg-primary/90' : 'bg-secondary hover:bg-secondary/90'}`}
               size="lg"
             >
               <ShoppingCart className="h-4 w-4 mr-2" />
