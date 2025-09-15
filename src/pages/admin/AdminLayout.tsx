@@ -28,8 +28,6 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     { href: "/admin/orders", label: "Rendelések", icon: ShoppingBag, color: "text-blue-600" },
     { href: "/admin/menu", label: "Étlap kezelés", icon: Package, color: "text-green-600" },
     { href: "/admin/daily-menu", label: "Napi menü", icon: Calendar, color: "text-yellow-600" },
-    { href: "/admin/menu-schedule", label: "Ütemezés", icon: Calendar, color: "text-purple-600" },
-    { href: "/admin/capacity", label: "Kapacitás", icon: Users, color: "text-orange-600" },
   ];
 
   return (
