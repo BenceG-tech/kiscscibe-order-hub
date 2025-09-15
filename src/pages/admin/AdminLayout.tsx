@@ -27,7 +27,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   const adminNavItems = [
     { href: "/admin/orders", label: "Rendelések", icon: ShoppingBag, color: "text-blue-600" },
     { href: "/admin/menu", label: "Étlap kezelés", icon: Package, color: "text-green-600" },
-    { href: "/admin/daily-menu", label: "Napi menü", icon: Calendar, color: "text-yellow-600" },
+    { href: "/admin/daily-menu", label: "Napi ajánlat", icon: Calendar, color: "text-yellow-600" },
   ];
 
   return (

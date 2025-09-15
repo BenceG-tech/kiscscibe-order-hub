@@ -381,22 +381,44 @@ const StreamlinedDailyOffers = () => {
   }
 
   return (
-    <div className="flex flex-col lg:grid lg:grid-cols-5 gap-6 min-h-0">
-      {/* Calendar - Mobile Compact / Desktop Sidebar */}
-      <div className="lg:col-span-2">
-        <Card className="rounded-2xl shadow-md border-primary/20">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg lg:text-xl font-bold text-foreground">
+    <div className="flex flex-col gap-4 lg:gap-6 min-h-0 p-1 lg:p-0">
+      {/* Calendar - Compact Mobile / Sidebar Desktop */}
+      <div className="w-full lg:w-auto">
+        <Card className="rounded-xl lg:rounded-2xl shadow-sm lg:shadow-md border-primary/10 lg:border-primary/20">
+          <CardHeader className="pb-2 lg:pb-3 px-3 py-3 lg:px-6 lg:py-4">
+            <CardTitle className="text-base lg:text-xl font-semibold lg:font-bold text-foreground">
               Naptár
             </CardTitle>
           </CardHeader>
-          <CardContent className="lg:p-6 p-3">
+          <CardContent className="p-2 lg:p-6">
             <Calendar
               mode="single"
               selected={selectedDate}
               onSelect={(date) => date && setSelectedDate(date)}
               locale={hu}
-              className="rounded-md border-0 p-0 mx-auto lg:mx-0"
+              className="rounded-md border-0 p-0 w-full mx-auto scale-90 lg:scale-100"
+              classNames={{
+                months: "flex flex-col space-y-2",
+                month: "space-y-2",
+                caption: "flex justify-center pt-1 relative items-center mb-2",
+                caption_label: "text-sm lg:text-base font-medium",
+                nav: "space-x-1 flex items-center",
+                nav_button: "h-7 w-7 lg:h-8 lg:w-8 bg-transparent p-0 opacity-50 hover:opacity-100 rounded-md",
+                nav_button_previous: "absolute left-1",
+                nav_button_next: "absolute right-1",
+                table: "w-full border-collapse space-y-1",
+                head_row: "flex justify-center",
+                head_cell: "text-muted-foreground rounded-md w-7 lg:w-9 font-normal text-xs lg:text-sm text-center",
+                row: "flex w-full mt-1 justify-center",
+                cell: "text-center text-sm p-0 relative focus-within:relative focus-within:z-20",
+                day: "h-7 w-7 lg:h-9 lg:w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground rounded-md text-xs lg:text-sm flex items-center justify-center",
+                day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+                day_today: "bg-accent text-accent-foreground font-semibold",
+                day_outside: "text-muted-foreground opacity-50",
+                day_disabled: "text-muted-foreground opacity-50",
+                day_range_middle: "aria-selected:bg-accent aria-selected:text-accent-foreground",
+                day_hidden: "invisible",
+              }}
               modifiers={{
                 hasContent: (date) => hasOfferOnDate(date),
                 weekend: (date) => isWeekend(date)
@@ -415,34 +437,33 @@ const StreamlinedDailyOffers = () => {
                 }
               }}
             />
-            <div className="mt-3 text-xs lg:text-sm text-muted-foreground space-y-1 lg:space-y-2">
+            <div className="mt-2 lg:mt-3 text-xs text-muted-foreground space-y-1">
               <div className="flex items-center gap-2">
-                <span className="w-3 h-3 lg:w-4 lg:h-4 bg-primary rounded"></span>
-                <span className="text-xs lg:text-sm">Ajánlat beállítva</span>
+                <span className="w-2 h-2 lg:w-3 lg:h-3 bg-primary rounded"></span>
+                <span>Ajánlat beállítva</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-3 h-3 lg:w-4 lg:h-4 bg-muted rounded"></span>
-                <span className="text-xs lg:text-sm">Hétvége - zárva</span>
+                <span className="w-2 h-2 lg:w-3 lg:h-3 bg-muted rounded"></span>
+                <span>Hétvége - zárva</span>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Main Content - Mobile Full / Desktop Right Side */}
-      <div className="lg:col-span-3 flex-1 min-h-0">
-        <div className="space-y-4 lg:space-y-6 max-h-screen lg:max-h-[calc(100vh-200px)] overflow-y-auto">
-          <Card className="rounded-2xl shadow-md border-primary/20">
-            <CardHeader className="pb-3 lg:pb-6">
-              <CardTitle className="text-lg lg:text-xl font-bold text-foreground flex items-center justify-between">
+      {/* Main Content - Mobile Optimized / Desktop Right Side */}
+      <div className="w-full flex-1 min-h-0">
+        <div className="space-y-3 lg:space-y-6">
+          <Card className="rounded-xl lg:rounded-2xl shadow-sm lg:shadow-md border-primary/10 lg:border-primary/20">
+            <CardHeader className="pb-3 lg:pb-6 px-3 py-3 lg:px-6 lg:py-4">
+              <CardTitle className="text-base lg:text-xl font-semibold lg:font-bold text-foreground flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <span>Napi Ajánlat + Menü</span>
                 <div className="text-xs lg:text-sm font-normal text-muted-foreground">
                   {format(selectedDate, 'MM. dd. (EEE)', { locale: hu })}
                 </div>
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4 lg:space-y-6 p-3 lg:p-6">
-            {isWeekend(selectedDate) ? (
+            <CardContent className="space-y-4 lg:space-y-6 px-3 lg:px-6 pb-4 lg:pb-6">{isWeekend(selectedDate) ? (
               <div className="text-center py-8">
                 <div className="p-6 bg-muted/50 rounded-lg">
                   <p className="text-muted-foreground text-lg font-medium mb-2">
@@ -475,118 +496,124 @@ const StreamlinedDailyOffers = () => {
                     )}
                   </div>
                   
-                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3 lg:gap-4">
+                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                      <div className="space-y-2">
-                       <Label className="text-sm">Ár (Ft)</Label>
+                       <Label className="text-sm font-medium">Ár (Ft)</Label>
                        <Input
                          type="number"
                          value={offerForm.price_huf}
                          onChange={(e) => setOfferForm(prev => ({ ...prev, price_huf: e.target.value }))}
-                         className="h-10"
+                         className="h-10 text-base"
+                         inputMode="numeric"
                        />
                      </div>
                      <div className="space-y-2">
-                       <Label className="text-sm">Maximum adag</Label>
+                       <Label className="text-sm font-medium">Maximum adag</Label>
                        <Input
                          type="number"
                          value={offerForm.max_portions}
                          onChange={(e) => setOfferForm(prev => ({ ...prev, max_portions: e.target.value }))}
-                         className="h-10"
+                         className="h-10 text-base"
+                         inputMode="numeric"
                        />
                      </div>
-                     <div className="space-y-2">
-                       <Label className="text-sm">Maradék adag</Label>
+                     <div className="space-y-2 sm:col-span-2 lg:col-span-1">
+                       <Label className="text-sm font-medium">Maradék adag</Label>
                        <Input
                          type="number"
                          value={offerForm.remaining_portions}
                          onChange={(e) => setOfferForm(prev => ({ ...prev, remaining_portions: e.target.value }))}
-                         className="h-10"
+                         className="h-10 text-base"
+                         inputMode="numeric"
                        />
                      </div>
                    </div>
                   
-                  <div className="space-y-2">
-                    <Label>Megjegyzés</Label>
-                    <Textarea
-                      value={offerForm.note}
-                      onChange={(e) => setOfferForm(prev => ({ ...prev, note: e.target.value }))}
-                      placeholder="Opcionális megjegyzés..."
-                    />
-                  </div>
+                 <div className="space-y-2">
+                   <Label className="text-sm font-medium">Megjegyzés</Label>
+                   <Textarea
+                     value={offerForm.note}
+                     onChange={(e) => setOfferForm(prev => ({ ...prev, note: e.target.value }))}
+                     placeholder="Opcionális megjegyzés..."
+                     className="min-h-[80px] resize-none"
+                   />
+                 </div>
                 </div>
 
                 <Separator />
 
-                {/* Selected Items List */}
-                {offerForm.selectedItems.length > 0 && (
-                  <div className="space-y-4">
-                    <h4 className="font-medium text-sm text-muted-foreground">KIVÁLASZTOTT ÉTELEK</h4>
-                    <div className="space-y-2">
-                      {offerForm.selectedItems.map(selectedItem => {
-                        const item = availableItems.find(i => i.id === selectedItem.id);
-                        if (!item) return null;
+                 {/* Selected Items List */}
+                 {offerForm.selectedItems.length > 0 && (
+                   <div className="space-y-3 lg:space-y-4">
+                     <h4 className="font-medium text-xs lg:text-sm text-muted-foreground uppercase tracking-wide">KIVÁLASZTOTT ÉTELEK</h4>
+                     <div className="space-y-2 lg:space-y-3">
+                       {offerForm.selectedItems.map(selectedItem => {
+                         const item = availableItems.find(i => i.id === selectedItem.id);
+                         if (!item) return null;
 
-                        return (
-                             <div
-                               key={item.id}
-                               className="p-3 lg:p-4 border rounded-lg bg-primary/5 border-primary/20"
-                             >
-                               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                 <div className="flex-1 min-w-0">
-                                   <div className="font-medium text-sm lg:text-base">{item.name}</div>
-                                   <div className="text-xs lg:text-sm text-muted-foreground">{item.price_huf} Ft</div>
-                                   {item.is_temporary && (
-                                     <Badge variant="secondary" className="mt-1 text-xs">Ideiglenes</Badge>
-                                   )}
-                                 </div>
-                                 
-                                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 lg:gap-4 sm:ml-4">
-                                   <div className="flex items-center gap-2">
-                                     <Checkbox
-                                       id={`menu-${item.id}`}
-                                       checked={selectedItem.isMenuPart}
-                                       onCheckedChange={(checked) => 
-                                         updateItemMenuSettings(item.id, !!checked, selectedItem.menuRole)
-                                       }
-                                     />
-                                     <Label htmlFor={`menu-${item.id}`} className="text-xs lg:text-sm">
-                                       Menü része
-                                     </Label>
-                                   </div>
-                                   
-                                   {selectedItem.isMenuPart && (
-                                     <Select
-                                       value={selectedItem.menuRole || ''}
-                                       onValueChange={(value) => 
-                                         updateItemMenuSettings(item.id, true, value as 'leves' | 'főétel')
-                                       }
-                                     >
-                                       <SelectTrigger className="w-24 lg:w-28 h-8 lg:h-10">
-                                         <SelectValue placeholder="Szerep" />
-                                       </SelectTrigger>
-                                       <SelectContent>
-                                         <SelectItem value="leves">Leves</SelectItem>
-                                         <SelectItem value="főétel">Főétel</SelectItem>
-                                       </SelectContent>
-                                     </Select>
-                                   )}
-                                   
-                                   <Button
-                                     variant="ghost"
-                                     size="sm"
-                                     className="h-8 w-8 lg:h-10 lg:w-10 p-0 hover:bg-destructive/10 self-center sm:self-auto"
-                                     onClick={() => removeItem(item.id)}
-                                   >
-                                     <X className="h-4 w-4 text-destructive" />
-                                   </Button>
-                                 </div>
-                               </div>
-                             </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+                         return (
+                              <div
+                                key={item.id}
+                                className="p-3 lg:p-4 border rounded-lg bg-primary/5 border-primary/20 hover:bg-primary/10 transition-colors"
+                              >
+                                <div className="flex flex-col gap-3">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="flex-1 min-w-0">
+                                      <div className="font-medium text-sm lg:text-base truncate">{item.name}</div>
+                                      <div className="text-xs lg:text-sm text-muted-foreground">{item.price_huf} Ft</div>
+                                      {item.is_temporary && (
+                                        <Badge variant="secondary" className="mt-1 text-xs">Ideiglenes</Badge>
+                                      )}
+                                    </div>
+                                    
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-8 w-8 p-0 hover:bg-destructive/10 shrink-0"
+                                      onClick={() => removeItem(item.id)}
+                                    >
+                                      <X className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                  </div>
+                                  
+                                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+                                    <div className="flex items-center gap-2">
+                                      <Checkbox
+                                        id={`menu-${item.id}`}
+                                        checked={selectedItem.isMenuPart}
+                                        onCheckedChange={(checked) => 
+                                          updateItemMenuSettings(item.id, !!checked, selectedItem.menuRole)
+                                        }
+                                      />
+                                      <Label htmlFor={`menu-${item.id}`} className="text-sm cursor-pointer">
+                                        Menü része
+                                      </Label>
+                                    </div>
+                                    
+                                    {selectedItem.isMenuPart && (
+                                      <Select
+                                        value={selectedItem.menuRole || ''}
+                                        onValueChange={(value) => 
+                                          updateItemMenuSettings(item.id, true, value as 'leves' | 'főétel')
+                                        }
+                                      >
+                                        <SelectTrigger className="w-full sm:w-28 h-9">
+                                          <SelectValue placeholder="Szerep" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="leves">Leves</SelectItem>
+                                          <SelectItem value="főétel">Főétel</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                         );
+                       })}
+                     </div>
+                   </div>
+                 )}
 
                 {/* Menu Configuration */}
                 {menuItems.length > 0 && (
@@ -612,99 +639,102 @@ const StreamlinedDailyOffers = () => {
                         </div>
                       )}
 
-                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 lg:gap-4">
-                         <div className="space-y-2">
-                           <Label className="text-sm">Ár (Ft)</Label>
-                           <Input
-                             type="number"
-                             value={offerForm.menuPrice}
-                             onChange={(e) => setOfferForm(prev => ({ ...prev, menuPrice: e.target.value }))}
-                             className="h-10"
-                           />
-                         </div>
-                         <div className="space-y-2">
-                           <Label className="text-sm">Max adag</Label>
-                           <Input
-                             type="number"
-                             value={offerForm.menuMaxPortions}
-                             onChange={(e) => setOfferForm(prev => ({ ...prev, menuMaxPortions: e.target.value }))}
-                             className="h-10"
-                           />
-                         </div>
-                         <div className="space-y-2">
-                           <Label className="text-sm">Maradt adag</Label>
-                           <Input
-                             type="number"
-                             value={offerForm.menuRemainingPortions}
-                             onChange={(e) => setOfferForm(prev => ({ ...prev, menuRemainingPortions: e.target.value }))}
-                             className="h-10"
-                           />
-                         </div>
-                       </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium">Ár (Ft)</Label>
+                            <Input
+                              type="number"
+                              value={offerForm.menuPrice}
+                              onChange={(e) => setOfferForm(prev => ({ ...prev, menuPrice: e.target.value }))}
+                              className="h-10 text-base"
+                              inputMode="numeric"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium">Max adag</Label>
+                            <Input
+                              type="number"
+                              value={offerForm.menuMaxPortions}
+                              onChange={(e) => setOfferForm(prev => ({ ...prev, menuMaxPortions: e.target.value }))}
+                              className="h-10 text-base"
+                              inputMode="numeric"
+                            />
+                          </div>
+                          <div className="space-y-2 sm:col-span-2 lg:col-span-1">
+                            <Label className="text-sm font-medium">Maradt adag</Label>
+                            <Input
+                              type="number"
+                              value={offerForm.menuRemainingPortions}
+                              onChange={(e) => setOfferForm(prev => ({ ...prev, menuRemainingPortions: e.target.value }))}
+                              className="h-10 text-base"
+                              inputMode="numeric"
+                            />
+                          </div>
+                        </div>
                     </div>
                   </>
                 )}
 
                 <Separator />
 
-                {/* Food Selection */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Ételek kiválasztása</h3>
-                  
-                  {/* Search and Filter */}
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Input
-                      placeholder="Keresés ételek között..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="flex-1 h-10"
-                    />
-                    <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                      <SelectTrigger className="w-full sm:w-48 h-10">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Minden kategória</SelectItem>
-                        {categories.map(category => (
-                          <SelectItem key={category.id} value={category.id}>
-                            {category.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                 {/* Food Selection */}
+                 <div className="space-y-3 lg:space-y-4">
+                   <h3 className="text-base lg:text-lg font-semibold">Ételek kiválasztása</h3>
+                   
+                   {/* Search and Filter */}
+                   <div className="flex flex-col gap-2 lg:gap-3">
+                     <Input
+                       placeholder="Keresés ételek között..."
+                       value={searchTerm}
+                       onChange={(e) => setSearchTerm(e.target.value)}
+                       className="h-10 text-base"
+                     />
+                     <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                       <SelectTrigger className="h-10 text-base">
+                         <SelectValue />
+                       </SelectTrigger>
+                       <SelectContent>
+                         <SelectItem value="all">Minden kategória</SelectItem>
+                         {categories.map(category => (
+                           <SelectItem key={category.id} value={category.id}>
+                             {category.name}
+                           </SelectItem>
+                         ))}
+                       </SelectContent>
+                     </Select>
+                   </div>
 
-                  {/* Available Items */}
-                  <div className="border rounded-lg max-h-64 overflow-y-auto">
-                    {filteredItems.length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground">
-                        Nincs több elérhető étel
-                      </div>
-                    ) : (
-                      <div className="p-2 space-y-1">
-                        {filteredItems.map(item => (
-                          <div
-                            key={item.id}
-                            className="flex items-center justify-between p-3 hover:bg-muted/50 rounded cursor-pointer"
-                            onClick={() => toggleItem(item.id)}
-                          >
-                            <div className="flex items-center gap-3">
-                              {item.image_url && (
-                                <img src={item.image_url} alt={item.name} className="w-8 h-8 object-cover rounded" />
-                              )}
-                              <div>
-                                <div className="font-medium text-sm">{item.name}</div>
-                                <div className="text-xs text-muted-foreground">{item.price_huf} Ft</div>
-                              </div>
-                            </div>
-                            <Button size="sm" variant="outline">
-                              <Plus className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                   {/* Available Items */}
+                   <div className="border rounded-lg max-h-48 lg:max-h-64 overflow-y-auto">
+                     {filteredItems.length === 0 ? (
+                       <div className="text-center py-6 lg:py-8 text-muted-foreground text-sm">
+                         Nincs több elérhető étel
+                       </div>
+                     ) : (
+                       <div className="p-1 lg:p-2 space-y-1">
+                         {filteredItems.map(item => (
+                           <div
+                             key={item.id}
+                             className="flex items-center justify-between p-3 hover:bg-muted/50 rounded cursor-pointer transition-colors"
+                             onClick={() => toggleItem(item.id)}
+                           >
+                             <div className="flex items-center gap-3">
+                               {item.image_url && (
+                                 <img src={item.image_url} alt={item.name} className="w-8 h-8 object-cover rounded" />
+                               )}
+                               <div className="min-w-0 flex-1">
+                                 <div className="font-medium text-sm truncate">{item.name}</div>
+                                 <div className="text-xs text-muted-foreground">{item.price_huf} Ft</div>
+                               </div>
+                             </div>
+                             <Button size="sm" variant="outline" className="h-8 w-8 p-0 shrink-0">
+                               <Plus className="h-4 w-4" />
+                             </Button>
+                           </div>
+                         ))}
+                       </div>
+                     )}
+                   </div>
 
                   {/* Temporary Items */}
                   <div className="space-y-4">
@@ -724,18 +754,18 @@ const StreamlinedDailyOffers = () => {
 
                 <Separator />
 
-                {/* Save Button */}
-                <div className="flex justify-center lg:justify-end pt-4">
-                  <Button
-                    onClick={saveOffer}
-                    disabled={saving || offerForm.selectedItems.length === 0 || (menuItems.length > 0 && !isValidMenu)}
-                    className="w-full sm:w-auto min-w-32 h-12 lg:h-10"
-                    size="lg"
-                  >
-                    <Save className="h-4 w-4 mr-2" />
-                    {saving ? 'Mentés...' : 'Mentés'}
-                  </Button>
-                </div>
+                 {/* Save Button */}
+                 <div className="flex justify-center lg:justify-end pt-2 lg:pt-4">
+                   <Button
+                     onClick={saveOffer}
+                     disabled={saving || offerForm.selectedItems.length === 0 || (menuItems.length > 0 && !isValidMenu)}
+                     className="w-full sm:w-auto min-w-32 h-12 text-base font-medium"
+                     size="lg"
+                   >
+                     <Save className="h-4 w-4 mr-2" />
+                     {saving ? 'Mentés...' : 'Mentés'}
+                   </Button>
+                 </div>
               </>
             )}
             </CardContent>
