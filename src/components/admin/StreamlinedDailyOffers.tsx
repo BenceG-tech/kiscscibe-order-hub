@@ -381,22 +381,22 @@ const StreamlinedDailyOffers = () => {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 h-[calc(100vh-200px)]">
-      {/* Calendar - Left Side */}
+    <div className="flex flex-col lg:grid lg:grid-cols-5 gap-6 min-h-0">
+      {/* Calendar - Mobile Compact / Desktop Sidebar */}
       <div className="lg:col-span-2">
         <Card className="rounded-2xl shadow-md border-primary/20">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold text-foreground">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg lg:text-xl font-bold text-foreground">
               Naptár
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="lg:p-6 p-3">
             <Calendar
               mode="single"
               selected={selectedDate}
               onSelect={(date) => date && setSelectedDate(date)}
               locale={hu}
-              className="rounded-md border-0 p-0"
+              className="rounded-md border-0 p-0 mx-auto lg:mx-0"
               modifiers={{
                 hasContent: (date) => hasOfferOnDate(date),
                 weekend: (date) => isWeekend(date)
@@ -415,32 +415,33 @@ const StreamlinedDailyOffers = () => {
                 }
               }}
             />
-            <div className="mt-4 text-sm text-muted-foreground space-y-2">
-              <div className="inline-flex items-center gap-2">
-                <span className="w-4 h-4 bg-primary rounded"></span>
-                Ajánlat beállítva
+            <div className="mt-3 text-xs lg:text-sm text-muted-foreground space-y-1 lg:space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 lg:w-4 lg:h-4 bg-primary rounded"></span>
+                <span className="text-xs lg:text-sm">Ajánlat beállítva</span>
               </div>
-              <div className="inline-flex items-center gap-2">
-                <span className="w-4 h-4 bg-muted rounded"></span>
-                Hétvége - zárva
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 lg:w-4 lg:h-4 bg-muted rounded"></span>
+                <span className="text-xs lg:text-sm">Hétvége - zárva</span>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Main Content - Right Side */}
-      <div className="lg:col-span-3 space-y-6 overflow-y-auto">
-        <Card className="rounded-2xl shadow-md border-primary/20">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold text-foreground flex items-center justify-between">
-              <span>Napi Ajánlat + Menü</span>
-              <div className="text-sm font-normal text-muted-foreground">
-                {format(selectedDate, 'yyyy. MMMM dd. (EEEE)', { locale: hu })}
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
+      {/* Main Content - Mobile Full / Desktop Right Side */}
+      <div className="lg:col-span-3 flex-1 min-h-0">
+        <div className="space-y-4 lg:space-y-6 max-h-screen lg:max-h-[calc(100vh-200px)] overflow-y-auto">
+          <Card className="rounded-2xl shadow-md border-primary/20">
+            <CardHeader className="pb-3 lg:pb-6">
+              <CardTitle className="text-lg lg:text-xl font-bold text-foreground flex items-center justify-between">
+                <span>Napi Ajánlat + Menü</span>
+                <div className="text-xs lg:text-sm font-normal text-muted-foreground">
+                  {format(selectedDate, 'MM. dd. (EEE)', { locale: hu })}
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 lg:space-y-6 p-3 lg:p-6">
             {isWeekend(selectedDate) ? (
               <div className="text-center py-8">
                 <div className="p-6 bg-muted/50 rounded-lg">
@@ -474,32 +475,35 @@ const StreamlinedDailyOffers = () => {
                     )}
                   </div>
                   
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label>Ár (Ft)</Label>
-                      <Input
-                        type="number"
-                        value={offerForm.price_huf}
-                        onChange={(e) => setOfferForm(prev => ({ ...prev, price_huf: e.target.value }))}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Maximum adag</Label>
-                      <Input
-                        type="number"
-                        value={offerForm.max_portions}
-                        onChange={(e) => setOfferForm(prev => ({ ...prev, max_portions: e.target.value }))}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Maradék adag</Label>
-                      <Input
-                        type="number"
-                        value={offerForm.remaining_portions}
-                        onChange={(e) => setOfferForm(prev => ({ ...prev, remaining_portions: e.target.value }))}
-                      />
-                    </div>
-                  </div>
+                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3 lg:gap-4">
+                     <div className="space-y-2">
+                       <Label className="text-sm">Ár (Ft)</Label>
+                       <Input
+                         type="number"
+                         value={offerForm.price_huf}
+                         onChange={(e) => setOfferForm(prev => ({ ...prev, price_huf: e.target.value }))}
+                         className="h-10"
+                       />
+                     </div>
+                     <div className="space-y-2">
+                       <Label className="text-sm">Maximum adag</Label>
+                       <Input
+                         type="number"
+                         value={offerForm.max_portions}
+                         onChange={(e) => setOfferForm(prev => ({ ...prev, max_portions: e.target.value }))}
+                         className="h-10"
+                       />
+                     </div>
+                     <div className="space-y-2">
+                       <Label className="text-sm">Maradék adag</Label>
+                       <Input
+                         type="number"
+                         value={offerForm.remaining_portions}
+                         onChange={(e) => setOfferForm(prev => ({ ...prev, remaining_portions: e.target.value }))}
+                         className="h-10"
+                       />
+                     </div>
+                   </div>
                   
                   <div className="space-y-2">
                     <Label>Megjegyzés</Label>
@@ -523,61 +527,61 @@ const StreamlinedDailyOffers = () => {
                         if (!item) return null;
 
                         return (
-                          <div
-                            key={item.id}
-                            className="p-3 border rounded-lg bg-primary/5 border-primary/20"
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1">
-                                <div className="font-medium text-sm">{item.name}</div>
-                                <div className="text-xs text-muted-foreground">{item.price_huf} Ft</div>
-                                {item.is_temporary && (
-                                  <Badge variant="secondary" className="mt-1 text-xs">Ideiglenes</Badge>
-                                )}
-                              </div>
-                              
-                              <div className="flex items-center gap-4 ml-4">
-                                <div className="flex items-center gap-2">
-                                  <Checkbox
-                                    id={`menu-${item.id}`}
-                                    checked={selectedItem.isMenuPart}
-                                    onCheckedChange={(checked) => 
-                                      updateItemMenuSettings(item.id, !!checked, selectedItem.menuRole)
-                                    }
-                                  />
-                                  <Label htmlFor={`menu-${item.id}`} className="text-xs">
-                                    Menü része
-                                  </Label>
-                                </div>
-                                
-                                {selectedItem.isMenuPart && (
-                                  <Select
-                                    value={selectedItem.menuRole || ''}
-                                    onValueChange={(value) => 
-                                      updateItemMenuSettings(item.id, true, value as 'leves' | 'főétel')
-                                    }
-                                  >
-                                    <SelectTrigger className="w-24 h-8">
-                                      <SelectValue placeholder="Szerep" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="leves">Leves</SelectItem>
-                                      <SelectItem value="főétel">Főétel</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                )}
-                                
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-8 w-8 p-0 hover:bg-destructive/10"
-                                  onClick={() => removeItem(item.id)}
-                                >
-                                  <X className="h-4 w-4 text-destructive" />
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
+                             <div
+                               key={item.id}
+                               className="p-3 lg:p-4 border rounded-lg bg-primary/5 border-primary/20"
+                             >
+                               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                 <div className="flex-1 min-w-0">
+                                   <div className="font-medium text-sm lg:text-base">{item.name}</div>
+                                   <div className="text-xs lg:text-sm text-muted-foreground">{item.price_huf} Ft</div>
+                                   {item.is_temporary && (
+                                     <Badge variant="secondary" className="mt-1 text-xs">Ideiglenes</Badge>
+                                   )}
+                                 </div>
+                                 
+                                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 lg:gap-4 sm:ml-4">
+                                   <div className="flex items-center gap-2">
+                                     <Checkbox
+                                       id={`menu-${item.id}`}
+                                       checked={selectedItem.isMenuPart}
+                                       onCheckedChange={(checked) => 
+                                         updateItemMenuSettings(item.id, !!checked, selectedItem.menuRole)
+                                       }
+                                     />
+                                     <Label htmlFor={`menu-${item.id}`} className="text-xs lg:text-sm">
+                                       Menü része
+                                     </Label>
+                                   </div>
+                                   
+                                   {selectedItem.isMenuPart && (
+                                     <Select
+                                       value={selectedItem.menuRole || ''}
+                                       onValueChange={(value) => 
+                                         updateItemMenuSettings(item.id, true, value as 'leves' | 'főétel')
+                                       }
+                                     >
+                                       <SelectTrigger className="w-24 lg:w-28 h-8 lg:h-10">
+                                         <SelectValue placeholder="Szerep" />
+                                       </SelectTrigger>
+                                       <SelectContent>
+                                         <SelectItem value="leves">Leves</SelectItem>
+                                         <SelectItem value="főétel">Főétel</SelectItem>
+                                       </SelectContent>
+                                     </Select>
+                                   )}
+                                   
+                                   <Button
+                                     variant="ghost"
+                                     size="sm"
+                                     className="h-8 w-8 lg:h-10 lg:w-10 p-0 hover:bg-destructive/10 self-center sm:self-auto"
+                                     onClick={() => removeItem(item.id)}
+                                   >
+                                     <X className="h-4 w-4 text-destructive" />
+                                   </Button>
+                                 </div>
+                               </div>
+                             </div>
                         );
                       })}
                     </div>
@@ -608,32 +612,35 @@ const StreamlinedDailyOffers = () => {
                         </div>
                       )}
 
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                          <Label>Ár (Ft)</Label>
-                          <Input
-                            type="number"
-                            value={offerForm.menuPrice}
-                            onChange={(e) => setOfferForm(prev => ({ ...prev, menuPrice: e.target.value }))}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Max adag</Label>
-                          <Input
-                            type="number"
-                            value={offerForm.menuMaxPortions}
-                            onChange={(e) => setOfferForm(prev => ({ ...prev, menuMaxPortions: e.target.value }))}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Maradt adag</Label>
-                          <Input
-                            type="number"
-                            value={offerForm.menuRemainingPortions}
-                            onChange={(e) => setOfferForm(prev => ({ ...prev, menuRemainingPortions: e.target.value }))}
-                          />
-                        </div>
-                      </div>
+                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 lg:gap-4">
+                         <div className="space-y-2">
+                           <Label className="text-sm">Ár (Ft)</Label>
+                           <Input
+                             type="number"
+                             value={offerForm.menuPrice}
+                             onChange={(e) => setOfferForm(prev => ({ ...prev, menuPrice: e.target.value }))}
+                             className="h-10"
+                           />
+                         </div>
+                         <div className="space-y-2">
+                           <Label className="text-sm">Max adag</Label>
+                           <Input
+                             type="number"
+                             value={offerForm.menuMaxPortions}
+                             onChange={(e) => setOfferForm(prev => ({ ...prev, menuMaxPortions: e.target.value }))}
+                             className="h-10"
+                           />
+                         </div>
+                         <div className="space-y-2">
+                           <Label className="text-sm">Maradt adag</Label>
+                           <Input
+                             type="number"
+                             value={offerForm.menuRemainingPortions}
+                             onChange={(e) => setOfferForm(prev => ({ ...prev, menuRemainingPortions: e.target.value }))}
+                             className="h-10"
+                           />
+                         </div>
+                       </div>
                     </div>
                   </>
                 )}
@@ -645,15 +652,15 @@ const StreamlinedDailyOffers = () => {
                   <h3 className="text-lg font-semibold">Ételek kiválasztása</h3>
                   
                   {/* Search and Filter */}
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Input
                       placeholder="Keresés ételek között..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="flex-1"
+                      className="flex-1 h-10"
                     />
                     <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                      <SelectTrigger className="w-48">
+                      <SelectTrigger className="w-full sm:w-48 h-10">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -718,11 +725,12 @@ const StreamlinedDailyOffers = () => {
                 <Separator />
 
                 {/* Save Button */}
-                <div className="flex justify-end">
+                <div className="flex justify-center lg:justify-end pt-4">
                   <Button
                     onClick={saveOffer}
                     disabled={saving || offerForm.selectedItems.length === 0 || (menuItems.length > 0 && !isValidMenu)}
-                    className="w-full md:w-auto"
+                    className="w-full sm:w-auto min-w-32 h-12 lg:h-10"
+                    size="lg"
                   >
                     <Save className="h-4 w-4 mr-2" />
                     {saving ? 'Mentés...' : 'Mentés'}
@@ -730,8 +738,9 @@ const StreamlinedDailyOffers = () => {
                 </div>
               </>
             )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
