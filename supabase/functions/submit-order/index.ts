@@ -299,8 +299,11 @@ serve(async (req) => {
         const dayOfWeek = slotDate.getDay();
         const [hours, minutes] = time.split(':').map(Number);
         
+        console.log(`Validating business hours: date=${date}, time=${time}, dayOfWeek=${dayOfWeek}, hours=${hours}`);
+        
         // Check if it's Sunday (closed)
         if (dayOfWeek === 0) {
+          console.error('Rejected: Sunday is closed');
           throw new Error('Vasárnap zárva tartunk');
         }
         
@@ -308,13 +311,18 @@ serve(async (req) => {
         let isValidTime = false;
         if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Monday-Friday
           isValidTime = hours >= 7 && hours < 15;
+          console.log(`Weekday hours check: ${hours} >= 7 && ${hours} < 15 = ${isValidTime}`);
         } else if (dayOfWeek === 6) { // Saturday
           isValidTime = hours >= 8 && hours < 14;
+          console.log(`Saturday hours check: ${hours} >= 8 && ${hours} < 14 = ${isValidTime}`);
         }
         
         if (!isValidTime) {
+          console.error(`Rejected: Invalid business hours for dayOfWeek=${dayOfWeek}, hours=${hours}`);
           throw new Error('A kiválasztott időpont nyitvatartási időn kívül esik');
         }
+        
+        console.log('Business hours validation passed');
         
         // Create the capacity slot
         const { data: newCapacityData, error: createError } = await supabase

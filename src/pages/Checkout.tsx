@@ -49,7 +49,7 @@ const Checkout = () => {
     return uniqueDates.filter(Boolean) as string[];
   }, [cart.items]);
 
-  const generateFallbackTimeSlots = (date: string): TimeSlot[] => {
+  const generateBusinessHourSlots = (date: string): TimeSlot[] => {
     const slotDate = new Date(date);
     const dayOfWeek = slotDate.getDay();
     
@@ -85,117 +85,141 @@ const Checkout = () => {
     setLoading(true);
     try {
       const today = new Date();
-      const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
       
-      let query = supabase
-        .from("capacity_slots")
-        .select("date, timeslot, max_orders, booked_orders");
+      // Step 1: Determine target dates
+      let targetDates: string[] = [];
       
-      // If cart has daily items, filter slots to only those dates
       if (dailyDates.length > 0) {
-        query = query.in("date", dailyDates);
+        // For daily items, use their specific dates
+        targetDates = dailyDates;
+        console.log('Using daily item dates:', targetDates);
       } else {
-        // Regular behavior for non-daily items
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        const year = tomorrow.getFullYear();
-        const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
-        const day = String(tomorrow.getDate()).padStart(2, '0');
-        const tomorrowStr = `${year}-${month}-${day}`;
+        // For regular items, generate next 5 business days starting from tomorrow
+        const currentDate = new Date(today);
+        currentDate.setDate(currentDate.getDate() + 1); // Start from tomorrow
+        let daysAdded = 0;
+        let maxDays = 10; // Prevent infinite loop
         
-        const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-        const nextWeekYear = nextWeek.getFullYear();
-        const nextWeekMonth = String(nextWeek.getMonth() + 1).padStart(2, '0');
-        const nextWeekDay = String(nextWeek.getDate()).padStart(2, '0');
-        const nextWeekStr = `${nextWeekYear}-${nextWeekMonth}-${nextWeekDay}`;
-        
-        query = query
-          .gte("date", tomorrowStr)
-          .lte("date", nextWeekStr);
+        while (daysAdded < 5 && maxDays > 0) {
+          const year = currentDate.getFullYear();
+          const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+          const day = String(currentDate.getDate()).padStart(2, '0');
+          const dateStr = `${year}-${month}-${day}`;
+          const dayOfWeek = currentDate.getDay();
+          
+          // Skip Sundays
+          if (dayOfWeek !== 0) {
+            targetDates.push(dateStr);
+            daysAdded++;
+          }
+          
+          currentDate.setDate(currentDate.getDate() + 1);
+          maxDays--;
+        }
+        console.log('Generated target dates for regular items:', targetDates);
       }
       
-      const { data, error } = await query
+      // Step 2: Generate all possible business hour slots for target dates
+      let allSlots: TimeSlot[] = [];
+      for (const date of targetDates) {
+        const dateSlots = generateBusinessHourSlots(date);
+        allSlots = [...allSlots, ...dateSlots];
+      }
+      
+      console.log(`Generated ${allSlots.length} business hour slots`);
+      
+      // Step 3: Fetch capacity data from database
+      const { data: capacityData, error } = await supabase
+        .from("capacity_slots")
+        .select("date, timeslot, max_orders, booked_orders")
+        .in("date", targetDates)
         .order("date")
         .order("timeslot");
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching capacity data:", error);
+        // Continue with default capacity
+      }
       
-      let slots = data?.map(slot => ({
-        date: slot.date,
-        timeslot: slot.timeslot,
-        available_capacity: slot.max_orders - slot.booked_orders
-      }))
-      .filter(slot => {
-        // Filter out slots with no capacity
-        if (slot.available_capacity <= 0) return false;
-        
-        // Filter out Sunday slots (getDay() === 0)
-        const slotDate = new Date(slot.date);
-        if (slotDate.getDay() === 0) return false; // Sunday = 0
-        
-        return true;
-      }) || [];
-      
-      // Generate fallback slots if no database slots found
-      if (slots.length === 0) {
-        if (dailyDates.length > 0) {
-          // For daily items, generate slots for their specific dates
-          for (const dailyDate of dailyDates) {
-            const fallbackSlots = generateFallbackTimeSlots(dailyDate);
-            slots = [...slots, ...fallbackSlots];
-          }
-        } else {
-          // For regular items, generate slots starting from tomorrow for next 5 business days
-          const currentDate = new Date(today);
-          currentDate.setDate(currentDate.getDate() + 1); // Start from tomorrow
-          let daysAdded = 0;
-          let maxDays = 10; // Prevent infinite loop
-          
-          console.log('Generating fallback slots starting from tomorrow:', currentDate.toDateString());
-          
-          while (daysAdded < 5 && maxDays > 0) {
-            // Use local date formatting to avoid timezone issues
-            const year = currentDate.getFullYear();
-            const month = String(currentDate.getMonth() + 1).padStart(2, '0');
-            const day = String(currentDate.getDate()).padStart(2, '0');
-            const dateStr = `${year}-${month}-${day}`;
-            const dayOfWeek = currentDate.getDay();
-            
-            console.log(`Checking date ${dateStr}, day of week: ${dayOfWeek}`);
-            
-            // Skip Sundays and generate slots for business days
-            if (dayOfWeek !== 0) {
-              const fallbackSlots = generateFallbackTimeSlots(dateStr);
-              console.log(`Generated ${fallbackSlots.length} slots for ${dateStr}`);
-              slots = [...slots, ...fallbackSlots];
-              daysAdded++;
-            }
-            
-            currentDate.setDate(currentDate.getDate() + 1);
-            maxDays--;
-          }
+      // Step 4: Overlay capacity information
+      const capacityMap = new Map<string, { max_orders: number; booked_orders: number }>();
+      if (capacityData) {
+        for (const slot of capacityData) {
+          const key = `${slot.date}_${slot.timeslot}`;
+          capacityMap.set(key, {
+            max_orders: slot.max_orders,
+            booked_orders: slot.booked_orders
+          });
         }
-        
-        // Sort slots by date and time
-        slots.sort((a, b) => {
+      }
+      
+      // Step 5: Apply capacity data and filter slots
+      const finalSlots = allSlots
+        .map(slot => {
+          const key = `${slot.date}_${slot.timeslot}`;
+          const capacity = capacityMap.get(key);
+          
+          if (capacity) {
+            return {
+              ...slot,
+              available_capacity: capacity.max_orders - capacity.booked_orders
+            };
+          }
+          
+          return slot; // Use default capacity of 8
+        })
+        .filter(slot => {
+          // Filter out slots with no available capacity
+          if (slot.available_capacity <= 0) {
+            console.log(`Filtered out slot ${slot.date} ${slot.timeslot} - no capacity`);
+            return false;
+          }
+          
+          // Filter out past slots
+          const slotDateTime = new Date(`${slot.date}T${slot.timeslot}`);
+          const now = new Date();
+          if (slotDateTime <= now) {
+            console.log(`Filtered out slot ${slot.date} ${slot.timeslot} - in the past`);
+            return false;
+          }
+          
+          return true;
+        })
+        .sort((a, b) => {
+          // Sort by date, then by time
           if (a.date !== b.date) {
             return a.date.localeCompare(b.date);
           }
           return a.timeslot.localeCompare(b.timeslot);
         });
-      }
       
-      setTimeSlots(slots);
+      console.log(`Final filtered slots: ${finalSlots.length}`);
+      finalSlots.forEach(slot => {
+        console.log(`  ${slot.date} ${slot.timeslot} (capacity: ${slot.available_capacity})`);
+      });
+      
+      setTimeSlots(finalSlots);
       
       // Auto-select first available slot if no slot is selected
-      if (slots.length > 0 && !formData.pickup_time) {
-        const firstSlot = slots[0];
+      if (finalSlots.length > 0 && !formData.pickup_time) {
+        const firstSlot = finalSlots[0];
+        console.log(`Auto-selecting first slot: ${firstSlot.date} ${firstSlot.timeslot}`);
         setFormData(prev => ({
           ...prev,
           pickup_date: firstSlot.date,
           pickup_time: firstSlot.timeslot
         }));
       }
+      
+      if (finalSlots.length === 0) {
+        console.warn('No valid time slots generated!');
+        toast({
+          title: "Figyelmeztetés",
+          description: "Nincsenek elérhető időpontok",
+          variant: "destructive"
+        });
+      }
+      
     } catch (error) {
       console.error("Error fetching time slots:", error);
       toast({
