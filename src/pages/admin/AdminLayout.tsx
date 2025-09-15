@@ -1,17 +1,12 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { 
   Package, 
   Calendar, 
-  Users, 
   ShoppingBag, 
-  BarChart3, 
-  Settings,
   ArrowLeft,
-  Bell,
   LogOut,
   User
 } from "lucide-react";
@@ -25,72 +20,92 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   };
 
   const adminNavItems = [
-    { href: "/admin/orders", label: "Rendelések", icon: ShoppingBag, color: "text-blue-600" },
-    { href: "/admin/menu", label: "Étlap kezelés", icon: Package, color: "text-green-600" },
-    { href: "/admin/daily-menu", label: "Napi ajánlat", icon: Calendar, color: "text-yellow-600" },
+    { href: "/admin/orders", label: "Rendelések", mobileLabel: "Rendelés", icon: ShoppingBag },
+    { href: "/admin/menu", label: "Étlap kezelés", mobileLabel: "Étlap", icon: Package },
+    { href: "/admin/daily-menu", label: "Napi ajánlat", mobileLabel: "Napi", icon: Calendar },
   ];
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Admin Header */}
-      <div className="bg-card border-b shadow-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" asChild>
-                <Link to="/" className="flex items-center gap-2">
-                  <ArrowLeft className="h-4 w-4" />
-                  Vissza a főoldalra
-                </Link>
-              </Button>
-              <div className="h-6 border-l border-border" />
-              <h1 className="text-2xl font-bold text-primary">Kiscsibe Admin</h1>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              {profile && (
-                <div className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  <span className="text-sm font-medium">{profile.full_name || profile.email}</span>
-                  <Badge variant="secondary">{profile.role}</Badge>
-                </div>
-              )}
-              <Button variant="ghost" size="sm" onClick={handleSignOut}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Kijelentkezés
-              </Button>
+      {/* Sticky Admin Header */}
+      <header className="sticky top-[constant(safe-area-inset-top)] top-[env(safe-area-inset-top)] z-50 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 border-b">
+        <div className="mx-auto max-w-screen-xl px-3 sm:px-4 flex items-center gap-2 sm:gap-4 py-2">
+          {/* Left: Logo + Brand */}
+          <div className="flex items-center gap-2 min-w-0">
+            <Button variant="ghost" size="sm" asChild className="hidden sm:flex">
+              <Link to="/" className="flex items-center gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                Vissza a főoldalra
+              </Link>
+            </Button>
+            <Button variant="ghost" size="sm" asChild className="sm:hidden p-1">
+              <Link to="/">
+                <ArrowLeft className="h-4 w-4" />
+              </Link>
+            </Button>
+            <div className="hidden sm:block h-6 border-l border-border" />
+            <div className="truncate">
+              <span className="block text-[18px] sm:text-2xl font-bold leading-tight text-primary">Kiscsibe</span>
+              <span className="block text-[14px] sm:text-lg font-bold leading-tight text-primary">Admin</span>
             </div>
           </div>
+
+          {/* Right: User + Actions */}
+          <div className="ml-auto flex items-center gap-1 sm:gap-2">
+            {profile && (
+              <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
+                <User className="h-4 w-4" />
+                <span className="font-medium truncate max-w-[120px]">{profile.full_name || profile.email}</span>
+              </div>
+            )}
+            {profile?.role && (
+              <Badge variant="secondary" className="hidden xs:inline-flex text-[11px] px-2 py-0.5">
+                {profile.role}
+              </Badge>
+            )}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleSignOut}
+              className="h-9 w-9 sm:w-auto sm:px-3"
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="hidden sm:inline ml-2 text-sm">Kijelentkezés</span>
+            </Button>
+          </div>
         </div>
-      </div>
+      </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
-        {/* Admin Navigation */}
-        <div className="bg-card rounded-lg border shadow-sm p-1 mb-8">
-          <nav className="flex space-x-1">
-            {adminNavItems.map((item) => (
-              <Link
-                key={item.href}
-                to={item.href}
-                className={`flex items-center gap-2 px-4 py-3 rounded-md font-medium transition-all duration-300 ${
-                  location.pathname === item.href 
-                    ? "bg-primary text-primary-foreground shadow-sm" 
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                }`}
-              >
-                <item.icon className="h-4 w-4" />
-                {item.label}
-              </Link>
+      {/* Sticky Navigation Tabs */}
+      <nav className="sticky top-[calc(env(safe-area-inset-top,0)+56px)] z-40 bg-card/95 backdrop-blur border-b">
+        <div className="overflow-x-auto no-scrollbar">
+          <ul className="flex min-w-full items-center px-3 py-2">
+            {adminNavItems.map((item, index) => (
+              <li key={item.href} className={index < adminNavItems.length - 1 ? "mr-6" : ""}>
+                <Link
+                  to={item.href}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-md font-medium transition-all duration-200 whitespace-nowrap min-h-[36px] ${
+                    location.pathname === item.href 
+                      ? "bg-primary text-primary-foreground border-b-2 border-primary" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  }`}
+                >
+                  <item.icon className="h-4 w-4" />
+                  <span className="hidden sm:inline">{item.label}</span>
+                  <span className="sm:hidden text-sm">{item.mobileLabel}</span>
+                </Link>
+              </li>
             ))}
-          </nav>
+          </ul>
         </div>
+      </nav>
 
-        {/* Page Content */}
+      {/* Page Content */}
+      <main className="mx-auto max-w-screen-xl px-3 sm:px-4">
         <div className="animate-fade-in">
           {children}
         </div>
-      </div>
+      </main>
     </div>
   );
 };

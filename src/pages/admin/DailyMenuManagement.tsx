@@ -11,57 +11,61 @@ const DailyMenuManagement = () => {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground">Napi ajánlatok</h1>
-            <p className="text-muted-foreground mt-1 text-sm md:text-base">
-              Kezelje a napi ajánlatokat és menüket egy helyen
-            </p>
-          </div>
+      {/* Page Header Section */}
+      <section className="pt-3 sm:pt-6 pb-4">
+        <div>
+          <h1 className="text-[22px] sm:text-3xl font-bold tracking-tight text-foreground">Napi ajánlatok</h1>
+          <p className="mt-1 text-[13px] sm:text-base text-muted-foreground">
+            Kezelje a napi ajánlatokat és menüket egy helyen
+          </p>
         </div>
-        
+      </section>
+      
+      {/* Content Tabs */}
+      <div className="pb-6">
         <Tabs defaultValue="daily" className="w-full">
-          <TabsList className={`grid w-full grid-cols-4 ${isMobile ? 'h-auto' : 'h-10'}`}>
-            <TabsTrigger 
-              value="daily" 
-              className={`${isMobile ? 'text-xs py-3 px-2' : 'text-sm'} data-[state=active]:bg-primary data-[state=active]:text-primary-foreground`}
-            >
-              {isMobile ? "Ajánlatok" : "Napi ajánlatok"}
-            </TabsTrigger>
-            <TabsTrigger 
-              value="scheduling" 
-              className={`${isMobile ? 'text-xs py-3 px-2' : 'text-sm'} data-[state=active]:bg-primary data-[state=active]:text-primary-foreground`}
-            >
-              Ütemezés
-            </TabsTrigger>
-            <TabsTrigger 
-              value="templates" 
-              className={`${isMobile ? 'text-xs py-3 px-2' : 'text-sm'} data-[state=active]:bg-primary data-[state=active]:text-primary-foreground`}
-            >
-              Sablonok
-            </TabsTrigger>
-            <TabsTrigger 
-              value="capacity" 
-              className={`${isMobile ? 'text-xs py-3 px-2' : 'text-sm'} data-[state=active]:bg-primary data-[state=active]:text-primary-foreground`}
-            >
-              Kapacitás
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto no-scrollbar mb-6">
+            <TabsList className="inline-flex h-auto min-w-full sm:w-auto bg-muted p-1">
+              <TabsTrigger 
+                value="daily" 
+                className="min-h-[36px] px-3 py-2 text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-background data-[state=active]:text-foreground"
+              >
+                {isMobile ? "Ajánlatok" : "Napi ajánlatok"}
+              </TabsTrigger>
+              <TabsTrigger 
+                value="scheduling" 
+                className="min-h-[36px] px-3 py-2 text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-background data-[state=active]:text-foreground"
+              >
+                Ütemezés
+              </TabsTrigger>
+              <TabsTrigger 
+                value="templates" 
+                className="min-h-[36px] px-3 py-2 text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-background data-[state=active]:text-foreground"
+              >
+                Sablonok
+              </TabsTrigger>
+              <TabsTrigger 
+                value="capacity" 
+                className="min-h-[36px] px-3 py-2 text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-background data-[state=active]:text-foreground"
+              >
+                Kapacitás
+              </TabsTrigger>
+            </TabsList>
+          </div>
           
-          <TabsContent value="daily" className="mt-6">
+          <TabsContent value="daily" className="mt-0">
             <StreamlinedDailyOffers />
           </TabsContent>
           
-          <TabsContent value="scheduling" className="mt-6">
+          <TabsContent value="scheduling" className="mt-0">
             <MenuScheduling />
           </TabsContent>
           
-          <TabsContent value="templates" className="mt-6">
+          <TabsContent value="templates" className="mt-0">
             <TemplateManagement />
           </TabsContent>
           
-          <TabsContent value="capacity" className="mt-6">
+          <TabsContent value="capacity" className="mt-0">
             <CapacityManagement />
           </TabsContent>
         </Tabs>
