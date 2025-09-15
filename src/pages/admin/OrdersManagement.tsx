@@ -151,6 +151,9 @@ const OrdersManagement = () => {
       title: "Siker",
       description: "Rendelés állapota frissítve",
     });
+
+    // Refresh orders to update UI
+    fetchOrders();
   };
 
   const getStatusConfig = (status: string) => {
