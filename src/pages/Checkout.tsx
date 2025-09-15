@@ -346,7 +346,7 @@ const Checkout = () => {
             unit_price_huf: item.price_huf,
             daily_type: item.daily_type,
             daily_date: item.daily_date,
-            daily_id: item.daily_id,
+            daily_id: item.daily_id ?? item.menu_id,
             modifiers: item.modifiers.map(mod => ({
               label_snapshot: mod.label,
               price_delta_huf: mod.price_delta_huf
@@ -575,17 +575,23 @@ const Checkout = () => {
                               <SelectValue placeholder="Válasszon időpontot" />
                             </SelectTrigger>
                             <SelectContent>
-                              {timeSlots.map((slot) => (
-                                <SelectItem 
-                                  key={`${slot.date}|${slot.timeslot}`}
-                                  value={`${slot.date}|${slot.timeslot}`}
-                                >
-                                  {formatTimeSlot(slot.date, slot.timeslot)} 
-                                  <Badge variant="outline" className="ml-2">
-                                    {slot.available_capacity} hely
-                                  </Badge>
-                                </SelectItem>
-                              ))}
+                              {timeSlots.length === 0 ? (
+                                <div className="p-3 text-sm text-muted-foreground">
+                                  Nincs elérhető időpont ehhez a rendeléshez.
+                                </div>
+                              ) : (
+                                timeSlots.map((slot) => (
+                                  <SelectItem 
+                                    key={`${slot.date}|${slot.timeslot}`}
+                                    value={`${slot.date}|${slot.timeslot}`}
+                                  >
+                                    {formatTimeSlot(slot.date, slot.timeslot)} 
+                                    <Badge variant="outline" className="ml-2">
+                                      {slot.available_capacity} hely
+                                    </Badge>
+                                  </SelectItem>
+                                ))
+                              )}
                             </SelectContent>
                           </Select>
                         )}

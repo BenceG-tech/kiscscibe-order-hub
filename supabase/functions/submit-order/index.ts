@@ -124,41 +124,76 @@ serve(async (req) => {
           tableName = 'daily_offers';
         } else if (item.daily_type === 'menu') {
           tableName = 'daily_menus';
+        } else if (item.daily_type === 'complete_menu') {
+          tableName = 'daily_offer_menus';
         } else {
           throw new Error(`Ismeretlen napi tétel típus: ${item.daily_type}`);
         }
 
-        // Check if daily item exists and has available portions
-        const { data: dailyData, error: dailyError } = await supabase
-          .from(tableName)
-          .select('id, price_huf, remaining_portions, date')
-          .eq('id', item.daily_id)
-          .single();
+        // Fetch and validate daily item depending on its table
+        let currentPrice = 0;
+        let remainingPortions = 0;
+        let itemDateStr = '';
 
-        if (dailyError || !dailyData) {
-          throw new Error(`Napi tétel nem található: ${item.name_snapshot}`);
+        if (tableName === 'daily_offer_menus') {
+          // First fetch menu record
+          const { data: dom, error: domError } = await supabase
+            .from('daily_offer_menus')
+            .select('id, menu_price_huf, remaining_portions, daily_offer_id')
+            .eq('id', item.daily_id)
+            .maybeSingle();
+
+          if (domError || !dom) {
+            throw new Error(`Napi menü nem található: ${item.name_snapshot}`);
+          }
+
+          // Fetch date from parent daily_offers
+          const { data: offer, error: offerError } = await supabase
+            .from('daily_offers')
+            .select('date')
+            .eq('id', dom.daily_offer_id)
+            .maybeSingle();
+
+          if (offerError || !offer) {
+            throw new Error('A napi ajánlat dátuma nem található');
+          }
+
+          currentPrice = dom.menu_price_huf;
+          remainingPortions = dom.remaining_portions;
+          itemDateStr = offer.date as unknown as string;
+        } else {
+          // daily_offers or daily_menus have price_huf and date columns directly
+          const { data: dailyData, error: dailyError } = await supabase
+            .from(tableName)
+            .select('id, price_huf, remaining_portions, date')
+            .eq('id', item.daily_id)
+            .maybeSingle();
+
+          if (dailyError || !dailyData) {
+            throw new Error(`Napi tétel nem található: ${item.name_snapshot}`);
+          }
+
+          currentPrice = (dailyData as any).price_huf;
+          remainingPortions = (dailyData as any).remaining_portions;
+          itemDateStr = (dailyData as any).date;
         }
 
         // Check if ordering is still allowed - prevent past dates
-        const itemDate = new Date(dailyData.date + 'T00:00:00.000Z');
+        const itemDate = new Date(itemDateStr + 'T00:00:00.000Z');
         const today = new Date();
-        today.setHours(0, 0, 0, 0); // Reset time to start of day for comparison
-        
-        // Reject if trying to order for a past date
+        today.setHours(0, 0, 0, 0);
+
         if (itemDate < today) {
-          throw new Error(`Múltbeli dátumra nem lehet rendelni: ${dailyData.date}`);
+          throw new Error(`Múltbeli dátumra nem lehet rendelni: ${itemDateStr}`);
         }
 
-        if (dailyData.remaining_portions < item.qty) {
-          throw new Error(`Nincs elég adag: ${item.name_snapshot} (maradt: ${dailyData.remaining_portions})`);
+        if (remainingPortions < item.qty) {
+          throw new Error(`Nincs elég adag: ${item.name_snapshot} (maradt: ${remainingPortions})`);
         }
 
-        // Use current price from database
-        const currentPrice = dailyData.price_huf;
         const lineTotal = currentPrice * item.qty;
-        
         calculatedTotal += lineTotal;
-        
+
         validatedItems.push({
           ...item,
           unit_price_huf: currentPrice,
