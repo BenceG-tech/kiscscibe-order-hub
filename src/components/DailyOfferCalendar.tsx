@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { LoadingSpinner } from "@/components/ui/loading";
 import { format, isToday, isBefore, startOfTomorrow, getDay } from "date-fns";
+import { getSmartInitialDate, getContentLabel } from "@/lib/dateUtils";
 import { hu } from "date-fns/locale";
 import { CalendarDays, Clock, Package, Coffee, AlertCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -63,8 +64,7 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
   const [currentDate, setCurrentDate] = useState<Date>(() => {
     if (selectedDate) return selectedDate;
     
-    const today = new Date();
-    return today;
+    return getSmartInitialDate();
   });
 
   // Helper function to check if ordering is allowed for a given date
@@ -213,9 +213,9 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
   };
 
   const handleTodayClick = () => {
-    const today = new Date();
-    setCurrentDate(today);
-    onDateSelect?.(today);
+    const smartDate = getSmartInitialDate();
+    setCurrentDate(smartDate);
+    onDateSelect?.(smartDate);
   };
 
   const currentOffers = getOffersForDate(currentDate);
@@ -243,7 +243,10 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
                 </div>
                 <div>
                   <CardTitle className="text-lg font-bold text-foreground">
-                    {isToday(currentDate) ? "Mai ajánlatok" : format(currentDate, 'MMMM dd.', { locale: hu })}
+                    {(() => {
+                      const { title } = getContentLabel(currentDate);
+                      return title;
+                    })()}
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">
                     {format(currentDate, 'EEEE', { locale: hu })}
@@ -456,7 +459,10 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-2xl font-bold text-foreground">
-                    {isToday(currentDate) ? "Mai ajánlatok" : "Napi ajánlatok"}
+                    {(() => {
+                      const { title } = getContentLabel(currentDate);
+                      return title;
+                    })()}
                   </CardTitle>
                   <p className="text-primary font-medium mt-1">
                     {format(currentDate, 'yyyy. MMMM dd. (EEEE)', { locale: hu })}

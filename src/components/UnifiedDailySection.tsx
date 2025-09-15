@@ -6,6 +6,7 @@ import DailyItemSelector from "@/components/DailyItemSelector";
 import DailyMenuPanel from "@/components/DailyMenuPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isToday, isPast, isSunday, getDay } from "date-fns";
+import { getSmartInitialDate, getContentLabel } from "@/lib/dateUtils";
 import { hu } from "date-fns/locale";
 
 interface MenuItem {
@@ -42,7 +43,7 @@ interface DailyMenuData {
 import StickyMenuCTA from "@/components/StickyMenuCTA";
 
 const UnifiedDailySection = () => {
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(getSmartInitialDate());
   const [dailyData, setDailyData] = useState<DailyOffersData | null>(null);
   const [menuData, setMenuData] = useState<DailyMenuData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -172,10 +173,8 @@ const UnifiedDailySection = () => {
   };
 
   const handleTodayClick = () => {
-    const today = new Date();
-    if (!isPast(today) && getDay(today) !== 0 && getDay(today) !== 6) {
-      setSelectedDate(today);
-    }
+    const smartDate = getSmartInitialDate();
+    setSelectedDate(smartDate);
   };
 
   const isDateDisabled = (date: Date) => {
@@ -264,7 +263,10 @@ const UnifiedDailySection = () => {
           ) : dailyData && dailyData.items.length > 0 ? (
             <div>
               <h3 className="text-xl font-sofia font-semibold mb-4">
-                {format(selectedDate, "MMMM d. (EEEE)", { locale: hu })} - Mai ajánlatok
+                {format(selectedDate, "MMMM d. (EEEE)", { locale: hu })} - {(() => {
+                  const { title } = getContentLabel(selectedDate);
+                  return title;
+                })()}
               </h3>
               <DailyItemSelector 
                 type="offer"
@@ -294,7 +296,10 @@ const UnifiedDailySection = () => {
             <Card>
               <CardContent className="p-6">
                 <h3 className="text-xl font-sofia font-semibold mb-2">
-                  {format(selectedDate, "MMMM d. (EEEE)", { locale: hu })} - Mai ajánlatok
+                  {format(selectedDate, "MMMM d. (EEEE)", { locale: hu })} - {(() => {
+                    const { title } = getContentLabel(selectedDate);
+                    return title;
+                  })()}
                 </h3>
                 <p className="text-muted-foreground">Még nincs felvéve ajánlat erre a napra.</p>
               </CardContent>
