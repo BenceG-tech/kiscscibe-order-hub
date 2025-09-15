@@ -34,7 +34,9 @@ interface CustomerInfo {
 interface OrderRequest {
   customer: CustomerInfo;
   payment_method: string;
-  pickup_time?: string;
+  pickup_time?: string | null; // Legacy support
+  pickup_date?: string | null; // New format: YYYY-MM-DD
+  pickup_time_slot?: string | null; // New format: HH:MM
   items: OrderItem[];
 }
 
@@ -54,6 +56,8 @@ serve(async (req) => {
       customer,
       payment_method,
       pickup_time,
+      pickup_date,
+      pickup_time_slot,
       items
     }: OrderRequest = await req.json();
 
@@ -230,12 +234,23 @@ serve(async (req) => {
     console.log('Generated order code:', orderCode);
 
     // Handle capacity slot update if pickup_time is specified
-    if (pickup_time) {
+    let date: string;
+    let time: string;
+    
+    if (pickup_date && pickup_time_slot) {
+      // New format: use date and time strings directly
+      date = pickup_date;
+      time = pickup_time_slot;
+      console.log('Updating capacity for (new format):', date, time);
+    } else if (pickup_time) {
+      // Legacy format: parse ISO string
       const pickupDate = new Date(pickup_time);
-      const date = pickupDate.toISOString().split('T')[0];
-      const time = pickupDate.toTimeString().split(' ')[0].slice(0, 5); // HH:MM format
-
-      console.log('Updating capacity for:', date, time);
+      date = pickupDate.toISOString().split('T')[0];
+      time = pickupDate.toTimeString().split(' ')[0].slice(0, 5); // HH:MM format
+      console.log('Updating capacity for (legacy format):', date, time);
+    }
+    
+    if (date && time) {
 
       // Validate daily items match pickup date
       const dailyItems = validatedItems.filter(item => item.daily_date);
@@ -267,7 +282,7 @@ serve(async (req) => {
         console.log('Capacity slot not found, creating fallback slot for:', date, time);
         
         // Validate business hours before creating
-        const slotDate = new Date(date);
+        const slotDate = new Date(date + 'T00:00:00'); // Local date parsing
         const dayOfWeek = slotDate.getDay();
         const [hours, minutes] = time.split(':').map(Number);
         
@@ -340,7 +355,7 @@ serve(async (req) => {
         total_huf: calculatedTotal,
         status: 'new',
         payment_method,
-        pickup_time: pickup_time || null,
+        pickup_time: pickup_time || (date && time ? new Date(`${date}T${time}`).toISOString() : null),
         notes: customer.notes || null
       })
       .select('id')
@@ -444,7 +459,7 @@ serve(async (req) => {
             <h3 style="margin-top: 0;">Rendelés részletei</h3>
             <p><strong>Rendelés kód:</strong> ${orderCode}</p>
             <p><strong>Telefonszám:</strong> ${customer.phone}</p>
-            ${pickup_time ? `<p><strong>Átvétel:</strong> ${new Date(pickup_time).toLocaleString('hu-HU')}</p>` : '<p><strong>Átvétel:</strong> Amilyen hamar lehet</p>'}
+            ${date && time ? `<p><strong>Átvétel:</strong> ${date} ${time}</p>` : '<p><strong>Átvétel:</strong> Amilyen hamar lehet</p>'}
             <p><strong>Fizetés:</strong> ${payment_method === 'cash' ? 'Készpénz' : 'Kártya'}</p>
             ${customer.notes ? `<p><strong>Megjegyzés:</strong> ${customer.notes}</p>` : ''}
           </div>

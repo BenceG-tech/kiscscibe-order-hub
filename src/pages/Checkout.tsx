@@ -96,9 +96,22 @@ const Checkout = () => {
         query = query.in("date", dailyDates);
       } else {
         // Regular behavior for non-daily items
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const year = tomorrow.getFullYear();
+        const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
+        const day = String(tomorrow.getDate()).padStart(2, '0');
+        const tomorrowStr = `${year}-${month}-${day}`;
+        
+        const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+        const nextWeekYear = nextWeek.getFullYear();
+        const nextWeekMonth = String(nextWeek.getMonth() + 1).padStart(2, '0');
+        const nextWeekDay = String(nextWeek.getDate()).padStart(2, '0');
+        const nextWeekStr = `${nextWeekYear}-${nextWeekMonth}-${nextWeekDay}`;
+        
         query = query
-          .gte("date", today.toISOString().split("T")[0])
-          .lte("date", nextWeek.toISOString().split("T")[0]);
+          .gte("date", tomorrowStr)
+          .lte("date", nextWeekStr);
       }
       
       const { data, error } = await query
@@ -138,7 +151,11 @@ const Checkout = () => {
           const maxDays = 10; // Prevent infinite loop
           
           while (daysAdded < 5 && maxDays > 0) {
-            const dateStr = currentDate.toISOString().split("T")[0];
+            // Use local date formatting to avoid timezone issues
+            const year = currentDate.getFullYear();
+            const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+            const day = String(currentDate.getDate()).padStart(2, '0');
+            const dateStr = `${year}-${month}-${day}`;
             const dayOfWeek = currentDate.getDay();
             
             // Skip Sundays and generate slots for business days
@@ -337,8 +354,8 @@ const Checkout = () => {
             notes: formData.notes || null
           },
           payment_method: formData.payment_method,
-          pickup_time: formData.pickup_type === "asap" ? null : 
-            new Date(`${formData.pickup_date}T${formData.pickup_time}`).toISOString(),
+          pickup_date: formData.pickup_type === "asap" ? null : formData.pickup_date,
+          pickup_time_slot: formData.pickup_type === "asap" ? null : formData.pickup_time,
           items: cart.items.map(item => ({
             item_id: item.id,
             name_snapshot: item.name,
