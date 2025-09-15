@@ -108,6 +108,7 @@ export type Database = {
           is_menu_part: boolean
           item_id: string | null
           menu_role: string | null
+          portions_needed: number
         }
         Insert: {
           daily_offer_id?: string | null
@@ -115,6 +116,7 @@ export type Database = {
           is_menu_part?: boolean
           item_id?: string | null
           menu_role?: string | null
+          portions_needed?: number
         }
         Update: {
           daily_offer_id?: string | null
@@ -122,6 +124,7 @@ export type Database = {
           is_menu_part?: boolean
           item_id?: string | null
           menu_role?: string | null
+          portions_needed?: number
         }
         Relationships: [
           {

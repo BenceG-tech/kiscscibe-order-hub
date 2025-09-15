@@ -8,11 +8,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { LoadingSpinner } from "@/components/ui/loading";
 import { format, getDay } from "date-fns";
 import { hu } from "date-fns/locale";
-import { Plus, Save, Trash2, Coffee, Utensils, Package, X, Clock, Sparkles } from "lucide-react";
+import { Plus, Save, Trash2, Coffee, Utensils, Package, X, Clock, Sparkles, Users, Minus, ChefHat, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { TemporaryItemCreator } from "./TemporaryItemCreator";
@@ -40,6 +42,7 @@ interface DailyOfferItem {
   item_id: string;
   is_menu_part: boolean;
   menu_role?: string;
+  portions_needed?: number;
   menu_items?: MenuItem;
 }
 
@@ -66,6 +69,15 @@ interface SelectedItem {
   id: string;
   isMenuPart: boolean;
   menuRole?: 'leves' | 'főétel';
+  portionsNeeded: number;
+}
+
+interface CapacitySlot {
+  id: string;
+  date: string;
+  timeslot: string;
+  max_orders: number;
+  booked_orders: number;
 }
 
 const StreamlinedDailyOffers = () => {
@@ -78,6 +90,7 @@ const StreamlinedDailyOffers = () => {
   const [dailyOffers, setDailyOffers] = useState<DailyOffer[]>([]);
   const [availableItems, setAvailableItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<MenuCategory[]>([]);
+  const [capacitySlots, setCapacitySlots] = useState<CapacitySlot[]>([]);
   
   // Form states
   const [offerForm, setOfferForm] = useState({
@@ -104,7 +117,7 @@ const StreamlinedDailyOffers = () => {
   }, [selectedDate, dailyOffers]);
 
   const fetchData = async () => {
-    const [offersResult, itemsResult, categoriesResult] = await Promise.all([
+    const [offersResult, itemsResult, categoriesResult, capacityResult] = await Promise.all([
       supabase
         .from('daily_offers')
         .select(`
@@ -114,6 +127,7 @@ const StreamlinedDailyOffers = () => {
             item_id,
             is_menu_part,
             menu_role,
+            portions_needed,
             menu_items (id, name, description, price_huf, image_url, is_temporary)
           ),
           daily_offer_menus (
@@ -132,12 +146,20 @@ const StreamlinedDailyOffers = () => {
       supabase
         .from('menu_categories')
         .select('*')
-        .order('sort', { ascending: true })
+        .order('sort', { ascending: true }),
+      supabase
+        .from('capacity_slots')
+        .select('*')
+        .gte('date', format(selectedDate, 'yyyy-MM-dd'))
+        .lte('date', format(new Date(selectedDate.getTime() + 7 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'))
+        .order('date')
+        .order('timeslot')
     ]);
 
     if (offersResult.data) setDailyOffers(offersResult.data);
     if (itemsResult.data) setAvailableItems(itemsResult.data);
     if (categoriesResult.data) setCategories(categoriesResult.data);
+    if (capacityResult.data) setCapacitySlots(capacityResult.data);
 
     setLoading(false);
   };
@@ -150,7 +172,8 @@ const StreamlinedDailyOffers = () => {
       const selectedItems: SelectedItem[] = existingOffer.daily_offer_items?.map(item => ({
         id: item.item_id,
         isMenuPart: item.is_menu_part,
-        menuRole: item.menu_role as 'leves' | 'főétel'
+        menuRole: item.menu_role as 'leves' | 'főétel',
+        portionsNeeded: item.portions_needed || 1
       })) || [];
       
       const offerMenu = existingOffer.daily_offer_menus;
@@ -200,7 +223,7 @@ const StreamlinedDailyOffers = () => {
       ...prev,
       selectedItems: prev.selectedItems.some(item => item.id === itemId)
         ? prev.selectedItems.filter(item => item.id !== itemId)
-        : [...prev.selectedItems, { id: itemId, isMenuPart: false }]
+        : [...prev.selectedItems, { id: itemId, isMenuPart: false, portionsNeeded: 1 }]
     }));
   };
 
@@ -211,6 +234,15 @@ const StreamlinedDailyOffers = () => {
         item.id === itemId
           ? { ...item, isMenuPart, menuRole: isMenuPart ? menuRole : undefined }
           : item
+      )
+    }));
+  };
+
+  const updateItemPortions = (itemId: string, portionsNeeded: number) => {
+    setOfferForm(prev => ({
+      ...prev,
+      selectedItems: prev.selectedItems.map(item =>
+        item.id === itemId ? { ...item, portionsNeeded: Math.max(1, portionsNeeded) } : item
       )
     }));
   };
@@ -226,7 +258,7 @@ const StreamlinedDailyOffers = () => {
     // Auto-select the newly created temporary item
     setOfferForm(prev => ({
       ...prev,
-      selectedItems: [...prev.selectedItems, { id: itemId, isMenuPart: false }]
+      selectedItems: [...prev.selectedItems, { id: itemId, isMenuPart: false, portionsNeeded: 1 }]
     }));
   };
 
@@ -298,7 +330,8 @@ const StreamlinedDailyOffers = () => {
           daily_offer_id: offerId,
           item_id: item.id,
           is_menu_part: item.isMenuPart,
-          menu_role: item.menuRole || null
+          menu_role: item.menuRole || null,
+          portions_needed: item.portionsNeeded
         }));
 
         const itemsResult = await supabase
@@ -371,6 +404,24 @@ const StreamlinedDailyOffers = () => {
   const soupItems = menuItems.filter(item => item.menuRole === 'leves');
   const mainItems = menuItems.filter(item => item.menuRole === 'főétel');
   const isValidMenu = menuItems.length === 0 || (soupItems.length === 1 && mainItems.length === 1);
+
+  // Capacity management helpers
+  const selectedDateCapacity = capacitySlots.filter(slot => slot.date === format(selectedDate, 'yyyy-MM-dd'));
+  const totalCapacity = selectedDateCapacity.reduce((sum, slot) => sum + slot.max_orders, 0);
+  const usedCapacity = selectedDateCapacity.reduce((sum, slot) => sum + slot.booked_orders, 0);
+  const capacityUtilization = totalCapacity > 0 ? Math.round((usedCapacity / totalCapacity) * 100) : 0;
+
+  // Calculate total portions needed
+  const totalPortionsNeeded = offerForm.selectedItems.reduce((sum, item) => sum + item.portionsNeeded, 0);
+
+  // Group items by category for collapsible sections
+  const groupedAvailableItems = categories.reduce((acc, category) => {
+    acc[category.id] = availableItems.filter(item => 
+      item.category_id === category.id && 
+      !offerForm.selectedItems.some(selected => selected.id === item.id)
+    );
+    return acc;
+  }, {} as Record<string, MenuItem[]>);
 
   if (loading) {
     return (
@@ -497,123 +548,283 @@ const StreamlinedDailyOffers = () => {
                   </div>
                   
                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                     <div className="space-y-2">
-                       <Label className="text-sm font-medium">Ár (Ft)</Label>
-                       <Input
-                         type="number"
-                         value={offerForm.price_huf}
-                         onChange={(e) => setOfferForm(prev => ({ ...prev, price_huf: e.target.value }))}
-                         className="h-10 text-base"
-                         inputMode="numeric"
-                       />
-                     </div>
-                     <div className="space-y-2">
-                       <Label className="text-sm font-medium">Maximum adag</Label>
-                       <Input
-                         type="number"
-                         value={offerForm.max_portions}
-                         onChange={(e) => setOfferForm(prev => ({ ...prev, max_portions: e.target.value }))}
-                         className="h-10 text-base"
-                         inputMode="numeric"
-                       />
-                     </div>
-                     <div className="space-y-2 sm:col-span-2 lg:col-span-1">
-                       <Label className="text-sm font-medium">Maradék adag</Label>
-                       <Input
-                         type="number"
-                         value={offerForm.remaining_portions}
-                         onChange={(e) => setOfferForm(prev => ({ ...prev, remaining_portions: e.target.value }))}
-                         className="h-10 text-base"
-                         inputMode="numeric"
-                       />
-                     </div>
-                   </div>
-                  
-                 <div className="space-y-2">
-                   <Label className="text-sm font-medium">Megjegyzés</Label>
-                   <Textarea
-                     value={offerForm.note}
-                     onChange={(e) => setOfferForm(prev => ({ ...prev, note: e.target.value }))}
-                     placeholder="Opcionális megjegyzés..."
-                     className="min-h-[80px] resize-none"
-                   />
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Ár (Ft)</Label>
+                        <Input
+                          type="number"
+                          value={offerForm.price_huf}
+                          onChange={(e) => setOfferForm(prev => ({ ...prev, price_huf: e.target.value }))}
+                          className="h-10 text-base"
+                          inputMode="numeric"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Maximum adag</Label>
+                        <Input
+                          type="number"
+                          value={offerForm.max_portions}
+                          onChange={(e) => setOfferForm(prev => ({ ...prev, max_portions: e.target.value }))}
+                          className="h-10 text-base"
+                          inputMode="numeric"
+                        />
+                      </div>
+                      <div className="space-y-2 sm:col-span-2 lg:col-span-1">
+                        <Label className="text-sm font-medium">Maradék adag</Label>
+                        <Input
+                          type="number"
+                          value={offerForm.remaining_portions}
+                          onChange={(e) => setOfferForm(prev => ({ ...prev, remaining_portions: e.target.value }))}
+                          className="h-10 text-base"
+                          inputMode="numeric"
+                        />
+                      </div>
+                    </div>
+                   
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Megjegyzés</Label>
+                    <Textarea
+                      value={offerForm.note}
+                      onChange={(e) => setOfferForm(prev => ({ ...prev, note: e.target.value }))}
+                      placeholder="Opcionális megjegyzés..."
+                      className="min-h-[80px] resize-none"
+                    />
+                  </div>
                  </div>
+
+                <Separator />
+
+                {/* Inline Capacity Management */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-5 w-5 text-secondary" />
+                      <h3 className="text-lg font-semibold">Kapacitás kezelés</h3>
+                      <Badge variant={capacityUtilization > 80 ? "destructive" : capacityUtilization > 60 ? "secondary" : "default"}>
+                        {capacityUtilization > 80 ? "🔴" : capacityUtilization > 60 ? "🟠" : "🟢"} {capacityUtilization}%
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {selectedDateCapacity.length > 0 ? (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between text-sm">
+                        <span>Napi kapacitás kihasználtság</span>
+                        <span className="font-medium">{usedCapacity} / {totalCapacity}</span>
+                      </div>
+                      <Progress value={capacityUtilization} className="h-2" />
+                      
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        {selectedDateCapacity.map((slot) => {
+                          const slotUtilization = slot.max_orders > 0 ? Math.round((slot.booked_orders / slot.max_orders) * 100) : 0;
+                          return (
+                            <div key={slot.id} className="p-2 border rounded text-xs">
+                              <div className="font-medium">{slot.timeslot}</div>
+                              <div className="text-muted-foreground">{slot.booked_orders}/{slot.max_orders}</div>
+                              <div className={`text-xs ${slotUtilization > 80 ? 'text-destructive' : slotUtilization > 60 ? 'text-orange-500' : 'text-green-500'}`}>
+                                {slotUtilization}%
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-4 border border-dashed rounded-lg text-center text-muted-foreground">
+                      <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">Nincs kapacitás beállítva erre a napra</p>
+                    </div>
+                  )}
                 </div>
 
                 <Separator />
 
-                 {/* Selected Items List */}
-                 {offerForm.selectedItems.length > 0 && (
-                   <div className="space-y-3 lg:space-y-4">
-                     <h4 className="font-medium text-xs lg:text-sm text-muted-foreground uppercase tracking-wide">KIVÁLASZTOTT ÉTELEK</h4>
-                     <div className="space-y-2 lg:space-y-3">
-                       {offerForm.selectedItems.map(selectedItem => {
-                         const item = availableItems.find(i => i.id === selectedItem.id);
-                         if (!item) return null;
+                {/* Enhanced Menu Preview */}
+                {menuItems.length > 0 && (
+                  <>
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <ChefHat className="h-5 w-5 text-secondary" />
+                        <h3 className="text-lg font-semibold">Menü előnézet</h3>
+                        {!isValidMenu && (
+                          <Badge variant="destructive" className="ml-2">
+                            <AlertCircle className="h-3 w-3 mr-1" />
+                            Hibás
+                          </Badge>
+                        )}
+                      </div>
 
-                         return (
-                              <div
-                                key={item.id}
-                                className="p-3 lg:p-4 border rounded-lg bg-primary/5 border-primary/20 hover:bg-primary/10 transition-colors"
-                              >
-                                <div className="flex flex-col gap-3">
-                                  <div className="flex items-start justify-between gap-3">
-                                    <div className="flex-1 min-w-0">
-                                      <div className="font-medium text-sm lg:text-base truncate">{item.name}</div>
-                                      <div className="text-xs lg:text-sm text-muted-foreground">{item.price_huf} Ft</div>
-                                      {item.is_temporary && (
-                                        <Badge variant="secondary" className="mt-1 text-xs">Ideiglenes</Badge>
-                                      )}
-                                    </div>
-                                    
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-8 w-8 p-0 hover:bg-destructive/10 shrink-0"
-                                      onClick={() => removeItem(item.id)}
-                                    >
-                                      <X className="h-4 w-4 text-destructive" />
-                                    </Button>
-                                  </div>
-                                  
-                                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
-                                    <div className="flex items-center gap-2">
-                                      <Checkbox
-                                        id={`menu-${item.id}`}
-                                        checked={selectedItem.isMenuPart}
-                                        onCheckedChange={(checked) => 
-                                          updateItemMenuSettings(item.id, !!checked, selectedItem.menuRole)
-                                        }
-                                      />
-                                      <Label htmlFor={`menu-${item.id}`} className="text-sm cursor-pointer">
-                                        Menü része
-                                      </Label>
-                                    </div>
-                                    
-                                    {selectedItem.isMenuPart && (
-                                      <Select
-                                        value={selectedItem.menuRole || ''}
-                                        onValueChange={(value) => 
-                                          updateItemMenuSettings(item.id, true, value as 'leves' | 'főétel')
-                                        }
-                                      >
-                                        <SelectTrigger className="w-full sm:w-28 h-9">
-                                          <SelectValue placeholder="Szerep" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="leves">Leves</SelectItem>
-                                          <SelectItem value="főétel">Főétel</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    )}
-                                  </div>
-                                </div>
+                      <Card className={`border-2 ${isValidMenu ? 'border-green-200 bg-green-50/50' : 'border-red-200 bg-red-50/50'}`}>
+                        <CardContent className="p-4">
+                          {isValidMenu ? (
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                <h4 className="font-medium text-green-800">✅ Érvényes menü összeállítás</h4>
+                                <Badge className="bg-green-600 text-white">
+                                  {offerForm.menuPrice} Ft
+                                </Badge>
                               </div>
-                         );
-                       })}
-                     </div>
-                   </div>
-                 )}
+                              <div className="grid md:grid-cols-2 gap-4">
+                                {soupItems.length > 0 && (
+                                  <div>
+                                    <h5 className="text-sm font-medium text-muted-foreground mb-1">LEVES</h5>
+                                    {soupItems.map(item => {
+                                      const menuItem = availableItems.find(i => i.id === item.id);
+                                      return menuItem ? (
+                                        <div key={item.id} className="text-sm">
+                                          {menuItem.name} ({item.portionsNeeded} adag)
+                                        </div>
+                                      ) : null;
+                                    })}
+                                  </div>
+                                )}
+                                {mainItems.length > 0 && (
+                                  <div>
+                                    <h5 className="text-sm font-medium text-muted-foreground mb-1">FŐÉTEL</h5>
+                                    {mainItems.map(item => {
+                                      const menuItem = availableItems.find(i => i.id === item.id);
+                                      return menuItem ? (
+                                        <div key={item.id} className="text-sm">
+                                          {menuItem.name} ({item.portionsNeeded} adag)
+                                        </div>
+                                      ) : null;
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-center text-red-800">
+                              <AlertCircle className="h-8 w-8 mx-auto mb-2" />
+                              <p className="font-medium mb-1">Hibás menü összeállítás</p>
+                              <p className="text-sm">Pontosan 1 leves és 1 főétel szükséges</p>
+                              <p className="text-xs text-red-600 mt-1">
+                                Jelenleg: {soupItems.length} leves, {mainItems.length} főétel
+                              </p>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </div>
+                    <Separator />
+                  </>
+                )}
+
+                  {/* Selected Items List with Per-Item Portions */}
+                  {offerForm.selectedItems.length > 0 && (
+                    <div className="space-y-3 lg:space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium text-xs lg:text-sm text-muted-foreground uppercase tracking-wide">
+                          KIVÁLASZTOTT ÉTELEK ({totalPortionsNeeded} összes adag)
+                        </h4>
+                      </div>
+                      <div className="space-y-2 lg:space-y-3">
+                        {offerForm.selectedItems.map(selectedItem => {
+                          const item = availableItems.find(i => i.id === selectedItem.id);
+                          if (!item) return null;
+
+                          return (
+                               <div
+                                 key={item.id}
+                                 className={`p-3 lg:p-4 border rounded-lg transition-colors ${
+                                   selectedItem.isMenuPart 
+                                     ? 'bg-green-50 border-green-200 ring-1 ring-green-200' 
+                                     : 'bg-primary/5 border-primary/20 hover:bg-primary/10'
+                                 }`}
+                               >
+                                 <div className="flex flex-col gap-3">
+                                   <div className="flex items-start justify-between gap-3">
+                                     <div className="flex-1 min-w-0">
+                                       <div className="flex items-center gap-2">
+                                         <div className="font-medium text-sm lg:text-base truncate">{item.name}</div>
+                                         {selectedItem.isMenuPart && (
+                                           <Badge variant="secondary" className="text-xs">
+                                             {selectedItem.menuRole === 'leves' ? 'Leves' : 'Főétel'}
+                                           </Badge>
+                                         )}
+                                       </div>
+                                       <div className="text-xs lg:text-sm text-muted-foreground">{item.price_huf} Ft</div>
+                                       {item.is_temporary && (
+                                         <Badge variant="outline" className="mt-1 text-xs">Ideiglenes</Badge>
+                                       )}
+                                     </div>
+                                     
+                                     <Button
+                                       variant="ghost"
+                                       size="sm"
+                                       className="h-8 w-8 p-0 hover:bg-destructive/10 shrink-0"
+                                       onClick={() => removeItem(item.id)}
+                                     >
+                                       <X className="h-4 w-4 text-destructive" />
+                                     </Button>
+                                   </div>
+                                   
+                                   <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                                     {/* Menu Part Toggle */}
+                                     <div className="flex items-center gap-2">
+                                       <Checkbox
+                                         id={`menu-${item.id}`}
+                                         checked={selectedItem.isMenuPart}
+                                         onCheckedChange={(checked) => 
+                                           updateItemMenuSettings(item.id, !!checked, selectedItem.menuRole)
+                                         }
+                                       />
+                                       <Label htmlFor={`menu-${item.id}`} className="text-sm cursor-pointer">
+                                         Menü része
+                                       </Label>
+                                     </div>
+                                     
+                                     {/* Menu Role Selector */}
+                                     {selectedItem.isMenuPart && (
+                                       <Select
+                                         value={selectedItem.menuRole || ''}
+                                         onValueChange={(value) => 
+                                           updateItemMenuSettings(item.id, true, value as 'leves' | 'főétel')
+                                         }
+                                       >
+                                         <SelectTrigger className="w-full sm:w-28 h-9">
+                                           <SelectValue placeholder="Szerep" />
+                                         </SelectTrigger>
+                                         <SelectContent>
+                                           <SelectItem value="leves">Leves</SelectItem>
+                                           <SelectItem value="főétel">Főétel</SelectItem>
+                                         </SelectContent>
+                                       </Select>
+                                     )}
+
+                                     {/* Portions Control */}
+                                     <div className="flex items-center gap-2">
+                                       <Label className="text-sm whitespace-nowrap">Adag:</Label>
+                                       <div className="flex items-center border rounded-md">
+                                         <Button
+                                           variant="ghost"
+                                           size="sm"
+                                           className="h-8 w-8 p-0"
+                                           onClick={() => updateItemPortions(item.id, selectedItem.portionsNeeded - 1)}
+                                           disabled={selectedItem.portionsNeeded <= 1}
+                                         >
+                                           <Minus className="h-3 w-3" />
+                                         </Button>
+                                         <span className="px-3 py-1 text-sm font-medium min-w-[3ch] text-center">
+                                           {selectedItem.portionsNeeded}
+                                         </span>
+                                         <Button
+                                           variant="ghost"
+                                           size="sm"
+                                           className="h-8 w-8 p-0"
+                                           onClick={() => updateItemPortions(item.id, selectedItem.portionsNeeded + 1)}
+                                         >
+                                           <Plus className="h-3 w-3" />
+                                         </Button>
+                                       </div>
+                                     </div>
+                                   </div>
+                                 </div>
+                               </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                 {/* Menu Configuration */}
                 {menuItems.length > 0 && (
@@ -677,11 +888,11 @@ const StreamlinedDailyOffers = () => {
 
                 <Separator />
 
-                 {/* Food Selection */}
+                 {/* Collapsible Food Selection by Category */}
                  <div className="space-y-3 lg:space-y-4">
-                   <h3 className="text-base lg:text-lg font-semibold">Ételek kiválasztása</h3>
+                   <h3 className="text-base lg:text-lg font-semibold">Ételek kiválasztása kategóriánként</h3>
                    
-                   {/* Search and Filter */}
+                   {/* Search Filter */}
                    <div className="flex flex-col gap-2 lg:gap-3">
                      <Input
                        placeholder="Keresés ételek között..."
@@ -689,68 +900,96 @@ const StreamlinedDailyOffers = () => {
                        onChange={(e) => setSearchTerm(e.target.value)}
                        className="h-10 text-base"
                      />
-                     <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                       <SelectTrigger className="h-10 text-base">
-                         <SelectValue />
-                       </SelectTrigger>
-                       <SelectContent>
-                         <SelectItem value="all">Minden kategória</SelectItem>
-                         {categories.map(category => (
-                           <SelectItem key={category.id} value={category.id}>
-                             {category.name}
-                           </SelectItem>
-                         ))}
-                       </SelectContent>
-                     </Select>
                    </div>
 
-                   {/* Available Items */}
-                   <div className="border rounded-lg max-h-48 lg:max-h-64 overflow-y-auto">
-                     {filteredItems.length === 0 ? (
-                       <div className="text-center py-6 lg:py-8 text-muted-foreground text-sm">
-                         Nincs több elérhető étel
-                       </div>
-                     ) : (
-                       <div className="p-1 lg:p-2 space-y-1">
-                         {filteredItems.map(item => (
-                           <div
-                             key={item.id}
-                             className="flex items-center justify-between p-3 hover:bg-muted/50 rounded cursor-pointer transition-colors"
-                             onClick={() => toggleItem(item.id)}
-                           >
-                             <div className="flex items-center gap-3">
-                               {item.image_url && (
-                                 <img src={item.image_url} alt={item.name} className="w-8 h-8 object-cover rounded" />
-                               )}
-                               <div className="min-w-0 flex-1">
-                                 <div className="font-medium text-sm truncate">{item.name}</div>
-                                 <div className="text-xs text-muted-foreground">{item.price_huf} Ft</div>
-                               </div>
+                   {/* Collapsible Categories */}
+                   <Accordion type="multiple" className="w-full">
+                     {categories.map(category => {
+                       const categoryItems = groupedAvailableItems[category.id]?.filter(item => {
+                         return searchTerm === '' || 
+                           item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase()));
+                       }) || [];
+                       
+                       if (categoryItems.length === 0) return null;
+
+                       return (
+                         <AccordionItem key={category.id} value={category.id}>
+                           <AccordionTrigger className="hover:no-underline">
+                             <div className="flex items-center gap-2">
+                               <span className="font-medium">{category.name}</span>
+                               <Badge variant="secondary" className="text-xs">
+                                 {categoryItems.length}
+                               </Badge>
                              </div>
-                             <Button size="sm" variant="outline" className="h-8 w-8 p-0 shrink-0">
-                               <Plus className="h-4 w-4" />
-                             </Button>
-                           </div>
-                         ))}
-                       </div>
-                     )}
-                   </div>
+                           </AccordionTrigger>
+                           <AccordionContent>
+                             <div className="space-y-2 pt-2">
+                               {categoryItems.map(item => (
+                                 <div
+                                   key={item.id}
+                                   className="flex items-center justify-between p-3 hover:bg-muted/50 rounded cursor-pointer transition-colors border"
+                                   onClick={() => toggleItem(item.id)}
+                                 >
+                                   <div className="flex items-center gap-3 flex-1 min-w-0">
+                                     {item.image_url && (
+                                       <img src={item.image_url} alt={item.name} className="w-8 h-8 object-cover rounded" />
+                                     )}
+                                     <div className="min-w-0 flex-1">
+                                       <div className="font-medium text-sm truncate">{item.name}</div>
+                                       {item.description && (
+                                         <div className="text-xs text-muted-foreground truncate">{item.description}</div>
+                                       )}
+                                       <div className="flex items-center gap-2">
+                                         <span className="text-xs text-muted-foreground">{item.price_huf} Ft</span>
+                                         {item.is_temporary && (
+                                           <Badge variant="outline" className="text-xs">Ideiglenes</Badge>
+                                         )}
+                                       </div>
+                                     </div>
+                                   </div>
+                                   <Button size="sm" variant="outline" className="h-8 w-8 p-0 shrink-0">
+                                     <Plus className="h-4 w-4" />
+                                   </Button>
+                                 </div>
+                               ))}
+                             </div>
+                           </AccordionContent>
+                         </AccordionItem>
+                       );
+                     })}
+                   </Accordion>
 
-                  {/* Temporary Items */}
-                  <div className="space-y-4">
-                    <TemporaryItemCreator
-                      categories={categories}
-                      onItemCreated={onItemCreated}
-                      onRefreshLibrary={fetchData}
-                    />
-                    
-                    <TemporaryItemsLibrary
-                      categories={categories}
-                      selectedItems={offerForm.selectedItems.map(item => item.id)}
-                      onItemToggle={toggleItem}
-                    />
-                  </div>
-                </div>
+                   {offerForm.selectedItems.length === 0 && (
+                     <div className="text-center py-8">
+                       <div className="p-6 bg-muted/50 rounded-lg">
+                         <Package className="h-12 w-12 mx-auto mb-4 opacity-50 text-muted-foreground" />
+                         <p className="text-muted-foreground text-lg font-medium mb-2">
+                           Nincs napi ajánlat beállítva
+                         </p>
+                         <p className="text-muted-foreground/70 text-sm">
+                           Válasszon ételeket a fenti kategóriákból az ajánlat összeállításához
+                         </p>
+                       </div>
+                     </div>
+                   )}
+
+                   {/* Temporary Items */}
+                   <div className="space-y-4 border-t pt-4">
+                     <h4 className="text-base font-semibold">Ideiglenes ételek kezelése</h4>
+                     <TemporaryItemCreator
+                       categories={categories}
+                       onItemCreated={onItemCreated}
+                       onRefreshLibrary={fetchData}
+                     />
+                     
+                     <TemporaryItemsLibrary
+                       categories={categories}
+                       selectedItems={offerForm.selectedItems.map(item => item.id)}
+                       onItemToggle={toggleItem}
+                     />
+                   </div>
+                 </div>
 
                 <Separator />
 
