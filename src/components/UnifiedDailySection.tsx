@@ -3,7 +3,6 @@ import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import DailyItemSelector from "@/components/DailyItemSelector";
-import DailyMenuShowcase from "@/components/DailyMenuShowcase";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isToday, isPast, isSunday, getDay } from "date-fns";
 import { hu } from "date-fns/locale";
@@ -296,10 +295,38 @@ const UnifiedDailySection = () => {
               {menuData && menuData.soup && menuData.main && (
                 <div>
                   <h3 className="text-xl font-semibold mb-4">Napi menü</h3>
-                  <DailyMenuShowcase
-                    menuData={menuData}
-                    date={selectedDate}
+                  <DailyItemSelector 
+                    type="menu"
+                    data={{
+                      id: menuData.menu_id,
+                      date: format(selectedDate, 'yyyy-MM-dd'),
+                      price_huf: menuData.menu_price_huf,
+                      note: "Kedvezményes menü ár",
+                      max_portions: menuData.menu_max_portions,
+                      remaining_portions: menuData.menu_remaining_portions,
+                      daily_menu_items: [
+                        {
+                          id: `soup_${menuData.soup.item_id}`,
+                          menu_items: {
+                            id: menuData.soup.item_id,
+                            name: `Leves: ${menuData.soup.item_name}`,
+                            description: menuData.soup.item_description || "",
+                            price_huf: menuData.soup.item_price_huf
+                          }
+                        },
+                        {
+                          id: `main_${menuData.main.item_id}`,
+                          menu_items: {
+                            id: menuData.main.item_id,
+                            name: `Főétel: ${menuData.main.item_name}`,
+                            description: menuData.main.item_description || "",
+                            price_huf: menuData.main.item_price_huf
+                          }
+                        }
+                      ]
+                    }}
                     canOrder={!isPast(selectedDate) && getDay(selectedDate) !== 0}
+                    showDetails={true}
                   />
                 </div>
               )}
