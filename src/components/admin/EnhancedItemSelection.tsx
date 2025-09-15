@@ -1,15 +1,10 @@
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import ImageUpload from './ImageUpload';
-import { Plus, X, Check } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { Check } from 'lucide-react';
+import { TemporaryItemsLibrary } from './TemporaryItemsLibrary';
+import { TemporaryItemCreator } from './TemporaryItemCreator';
 
 interface MenuItem {
   id: string;
@@ -27,96 +22,54 @@ interface MenuCategory {
   sort: number;
 }
 
-interface CustomItem {
-  tempId: string;
-  name: string;
-  description: string;
-  price_huf: number;
-  category_id: string;
-  image_url?: string;
-}
 
 interface EnhancedItemSelectionProps {
   menuItems: MenuItem[];
   categories: MenuCategory[];
   selectedItems: string[];
-  customItems: CustomItem[];
   onItemToggle: (itemId: string) => void;
-  onCustomItemAdd: (item: Omit<CustomItem, 'tempId'>) => void;
-  onCustomItemRemove: (tempId: string) => void;
-  onCustomItemUpdate: (tempId: string, item: Partial<CustomItem>) => void;
+  onRefreshData: () => void;
 }
 
 export const EnhancedItemSelection: React.FC<EnhancedItemSelectionProps> = ({
   menuItems,
   categories,
   selectedItems,
-  customItems,
   onItemToggle,
-  onCustomItemAdd,
-  onCustomItemRemove,
-  onCustomItemUpdate
+  onRefreshData
 }) => {
-  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("permanent");
-  const [customItemForm, setCustomItemForm] = useState({
-    name: '',
-    description: '',
-    price_huf: 0,
-    category_id: '',
-    image_url: ''
-  });
 
   const permanentItems = menuItems.filter(item => !item.is_temporary);
+  const temporaryItems = menuItems.filter(item => item.is_temporary);
+  
   const groupedItems = categories.reduce((acc, category) => {
     acc[category.id] = permanentItems.filter(item => item.category_id === category.id);
     return acc;
   }, {} as Record<string, MenuItem[]>);
 
-  const handleAddCustomItem = () => {
-    if (!customItemForm.name.trim() || !customItemForm.category_id || customItemForm.price_huf <= 0) {
-      toast({
-        title: "Hiba",
-        description: "Kérjük, töltse ki az összes kötelező mezőt (név, kategória, ár).",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    onCustomItemAdd({
-      name: customItemForm.name.trim(),
-      description: customItemForm.description.trim(),
-      price_huf: Math.round(customItemForm.price_huf),
-      category_id: customItemForm.category_id,
-      image_url: customItemForm.image_url
-    });
-
-    setCustomItemForm({
-      name: '',
-      description: '',
-      price_huf: 0,
-      category_id: '',
-      image_url: ''
-    });
-
-    toast({
-      title: "Siker",
-      description: "Egyedi elem hozzáadva!",
-    });
-  };
-
-  const selectedPermanentCount = selectedItems.length;
-  const totalSelectedCount = selectedPermanentCount + customItems.length;
+  const selectedPermanentCount = selectedItems.filter(id => 
+    permanentItems.some(item => item.id === id)
+  ).length;
+  
+  const selectedTemporaryCount = selectedItems.filter(id => 
+    temporaryItems.some(item => item.id === id)
+  ).length;
+  
+  const totalSelectedCount = selectedPermanentCount + selectedTemporaryCount;
 
   return (
     <div className="space-y-4">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="permanent">
-            Állandó menü ({selectedPermanentCount})
+            Állandó ({selectedPermanentCount})
           </TabsTrigger>
-          <TabsTrigger value="custom">
-            Egyedi elemek ({customItems.length})
+          <TabsTrigger value="temporary">
+            Ideiglenes ({selectedTemporaryCount})
+          </TabsTrigger>
+          <TabsTrigger value="create">
+            Új létrehozása
           </TabsTrigger>
           <TabsTrigger value="preview">
             Előnézet ({totalSelectedCount})
@@ -174,113 +127,23 @@ export const EnhancedItemSelection: React.FC<EnhancedItemSelectionProps> = ({
           })}
         </TabsContent>
 
-        <TabsContent value="custom" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Új egyedi elem hozzáadása</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="custom-name">Név *</Label>
-                  <Input
-                    id="custom-name"
-                    value={customItemForm.name}
-                    onChange={(e) => setCustomItemForm(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="pl. Házi limonádé"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="custom-price">Ár (Ft) *</Label>
-                  <Input
-                    id="custom-price"
-                    type="number"
-                    value={customItemForm.price_huf || ''}
-                    onChange={(e) => setCustomItemForm(prev => ({ ...prev, price_huf: parseInt(e.target.value) || 0 }))}
-                    placeholder="590"
-                  />
-                </div>
-              </div>
+        <TabsContent value="temporary" className="space-y-4">
+          <TemporaryItemsLibrary
+            categories={categories}
+            selectedItems={selectedItems}
+            onItemToggle={onItemToggle}
+          />
+        </TabsContent>
 
-              <div className="space-y-2">
-                <Label htmlFor="custom-category">Kategória *</Label>
-                <Select 
-                  value={customItemForm.category_id} 
-                  onValueChange={(value) => setCustomItemForm(prev => ({ ...prev, category_id: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Válasszon kategóriát" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="custom-description">Leírás</Label>
-                <Textarea
-                  id="custom-description"
-                  value={customItemForm.description}
-                  onChange={(e) => setCustomItemForm(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="További információ az ételről..."
-                  rows={2}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Kép (opcionális)</Label>
-                <ImageUpload
-                  currentImageUrl={customItemForm.image_url}
-                  onImageUploaded={(url) => setCustomItemForm(prev => ({ ...prev, image_url: url }))}
-                  onImageRemoved={() => setCustomItemForm(prev => ({ ...prev, image_url: '' }))}
-                />
-              </div>
-
-              <Button onClick={handleAddCustomItem} className="w-full">
-                <Plus className="w-4 h-4 mr-2" />
-                Elem hozzáadása
-              </Button>
-            </CardContent>
-          </Card>
-
-          {customItems.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Hozzáadott egyedi elemek</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {customItems.map((item) => {
-                  const category = categories.find(c => c.id === item.category_id);
-                  return (
-                    <div key={item.tempId} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex-1">
-                        <div className="font-medium">{item.name}</div>
-                        {item.description && (
-                          <div className="text-sm text-muted-foreground">{item.description}</div>
-                        )}
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="secondary">{category?.name}</Badge>
-                          <span className="text-sm font-medium text-primary">{item.price_huf} Ft</span>
-                        </div>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onCustomItemRemove(item.tempId)}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  );
-                })}
-              </CardContent>
-            </Card>
-          )}
+        <TabsContent value="create" className="space-y-4">
+          <TemporaryItemCreator
+            categories={categories}
+            onItemCreated={(itemId) => {
+              onItemToggle(itemId);
+              setActiveTab("preview");
+            }}
+            onRefreshLibrary={onRefreshData}
+          />
         </TabsContent>
 
         <TabsContent value="preview" className="space-y-4">
@@ -299,49 +162,58 @@ export const EnhancedItemSelection: React.FC<EnhancedItemSelectionProps> = ({
                     <div>
                       <h4 className="font-medium text-sm text-muted-foreground mb-2">ÁLLANDÓ MENÜ ELEMEI</h4>
                       <div className="space-y-2">
-                        {selectedItems.map(itemId => {
-                          const item = permanentItems.find(i => i.id === itemId);
-                          if (!item) return null;
-                          const category = categories.find(c => c.id === item.category_id);
-                          return (
-                            <div key={itemId} className="flex items-center justify-between p-2 border rounded">
-                              <div>
-                                <div className="font-medium">{item.name}</div>
-                                <Badge variant="outline" className="text-xs">{category?.name}</Badge>
+                        {selectedItems
+                          .filter(itemId => permanentItems.some(item => item.id === itemId))
+                          .map(itemId => {
+                            const item = permanentItems.find(i => i.id === itemId);
+                            if (!item) return null;
+                            const category = categories.find(c => c.id === item.category_id);
+                            return (
+                              <div key={itemId} className="flex items-center justify-between p-2 border rounded">
+                                <div>
+                                  <div className="font-medium">{item.name}</div>
+                                  <Badge variant="outline" className="text-xs">{category?.name}</Badge>
+                                </div>
+                                <div className="text-sm font-medium">{item.price_huf} Ft</div>
                               </div>
-                              <div className="text-sm font-medium">{item.price_huf} Ft</div>
-                            </div>
-                          );
+                            );
                         })}
                       </div>
                     </div>
                   )}
 
-                  {customItems.length > 0 && (
+                  {selectedTemporaryCount > 0 && (
                     <div>
-                      <h4 className="font-medium text-sm text-muted-foreground mb-2">EGYEDI ELEMEK</h4>
+                      <h4 className="font-medium text-sm text-muted-foreground mb-2">IDEIGLENES ELEMEK</h4>
                       <div className="space-y-2">
-                         {customItems.map(item => {
-                           const category = categories.find(c => c.id === item.category_id);
-                           return (
-                             <div key={item.tempId} className="flex items-center justify-between p-2 border rounded">
-                               <div className="flex items-center gap-3">
-                                 {item.image_url && (
-                                   <img 
-                                     src={item.image_url} 
-                                     alt={item.name}
-                                     className="w-10 h-10 object-cover rounded"
-                                   />
-                                 )}
-                                 <div>
-                                   <div className="font-medium">{item.name}</div>
-                                   <Badge variant="outline" className="text-xs">{category?.name}</Badge>
-                                 </div>
-                               </div>
-                               <div className="text-sm font-medium">{item.price_huf} Ft</div>
-                             </div>
-                           );
-                         })}
+                        {selectedItems
+                          .filter(itemId => temporaryItems.some(item => item.id === itemId))
+                          .map(itemId => {
+                            const item = temporaryItems.find(i => i.id === itemId);
+                            if (!item) return null;
+                            const category = categories.find(c => c.id === item.category_id);
+                            return (
+                              <div key={itemId} className="flex items-center justify-between p-2 border rounded">
+                                <div className="flex items-center gap-3">
+                                  {item.image_url && (
+                                    <img 
+                                      src={item.image_url} 
+                                      alt={item.name}
+                                      className="w-10 h-10 object-cover rounded"
+                                    />
+                                  )}
+                                  <div>
+                                    <div className="font-medium">{item.name}</div>
+                                    <div className="flex items-center gap-2">
+                                      <Badge variant="outline" className="text-xs">{category?.name}</Badge>
+                                      <Badge variant="secondary" className="text-xs">Ideiglenes</Badge>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="text-sm font-medium">{item.price_huf} Ft</div>
+                              </div>
+                            );
+                        })}
                       </div>
                     </div>
                   )}

@@ -16,6 +16,8 @@ import { Plus, Edit, Trash2, Save, X, Package, Coffee, Utensils } from "lucide-r
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { EnhancedItemSelection } from "./EnhancedItemSelection";
+import { MenuItemSelection } from "./MenuItemSelection";
 
 interface MenuItem {
   id: string;
@@ -499,7 +501,15 @@ const UnifiedDailyManagement = () => {
                   {/* Daily Menu Section */}
                   {selectedOffer.daily_offer_menus && (
                     <>
-                      <Separator />
+            <Separator />
+
+            {/* Selected Items Configuration */}
+            <MenuItemSelection
+              selectedItems={offerForm.selectedItems}
+              onUpdateItemMenuSettings={updateItemMenuSettings}
+              onRemoveOfferItem={removeOfferItem}
+              availableItems={availableItems}
+            />
                       <div className="p-4 border rounded-lg border-border">
                         <div className="flex items-center gap-2 mb-3">
                           <Utensils className="h-5 w-5 text-secondary" />
@@ -615,88 +625,13 @@ const UnifiedDailyManagement = () => {
             {/* Food Selection */}
             <div className="space-y-4">
               <Label>Ételek kiválasztása</Label>
-              <div className="max-h-60 overflow-y-auto space-y-4">
-                {categories.map(category => {
-                  const categoryItems = availableItems.filter(item => item.category_id === category.id && !item.is_temporary);
-                  if (categoryItems.length === 0) return null;
-                  
-                  return (
-                    <div key={category.id} className="space-y-2">
-                      <h4 className="font-medium text-sm text-muted-foreground">{category.name}</h4>
-                      <div className="grid grid-cols-1 gap-2">
-                        {categoryItems.map(item => {
-                          const selectedItem = offerForm.selectedItems.find(si => si.id === item.id);
-                          const isSelected = !!selectedItem;
-                          
-                          return (
-                            <div
-                              key={item.id}
-                              className={`p-3 border rounded cursor-pointer transition-colors ${
-                                isSelected
-                                  ? 'border-primary bg-primary/5'
-                                  : 'border-border hover:bg-muted/50'
-                              }`}
-                            >
-                              <div className="flex items-center justify-between">
-                                <div 
-                                  className="flex-1"
-                                  onClick={() => toggleOfferItem(item.id)}
-                                >
-                                  <div className="font-medium text-sm">{item.name}</div>
-                                  <div className="text-xs text-muted-foreground">{item.price_huf} Ft</div>
-                                </div>
-                                
-                                {isSelected && (
-                                  <div className="flex items-center gap-4 ml-4">
-                                    <div className="flex items-center gap-2">
-                                      <Checkbox
-                                        id={`menu-${item.id}`}
-                                        checked={selectedItem?.isMenuPart || false}
-                                        onCheckedChange={(checked) => 
-                                          updateItemMenuSettings(item.id, !!checked, selectedItem?.menuRole)
-                                        }
-                                      />
-                                      <Label htmlFor={`menu-${item.id}`} className="text-xs">
-                                        Menü része
-                                      </Label>
-                                    </div>
-                                    
-                                    {selectedItem?.isMenuPart && (
-                                      <Select
-                                        value={selectedItem.menuRole || ''}
-                                        onValueChange={(value) => 
-                                          updateItemMenuSettings(item.id, true, value as 'leves' | 'főétel')
-                                        }
-                                      >
-                                        <SelectTrigger className="w-24 h-8">
-                                          <SelectValue placeholder="Szerep" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="leves">Leves</SelectItem>
-                                          <SelectItem value="főétel">Főétel</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    )}
-                                    
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-8 w-8 p-0 hover:bg-destructive/10"
-                                      onClick={() => removeOfferItem(item.id)}
-                                    >
-                                      <X className="h-4 w-4 text-destructive" />
-                                    </Button>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              <EnhancedItemSelection
+                menuItems={availableItems}
+                categories={categories}
+                selectedItems={offerForm.selectedItems.map(item => item.id)}
+                onItemToggle={toggleOfferItem}
+                onRefreshData={fetchData}
+              />
             </div>
 
             {/* Menu Configuration */}
