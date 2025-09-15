@@ -140,61 +140,83 @@ const ModernNavigation = () => {
               </div>
             </div>
 
-            {/* Mobile Menu Button */}
-            <Sheet open={isOpen} onOpenChange={setIsOpen}>
-              <SheetTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="md:hidden hover:bg-primary/10"
+            {/* Mobile Cart and Menu Button */}
+            <div className="md:hidden flex items-center gap-2">
+              {/* Mobile Cart Icon */}
+              <div className="relative">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="hover:bg-primary/10"
+                  onClick={() => setIsCartOpen(true)}
                 >
-                  <Menu className="h-6 w-6" />
+                  <ShoppingCart className="h-5 w-5" />
+                  {cart.itemCount > 0 && (
+                    <Badge 
+                      className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 bg-primary text-primary-foreground text-xs"
+                    >
+                      {cart.itemCount}
+                    </Badge>
+                  )}
                 </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-[300px]">
-                <div className="flex flex-col space-y-4 mt-8">
-                  <div className="pb-4 border-b">
-                    <h2 className="font-bold text-lg text-primary">Kiscsibe Reggeliző & Étterem</h2>
-                  </div>
-                  
-                  {navLinks.map((link) => (
-                    <Link
-                      key={link.href}
-                      to={link.href}
-                      onClick={closeMenu}
-                      className={`font-medium text-lg py-2 px-3 rounded-lg transition-all duration-300 hover:bg-primary/10 hover:text-primary ${
-                        location.pathname === link.href 
-                          ? "text-primary bg-primary/10" 
-                          : "text-foreground"
-                      }`}
-                    >
-                      {link.label}
-                    </Link>
-                  ))}
-                  
-                  <div className="pt-4 border-t">
-                    <Button 
-                      asChild
-                      className="w-full bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm mb-3"
-                      onClick={closeMenu}
-                    >
-                       <Link to="/etlap">Rendelj most</Link>
-                    </Button>
+              </div>
+              
+              {/* Mobile Menu Button */}
+              <Sheet open={isOpen} onOpenChange={setIsOpen}>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="hover:bg-primary/10"
+                  >
+                    <Menu className="h-6 w-6" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-[300px]">
+                  <div className="flex flex-col space-y-4 mt-8">
+                    <div className="pb-4 border-b">
+                      <h2 className="font-bold text-lg text-primary">Kiscsibe Reggeliző & Étterem</h2>
+                    </div>
                     
-                    <Button 
-                      variant="outline" 
-                      className="w-full border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-                      asChild
-                    >
-                      <a href="tel:+3612345678" className="inline-flex items-center gap-2">
-                        <Phone className="h-4 w-4" />
-                        Hívás: +36 1 234 5678
-                      </a>
-                    </Button>
+                    {navLinks.map((link) => (
+                      <Link
+                        key={link.href}
+                        to={link.href}
+                        onClick={closeMenu}
+                        className={`font-medium text-lg py-2 px-3 rounded-lg transition-all duration-300 hover:bg-primary/10 hover:text-primary ${
+                          location.pathname === link.href 
+                            ? "text-primary bg-primary/10" 
+                            : "text-foreground"
+                        }`}
+                      >
+                        {link.label}
+                      </Link>
+                    ))}
+                    
+                    <div className="pt-4 border-t">
+                      <Button 
+                        asChild
+                        className="w-full bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm mb-3"
+                        onClick={closeMenu}
+                      >
+                         <Link to="/etlap">Rendelj most</Link>
+                      </Button>
+                      
+                      <Button 
+                        variant="outline" 
+                        className="w-full border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                        asChild
+                      >
+                        <a href="tel:+3612345678" className="inline-flex items-center gap-2">
+                          <Phone className="h-4 w-4" />
+                          Hívás: +36 1 234 5678
+                        </a>
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </SheetContent>
-            </Sheet>
+                </SheetContent>
+              </Sheet>
+            </div>
           </div>
         </div>
       </div>

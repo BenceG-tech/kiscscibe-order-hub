@@ -251,13 +251,6 @@ const UnifiedDailySection = () => {
 
         {/* Content Section */}
         <div className="space-y-6">
-          {/* Daily Offers Panel */}
-          <DailyOffersPanel 
-            date={selectedDate}
-            data={dailyData}
-            loading={loading}
-          />
-
           {/* Daily Menu Panel */}
           <div className="lg:hidden block">
             <DailyMenuPanel 
@@ -266,6 +259,13 @@ const UnifiedDailySection = () => {
               loading={loading}
             />
           </div>
+
+          {/* Daily Offers Panel */}
+          <DailyOffersPanel 
+            date={selectedDate}
+            data={dailyData}
+            loading={loading}
+          />
         </div>
 
         {/* Desktop Menu Panel */}
