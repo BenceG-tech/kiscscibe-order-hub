@@ -299,17 +299,19 @@ const UnifiedDailySection = () => {
       </div>
 
       {/* Mobile Sticky CTA */}
-      <StickyMenuCTA 
-        menuData={menuData ? {
-          menu_id: menuData.menu_id,
-          menu_price_huf: menuData.menu_price_huf,
-          menu_remaining_portions: menuData.menu_remaining_portions,
-          soup: menuData.soup ? { id: menuData.soup.item_id, name: menuData.soup.item_name } : null,
-          main: menuData.main ? { id: menuData.main.item_id, name: menuData.main.item_name } : null
-        } : null}
-        date={selectedDate}
-        onAddToCart={handleAddMenuToCart}
-      />
+      {menuData && menuData.soup && menuData.main && (
+        <StickyMenuCTA 
+          menuData={{
+            menu_id: menuData.menu_id,
+            menu_price_huf: menuData.menu_price_huf,
+            menu_remaining_portions: menuData.menu_remaining_portions,
+            soup: menuData.soup ? { id: menuData.soup.item_id, name: menuData.soup.item_name } : null,
+            main: menuData.main ? { id: menuData.main.item_id, name: menuData.main.item_name } : null
+          }}
+          date={selectedDate}
+          onAddToCart={handleAddMenuToCart}
+        />
+      )}
 
       {/* Mobile bottom spacing for sticky CTA */}
       <div className="h-20 md:h-0"></div>
