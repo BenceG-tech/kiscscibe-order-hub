@@ -1,1 +1,4 @@
 project_id = "gvtsbnivuysunnjrpndk"
+
+[functions.submit-order]
+verify_jwt = false

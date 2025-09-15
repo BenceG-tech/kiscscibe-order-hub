@@ -230,9 +230,17 @@ const Checkout = () => {
     const currentHour = now.getHours();
     const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
     
-    // Monday-Friday: 7:00-16:00, Saturday-Sunday: closed
-    if (currentDay === 0 || currentDay === 6) return false; // Weekend closed
-    return currentHour >= 7 && currentHour < 16; // Monday-Friday
+    // Check if it's Sunday (closed)
+    if (currentDay === 0) return false; // Sunday closed
+    
+    // Check opening hours
+    if (currentDay >= 1 && currentDay <= 5) { // Monday-Friday
+      return currentHour >= 7 && currentHour < 15;
+    } else if (currentDay === 6) { // Saturday
+      return currentHour >= 8 && currentHour < 14;
+    }
+    
+    return false;
   };
   
   const formatTimeSlot = (date: string, time: string) => {
@@ -250,6 +258,13 @@ const Checkout = () => {
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    console.log('=== RENDELÉS LEADÁS DEBUG ===');
+    console.log('Form data:', formData);
+    console.log('Cart items:', cart.items);
+    console.log('Daily dates:', dailyDates);
+    console.log('Multiple daily dates:', hasMultipleDailyDates());
+    console.log('Business hours:', isBusinessHours());
     
     // Prevent submission if cart has multiple daily dates
     if (hasMultipleDailyDates()) {
@@ -310,6 +325,8 @@ const Checkout = () => {
     setIsSubmitting(true);
 
     try {
+      console.log('Calling submit-order edge function...');
+      
       // Call the submit-order edge function
       const { data, error } = await supabase.functions.invoke("submit-order", {
         body: {
@@ -337,6 +354,8 @@ const Checkout = () => {
           }))
         }
       });
+      
+      console.log('Edge function response:', { data, error });
       
       if (error) throw error;
       
@@ -597,24 +616,38 @@ const Checkout = () => {
                     </RadioGroup>
                   </div>
                   
-                  <Button
-                    type="submit"
-                    className="w-full bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm"
-                    disabled={
-                      isSubmitting || 
-                      hasMultipleDailyDates() ||
-                      (formData.pickup_type === "scheduled" && (!formData.pickup_date || !formData.pickup_time))
-                    }
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <LoadingSpinner className="h-4 w-4 mr-2" />
-                        Rendelés leadása...
-                      </>
-                    ) : (
-                      `Rendelés leadása - ${cart.total.toLocaleString()} Ft`
+                  {/* Submit Button with Helpful Feedback */}
+                  <div className="space-y-2">
+                    {(hasMultipleDailyDates() || (formData.pickup_type === "scheduled" && (!formData.pickup_date || !formData.pickup_time))) && (
+                      <div className="text-sm text-muted-foreground bg-muted p-3 rounded-lg">
+                        {hasMultipleDailyDates() && (
+                          <p>• Távolítsa el a különböző dátumú napi ajánlatokat</p>
+                        )}
+                        {formData.pickup_type === "scheduled" && (!formData.pickup_date || !formData.pickup_time) && (
+                          <p>• Válasszon időpontot az átvételhez</p>
+                        )}
+                      </div>
                     )}
-                  </Button>
+                    
+                    <Button
+                      type="submit"
+                      className="w-full bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm"
+                      disabled={
+                        isSubmitting || 
+                        hasMultipleDailyDates() ||
+                        (formData.pickup_type === "scheduled" && (!formData.pickup_date || !formData.pickup_time))
+                      }
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <LoadingSpinner className="h-4 w-4 mr-2" />
+                          Rendelés leadása...
+                        </>
+                      ) : (
+                        `Rendelés leadása - ${cart.total.toLocaleString()} Ft`
+                      )}
+                    </Button>
+                  </div>
                 </form>
               </CardContent>
             </Card>
