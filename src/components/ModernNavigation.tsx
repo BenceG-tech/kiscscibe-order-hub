@@ -67,7 +67,7 @@ const ModernNavigation = () => {
               <Button 
                 onClick={() => document.getElementById('napi-ajanlat')?.scrollIntoView({ behavior: 'smooth' })}
                 size={scrolled ? "sm" : "default"}
-                className="bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm text-primary-foreground font-semibold transition-all duration-300"
+                className="bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm text-primary-foreground font-sofia font-bold text-base transition-all duration-300"
                 asChild
               >
                 <Link to="/etlap">Rendelj most</Link>
@@ -96,7 +96,7 @@ const ModernNavigation = () => {
             {/* Logo */}
             <Link 
               to="/" 
-              className="font-bold text-xl md:text-2xl text-primary hover:text-primary/80 transition-all duration-300"
+              className="font-sofia font-bold text-xl md:text-2xl text-primary hover:text-primary/80 transition-all duration-300"
             >
               Kiscsibe Reggeliző & Étterem
             </Link>
@@ -175,7 +175,7 @@ const ModernNavigation = () => {
                 <SheetContent side="right" className="w-[300px]">
                   <div className="flex flex-col space-y-4 mt-8">
                     <div className="pb-4 border-b">
-                      <h2 className="font-bold text-lg text-primary">Kiscsibe Reggeliző & Étterem</h2>
+                      <h2 className="font-sofia font-bold text-lg text-primary">Kiscsibe Reggeliző & Étterem</h2>
                     </div>
                     
                     {navLinks.map((link) => (
@@ -196,7 +196,7 @@ const ModernNavigation = () => {
                     <div className="pt-4 border-t">
                       <Button 
                         asChild
-                        className="w-full bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm mb-3"
+                        className="w-full bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm mb-3 font-sofia font-bold text-base"
                         onClick={closeMenu}
                       >
                          <Link to="/etlap">Rendelj most</Link>
