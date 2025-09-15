@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StreamlinedDailyOffers from "@/components/admin/StreamlinedDailyOffers";
 import MenuScheduling from "@/components/admin/MenuScheduling";
 import CapacityManagement from "@/components/admin/CapacityManagement";
+import TemplateManagement from "@/components/admin/TemplateManagement";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const DailyMenuManagement = () => {
@@ -21,18 +22,24 @@ const DailyMenuManagement = () => {
         </div>
         
         <Tabs defaultValue="daily" className="w-full">
-          <TabsList className={`grid w-full grid-cols-3 ${isMobile ? 'h-auto' : 'h-10'}`}>
+          <TabsList className={`grid w-full grid-cols-4 ${isMobile ? 'h-auto' : 'h-10'}`}>
             <TabsTrigger 
               value="daily" 
               className={`${isMobile ? 'text-xs py-3 px-2' : 'text-sm'} data-[state=active]:bg-primary data-[state=active]:text-primary-foreground`}
             >
-              Napi ajánlatok
+              {isMobile ? "Ajánlatok" : "Napi ajánlatok"}
             </TabsTrigger>
             <TabsTrigger 
               value="scheduling" 
               className={`${isMobile ? 'text-xs py-3 px-2' : 'text-sm'} data-[state=active]:bg-primary data-[state=active]:text-primary-foreground`}
             >
               Ütemezés
+            </TabsTrigger>
+            <TabsTrigger 
+              value="templates" 
+              className={`${isMobile ? 'text-xs py-3 px-2' : 'text-sm'} data-[state=active]:bg-primary data-[state=active]:text-primary-foreground`}
+            >
+              Sablonok
             </TabsTrigger>
             <TabsTrigger 
               value="capacity" 
@@ -48,6 +55,10 @@ const DailyMenuManagement = () => {
           
           <TabsContent value="scheduling" className="mt-6">
             <MenuScheduling />
+          </TabsContent>
+          
+          <TabsContent value="templates" className="mt-6">
+            <TemplateManagement />
           </TabsContent>
           
           <TabsContent value="capacity" className="mt-6">

@@ -181,6 +181,57 @@ export type Database = {
           },
         ]
       }
+      daily_offer_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          default_max_portions: number | null
+          default_price_huf: number | null
+          description: string | null
+          id: string
+          is_active: boolean
+          items: Json
+          last_used_at: string | null
+          menu_config: Json | null
+          name: string
+          tags: string[] | null
+          updated_at: string
+          usage_count: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          default_max_portions?: number | null
+          default_price_huf?: number | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          items?: Json
+          last_used_at?: string | null
+          menu_config?: Json | null
+          name: string
+          tags?: string[] | null
+          updated_at?: string
+          usage_count?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          default_max_portions?: number | null
+          default_price_huf?: number | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          items?: Json
+          last_used_at?: string | null
+          menu_config?: Json | null
+          name?: string
+          tags?: string[] | null
+          updated_at?: string
+          usage_count?: number
+        }
+        Relationships: []
+      }
       daily_offers: {
         Row: {
           created_at: string | null
@@ -590,6 +641,10 @@ export type Database = {
       get_user_role: {
         Args: { check_user_id?: string }
         Returns: string
+      }
+      increment_template_usage: {
+        Args: { template_id: string }
+        Returns: undefined
       }
       is_admin: {
         Args: Record<PropertyKey, never> | { check_user_id?: string }

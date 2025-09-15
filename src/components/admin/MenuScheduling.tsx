@@ -36,13 +36,36 @@ interface MenuItem {
 interface MenuTemplate {
   id: string;
   name: string;
+  description?: string;
   items: string[];
   menu_config?: {
-    price_huf: number;
-    max_portions: number;
-    soup_id: string;
-    main_id: string;
+    soup?: string;
+    main?: string;
   };
+  default_price_huf?: number;
+  default_max_portions?: number;
+  created_at?: string;
+  updated_at?: string;
+  usage_count?: number;
+  last_used_at?: string;
+  tags?: string[];
+  is_active?: boolean;
+}
+
+interface SupabaseTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  items: any; // Json type from Supabase
+  menu_config?: any; // Json type from Supabase
+  default_price_huf?: number;
+  default_max_portions?: number;
+  created_at: string;
+  updated_at: string;
+  usage_count: number;
+  last_used_at?: string;
+  tags?: string[];
+  is_active: boolean;
 }
 
 interface BulkScheduleData {
@@ -85,12 +108,13 @@ const MenuScheduling = () => {
 
   const [templateForm, setTemplateForm] = useState({
     name: "",
+    description: "",
     selectedItems: [] as string[],
-    menuConfig: {
-      price_huf: 1800,
-      max_portions: 30,
-      soup_id: "",
-      main_id: ""
+    default_price_huf: 0,
+    default_max_portions: 30,
+    menu_config: {
+      soup: "",
+      main: ""
     }
   });
 
@@ -100,7 +124,7 @@ const MenuScheduling = () => {
 
   const fetchData = async () => {
     try {
-      const [itemsResult, offersResult] = await Promise.all([
+      const [itemsResult, offersResult, templatesResult] = await Promise.all([
         supabase
           .from('menu_items')
           .select('*')
@@ -110,16 +134,26 @@ const MenuScheduling = () => {
           .from('daily_offers')
           .select('*')
           .gte('date', format(new Date(), 'yyyy-MM-dd'))
-          .order('date')
+          .order('date'),
+        supabase
+          .from('daily_offer_templates')
+          .select('*')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
       ]);
 
       if (itemsResult.data) setAvailableItems(itemsResult.data);
       if (offersResult.data) setExistingOffers(offersResult.data);
       
-      // Load templates from localStorage for now (could be moved to database)
-      const savedTemplates = localStorage.getItem('menu_templates');
-      if (savedTemplates) {
-        setTemplates(JSON.parse(savedTemplates));
+      // Transform templates data to proper format
+      if (templatesResult.data) {
+        const transformedTemplates: MenuTemplate[] = (templatesResult.data as SupabaseTemplate[]).map(template => ({
+          ...template,
+          items: Array.isArray(template.items) ? template.items : [],
+          menu_config: template.menu_config || {},
+          tags: Array.isArray(template.tags) ? template.tags : []
+        }));
+        setTemplates(transformedTemplates);
       }
       
     } catch (error) {
@@ -146,7 +180,7 @@ const MenuScheduling = () => {
 
   const dayNames = ['Vasárnap', 'Hétfő', 'Kedd', 'Szerda', 'Csütörtök', 'Péntek', 'Szombat'];
 
-  const saveTemplate = () => {
+  const saveTemplate = async () => {
     if (!templateForm.name.trim()) {
       toast({
         title: "Hiba",
@@ -156,33 +190,53 @@ const MenuScheduling = () => {
       return;
     }
 
-    const newTemplate: MenuTemplate = {
-      id: Date.now().toString(),
-      name: templateForm.name,
-      items: templateForm.selectedItems,
-      menu_config: templateForm.menuConfig
-    };
+    try {
+      const templateData = {
+        name: templateForm.name,
+        description: templateForm.description,
+        items: templateForm.selectedItems,
+        menu_config: templateForm.menu_config,
+        default_price_huf: templateForm.default_price_huf,
+        default_max_portions: templateForm.default_max_portions,
+        is_active: true
+      };
 
-    const updatedTemplates = [...templates, newTemplate];
-    setTemplates(updatedTemplates);
-    localStorage.setItem('menu_templates', JSON.stringify(updatedTemplates));
-    
-    toast({
-      title: "Siker",
-      description: "Sablon mentve"
-    });
-    
-    setIsTemplateDialogOpen(false);
-    setTemplateForm({
-      name: "",
-      selectedItems: [],
-      menuConfig: {
-        price_huf: 1800,
-        max_portions: 30,
-        soup_id: "",
-        main_id: ""
-      }
-    });
+      const { error } = await supabase
+        .from('daily_offer_templates')
+        .insert([templateData]);
+
+      if (error) throw error;
+      
+      // Increment usage count when template is used
+      await supabase.rpc('increment_template_usage', { template_id: templateData.name });
+      
+      toast({
+        title: "Siker",
+        description: "Sablon mentve"
+      });
+      
+      setIsTemplateDialogOpen(false);
+      setTemplateForm({
+        name: "",
+        description: "",
+        selectedItems: [],
+        default_price_huf: 0,
+        default_max_portions: 30,
+        menu_config: {
+          soup: "",
+          main: ""
+        }
+      });
+      
+      fetchData();
+    } catch (error) {
+      console.error('Error saving template:', error);
+      toast({
+        title: "Hiba",
+        description: "Nem sikerült menteni a sablont",
+        variant: "destructive"
+      });
+    }
   };
 
   const scheduleBulkMenus = async () => {
@@ -248,16 +302,16 @@ const MenuScheduling = () => {
         }));
 
         // If template has menu configuration, add menu items
-        if (bulkData.template.menu_config && bulkData.template.menu_config.soup_id && bulkData.template.menu_config.main_id) {
+        if (bulkData.template.menu_config && bulkData.template.menu_config.soup && bulkData.template.menu_config.main) {
           itemsToInsert.push({
             daily_offer_id: offerId,
-            item_id: bulkData.template.menu_config.soup_id,
+            item_id: bulkData.template.menu_config.soup,
             is_menu_part: true,
             menu_role: 'leves'
           });
           itemsToInsert.push({
             daily_offer_id: offerId,
-            item_id: bulkData.template.menu_config.main_id,
+            item_id: bulkData.template.menu_config.main,
             is_menu_part: true,
             menu_role: 'főétel'
           });
@@ -268,8 +322,8 @@ const MenuScheduling = () => {
             .insert({
               daily_offer_id: offerId,
               menu_price_huf: bulkData.menuPrice,
-              max_portions: bulkData.template.menu_config.max_portions,
-              remaining_portions: bulkData.template.menu_config.max_portions
+              max_portions: bulkData.template.default_max_portions || 30,
+              remaining_portions: bulkData.template.default_max_portions || 30
             });
         }
 
@@ -540,9 +594,9 @@ const MenuScheduling = () => {
                         <Badge variant="outline" className="text-xs">
                           {template.items.length} tétel
                         </Badge>
-                        {template.menu_config && (
+                        {template.menu_config && (template.menu_config.soup || template.menu_config.main) && (
                           <Badge variant="outline" className="text-xs">
-                            Menü: {template.menu_config.price_huf} Ft
+                            Menü: {template.default_price_huf || 0} Ft
                           </Badge>
                         )}
                       </div>
