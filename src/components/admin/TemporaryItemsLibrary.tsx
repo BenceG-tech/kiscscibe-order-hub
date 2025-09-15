@@ -3,9 +3,21 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, Check, Clock, Star } from 'lucide-react';
+import { Search, Check, Clock, Star, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { LoadingSpinner } from '@/components/ui/loading';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 interface MenuItem {
   id: string;
@@ -39,6 +51,8 @@ export const TemporaryItemsLibrary: React.FC<TemporaryItemsLibraryProps> = ({
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchTemporaryItems();
@@ -59,6 +73,36 @@ export const TemporaryItemsLibrary: React.FC<TemporaryItemsLibraryProps> = ({
       console.error('Error fetching temporary items:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteItem = async (itemId: string, itemName: string) => {
+    setDeletingItemId(itemId);
+    
+    try {
+      const { error } = await supabase
+        .from('menu_items')
+        .update({ is_active: false })
+        .eq('id', itemId);
+
+      if (error) throw error;
+
+      // Remove from local state optimistically
+      setTemporaryItems(prev => prev.filter(item => item.id !== itemId));
+      
+      toast({
+        title: "Elem törölve",
+        description: `"${itemName}" sikeresen eltávolítva az ideiglenes elemek könyvtárából.`,
+      });
+    } catch (error) {
+      console.error('Error deleting temporary item:', error);
+      toast({
+        title: "Hiba történt",
+        description: "Nem sikerült törölni az elemet. Kérjük, próbálja újra.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingItemId(null);
     }
   };
 
@@ -142,57 +186,93 @@ export const TemporaryItemsLibrary: React.FC<TemporaryItemsLibraryProps> = ({
                       {category.name}
                     </h4>
                     <div className="space-y-2">
-                      {categoryItems.map(item => (
-                        <div
-                          key={item.id}
-                          className={`flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                            selectedItems.includes(item.id)
-                              ? 'border-primary bg-primary/5'
-                              : 'border-border hover:bg-muted/50'
-                          }`}
-                          onClick={() => onItemToggle(item.id)}
-                        >
-                          <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
-                            selectedItems.includes(item.id)
-                              ? 'border-primary bg-primary'
-                              : 'border-muted-foreground'
-                          }`}>
-                            {selectedItems.includes(item.id) && (
-                              <Check className="w-3 h-3 text-primary-foreground" />
-                            )}
-                          </div>
-                          
-                          {item.image_url && (
-                            <img 
-                              src={item.image_url} 
-                              alt={item.name}
-                              className="w-12 h-12 object-cover rounded"
-                            />
-                          )}
-                          
-                          <div className="flex-1">
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <div className="font-medium">{item.name}</div>
-                                {item.description && (
-                                  <div className="text-sm text-muted-foreground line-clamp-2">
-                                    {item.description}
-                                  </div>
-                                )}
-                                <div className="flex items-center gap-2 mt-1">
-                                  <span className="text-sm font-medium text-primary">
-                                    {item.price_huf} Ft
-                                  </span>
-                                  <Badge variant="outline" className="text-xs">
-                                    <Clock className="w-3 h-3 mr-1" />
-                                    Ideiglenes
-                                  </Badge>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                       {categoryItems.map(item => (
+                         <div
+                           key={item.id}
+                           className={`flex items-center space-x-3 p-3 rounded-lg border transition-colors ${
+                             selectedItems.includes(item.id)
+                               ? 'border-primary bg-primary/5'
+                               : 'border-border hover:bg-muted/50'
+                           }`}
+                         >
+                           <div 
+                             className={`w-4 h-4 rounded border-2 flex items-center justify-center cursor-pointer ${
+                               selectedItems.includes(item.id)
+                                 ? 'border-primary bg-primary'
+                                 : 'border-muted-foreground'
+                             }`}
+                             onClick={() => onItemToggle(item.id)}
+                           >
+                             {selectedItems.includes(item.id) && (
+                               <Check className="w-3 h-3 text-primary-foreground" />
+                             )}
+                           </div>
+                           
+                           {item.image_url && (
+                             <img 
+                               src={item.image_url} 
+                               alt={item.name}
+                               className="w-12 h-12 object-cover rounded"
+                             />
+                           )}
+                           
+                           <div 
+                             className="flex-1 cursor-pointer"
+                             onClick={() => onItemToggle(item.id)}
+                           >
+                             <div className="flex items-start justify-between">
+                               <div>
+                                 <div className="font-medium">{item.name}</div>
+                                 {item.description && (
+                                   <div className="text-sm text-muted-foreground line-clamp-2">
+                                     {item.description}
+                                   </div>
+                                 )}
+                                 <div className="flex items-center gap-2 mt-1">
+                                   <span className="text-sm font-medium text-primary">
+                                     {item.price_huf} Ft
+                                   </span>
+                                   <Badge variant="outline" className="text-xs">
+                                     <Clock className="w-3 h-3 mr-1" />
+                                     Ideiglenes
+                                   </Badge>
+                                 </div>
+                               </div>
+                             </div>
+                           </div>
+
+                           <AlertDialog>
+                             <AlertDialogTrigger asChild>
+                               <Button
+                                 variant="ghost"
+                                 size="sm"
+                                 className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                 disabled={deletingItemId === item.id}
+                               >
+                                 <Trash2 className="h-4 w-4" />
+                               </Button>
+                             </AlertDialogTrigger>
+                             <AlertDialogContent>
+                               <AlertDialogHeader>
+                                 <AlertDialogTitle>Biztos törli ezt az elemet?</AlertDialogTitle>
+                                 <AlertDialogDescription>
+                                   Ez a művelet eltávolítja a "{item.name}" elemet az ideiglenes elemek könyvtárából.
+                                   Az elem nem lesz többé elérhető új napi ajánlatokhoz.
+                                 </AlertDialogDescription>
+                               </AlertDialogHeader>
+                               <AlertDialogFooter>
+                                 <AlertDialogCancel>Mégse</AlertDialogCancel>
+                                 <AlertDialogAction
+                                   onClick={() => handleDeleteItem(item.id, item.name)}
+                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                 >
+                                   Törlés
+                                 </AlertDialogAction>
+                               </AlertDialogFooter>
+                             </AlertDialogContent>
+                           </AlertDialog>
+                         </div>
+                       ))}
                     </div>
                   </div>
                 );
