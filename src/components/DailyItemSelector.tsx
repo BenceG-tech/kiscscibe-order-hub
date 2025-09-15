@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, Package, Coffee, Clock, AlertCircle, Plus, Minus, Soup, UtensilsCrossed, Salad, Cake, Wine } from "lucide-react";
+import { ShoppingCart, Package, Coffee, Clock, AlertCircle, Plus, Minus } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "sonner";
 
@@ -13,9 +13,6 @@ interface MenuItem {
   description: string;
   price_huf: number;
   image_url?: string;
-  category_id?: string;
-  category_name?: string;
-  category_sort?: number;
 }
 
 interface DailyOfferItem {
@@ -65,40 +62,8 @@ const DailyItemSelector = ({ type, data, canOrder, showDetails = false, deadline
     ? (data as DailyOffer).daily_offer_items || []
     : (data as DailyMenu).daily_menu_items || [];
 
-  // Group items by category (exclude items without proper category)
-  const groupedItems = items.reduce((groups, item) => {
-    const categoryName = item.menu_items?.category_name;
-    const categorySort = item.menu_items?.category_sort || 999;
-    
-    // Only include items that have a proper category name
-    if (categoryName) {
-      if (!groups[categoryName]) {
-        groups[categoryName] = {
-          items: [],
-          sort: categorySort
-        };
-      }
-      groups[categoryName].items.push(item);
-    }
-    return groups;
-  }, {} as Record<string, { items: typeof items; sort: number }>);
-
-  // Sort categories by sort order
-  const sortedCategories = Object.entries(groupedItems).sort(([, a], [, b]) => a.sort - b.sort);
-
   const allItemIds = items.map(item => item.id);
   const allSelected = selectedItems.length === items.length && selectedItems.length > 0;
-
-  // Get category icon
-  const getCategoryIcon = (categoryName: string) => {
-    const name = categoryName.toLowerCase();
-    if (name.includes('leves')) return <Soup className="h-4 w-4" />;
-    if (name.includes('főétel') || name.includes('hús')) return <UtensilsCrossed className="h-4 w-4" />;
-    if (name.includes('köret') || name.includes('saláta')) return <Salad className="h-4 w-4" />;
-    if (name.includes('desszert') || name.includes('édesség')) return <Cake className="h-4 w-4" />;
-    if (name.includes('ital')) return <Wine className="h-4 w-4" />;
-    return <Package className="h-4 w-4" />;
-  };
   
   // Calculate pricing with quantities
   const calculatePrice = () => {
@@ -257,77 +222,65 @@ const DailyItemSelector = ({ type, data, canOrder, showDetails = false, deadline
           </Button>
         </div>
 
-        <div className="space-y-6">
-          {sortedCategories.map(([categoryName, categoryData]) => (
-            <div key={categoryName} className="space-y-3">
-              {/* Simple Category Header */}
-              <h3 className="font-semibold text-base text-foreground border-b border-border pb-1">
-                {categoryName}
-              </h3>
-
-              {/* Category Items */}
-              <div className="space-y-2">
-                {categoryData.items.map((item, index) => (
-                  <div key={item.id} className="flex items-start gap-3 p-3 rounded-lg border border-primary/10 hover:border-primary/20 transition-colors">
-                    <Checkbox
-                      id={item.id}
-                      checked={selectedItems.includes(item.id)}
-                      onCheckedChange={() => handleItemToggle(item.id)}
-                      className="mt-1"
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="flex-shrink-0 w-6 h-6 bg-primary/10 text-primary rounded-full flex items-center justify-center text-sm font-bold">
-                          {index + 1}
-                        </span>
-                        <label 
-                          htmlFor={item.id}
-                          className="font-medium cursor-pointer flex-1"
-                        >
-                          {item.menu_items?.name}
-                        </label>
-                        <Badge variant="outline" className="text-xs">
-                          {item.menu_items?.price_huf} Ft
-                        </Badge>
-                      </div>
-                      {item.menu_items?.description && (
-                        <p className="text-muted-foreground text-sm mt-1 ml-8">
-                          {item.menu_items.description}
-                        </p>
-                      )}
-                      {selectedItems.includes(item.id) && (
-                        <div className="flex items-center gap-2 mt-2 ml-8">
-                          <span className="text-sm text-muted-foreground">Mennyiség:</span>
-                          <div className="flex items-center gap-1">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleQuantityChange(item.id, -1)}
-                              disabled={quantities[item.id] <= 1}
-                              className="h-8 w-8 p-0"
-                            >
-                              <Minus className="h-3 w-3" />
-                            </Button>
-                            <span className="mx-2 font-medium min-w-[2rem] text-center">
-                              {quantities[item.id] || 1}
-                            </span>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleQuantityChange(item.id, 1)}
-                              className="h-8 w-8 p-0"
-                            >
-                              <Plus className="h-3 w-3" />
-                            </Button>
-                          </div>
-                          <span className="text-sm font-medium text-primary">
-                            = {((item.menu_items?.price_huf || 0) * (quantities[item.id] || 1)).toLocaleString()} Ft
-                          </span>
-                        </div>
-                      )}
+        <div className="space-y-3">
+          {items.map((item, index) => (
+            <div key={item.id} className="flex items-start gap-3 p-3 rounded-lg border border-primary/10 hover:border-primary/20 transition-colors">
+              <Checkbox
+                id={item.id}
+                checked={selectedItems.includes(item.id)}
+                onCheckedChange={() => handleItemToggle(item.id)}
+                className="mt-1"
+              />
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="flex-shrink-0 w-6 h-6 bg-primary/10 text-primary rounded-full flex items-center justify-center text-sm font-bold">
+                    {index + 1}
+                  </span>
+                  <label 
+                    htmlFor={item.id}
+                    className="font-medium cursor-pointer flex-1"
+                  >
+                    {item.menu_items?.name}
+                  </label>
+                  <Badge variant="outline" className="text-xs">
+                    {item.menu_items?.price_huf} Ft
+                  </Badge>
+                </div>
+                {item.menu_items?.description && (
+                  <p className="text-muted-foreground text-sm mt-1 ml-8">
+                    {item.menu_items.description}
+                  </p>
+                )}
+                {selectedItems.includes(item.id) && (
+                  <div className="flex items-center gap-2 mt-2 ml-8">
+                    <span className="text-sm text-muted-foreground">Mennyiség:</span>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleQuantityChange(item.id, -1)}
+                        disabled={quantities[item.id] <= 1}
+                        className="h-8 w-8 p-0"
+                      >
+                        <Minus className="h-3 w-3" />
+                      </Button>
+                      <span className="mx-2 font-medium min-w-[2rem] text-center">
+                        {quantities[item.id] || 1}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleQuantityChange(item.id, 1)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <Plus className="h-3 w-3" />
+                      </Button>
                     </div>
+                    <span className="text-sm font-medium text-primary">
+                      = {((item.menu_items?.price_huf || 0) * (quantities[item.id] || 1)).toLocaleString()} Ft
+                    </span>
                   </div>
-                ))}
+                )}
               </div>
             </div>
           ))}

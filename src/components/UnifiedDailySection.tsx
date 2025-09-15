@@ -18,9 +18,6 @@ interface MenuItem {
   item_price_huf: number;
   item_allergens?: string[];
   item_image_url?: string;
-  category_id?: string;
-  category_name?: string;
-  category_sort?: number;
 }
 
 interface DailyOffersData {
@@ -104,10 +101,7 @@ const UnifiedDailySection = () => {
               item_description: item.item_description,
               item_price_huf: item.item_price_huf,
               item_allergens: item.item_allergens,
-              item_image_url: item.item_image_url,
-              category_id: item.category_id,
-              category_name: item.category_name,
-              category_sort: item.category_sort
+              item_image_url: item.item_image_url
             }))
           : [];
         
@@ -288,10 +282,7 @@ const UnifiedDailySection = () => {
                       name: item.item_name,
                       description: item.item_description || '',
                       price_huf: item.item_price_huf,
-                      image_url: item.item_image_url,
-                      category_id: item.category_id,
-                      category_name: item.category_name,
-                      category_sort: item.category_sort
+                      image_url: item.item_image_url
                     }
                   }))
                 }}
