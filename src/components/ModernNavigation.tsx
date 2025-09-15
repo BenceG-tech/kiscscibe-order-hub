@@ -63,7 +63,7 @@ const ModernNavigation = () => {
               Ma nyitva: H–P 7:00–16:00 • Szo-V Zárva
             </div>
             
-            <div className="flex items-center gap-2">
+            <div className="hidden md:flex items-center gap-2">
               <Button 
                 onClick={() => document.getElementById('napi-ajanlat')?.scrollIntoView({ behavior: 'smooth' })}
                 size={scrolled ? "sm" : "default"}
