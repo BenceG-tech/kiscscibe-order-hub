@@ -6,6 +6,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu, X, Phone, ShoppingCart } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { CartDialog } from "@/components/CartDialog";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const ModernNavigation = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -120,6 +121,9 @@ const ModernNavigation = () => {
                 </Link>
               ))}
               
+              {/* Theme toggle for desktop */}
+              <ThemeToggle />
+              
               {/* Cart icon for desktop */}
               <div className="relative group">
                 <Button 
@@ -193,10 +197,15 @@ const ModernNavigation = () => {
                       </Link>
                     ))}
                     
-                    <div className="pt-4 border-t">
+                    <div className="pt-4 border-t space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">Téma váltás</span>
+                        <ThemeToggle />
+                      </div>
+                      
                       <Button 
                         asChild
-                        className="w-full bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm mb-3 font-sofia font-bold text-base"
+                        className="w-full bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm font-sofia font-bold text-base"
                         onClick={closeMenu}
                       >
                          <Link to="/etlap">Rendelj most</Link>

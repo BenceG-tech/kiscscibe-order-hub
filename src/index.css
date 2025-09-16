@@ -15,40 +15,40 @@
 
 @layer base {
   :root {
-    /* Kiscsibe Reggeliző Brand Colors - Dark Navy Theme */
-    --background: 220 25% 15%; /* Dark navy background */
-    --foreground: 46 96% 57%; /* Golden yellow text */
+    /* Kiscsibe Reggeliző Brand Colors - Light Theme */
+    --background: 48 95% 97%; /* #FFF8E6 világos háttér */
+    --foreground: 0 0% 16%; /* #2A2A2A sötétszürke szöveg */
 
     /* Cards and containers */
-    --card: 220 20% 18%;
-    --card-foreground: 46 96% 57%;
+    --card: 48 100% 99%;
+    --card-foreground: 0 0% 16%;
 
-    --popover: 220 20% 18%;
-    --popover-foreground: 46 96% 57%;
+    --popover: 48 100% 99%;
+    --popover-foreground: 0 0% 16%;
 
     /* Primary - brand sárga #F6C22D */
     --primary: 46 96% 57%; /* #F6C22D */
     --primary-foreground: 0 0% 16%;
     --primary-glow: 46 100% 67%;
 
-    /* Secondary - dark navy variations */
-    --secondary: 220 15% 22%;
-    --secondary-foreground: 46 96% 57%;
+    /* Secondary - warm cream tones */
+    --secondary: 48 85% 92%;
+    --secondary-foreground: 24 35% 15%;
 
-    /* Muted - subtle navy grays */
-    --muted: 220 10% 25%;
-    --muted-foreground: 220 5% 70%;
+    /* Muted - subtle warm grays */
+    --muted: 48 25% 88%;
+    --muted-foreground: 24 15% 45%;
 
     /* Accent - warm brown for highlights */
     --accent: 35 45% 65%;
-    --accent-foreground: 220 25% 15%;
+    --accent-foreground: 48 100% 99%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 220 25% 15%;
+    --destructive-foreground: 48 100% 99%;
 
     /* Borders and inputs */
-    --border: 220 15% 30%;
-    --input: 220 15% 30%;
+    --border: 48 35% 85%;
+    --input: 48 35% 85%;
     --ring: 45 95% 55%;
 
     /* Restaurant-specific colors */
@@ -90,39 +90,46 @@
   }
 
   .dark {
-    /* Dark mode with warm evening restaurant vibes */
-    --background: 24 25% 8%;
-    --foreground: 48 85% 92%;
+    /* Dark mode - Dark Navy Theme */
+    --background: 220 25% 15%; /* Dark navy background */
+    --foreground: 46 96% 57%; /* Golden yellow text */
 
-    --card: 24 30% 12%;
-    --card-foreground: 48 85% 92%;
+    /* Cards and containers */
+    --card: 220 20% 18%;
+    --card-foreground: 46 96% 57%;
 
-    --popover: 24 30% 12%;
-    --popover-foreground: 48 85% 92%;
+    --popover: 220 20% 18%;
+    --popover-foreground: 46 96% 57%;
 
-    --primary: 45 95% 55%;
-    --primary-foreground: 24 35% 15%;
-    --primary-glow: 45 100% 65%;
+    /* Primary - brand sárga #F6C22D */
+    --primary: 46 96% 57%; /* #F6C22D */
+    --primary-foreground: 0 0% 16%;
+    --primary-glow: 46 100% 67%;
 
-    --secondary: 24 20% 18%;
-    --secondary-foreground: 48 85% 92%;
+    /* Secondary - dark navy variations */
+    --secondary: 220 15% 22%;
+    --secondary-foreground: 46 96% 57%;
 
-    --muted: 24 15% 22%;
-    --muted-foreground: 48 25% 65%;
+    /* Muted - subtle navy grays */
+    --muted: 220 10% 25%;
+    --muted-foreground: 220 5% 70%;
 
-    --accent: 35 45% 55%;
-    --accent-foreground: 48 85% 92%;
+    /* Accent - warm brown for highlights */
+    --accent: 35 45% 65%;
+    --accent-foreground: 220 25% 15%;
 
-    --destructive: 0 62.8% 50%;
-    --destructive-foreground: 48 85% 92%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 220 25% 15%;
 
-    --border: 24 20% 20%;
-    --input: 24 20% 20%;
+    /* Borders and inputs */
+    --border: 220 15% 30%;
+    --input: 220 15% 30%;
     --ring: 45 95% 55%;
 
-    --warmth: 35 75% 55%;
-    --comfort: 25 55% 65%;
-    --fresh: 115 25% 45%;
+    /* Restaurant-specific colors for dark mode */
+    --warmth: 35 85% 75%;
+    --comfort: 25 65% 85%;
+    --fresh: 115 35% 65%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -169,7 +176,11 @@
   }
   
   .sticky-blur {
-    background: rgba(34, 42, 65, 0.85);
+    background: rgba(255, 250, 240, 0.85);
     backdrop-filter: blur(8px);
+  }
+  
+  .dark .sticky-blur {
+    background: rgba(34, 42, 65, 0.85);
   }
 }
