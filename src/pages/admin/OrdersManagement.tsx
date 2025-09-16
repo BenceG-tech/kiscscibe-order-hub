@@ -168,16 +168,27 @@ const OrdersManagement = () => {
   };
 
   const filterOrders = (status: string) => {
-    if (status === "all") return orders;
+    if (status === "all") {
+      // Show only active orders (not completed or cancelled)
+      return orders.filter(order => !['completed', 'cancelled'].includes(order.status));
+    }
+    if (status === "past") {
+      // Show completed and cancelled orders
+      return orders.filter(order => ['completed', 'cancelled'].includes(order.status));
+    }
     return orders.filter(order => order.status === status);
   };
 
   const getOrderCounts = () => {
+    const activeOrders = orders.filter(o => !['completed', 'cancelled'].includes(o.status));
+    const pastOrders = orders.filter(o => ['completed', 'cancelled'].includes(o.status));
+    
     return {
       new: orders.filter(o => o.status === 'new').length,
       preparing: orders.filter(o => o.status === 'preparing').length,
       ready: orders.filter(o => o.status === 'ready').length,
-      all: orders.length
+      past: pastOrders.length,
+      all: activeOrders.length
     };
   };
 
@@ -225,13 +236,19 @@ const OrdersManagement = () => {
                 <Badge className="ml-2 bg-green-600 text-white">{counts.ready}</Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="all">Összes</TabsTrigger>
+            <TabsTrigger value="past" className="relative">
+              Múltbeli rendelések
+              {counts.past > 0 && (
+                <Badge className="ml-2 bg-gray-600 text-white">{counts.past}</Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="all">Aktív rendelések</TabsTrigger>
           </TabsList>
 
-          {["new", "preparing", "ready", "all"].map((tabValue) => (
+          {["new", "preparing", "ready", "past", "all"].map((tabValue) => (
             <TabsContent key={tabValue} value={tabValue} className="mt-6">
               <div className="grid gap-4">
-                {filterOrders(tabValue === "all" ? "" : tabValue).map((order) => {
+                {filterOrders(tabValue === "all" ? "all" : tabValue === "past" ? "past" : tabValue).map((order) => {
                   const statusConfig = getStatusConfig(order.status);
                   const StatusIcon = statusConfig.icon;
 
@@ -364,11 +381,11 @@ const OrdersManagement = () => {
                   );
                 })}
                 
-                {filterOrders(tabValue === "all" ? "" : tabValue).length === 0 && (
+                {filterOrders(tabValue === "all" ? "all" : tabValue === "past" ? "past" : tabValue).length === 0 && (
                   <Card>
                     <CardContent className="p-8 text-center">
                       <p className="text-muted-foreground">
-                        Nincs {tabValue !== "all" ? "ilyen állapotú" : ""} rendelés
+                        Nincs {tabValue === "all" ? "aktív" : tabValue === "past" ? "múltbeli" : "ilyen állapotú"} rendelés
                       </p>
                     </CardContent>
                   </Card>
