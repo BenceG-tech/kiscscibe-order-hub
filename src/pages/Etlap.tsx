@@ -27,6 +27,7 @@ interface MenuItem {
   image_url: string;
   allergens: string[];
   category_id: string;
+  requires_side_selection?: boolean;
 }
 
 interface CartItem {
@@ -118,6 +119,14 @@ const Etlap = () => {
   };
 
   const handleAddToCart = async (item: MenuItem) => {
+    // Check if side selection is required based on the new field
+    if (item.requires_side_selection) {
+      setSelectedMainItem(item);
+      setSidePickerOpen(true);
+      return;
+    }
+    
+    // Legacy check for existing side configurations (fallback)
     const requiresSides = await checkSideRequirement(item);
     
     if (requiresSides) {
@@ -230,21 +239,28 @@ const Etlap = () => {
                       <span className="text-xl font-bold text-primary">
                         {item.price_huf} Ft
                       </span>
-                      {item.allergens && item.allergens.length > 0 && (
-                        <div className="flex gap-1">
-                          {item.allergens.map((allergen) => (
-                            <Badge key={allergen} variant="secondary" className="text-xs">
-                              {allergen}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {item.requires_side_selection && (
+                          <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20">
+                            Köret
+                          </Badge>
+                        )}
+                        {item.allergens && item.allergens.length > 0 && (
+                          <div className="flex gap-1">
+                            {item.allergens.map((allergen) => (
+                              <Badge key={allergen} variant="secondary" className="text-xs">
+                                {allergen}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <Button 
                       onClick={() => handleAddToCart(item)}
                       className="w-full bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm transition-all duration-300 hover-scale"
                     >
-                      Kosárba
+                      {item.requires_side_selection ? "Köret választás" : "Kosárba"}
                     </Button>
                   </div>
                 </CardContent>
@@ -279,6 +295,7 @@ const Etlap = () => {
           onOpenChange={setSidePickerOpen}
           mainItemId={selectedMainItem.id}
           mainItemName={selectedMainItem.name}
+          mainItemRequiresSideSelection={selectedMainItem.requires_side_selection}
           onSideSelected={handleSideSelected}
         />
       )}

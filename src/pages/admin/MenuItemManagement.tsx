@@ -44,6 +44,7 @@ interface MenuItem {
   category_id: string;
   is_active: boolean;
   is_featured: boolean;
+  requires_side_selection: boolean;
   image_url?: string;
   allergens: string[];
   created_at: string;
@@ -81,6 +82,7 @@ const MenuItemManagement = () => {
     category_id: "",
     is_active: true,
     is_featured: false,
+    requires_side_selection: false,
     image_url: "",
     allergens: [] as string[]
   });
@@ -165,6 +167,7 @@ const MenuItemManagement = () => {
         category_id: item.category_id,
         is_active: item.is_active,
         is_featured: item.is_featured,
+        requires_side_selection: item.requires_side_selection || false,
         image_url: item.image_url || "",
         allergens: item.allergens || []
       });
@@ -177,6 +180,7 @@ const MenuItemManagement = () => {
         category_id: categories[0]?.id || "",
         is_active: true,
         is_featured: false,
+        requires_side_selection: false,
         image_url: "",
         allergens: []
       });
@@ -194,6 +198,7 @@ const MenuItemManagement = () => {
         category_id: itemForm.category_id,
         is_active: itemForm.is_active,
         is_featured: itemForm.is_featured,
+        requires_side_selection: itemForm.requires_side_selection,
         image_url: itemForm.image_url || null,
         allergens: itemForm.allergens
       };
@@ -818,6 +823,17 @@ const MenuItemManagement = () => {
                     />
                     <Label htmlFor="is_featured" className="text-sm font-medium">
                       Kiemelt étel
+                    </Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="requires_side_selection"
+                      checked={itemForm.requires_side_selection}
+                      onCheckedChange={(checked) => setItemForm({...itemForm, requires_side_selection: checked})}
+                    />
+                    <Label htmlFor="requires_side_selection" className="text-sm font-medium">
+                      Kötelező köret választás
                     </Label>
                   </div>
                 </div>

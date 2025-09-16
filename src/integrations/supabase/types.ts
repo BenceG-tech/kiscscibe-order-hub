@@ -414,6 +414,7 @@ export type Database = {
           is_temporary: boolean
           name: string
           price_huf: number
+          requires_side_selection: boolean
         }
         Insert: {
           allergens?: string[] | null
@@ -427,6 +428,7 @@ export type Database = {
           is_temporary?: boolean
           name: string
           price_huf: number
+          requires_side_selection?: boolean
         }
         Update: {
           allergens?: string[] | null
@@ -440,6 +442,7 @@ export type Database = {
           is_temporary?: boolean
           name?: string
           price_huf?: number
+          requires_side_selection?: boolean
         }
         Relationships: [
           {

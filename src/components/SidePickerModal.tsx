@@ -27,6 +27,7 @@ interface SidePickerModalProps {
   onOpenChange: (open: boolean) => void;
   mainItemId: string;
   mainItemName: string;
+  mainItemRequiresSideSelection?: boolean;
   onSideSelected: (selectedSides: SideItem[]) => void;
 }
 
@@ -35,6 +36,7 @@ export const SidePickerModal: React.FC<SidePickerModalProps> = ({
   onOpenChange,
   mainItemId,
   mainItemName,
+  mainItemRequiresSideSelection = false,
   onSideSelected
 }) => {
   const [sideConfigs, setSideConfigs] = useState<SideConfig[]>([]);
@@ -98,7 +100,10 @@ export const SidePickerModal: React.FC<SidePickerModalProps> = ({
       setSideItems(items);
       setMinSelect(firstConfig.min_select);
       setMaxSelect(firstConfig.max_select);
-      setIsRequired(firstConfig.is_required);
+      
+      // Check if required either from config or from main item setting
+      const isRequiredSelection = firstConfig.is_required || mainItemRequiresSideSelection;
+      setIsRequired(isRequiredSelection);
 
       // Set default selections
       const defaultSelections = configs
@@ -153,8 +158,11 @@ export const SidePickerModal: React.FC<SidePickerModalProps> = ({
   };
 
   const handleCancel = () => {
-    setSelectedSides([]);
-    onOpenChange(false);
+    // Only allow cancel if not required
+    if (!isRequired && !mainItemRequiresSideSelection) {
+      setSelectedSides([]);
+      onOpenChange(false);
+    }
   };
 
   const isValidSelection = selectedSides.length >= minSelect && selectedSides.length <= maxSelect;
@@ -162,15 +170,17 @@ export const SidePickerModal: React.FC<SidePickerModalProps> = ({
   if (!open) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={!isRequired && !mainItemRequiresSideSelection ? onOpenChange : undefined}>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Válassz köretet</DialogTitle>
+          <DialogTitle>
+            {isRequired || mainItemRequiresSideSelection ? "Köret választása szükséges" : "Válassz köretet"}
+          </DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            <strong>{mainItemName}</strong> főételhez köret választása {isRequired ? 'kötelező' : 'opcionális'}.
+            <strong>{mainItemName}</strong> főételhez köret választása {isRequired || mainItemRequiresSideSelection ? 'kötelező' : 'opcionális'}.
             {minSelect === maxSelect ? (
               ` Válassz ${minSelect} köretet.`
             ) : (
@@ -233,13 +243,15 @@ export const SidePickerModal: React.FC<SidePickerModalProps> = ({
           )}
 
           <div className="flex gap-3 pt-4">
-            <Button variant="outline" onClick={handleCancel} className="flex-1">
-              Mégse
-            </Button>
+            {!isRequired && !mainItemRequiresSideSelection && (
+              <Button variant="outline" onClick={handleCancel} className="flex-1">
+                Mégse
+              </Button>
+            )}
             <Button 
               onClick={handleConfirm} 
               disabled={!isValidSelection}
-              className="flex-1"
+              className={!isRequired && !mainItemRequiresSideSelection ? "flex-1" : "w-full"}
             >
               Hozzáadás
             </Button>
