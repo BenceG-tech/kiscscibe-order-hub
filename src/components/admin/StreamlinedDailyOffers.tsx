@@ -660,7 +660,7 @@ const StreamlinedDailyOffers = () => {
                             <div className="space-y-3">
                               <div className="flex items-center justify-between">
                                 <h4 className="font-medium text-green-800">✅ Érvényes menü összeállítás</h4>
-                                <Badge className="bg-green-600 text-white">
+                                <Badge variant="price">
                                   {offerForm.menuPrice} Ft
                                 </Badge>
                               </div>

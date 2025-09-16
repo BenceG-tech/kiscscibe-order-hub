@@ -37,7 +37,7 @@
 
     /* Muted - subtle warm grays */
     --muted: 48 25% 88%;
-    --muted-foreground: 24 15% 45%;
+    --muted-foreground: 24 15% 35%; /* Darker for better contrast */
 
     /* Accent - warm brown for highlights */
     --accent: 35 45% 65%;
@@ -47,8 +47,8 @@
     --destructive-foreground: 48 100% 99%;
 
     /* Borders and inputs */
-    --border: 48 35% 85%;
-    --input: 48 35% 85%;
+    --border: 48 35% 75%; /* Darker border for better visibility */
+    --input: 48 35% 95%; /* Lighter input background */
     --ring: 45 95% 55%;
 
     /* Restaurant-specific colors */
@@ -92,38 +92,38 @@
   .dark {
     /* Dark mode - Dark Navy Theme */
     --background: 220 25% 15%; /* Dark navy background */
-    --foreground: 46 96% 57%; /* Golden yellow text */
+    --foreground: 46 90% 90%; /* Light golden yellow text - improved contrast */
 
     /* Cards and containers */
     --card: 220 20% 18%;
-    --card-foreground: 46 96% 57%;
+    --card-foreground: 46 90% 90%; /* Light golden yellow for better contrast */
 
     --popover: 220 20% 18%;
-    --popover-foreground: 46 96% 57%;
+    --popover-foreground: 46 90% 90%;
 
     /* Primary - brand sárga #F6C22D */
     --primary: 46 96% 57%; /* #F6C22D */
-    --primary-foreground: 0 0% 16%;
+    --primary-foreground: 220 25% 15%; /* Dark navy text on yellow */
     --primary-glow: 46 100% 67%;
 
     /* Secondary - dark navy variations */
     --secondary: 220 15% 22%;
-    --secondary-foreground: 46 96% 57%;
+    --secondary-foreground: 46 90% 90%; /* Light text for contrast */
 
     /* Muted - subtle navy grays */
     --muted: 220 10% 25%;
-    --muted-foreground: 220 5% 70%;
+    --muted-foreground: 220 5% 85%; /* Much lighter for better contrast */
 
     /* Accent - warm brown for highlights */
     --accent: 35 45% 65%;
     --accent-foreground: 220 25% 15%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 220 25% 15%;
+    --destructive-foreground: 0 0% 98%; /* Light text on red */
 
     /* Borders and inputs */
-    --border: 220 15% 30%;
-    --input: 220 15% 30%;
+    --border: 220 15% 35%; /* Slightly lighter for visibility */
+    --input: 220 15% 22%; /* Darker input background */
     --ring: 45 95% 55%;
 
     /* Restaurant-specific colors for dark mode */
@@ -182,5 +182,23 @@
   
   .dark .sticky-blur {
     background: rgba(34, 42, 65, 0.85);
+  }
+
+  /* Badge variants for better contrast */
+  .badge-price {
+    @apply bg-green-600 text-white font-semibold;
+  }
+  
+  .dark .badge-price {
+    @apply bg-green-500 text-green-950;
+  }
+
+  /* Progress bar improvements */
+  .progress-enhanced .progress-indicator {
+    background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary-glow)));
+  }
+
+  .dark .progress-enhanced .progress-indicator {
+    @apply bg-primary;
   }
 }
