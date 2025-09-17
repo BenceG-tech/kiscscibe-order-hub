@@ -303,7 +303,7 @@ const CapacityManagement = () => {
         <Card className="rounded-2xl shadow-md border-primary/20">
           <CardHeader className="pb-4">
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <Users className="h-5 w-5" />
+              <Users className="h-5 w-5 text-foreground" />
               Kapacitás naptár
             </CardTitle>
           </CardHeader>

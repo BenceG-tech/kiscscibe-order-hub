@@ -644,7 +644,7 @@ const StreamlinedDailyOffers = () => {
                   <>
                     <div className="space-y-4">
                       <div className="flex items-center gap-2">
-                        <ChefHat className="h-5 w-5 text-secondary" />
+                        <ChefHat className="h-5 w-5 text-foreground" />
                         <h3 className="text-lg font-semibold">Menü előnézet</h3>
                         {!isValidMenu && (
                           <Badge variant="destructive" className="ml-2">
@@ -833,7 +833,7 @@ const StreamlinedDailyOffers = () => {
                     <Separator />
                     <div className="space-y-4">
                       <div className="flex items-center gap-2">
-                        <Utensils className="h-5 w-5 text-secondary" />
+                        <Utensils className="h-5 w-5 text-foreground" />
                         <h3 className="text-lg font-semibold">Menü beállításai</h3>
                         {!isValidMenu ? (
                           <TooltipProvider>
