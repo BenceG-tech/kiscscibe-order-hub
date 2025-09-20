@@ -202,12 +202,7 @@ const Etlap = () => {
 
           {/* Categories */}
           <Tabs value={activeCategory} onValueChange={setActiveCategory} className="mb-8">
-            <TabsList className={`grid w-full gap-1 ${
-              categories.length <= 2 ? 'grid-cols-3' : 
-              categories.length <= 3 ? 'grid-cols-4' : 
-              categories.length <= 4 ? 'grid-cols-5' : 
-              'grid-cols-2 md:grid-cols-3 lg:grid-cols-6'
-            }`}>
+            <TabsList className="w-full justify-start">
               <TabsTrigger value="all">Összes</TabsTrigger>
               {categories.map((category) => (
                 <TabsTrigger key={category.id} value={category.id}>
@@ -218,54 +213,56 @@ const Etlap = () => {
           </Tabs>
 
           {/* Menu Items Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 mb-8">
             {filteredItems.map((item, index) => (
-              <Card key={item.id} className="group hover:shadow-lg transition-all duration-300 hover-scale animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
+              <Card key={item.id} className="group hover:shadow-xl transition-all duration-300 hover:scale-[1.02] animate-fade-in border-0 shadow-md bg-card/95 backdrop-blur-sm" style={{ animationDelay: `${index * 0.05}s` }}>
                 <CardContent className="p-0">
-                  <div className="aspect-[3/2] bg-muted rounded-t-lg overflow-hidden">
+                  <div className="aspect-square bg-muted rounded-t-2xl overflow-hidden relative">
                     {item.image_url ? (
                       <img 
                         src={item.image_url} 
                         alt={item.name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-6xl bg-gradient-to-br from-primary/10 to-warmth/10">
-                        🍽️
+                      <div className="w-full h-full flex items-center justify-center text-muted-foreground bg-gradient-to-br from-muted to-muted/60">
+                        <span className="text-sm">Kép nincs</span>
                       </div>
                     )}
-                  </div>
-                  <div className="p-4">
-                    <h3 className="font-semibold text-lg mb-2">{item.name}</h3>
-                    <p className="text-muted-foreground text-sm mb-3 line-clamp-2">
-                      {item.description}
-                    </p>
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-xl font-bold text-primary">
+                    <div className="absolute top-3 right-3">
+                      <Badge className="bg-primary/90 text-primary-foreground font-bold text-sm px-3 py-1 rounded-full backdrop-blur-sm">
                         {item.price_huf} Ft
-                      </span>
-                      <div className="flex items-center gap-2">
-                        {item.requires_side_selection && (
-                          <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20">
-                            Köret
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="p-4 space-y-3">
+                    <h3 className="font-bold text-base text-foreground leading-tight line-clamp-2">{item.name}</h3>
+                    
+                    {item.description && (
+                      <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{item.description}</p>
+                    )}
+
+                    {item.allergens && item.allergens.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {item.allergens.slice(0, 3).map((allergen, idx) => (
+                          <Badge key={idx} variant="secondary" className="text-xs px-2 py-0.5 rounded-full">
+                            {allergen}
+                          </Badge>
+                        ))}
+                        {item.allergens.length > 3 && (
+                          <Badge variant="secondary" className="text-xs px-2 py-0.5 rounded-full">
+                            +{item.allergens.length - 3}
                           </Badge>
                         )}
-                        {item.allergens && item.allergens.length > 0 && (
-                          <div className="flex gap-1">
-                            {item.allergens.map((allergen) => (
-                              <Badge key={allergen} variant="secondary" className="text-xs">
-                                {allergen}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
                       </div>
-                    </div>
+                    )}
+
                     <Button 
                       onClick={() => handleAddToCart(item)}
-                      className="w-full bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm transition-all duration-300 hover-scale"
+                      className="w-full rounded-xl font-semibold"
+                      size="sm"
                     >
-                      {item.requires_side_selection ? "Köret választás" : "Kosárba"}
+                      {item.requires_side_selection ? "Köretek választása" : "Kosárba"}
                     </Button>
                   </div>
                 </CardContent>
