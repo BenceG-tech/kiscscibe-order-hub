@@ -202,7 +202,12 @@ const Etlap = () => {
 
           {/* Categories */}
           <Tabs value={activeCategory} onValueChange={setActiveCategory} className="mb-8">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className={`grid w-full gap-1 ${
+              categories.length <= 2 ? 'grid-cols-3' : 
+              categories.length <= 3 ? 'grid-cols-4' : 
+              categories.length <= 4 ? 'grid-cols-5' : 
+              'grid-cols-2 md:grid-cols-3 lg:grid-cols-6'
+            }`}>
               <TabsTrigger value="all">Összes</TabsTrigger>
               {categories.map((category) => (
                 <TabsTrigger key={category.id} value={category.id}>
@@ -217,7 +222,7 @@ const Etlap = () => {
             {filteredItems.map((item, index) => (
               <Card key={item.id} className="group hover:shadow-lg transition-all duration-300 hover-scale animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
                 <CardContent className="p-0">
-                  <div className="aspect-[4/3] bg-muted rounded-t-lg overflow-hidden">
+                  <div className="aspect-[3/2] bg-muted rounded-t-lg overflow-hidden">
                     {item.image_url ? (
                       <img 
                         src={item.image_url} 
