@@ -201,7 +201,7 @@ const Etlap = () => {
           </div>
 
           {/* Categories */}
-          <Tabs value={activeCategory} onValueChange={setActiveCategory} className="mb-8">
+          <Tabs value={activeCategory} onValueChange={setActiveCategory} className="mb-4">
             <TabsList className="w-full justify-start">
               <TabsTrigger value="all">Összes</TabsTrigger>
               {categories.map((category) => (
