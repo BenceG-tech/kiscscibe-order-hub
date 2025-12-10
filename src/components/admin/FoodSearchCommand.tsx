@@ -60,8 +60,11 @@ export const FoodSearchCommand = ({
     .map(id => availableItems.find(item => item.id === id))
     .filter(Boolean) as MenuItem[];
 
-  // Show recently used only when no search term
-  const showRecentlyUsed = searchTerm === "" && recentItems.length > 0;
+  // Show results when there's a search term OR a specific category is selected
+  const showSearchResults = searchTerm !== "" || selectedCategory !== "all";
+  
+  // Show recently used only when no search term and no category filter
+  const showRecentlyUsed = !showSearchResults && recentItems.length > 0;
 
   // Reset highlighted index when results change
   useEffect(() => {
@@ -227,7 +230,7 @@ export const FoodSearchCommand = ({
             )}
 
             {/* Search Results */}
-            {searchTerm && (
+            {showSearchResults && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
                   <div className="flex items-center gap-2">
@@ -274,8 +277,8 @@ export const FoodSearchCommand = ({
               </div>
             )}
 
-            {/* Empty state when no search and no recent */}
-            {!searchTerm && recentItems.length === 0 && (
+            {/* Empty state when no search, no category filter, and no recent */}
+            {!showSearchResults && recentItems.length === 0 && (
               <div className="text-center py-6 text-muted-foreground border border-dashed rounded-lg">
                 <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
                 <p className="text-sm">Kezdj el gépelni a kereséshez</p>
