@@ -18,7 +18,8 @@ import {
   Save,
   X,
   Package,
-  DollarSign
+  DollarSign,
+  Search
 } from "lucide-react";
 
 interface MenuCategory {
@@ -46,6 +47,8 @@ const MenuManagement = () => {
   const [loading, setLoading] = useState(true);
   const [isItemDialogOpen, setIsItemDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
   const [itemForm, setItemForm] = useState({
     name: "",
@@ -56,6 +59,26 @@ const MenuManagement = () => {
     image_url: "",
     is_active: true,
     is_featured: false
+  });
+
+  // Normalize text for accent-insensitive search
+  const normalizeText = (text: string) => {
+    return text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/ő/g, 'o')
+      .replace(/ű/g, 'u');
+  };
+
+  // Filter menu items based on search and category
+  const filteredMenuItems = menuItems.filter(item => {
+    const normalizedSearch = normalizeText(searchTerm);
+    const matchesSearch = searchTerm === "" || 
+      normalizeText(item.name).includes(normalizedSearch) ||
+      (item.description && normalizeText(item.description).includes(normalizedSearch));
+    const matchesCategory = selectedCategory === "all" || item.category_id === selectedCategory;
+    return matchesSearch && matchesCategory;
   });
 
   useEffect(() => {
@@ -337,9 +360,68 @@ const MenuManagement = () => {
           </Dialog>
         </div>
 
+        {/* Search and Filters */}
+        <Card className="p-4">
+          <div className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Keresés az ételek között... (pl. gulyás, pörkölt)"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 h-12 text-base"
+              />
+              {searchTerm && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                  onClick={() => setSearchTerm("")}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+            
+            <div className="flex flex-wrap gap-2">
+              <Badge
+                variant={selectedCategory === "all" ? "default" : "outline"}
+                className="cursor-pointer hover:bg-primary/80 transition-colors"
+                onClick={() => setSelectedCategory("all")}
+              >
+                Összes ({menuItems.length})
+              </Badge>
+              {categories.map(category => {
+                const count = menuItems.filter(i => i.category_id === category.id).length;
+                return (
+                  <Badge
+                    key={category.id}
+                    variant={selectedCategory === category.id ? "default" : "outline"}
+                    className="cursor-pointer hover:bg-primary/80 transition-colors"
+                    onClick={() => setSelectedCategory(category.id)}
+                  >
+                    {category.name} ({count})
+                  </Badge>
+                );
+              })}
+            </div>
+            
+            {searchTerm && (
+              <p className="text-sm text-muted-foreground">
+                {filteredMenuItems.length} találat "{searchTerm}" keresésre
+              </p>
+            )}
+          </div>
+        </Card>
+
         <div className="grid gap-6">
           {categories.map((category) => {
-            const categoryItems = menuItems.filter(item => item.category_id === category.id);
+            const categoryItems = filteredMenuItems.filter(item => item.category_id === category.id);
+            
+            // Hide empty categories when searching or filtering
+            if (categoryItems.length === 0 && (searchTerm !== "" || selectedCategory !== "all")) {
+              return null;
+            }
             
             return (
               <Card key={category.id} className="animate-fade-in">
@@ -434,6 +516,14 @@ const MenuManagement = () => {
               </Card>
             );
           })}
+          
+          {filteredMenuItems.length === 0 && searchTerm !== "" && (
+            <Card className="p-8 text-center">
+              <Search className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+              <p className="text-lg font-medium">Nincs találat: "{searchTerm}"</p>
+              <p className="text-sm text-muted-foreground mt-1">Próbálj más keresőszót használni</p>
+            </Card>
+          )}
         </div>
       </div>
     </AdminLayout>
