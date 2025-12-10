@@ -648,14 +648,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      bootstrap_first_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      gen_order_code: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      bootstrap_first_admin: { Args: never; Returns: boolean }
+      gen_order_code: { Args: never; Returns: string }
       get_customer_order: {
         Args: { customer_phone: string; order_code: string }
         Returns: {
@@ -702,26 +696,16 @@ export type Database = {
           offer_remaining_portions: number
         }[]
       }
-      get_user_role: {
-        Args: { check_user_id?: string }
-        Returns: string
-      }
+      get_user_role: { Args: { check_user_id?: string }; Returns: string }
       increment_template_usage: {
         Args: { template_id: string }
         Returns: undefined
       }
-      is_admin: {
-        Args: Record<PropertyKey, never> | { check_user_id?: string }
-        Returns: boolean
-      }
-      is_date_in_past: {
-        Args: { check_date: string }
-        Returns: boolean
-      }
-      is_weekend: {
-        Args: { check_date: string }
-        Returns: boolean
-      }
+      is_admin:
+        | { Args: never; Returns: boolean }
+        | { Args: { check_user_id?: string }; Returns: boolean }
+      is_date_in_past: { Args: { check_date: string }; Returns: boolean }
+      is_weekend: { Args: { check_date: string }; Returns: boolean }
       update_daily_portions: {
         Args: { daily_id: string; quantity_needed: number; table_name: string }
         Returns: boolean
