@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { capitalizeFirst } from "@/lib/utils";
 import { 
   Plus, 
   Edit, 
@@ -637,7 +638,7 @@ const MenuItemManagement = () => {
                     />
                     <div className="flex-1">
                       <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
-                        {item.name}
+                        {capitalizeFirst(item.name)}
                         {item.is_featured && <Star className="h-4 w-4 text-yellow-500 fill-current" />}
                         {item.usage_info?.is_in_daily_offer && (
                           <Badge variant="secondary" className="text-xs">

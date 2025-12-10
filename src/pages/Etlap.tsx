@@ -12,6 +12,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { format, getDay, isPast, isToday } from "date-fns";
 import { hu } from "date-fns/locale";
 import { getSmartInitialDate, getContentLabel } from "@/lib/dateUtils";
+import { capitalizeFirst } from "@/lib/utils";
 
 interface MenuItem {
   id: string;
@@ -324,7 +325,7 @@ const Etlap = () => {
                               <div className="flex items-center gap-2">
                                 <span className="text-xs font-medium text-amber-600 dark:text-amber-400 uppercase">Leves</span>
                               </div>
-                              <h4 className="font-semibold text-lg">{menuData.soup.item_name}</h4>
+                              <h4 className="font-semibold text-lg">{capitalizeFirst(menuData.soup.item_name)}</h4>
                               {menuData.soup.item_description && (
                                 <p className="text-sm text-muted-foreground">{menuData.soup.item_description}</p>
                               )}
@@ -340,7 +341,7 @@ const Etlap = () => {
                               <div className="flex items-center gap-2">
                                 <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 uppercase">Főétel</span>
                               </div>
-                              <h4 className="font-semibold text-lg">{menuData.main.item_name}</h4>
+                              <h4 className="font-semibold text-lg">{capitalizeFirst(menuData.main.item_name)}</h4>
                               {menuData.main.item_description && (
                                 <p className="text-sm text-muted-foreground">{menuData.main.item_description}</p>
                               )}
@@ -384,7 +385,7 @@ const Etlap = () => {
                               )}
                               <div className="p-4 space-y-3">
                                 <div className="flex items-start justify-between gap-2">
-                                  <h4 className="font-semibold">{item.item_name}</h4>
+                                  <h4 className="font-semibold">{capitalizeFirst(item.item_name)}</h4>
                                   <Badge variant="secondary" className="shrink-0">
                                     {item.item_price_huf} Ft
                                   </Badge>

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search, Plus, X, Clock, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, capitalizeFirst } from "@/lib/utils";
 
 interface MenuItem {
   id: string;
@@ -228,7 +228,7 @@ export const FoodSearchCommand = ({
                       )}
                     >
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium truncate">{item.name}</div>
+                        <div className="font-medium truncate">{capitalizeFirst(item.name)}</div>
                         <div className="text-xs text-muted-foreground truncate">
                           {getCategoryName(item.category_id)}
                         </div>
@@ -266,7 +266,7 @@ export const FoodSearchCommand = ({
                           )}
                         >
                           <div className="flex-1 min-w-0">
-                            <div className="font-medium truncate">{item.name}</div>
+                            <div className="font-medium truncate">{capitalizeFirst(item.name)}</div>
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
                               <span className="truncate">{getCategoryName(item.category_id)}</span>
                               <span>•</span>

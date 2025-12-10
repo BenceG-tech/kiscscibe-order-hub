@@ -11,6 +11,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ImageUpload from "@/components/admin/ImageUpload";
+import { capitalizeFirst } from "@/lib/utils";
 import { 
   Plus, 
   Edit, 
@@ -447,7 +448,7 @@ const MenuManagement = () => {
                                  className="w-12 h-12 object-cover rounded-lg"
                                />
                              )}
-                             <h4 className="font-medium">{item.name}</h4>
+                             <h4 className="font-medium">{capitalizeFirst(item.name)}</h4>
                             <div className="flex gap-2">
                               {!item.is_active && (
                                 <Badge variant="secondary">Inaktív</Badge>

@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Check } from 'lucide-react';
 import { TemporaryItemsLibrary } from './TemporaryItemsLibrary';
 import { TemporaryItemCreator } from './TemporaryItemCreator';
+import { capitalizeFirst } from '@/lib/utils';
 
 interface MenuItem {
   id: string;
@@ -111,7 +112,7 @@ export const EnhancedItemSelection: React.FC<EnhancedItemSelectionProps> = ({
                         )}
                       </div>
                       <div className="flex-1">
-                        <div className="font-medium">{item.name}</div>
+                        <div className="font-medium">{capitalizeFirst(item.name)}</div>
                         {item.description && (
                           <div className="text-sm text-muted-foreground">{item.description}</div>
                         )}
@@ -172,7 +173,7 @@ export const EnhancedItemSelection: React.FC<EnhancedItemSelectionProps> = ({
                             return (
                               <div key={itemId} className="flex items-center justify-between p-2 border rounded">
                                 <div>
-                                  <div className="font-medium">{item.name}</div>
+                                  <div className="font-medium">{capitalizeFirst(item.name)}</div>
                                   <Badge variant="outline" className="text-xs">{category?.name}</Badge>
                                 </div>
                                 <div className="text-sm font-medium">{item.price_huf} Ft</div>
@@ -204,7 +205,7 @@ export const EnhancedItemSelection: React.FC<EnhancedItemSelectionProps> = ({
                                     />
                                   )}
                                   <div>
-                                    <div className="font-medium">{item.name}</div>
+                                    <div className="font-medium">{capitalizeFirst(item.name)}</div>
                                     <div className="flex items-center gap-2">
                                       <Badge variant="outline" className="text-xs">{category?.name}</Badge>
                                       <Badge variant="secondary" className="text-xs">Ideiglenes</Badge>
