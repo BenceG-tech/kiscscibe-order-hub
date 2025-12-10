@@ -2,13 +2,15 @@ import { useState, useEffect } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import DailyItemSelector from "@/components/DailyItemSelector";
+import { Badge } from "@/components/ui/badge";
 import DailyMenuPanel from "@/components/DailyMenuPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isToday, isPast, isSunday, getDay } from "date-fns";
 import { getSmartInitialDate, getContentLabel } from "@/lib/dateUtils";
 import { hu } from "date-fns/locale";
 import { capitalizeFirst } from "@/lib/utils";
+import { useCart } from "@/contexts/CartContext";
+import { useToast } from "@/components/ui/use-toast";
 interface MenuItem {
   id: string;
   item_id: string;
@@ -43,11 +45,32 @@ interface DailyMenuData {
 import StickyMenuCTA from "@/components/StickyMenuCTA";
 
 const UnifiedDailySection = () => {
+  const { toast } = useToast();
+  const { addItem, addCompleteMenu } = useCart();
   const [selectedDate, setSelectedDate] = useState<Date>(getSmartInitialDate());
   const [dailyData, setDailyData] = useState<DailyOffersData | null>(null);
   const [menuData, setMenuData] = useState<DailyMenuData | null>(null);
   const [loading, setLoading] = useState(false);
   const [availableDates, setAvailableDates] = useState<Date[]>([]);
+
+  // Get extra items (not part of menu)
+  const extraItems = dailyData?.items.filter(item => !item.is_menu_part) || [];
+
+  const handleAddItemToCart = (item: MenuItem) => {
+    addItem({
+      id: item.item_id,
+      name: item.item_name,
+      price_huf: item.item_price_huf,
+      modifiers: [],
+      sides: [],
+      image_url: item.item_image_url
+    });
+    
+    toast({
+      title: "Kosárba tetve",
+      description: `${item.item_name} hozzáadva a kosárhoz`
+    });
+  };
 
   const handleAddMenuToCart = () => {
     if (!menuData || !menuData.soup || !menuData.main) return;
@@ -271,36 +294,56 @@ const UnifiedDailySection = () => {
               </CardContent>
             </Card>
           ) : dailyData && dailyData.items.length > 0 ? (
-            <div>
-              <h3 className="text-xl font-sofia font-semibold mb-4">
+            <div className="space-y-4">
+              <h3 className="text-xl font-sofia font-semibold">
                 {format(selectedDate, "MMMM d. (EEEE)", { locale: hu })} - {(() => {
                   const { title } = getContentLabel(selectedDate);
                   return title;
                 })()}
               </h3>
-              <DailyItemSelector 
-                type="offer"
-                data={{
-                  id: dailyData.offer_id,
-                  date: dailyData.offer_date,
-                  price_huf: dailyData.offer_price_huf || 0,
-                  note: dailyData.offer_note,
-                  max_portions: dailyData.offer_max_portions || 0,
-                  remaining_portions: dailyData.offer_remaining_portions || 0,
-                  daily_offer_items: dailyData.items.map(item => ({
-                    id: item.id,
-                    menu_items: {
-                      id: item.item_id,
-                      name: capitalizeFirst(item.item_name),
-                      description: item.item_description || '',
-                      price_huf: item.item_price_huf,
-                      image_url: item.item_image_url
-                    }
-                  }))
-                }}
-                canOrder={true}
-                showDetails={true}
-              />
+              
+              {/* Extra Items - Grid layout exactly like on /etlap */}
+              {extraItems.length > 0 && (
+                <div className="space-y-4">
+                  <h4 className="text-lg font-semibold">További napi ételek</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {extraItems.map((item) => (
+                      <Card key={item.id} className="group hover:shadow-lg transition-all duration-300">
+                        <CardContent className="p-0">
+                          {item.item_image_url && (
+                            <div className="aspect-video bg-muted overflow-hidden">
+                              <img 
+                                src={item.item_image_url} 
+                                alt={item.item_name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                            </div>
+                          )}
+                          <div className="p-4 space-y-3">
+                            <div className="flex items-start justify-between gap-2">
+                              <h4 className="font-semibold">{capitalizeFirst(item.item_name)}</h4>
+                              <Badge variant="secondary" className="shrink-0">
+                                {item.item_price_huf} Ft
+                              </Badge>
+                            </div>
+                            {item.item_description && (
+                              <p className="text-sm text-muted-foreground line-clamp-2">
+                                {item.item_description}
+                              </p>
+                            )}
+                            <Button
+                              onClick={() => handleAddItemToCart(item)}
+                              className="w-full"
+                            >
+                              Kosárba
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <Card>
