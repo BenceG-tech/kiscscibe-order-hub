@@ -35,11 +35,11 @@ const Contact = () => {
   };
 
   const openingHours = [
-    { day: "Hétfő", hours: "7:00 - 15:00", isOpen: true },
-    { day: "Kedd", hours: "7:00 - 15:00", isOpen: true },
-    { day: "Szerda", hours: "7:00 - 15:00", isOpen: true },
-    { day: "Csütörtök", hours: "7:00 - 15:00", isOpen: true },
-    { day: "Péntek", hours: "7:00 - 15:00", isOpen: true },
+    { day: "Hétfő", hours: "7:00 - 16:00", isOpen: true },
+    { day: "Kedd", hours: "7:00 - 16:00", isOpen: true },
+    { day: "Szerda", hours: "7:00 - 16:00", isOpen: true },
+    { day: "Csütörtök", hours: "7:00 - 16:00", isOpen: true },
+    { day: "Péntek", hours: "7:00 - 16:00", isOpen: true },
     { day: "Szombat", hours: "Zárva", isOpen: false },
     { day: "Vasárnap", hours: "Zárva", isOpen: false }
   ];
