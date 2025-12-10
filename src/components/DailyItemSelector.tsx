@@ -234,17 +234,19 @@ const DailyItemSelector = ({ type, data, canOrder, showDetails = false, deadline
                 onCheckedChange={() => handleItemToggle(item.id)}
                 className="mt-1"
               />
-              {item.menu_items?.image_url ? (
-                <img 
-                  src={item.menu_items.image_url} 
-                  alt={item.menu_items.name}
-                  className="w-36 h-36 rounded-xl object-cover shrink-0 shadow-md hover:scale-105 transition-transform duration-200"
-                />
-              ) : (
-                <div className="w-36 h-36 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 shadow-md">
-                  <UtensilsCrossed className="h-16 w-16 text-primary" />
-                </div>
-              )}
+              <div className="w-48 aspect-video rounded-xl overflow-hidden shrink-0 shadow-md">
+                {item.menu_items?.image_url ? (
+                  <img 
+                    src={item.menu_items.image_url} 
+                    alt={item.menu_items.name}
+                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-primary/10 flex items-center justify-center">
+                    <UtensilsCrossed className="h-12 w-12 text-primary" />
+                  </div>
+                )}
+              </div>
               <div className="flex-1 min-w-0 py-2">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="flex-shrink-0 w-6 h-6 bg-primary/10 text-primary rounded-full flex items-center justify-center text-sm font-bold">
