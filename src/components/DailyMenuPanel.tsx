@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCart } from "@/contexts/CartContext";
-import { UtensilsCrossed } from "lucide-react";
+import { UtensilsCrossed, Soup } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { capitalizeFirst } from "@/lib/utils";
@@ -143,13 +143,24 @@ const DailyMenuPanel = ({ date, menuData, loading }: DailyMenuPanelProps) => {
           
           {menuData.soup && (
             <div className="flex items-start gap-3 p-3 bg-background/50 rounded-lg">
-              <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">
-                leves
-              </Badge>
-              <div>
+              {menuData.soup.item_image_url ? (
+                <img 
+                  src={menuData.soup.item_image_url} 
+                  alt={menuData.soup.item_name}
+                  className="w-12 h-12 rounded-lg object-cover shrink-0"
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
+                  <Soup className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700 text-xs mb-1">
+                  leves
+                </Badge>
                 <h5 className="font-medium">{capitalizeFirst(menuData.soup.item_name)}</h5>
                 {menuData.soup.item_description && (
-                  <p className="text-sm text-muted-foreground">{menuData.soup.item_description}</p>
+                  <p className="text-sm text-muted-foreground line-clamp-2">{menuData.soup.item_description}</p>
                 )}
               </div>
             </div>
@@ -157,13 +168,24 @@ const DailyMenuPanel = ({ date, menuData, loading }: DailyMenuPanelProps) => {
 
           {menuData.main && (
             <div className="flex items-start gap-3 p-3 bg-background/50 rounded-lg">
-              <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">
-                főétel
-              </Badge>
-              <div>
+              {menuData.main.item_image_url ? (
+                <img 
+                  src={menuData.main.item_image_url} 
+                  alt={menuData.main.item_name}
+                  className="w-12 h-12 rounded-lg object-cover shrink-0"
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
+                  <UtensilsCrossed className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <Badge variant="outline" className="bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-700 text-xs mb-1">
+                  főétel
+                </Badge>
                 <h5 className="font-medium">{capitalizeFirst(menuData.main.item_name)}</h5>
                 {menuData.main.item_description && (
-                  <p className="text-sm text-muted-foreground">{menuData.main.item_description}</p>
+                  <p className="text-sm text-muted-foreground line-clamp-2">{menuData.main.item_description}</p>
                 )}
               </div>
             </div>
