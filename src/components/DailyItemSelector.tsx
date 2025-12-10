@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ShoppingCart, Package, Coffee, Clock, AlertCircle, Plus, Minus } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "sonner";
+import { capitalizeFirst } from "@/lib/utils";
 
 interface MenuItem {
   id: string;
@@ -242,7 +243,7 @@ const DailyItemSelector = ({ type, data, canOrder, showDetails = false, deadline
                     htmlFor={item.id}
                     className="font-sofia font-medium cursor-pointer flex-1"
                   >
-                    {item.menu_items?.name}
+                    {capitalizeFirst(item.menu_items?.name || '')}
                   </label>
                   <Badge variant="outline" className="text-xs">
                     {item.menu_items?.price_huf} Ft

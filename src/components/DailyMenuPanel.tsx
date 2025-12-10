@@ -5,6 +5,7 @@ import { useCart } from "@/contexts/CartContext";
 import { UtensilsCrossed } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { capitalizeFirst } from "@/lib/utils";
 
 interface MenuItem {
   id: string;
@@ -146,7 +147,7 @@ const DailyMenuPanel = ({ date, menuData, loading }: DailyMenuPanelProps) => {
                 leves
               </Badge>
               <div>
-                <h5 className="font-medium">{menuData.soup.item_name}</h5>
+                <h5 className="font-medium">{capitalizeFirst(menuData.soup.item_name)}</h5>
                 {menuData.soup.item_description && (
                   <p className="text-sm text-muted-foreground">{menuData.soup.item_description}</p>
                 )}
@@ -160,7 +161,7 @@ const DailyMenuPanel = ({ date, menuData, loading }: DailyMenuPanelProps) => {
                 főétel
               </Badge>
               <div>
-                <h5 className="font-medium">{menuData.main.item_name}</h5>
+                <h5 className="font-medium">{capitalizeFirst(menuData.main.item_name)}</h5>
                 {menuData.main.item_description && (
                   <p className="text-sm text-muted-foreground">{menuData.main.item_description}</p>
                 )}

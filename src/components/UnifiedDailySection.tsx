@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, isToday, isPast, isSunday, getDay } from "date-fns";
 import { getSmartInitialDate, getContentLabel } from "@/lib/dateUtils";
 import { hu } from "date-fns/locale";
-
+import { capitalizeFirst } from "@/lib/utils";
 interface MenuItem {
   id: string;
   item_id: string;
@@ -189,23 +189,33 @@ const UnifiedDailySection = () => {
 
   return (
     <>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Calendar Section */}
-        <div className="space-y-4">
+      {/* Daily Menu Panel - First thing visitors see */}
+      <div className="mb-6">
+        <DailyMenuPanel 
+          date={selectedDate}
+          menuData={menuData}
+          loading={loading}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
+        {/* Calendar Section - Compact */}
+        <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-xl font-sofia font-semibold">Napi ajánlatok naptára</h3>
+            <h3 className="text-lg font-sofia font-semibold">Naptár</h3>
             <Button
               variant="outline"
               size="sm"
               onClick={handleTodayClick}
               disabled={isPast(new Date()) || getDay(new Date()) === 0 || getDay(new Date()) === 6}
+              className="h-7 text-xs px-2"
             >
               Ma
             </Button>
           </div>
           
           <Card>
-            <CardContent className="p-4">
+            <CardContent className="p-2">
               <Calendar
                 mode="single"
                 selected={selectedDate}
@@ -234,22 +244,22 @@ const UnifiedDailySection = () => {
                 }}
                 className="w-full"
               />
-              <div className="mt-4 space-y-2 text-xs text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-primary/10 border-2 border-primary rounded"></div>
-                  <span>Elérhető ajánlat</span>
+              <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <div className="w-2.5 h-2.5 bg-primary/10 border border-primary rounded"></div>
+                  <span>Ajánlat</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-muted-foreground/20 rounded"></div>
-                  <span>Zárva (hétvége)</span>
+                <div className="flex items-center gap-1">
+                  <div className="w-2.5 h-2.5 bg-muted-foreground/20 rounded"></div>
+                  <span>Zárva</span>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Content Section */}
-        <div className="space-y-6">
+        {/* Content Section - More space for daily offers */}
+        <div className="space-y-4">
           {/* Daily Offers - Interactive Selector */}
           {loading ? (
             <Card>
@@ -281,7 +291,7 @@ const UnifiedDailySection = () => {
                     id: item.id,
                     menu_items: {
                       id: item.item_id,
-                      name: item.item_name,
+                      name: capitalizeFirst(item.item_name),
                       description: item.item_description || '',
                       price_huf: item.item_price_huf,
                       image_url: item.item_image_url
@@ -305,24 +315,6 @@ const UnifiedDailySection = () => {
               </CardContent>
             </Card>
           )}
-
-          {/* Daily Menu Panel */}
-          <div className="lg:hidden block">
-            <DailyMenuPanel 
-              date={selectedDate}
-              menuData={menuData}
-              loading={loading}
-            />
-          </div>
-        </div>
-
-        {/* Desktop Menu Panel */}
-        <div className="hidden lg:block lg:col-span-2">
-          <DailyMenuPanel 
-            date={selectedDate}
-            menuData={menuData}
-            loading={loading}
-          />
         </div>
       </div>
 
