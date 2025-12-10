@@ -4,6 +4,7 @@ import StreamlinedDailyOffers from "@/components/admin/StreamlinedDailyOffers";
 import MenuScheduling from "@/components/admin/MenuScheduling";
 import CapacityManagement from "@/components/admin/CapacityManagement";
 import TemplateManagement from "@/components/admin/TemplateManagement";
+import MasterMenuImport from "@/components/admin/MasterMenuImport";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const DailyMenuManagement = () => {
@@ -50,6 +51,12 @@ const DailyMenuManagement = () => {
               >
                 Kapacitás
               </TabsTrigger>
+              <TabsTrigger 
+                value="import" 
+                className="min-h-[36px] px-3 py-2 text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-background data-[state=active]:text-foreground"
+              >
+                {isMobile ? "Import" : "Excel Import"}
+              </TabsTrigger>
             </TabsList>
           </div>
           
@@ -67,6 +74,10 @@ const DailyMenuManagement = () => {
           
           <TabsContent value="capacity" className="mt-0">
             <CapacityManagement />
+          </TabsContent>
+          
+          <TabsContent value="import" className="mt-0">
+            <MasterMenuImport />
           </TabsContent>
         </Tabs>
       </div>
