@@ -414,9 +414,14 @@ const Checkout = () => {
             daily_type: item.daily_type,
             daily_date: item.daily_date,
             daily_id: item.daily_id ?? item.menu_id,
-            modifiers: item.modifiers.map(mod => ({
+            modifiers: (item.modifiers || []).map(mod => ({
               label_snapshot: mod.label,
               price_delta_huf: mod.price_delta_huf
+            })),
+            sides: (item.sides || []).map(side => ({
+              id: side.id,
+              name: side.name,
+              price_huf: side.price_huf
             }))
           }))
         }
@@ -469,34 +474,6 @@ const Checkout = () => {
           
           <div className="grid lg:grid-cols-2 gap-8">
             {/* Order Summary */}
-            {/* Temporary Debug Panel */}
-            {process.env.NODE_ENV === 'development' && (
-              <Card className="mb-6 border-orange-200 bg-orange-50">
-                <CardHeader>
-                  <CardTitle className="text-orange-800 text-sm">🔍 Debug Panel</CardTitle>
-                </CardHeader>
-                <CardContent className="text-xs space-y-2">
-                  <div><strong>Target dates:</strong> {dailyDates.length > 0 ? dailyDates.join(', ') : 'Regular items (next 5 days)'}</div>
-                  <div><strong>Available slots:</strong> {timeSlots.length}</div>
-                  <div><strong>Selected:</strong> {formData.pickup_date} {formData.pickup_time}</div>
-                  <div><strong>Daily constraint:</strong> {getPickupConstraint() || 'None'}</div>
-                  {timeSlots.length > 0 && (
-                    <details>
-                      <summary className="cursor-pointer text-orange-700">Show all slots</summary>
-                      <div className="mt-2 space-y-1">
-                        {timeSlots.slice(0, 10).map(slot => (
-                          <div key={`${slot.date}-${slot.timeslot}`} className="text-xs">
-                            {slot.date} {slot.timeslot} ({slot.available_capacity} free)
-                          </div>
-                        ))}
-                        {timeSlots.length > 10 && <div className="text-xs italic">...and {timeSlots.length - 10} more</div>}
-                      </div>
-                    </details>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-            
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">

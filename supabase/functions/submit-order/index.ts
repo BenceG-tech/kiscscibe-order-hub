@@ -103,11 +103,12 @@ serve(async (req) => {
 
       if (sideConfigs && sideConfigs.length > 0) {
         const config = sideConfigs[0];
-        if (config.is_required && item.sides.length < config.min_select) {
+        const itemSides = item.sides || [];
+        if (config.is_required && itemSides.length < config.min_select) {
           throw new Error(`${item.name_snapshot} - köret választása kötelező. Legalább ${config.min_select} köretet kell választani.`);
         }
         
-        if (item.sides.length > config.max_select) {
+        if (itemSides.length > config.max_select) {
           throw new Error(`${item.name_snapshot} - túl sok köret választva. Maximum ${config.max_select} köretet lehet választani.`);
         }
       }
@@ -139,8 +140,8 @@ serve(async (req) => {
 
         // Use current price from database (not client-submitted price)
         const currentPrice = menuItem.price_huf;
-        const modifiersTotal = item.modifiers.reduce((sum, mod) => sum + mod.price_delta_huf, 0);
-        const sidesTotal = item.sides.reduce((sum, side) => sum + side.price_huf, 0);
+        const modifiersTotal = (item.modifiers || []).reduce((sum, mod) => sum + mod.price_delta_huf, 0);
+        const sidesTotal = (item.sides || []).reduce((sum, side) => sum + side.price_huf, 0);
         const lineTotal = (currentPrice + modifiersTotal + sidesTotal) * item.qty;
         
         calculatedTotal += lineTotal;
