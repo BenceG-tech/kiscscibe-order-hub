@@ -318,32 +318,44 @@ const Etlap = () => {
                         <div className="p-6 space-y-4">
                           {/* Soup */}
                           <div className="flex items-start gap-4">
-                            <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg shrink-0">
-                              <Soup className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs font-medium text-amber-600 dark:text-amber-400 uppercase">Leves</span>
+                            {menuData.soup.item_image_url ? (
+                              <img 
+                                src={menuData.soup.item_image_url} 
+                                alt={menuData.soup.item_name}
+                                className="w-12 h-12 rounded-lg object-cover shrink-0"
+                              />
+                            ) : (
+                              <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg shrink-0">
+                                <Soup className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                               </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <span className="text-xs font-medium text-amber-600 dark:text-amber-400 uppercase">Leves</span>
                               <h4 className="font-semibold text-lg">{capitalizeFirst(menuData.soup.item_name)}</h4>
                               {menuData.soup.item_description && (
-                                <p className="text-sm text-muted-foreground">{menuData.soup.item_description}</p>
+                                <p className="text-sm text-muted-foreground line-clamp-2">{menuData.soup.item_description}</p>
                               )}
                             </div>
                           </div>
 
                           {/* Main Course */}
                           <div className="flex items-start gap-4">
-                            <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg shrink-0">
-                              <UtensilsCrossed className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 uppercase">Főétel</span>
+                            {menuData.main.item_image_url ? (
+                              <img 
+                                src={menuData.main.item_image_url} 
+                                alt={menuData.main.item_name}
+                                className="w-12 h-12 rounded-lg object-cover shrink-0"
+                              />
+                            ) : (
+                              <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg shrink-0">
+                                <UtensilsCrossed className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                               </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 uppercase">Főétel</span>
                               <h4 className="font-semibold text-lg">{capitalizeFirst(menuData.main.item_name)}</h4>
                               {menuData.main.item_description && (
-                                <p className="text-sm text-muted-foreground">{menuData.main.item_description}</p>
+                                <p className="text-sm text-muted-foreground line-clamp-2">{menuData.main.item_description}</p>
                               )}
                             </div>
                           </div>

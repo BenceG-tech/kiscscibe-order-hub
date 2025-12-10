@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, Package, Coffee, Clock, AlertCircle, Plus, Minus } from "lucide-react";
+import { ShoppingCart, Package, Coffee, Clock, AlertCircle, Plus, Minus, UtensilsCrossed } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "sonner";
 import { capitalizeFirst } from "@/lib/utils";
@@ -234,7 +234,18 @@ const DailyItemSelector = ({ type, data, canOrder, showDetails = false, deadline
                 onCheckedChange={() => handleItemToggle(item.id)}
                 className="mt-1"
               />
-              <div className="flex-1">
+              {item.menu_items?.image_url ? (
+                <img 
+                  src={item.menu_items.image_url} 
+                  alt={item.menu_items.name}
+                  className="w-14 h-14 rounded-lg object-cover shrink-0"
+                />
+              ) : (
+                <div className="w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <UtensilsCrossed className="h-6 w-6 text-primary" />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="flex-shrink-0 w-6 h-6 bg-primary/10 text-primary rounded-full flex items-center justify-center text-sm font-bold">
                     {index + 1}
@@ -245,12 +256,12 @@ const DailyItemSelector = ({ type, data, canOrder, showDetails = false, deadline
                   >
                     {capitalizeFirst(item.menu_items?.name || '')}
                   </label>
-                  <Badge variant="outline" className="text-xs">
+                  <Badge variant="outline" className="text-xs shrink-0">
                     {item.menu_items?.price_huf} Ft
                   </Badge>
                 </div>
                 {item.menu_items?.description && (
-                  <p className="text-muted-foreground text-sm mt-1 ml-8">
+                  <p className="text-muted-foreground text-sm mt-1 ml-8 line-clamp-2">
                     {item.menu_items.description}
                   </p>
                 )}
