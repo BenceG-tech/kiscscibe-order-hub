@@ -1,30 +1,8 @@
 import ModernNavigation from "@/components/ModernNavigation";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Heart, Users, Clock, Award } from "lucide-react";
 
 const About = () => {
-  const teamMembers = [
-    {
-      name: "Nagy Péter",
-      role: "Tulajdonos & Főszakács",
-      description: "20+ éves tapasztalat a vendéglátásban",
-      image: "👨‍🍳"
-    },
-    {
-      name: "Kiss Mária",
-      role: "Konyhafőnök",
-      description: "Hagyományos magyar konyha specialistája",
-      image: "👩‍🍳"
-    },
-    {
-      name: "Szabó Anna",
-      role: "Pincér & Ügyfélszolgálat",
-      description: "Barátságos kiszolgálás és vendégélmény",
-      image: "👩‍💼"
-    }
-  ];
-
   const values = [
     {
       icon: Heart,
@@ -140,24 +118,6 @@ const About = () => {
                   </Card>
                 ))}
               </div>
-            </div>
-          </section>
-
-          {/* Team Section */}
-          <section className="py-16">
-            <h2 className="text-3xl font-bold text-center text-foreground mb-12">Csapatunk</h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {teamMembers.map((member, index) => (
-                <Card key={index} className="text-center hover:shadow-cozy transition-all duration-300 hover-scale">
-                  <CardContent className="p-8">
-                    <div className="text-6xl mb-4">{member.image}</div>
-                    <h3 className="font-bold text-xl mb-2">{member.name}</h3>
-                    <Badge variant="secondary" className="mb-4">{member.role}</Badge>
-                    <p className="text-muted-foreground">{member.description}</p>
-                  </CardContent>
-                </Card>
-              ))}
             </div>
           </section>
 
