@@ -230,11 +230,28 @@ const StreamlinedDailyOffers = () => {
   };
 
   const updateItemMenuSettings = (itemId: string, isMenuPart: boolean, menuRole?: 'leves' | 'főétel') => {
+    // Auto-detect menu role based on category if not provided
+    let autoRole = menuRole;
+    if (isMenuPart && !menuRole) {
+      const item = availableItems.find(i => i.id === itemId);
+      if (item?.category_id) {
+        const category = categories.find(c => c.id === item.category_id);
+        if (category) {
+          const categoryName = category.name.toLowerCase();
+          if (categoryName.includes('leves')) {
+            autoRole = 'leves';
+          } else {
+            autoRole = 'főétel';
+          }
+        }
+      }
+    }
+    
     setOfferForm(prev => ({
       ...prev,
       selectedItems: prev.selectedItems.map(item =>
         item.id === itemId
-          ? { ...item, isMenuPart, menuRole: isMenuPart ? menuRole : undefined }
+          ? { ...item, isMenuPart, menuRole: isMenuPart ? autoRole : undefined }
           : item
       )
     }));
@@ -729,7 +746,7 @@ const StreamlinedDailyOffers = () => {
                                  key={item.id}
                                  className={`p-3 lg:p-4 border rounded-lg transition-colors ${
                                    selectedItem.isMenuPart 
-                                     ? 'bg-green-50 border-green-200 ring-1 ring-green-200' 
+                                     ? 'bg-emerald-500/10 border-emerald-500/40 ring-1 ring-emerald-500/30' 
                                      : 'bg-primary/5 border-primary/20 hover:bg-primary/10'
                                  }`}
                                >
