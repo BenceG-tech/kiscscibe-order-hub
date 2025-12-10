@@ -225,7 +225,7 @@ const StreamlinedDailyOffers = () => {
       ...prev,
       selectedItems: prev.selectedItems.some(item => item.id === itemId)
         ? prev.selectedItems.filter(item => item.id !== itemId)
-        : [...prev.selectedItems, { id: itemId, isMenuPart: false, portionsNeeded: 1 }]
+        : [...prev.selectedItems, { id: itemId, isMenuPart: false, portionsNeeded: 20 }]
     }));
   };
 
@@ -277,7 +277,7 @@ const StreamlinedDailyOffers = () => {
     // Auto-select the newly created temporary item
     setOfferForm(prev => ({
       ...prev,
-      selectedItems: [...prev.selectedItems, { id: itemId, isMenuPart: false, portionsNeeded: 1 }]
+      selectedItems: [...prev.selectedItems, { id: itemId, isMenuPart: false, portionsNeeded: 20 }]
     }));
   };
 
@@ -823,9 +823,13 @@ const StreamlinedDailyOffers = () => {
                                          >
                                            <Minus className="h-3 w-3" />
                                          </Button>
-                                         <span className="px-3 py-1 text-sm font-medium min-w-[3ch] text-center">
-                                           {selectedItem.portionsNeeded}
-                                         </span>
+                                         <Input
+                                           type="number"
+                                           min={1}
+                                           value={selectedItem.portionsNeeded}
+                                           onChange={(e) => updateItemPortions(item.id, parseInt(e.target.value) || 1)}
+                                           className="h-8 w-16 text-center border-0 focus-visible:ring-0 text-sm font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                         />
                                          <Button
                                            variant="ghost"
                                            size="sm"

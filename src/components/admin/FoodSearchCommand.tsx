@@ -44,13 +44,24 @@ export const FoodSearchCommand = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
+  // Normalize text for accent-insensitive search
+  const normalizeText = (text: string) => {
+    return text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/ő/g, 'o')
+      .replace(/ű/g, 'u');
+  };
+
   // Filter items based on search and category, excluding already selected
   const availableItems = items.filter(item => !selectedItemIds.includes(item.id));
   
   const filteredItems = availableItems.filter(item => {
+    const normalizedSearch = normalizeText(searchTerm);
     const matchesSearch = searchTerm === "" || 
-      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase()));
+      normalizeText(item.name).includes(normalizedSearch) ||
+      (item.description && normalizeText(item.description).includes(normalizedSearch));
     const matchesCategory = selectedCategory === "all" || item.category_id === selectedCategory;
     return matchesSearch && matchesCategory;
   });
