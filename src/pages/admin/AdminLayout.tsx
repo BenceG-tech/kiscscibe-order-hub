@@ -8,7 +8,8 @@ import {
   ShoppingBag, 
   ArrowLeft,
   LogOut,
-  User
+  User,
+  Image
 } from "lucide-react";
 
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
@@ -23,6 +24,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     { href: "/admin/orders", label: "Rendelések", mobileLabel: "Rendelés", icon: ShoppingBag },
     { href: "/admin/menu", label: "Étlap kezelés", mobileLabel: "Étlap", icon: Package },
     { href: "/admin/daily-menu", label: "Napi ajánlat", mobileLabel: "Napi", icon: Calendar },
+    { href: "/admin/gallery", label: "Galéria", mobileLabel: "Galéria", icon: Image },
   ];
 
   return (

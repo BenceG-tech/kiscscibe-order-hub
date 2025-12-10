@@ -19,6 +19,7 @@ import AdminMenu from "./pages/admin/Menu";
 import AdminMenuSchedule from "./pages/admin/MenuSchedule";
 import AdminDailyMenu from "./pages/admin/DailyMenu";
 import AdminCapacity from "./pages/admin/Capacity";
+import AdminGallery from "./pages/admin/Gallery";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -63,6 +64,11 @@ const App = () => (
               <Route path="/admin/capacity" element={
                 <ProtectedRoute requireAdmin>
                   <AdminCapacity />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/gallery" element={
+                <ProtectedRoute requireAdmin>
+                  <AdminGallery />
                 </ProtectedRoute>
               } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
