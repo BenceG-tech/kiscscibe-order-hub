@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { toast } from "sonner";
 import { Plus, Trash2, ArrowUp, ArrowDown, Pencil, Image as ImageIcon, Loader2 } from "lucide-react";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-import ImageUpload from "./ImageUpload";
+import MultiImageUpload from "./MultiImageUpload";
 
 interface GalleryImage {
   id: string;
@@ -25,8 +25,6 @@ const GalleryManagement = () => {
   const queryClient = useQueryClient();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingImage, setEditingImage] = useState<GalleryImage | null>(null);
-  const [newImageUrl, setNewImageUrl] = useState("");
-  const [newAltText, setNewAltText] = useState("");
 
   const { data: images = [], isLoading } = useQuery({
     queryKey: ['admin-gallery-images'],
@@ -41,23 +39,28 @@ const GalleryManagement = () => {
     }
   });
 
-  const addImageMutation = useMutation({
-    mutationFn: async ({ image_url, alt_text }: { image_url: string; alt_text: string }) => {
+  const addMultipleImagesMutation = useMutation({
+    mutationFn: async (newImages: { url: string; altText: string }[]) => {
       const maxSortOrder = images.length > 0 ? Math.max(...images.map(i => i.sort_order)) : -1;
+      
+      const inserts = newImages.map((img, index) => ({
+        image_url: img.url,
+        alt_text: img.altText,
+        sort_order: maxSortOrder + 1 + index
+      }));
+      
       const { error } = await supabase
         .from('gallery_images')
-        .insert({ image_url, alt_text, sort_order: maxSortOrder + 1 });
+        .insert(inserts);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-gallery-images'] });
       queryClient.invalidateQueries({ queryKey: ['gallery-images'] });
-      toast.success("Kép hozzáadva!");
+      toast.success("Képek hozzáadva!");
       setIsAddDialogOpen(false);
-      setNewImageUrl("");
-      setNewAltText("");
     },
-    onError: () => toast.error("Hiba a kép hozzáadásakor")
+    onError: () => toast.error("Hiba a képek hozzáadásakor")
   });
 
   const updateImageMutation = useMutation({
@@ -118,14 +121,6 @@ const GalleryManagement = () => {
     }
   });
 
-  const handleAddImage = () => {
-    if (!newImageUrl || !newAltText) {
-      toast.error("Kérjük, töltse ki az összes mezőt!");
-      return;
-    }
-    addImageMutation.mutate({ image_url: newImageUrl, alt_text: newAltText });
-  };
-
   if (isLoading) {
     return (
       <Card>
@@ -144,43 +139,19 @@ const GalleryManagement = () => {
           <DialogTrigger asChild>
             <Button size="sm">
               <Plus className="h-4 w-4 mr-1" />
-              Új kép
+              Képek hozzáadása
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Új galéria kép</DialogTitle>
+              <DialogTitle>Képek hozzáadása a galériához</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 pt-4">
-              <div>
-                <Label>Kép feltöltése</Label>
-                <div className="mt-2">
-                  <ImageUpload
-                    currentImageUrl={newImageUrl}
-                    onImageUploaded={setNewImageUrl}
-                    onImageRemoved={() => setNewImageUrl("")}
-                    bucketName="menu-images"
-                  />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="alt-text">Kép leírása (alt text)</Label>
-                <Input
-                  id="alt-text"
-                  value={newAltText}
-                  onChange={(e) => setNewAltText(e.target.value)}
-                  placeholder="pl. Rántott csirke tálalva"
-                  className="mt-1"
-                />
-              </div>
-              <Button 
-                onClick={handleAddImage} 
-                disabled={!newImageUrl || !newAltText || addImageMutation.isPending}
-                className="w-full"
-              >
-                {addImageMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Hozzáadás
-              </Button>
+            <div className="pt-4">
+              <MultiImageUpload
+                onImagesUploaded={(imgs) => addMultipleImagesMutation.mutate(imgs)}
+                bucketName="menu-images"
+                isUploading={addMultipleImagesMutation.isPending}
+              />
             </div>
           </DialogContent>
         </Dialog>
