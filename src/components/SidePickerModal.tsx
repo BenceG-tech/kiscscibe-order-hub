@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { capitalizeFirst } from '@/lib/utils';
 
 interface SideItem {
   id: string;
@@ -230,7 +231,7 @@ export const SidePickerModal: React.FC<SidePickerModalProps> = ({
                     </div>
                     
                     <div className="flex-1">
-                      <h4 className="font-medium">{side.name}</h4>
+                      <h4 className="font-medium">{capitalizeFirst(side.name)}</h4>
                       {side.description && (
                         <p className="text-sm text-muted-foreground">{side.description}</p>
                       )}

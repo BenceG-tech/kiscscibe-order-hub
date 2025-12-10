@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, Minus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { capitalizeFirst } from "@/lib/utils";
 
 interface CartDialogProps {
   open: boolean;
@@ -59,13 +60,13 @@ export const CartDialog = ({ open, onOpenChange }: CartDialogProps) => {
               {cart.items.map((item) => (
                 <div key={item.id} className="flex items-center justify-between py-2 border-b">
                   <div className="flex-1">
-                    <h4 className="font-medium">{item.name}</h4>
+                    <h4 className="font-medium">{capitalizeFirst(item.name)}</h4>
                     <p className="text-sm text-muted-foreground">
                       {item.price_huf} Ft / db
                     </p>
                     {item.sides && item.sides.length > 0 && (
                       <p className="text-xs text-muted-foreground">
-                        Köret: {item.sides.map(side => side.name).join(', ')}
+                        Köret: {item.sides.map(side => capitalizeFirst(side.name)).join(', ')}
                       </p>
                     )}
                   </div>

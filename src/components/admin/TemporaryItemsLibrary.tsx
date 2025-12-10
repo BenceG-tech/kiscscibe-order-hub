@@ -8,6 +8,7 @@ import { Search, Check, Clock, Star, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { useToast } from '@/hooks/use-toast';
+import { capitalizeFirst } from '@/lib/utils';
 
 interface MenuItem {
   id: string;
@@ -215,7 +216,7 @@ export const TemporaryItemsLibrary: React.FC<TemporaryItemsLibraryProps> = ({
                           <div className="flex-1" onClick={() => onItemToggle(item.id)} style={{ cursor: 'pointer' }}>
                             <div className="flex items-start justify-between">
                               <div>
-                                <div className="font-medium">{item.name}</div>
+                                <div className="font-medium">{capitalizeFirst(item.name)}</div>
                                 {item.description && (
                                   <div className="text-sm text-muted-foreground line-clamp-2">
                                     {item.description}
