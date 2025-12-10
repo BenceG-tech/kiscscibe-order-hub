@@ -319,7 +319,7 @@ const Etlap = () => {
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {/* Soup Card */}
                             <div className="bg-background/50 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300">
-                              <div className="aspect-[4/3] w-full overflow-hidden">
+                              <div className="aspect-[16/9] w-full overflow-hidden">
                                 {menuData.soup.item_image_url ? (
                                   <img 
                                     src={menuData.soup.item_image_url} 
@@ -343,7 +343,7 @@ const Etlap = () => {
 
                             {/* Main Course Card */}
                             <div className="bg-background/50 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300">
-                              <div className="aspect-[4/3] w-full overflow-hidden">
+                              <div className="aspect-[16/9] w-full overflow-hidden">
                                 {menuData.main.item_image_url ? (
                                   <img 
                                     src={menuData.main.item_image_url} 
