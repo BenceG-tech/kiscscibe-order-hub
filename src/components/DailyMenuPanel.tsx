@@ -142,7 +142,7 @@ const DailyMenuPanel = ({ date, menuData, loading }: DailyMenuPanelProps) => {
           {/* Soup Card */}
           {menuData.soup && (
             <div className="bg-background/50 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300">
-              <div className="aspect-[4/3] w-full overflow-hidden">
+              <div className="aspect-[16/9] w-full overflow-hidden">
                 {menuData.soup.item_image_url ? (
                   <img 
                     src={menuData.soup.item_image_url} 
@@ -170,7 +170,7 @@ const DailyMenuPanel = ({ date, menuData, loading }: DailyMenuPanelProps) => {
           {/* Main Course Card */}
           {menuData.main && (
             <div className="bg-background/50 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300">
-              <div className="aspect-[4/3] w-full overflow-hidden">
+              <div className="aspect-[16/9] w-full overflow-hidden">
                 {menuData.main.item_image_url ? (
                   <img 
                     src={menuData.main.item_image_url} 
