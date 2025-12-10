@@ -5,7 +5,6 @@ import MenuScheduling from "@/components/admin/MenuScheduling";
 import CapacityManagement from "@/components/admin/CapacityManagement";
 import TemplateManagement from "@/components/admin/TemplateManagement";
 import MasterMenuImport from "@/components/admin/MasterMenuImport";
-import GalleryManagement from "@/components/admin/GalleryManagement";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const DailyMenuManagement = () => {
@@ -58,12 +57,6 @@ const DailyMenuManagement = () => {
               >
                 {isMobile ? "Import" : "Excel Import"}
               </TabsTrigger>
-              <TabsTrigger 
-                value="gallery" 
-                className="min-h-[36px] px-3 py-2 text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-background data-[state=active]:text-foreground"
-              >
-                Galéria
-              </TabsTrigger>
             </TabsList>
           </div>
           
@@ -85,10 +78,6 @@ const DailyMenuManagement = () => {
           
           <TabsContent value="import" className="mt-0">
             <MasterMenuImport />
-          </TabsContent>
-          
-          <TabsContent value="gallery" className="mt-0">
-            <GalleryManagement />
           </TabsContent>
         </Tabs>
       </div>
