@@ -36,7 +36,7 @@ const ModernNavigation = () => {
 
   const navLinks = [
     { href: "/", label: "Főoldal" },
-    { href: "/etlap", label: "Étlap" },
+    { href: "/etlap", label: "Napi Ajánlat" },
     { href: "/about", label: "Rólunk" },
     { href: "/contact", label: "Kapcsolat" },
     { href: "/admin/daily-menu", label: "Admin" },
