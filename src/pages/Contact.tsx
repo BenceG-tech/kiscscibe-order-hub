@@ -40,7 +40,7 @@ const Contact = () => {
     { day: "Szerda", hours: "7:00 - 15:00", isOpen: true },
     { day: "Csütörtök", hours: "7:00 - 15:00", isOpen: true },
     { day: "Péntek", hours: "7:00 - 15:00", isOpen: true },
-    { day: "Szombat", hours: "8:00 - 14:00", isOpen: true },
+    { day: "Szombat", hours: "Zárva", isOpen: false },
     { day: "Vasárnap", hours: "Zárva", isOpen: false }
   ];
 
