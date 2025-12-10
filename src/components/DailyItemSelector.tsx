@@ -227,7 +227,7 @@ const DailyItemSelector = ({ type, data, canOrder, showDetails = false, deadline
 
         <div className="space-y-3">
           {items.map((item, index) => (
-            <div key={item.id} className="flex items-start gap-3 p-3 rounded-lg border border-primary/10 hover:border-primary/20 transition-colors">
+            <div key={item.id} className="flex items-start gap-4 p-4 rounded-xl border border-primary/10 hover:border-primary/20 transition-colors">
               <Checkbox
                 id={item.id}
                 checked={selectedItems.includes(item.id)}
@@ -238,19 +238,19 @@ const DailyItemSelector = ({ type, data, canOrder, showDetails = false, deadline
                 <img 
                   src={item.menu_items.image_url} 
                   alt={item.menu_items.name}
-                  className="w-14 h-14 rounded-lg object-cover shrink-0"
+                  className="w-36 h-36 rounded-xl object-cover shrink-0 shadow-md hover:scale-105 transition-transform duration-200"
                 />
               ) : (
-                <div className="w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <UtensilsCrossed className="h-6 w-6 text-primary" />
+                <div className="w-36 h-36 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 shadow-md">
+                  <UtensilsCrossed className="h-16 w-16 text-primary" />
                 </div>
               )}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
+              <div className="flex-1 min-w-0 py-2">
+                <div className="flex items-center gap-2 mb-2">
                   <span className="flex-shrink-0 w-6 h-6 bg-primary/10 text-primary rounded-full flex items-center justify-center text-sm font-bold">
                     {index + 1}
                   </span>
-                  <label 
+                  <label
                     htmlFor={item.id}
                     className="font-sofia font-medium cursor-pointer flex-1"
                   >

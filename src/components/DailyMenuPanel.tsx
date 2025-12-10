@@ -142,50 +142,50 @@ const DailyMenuPanel = ({ date, menuData, loading }: DailyMenuPanelProps) => {
           <h4 className="font-medium">Összetétel:</h4>
           
           {menuData.soup && (
-            <div className="flex items-start gap-3 p-3 bg-background/50 rounded-lg">
+            <div className="flex items-start gap-4 p-4 bg-background/50 rounded-xl">
               {menuData.soup.item_image_url ? (
                 <img 
                   src={menuData.soup.item_image_url} 
                   alt={menuData.soup.item_name}
-                  className="w-12 h-12 rounded-lg object-cover shrink-0"
+                  className="w-36 h-36 rounded-xl object-cover shrink-0 shadow-md hover:scale-105 transition-transform duration-200"
                 />
               ) : (
-                <div className="w-12 h-12 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
-                  <Soup className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                <div className="w-36 h-36 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0 shadow-md">
+                  <Soup className="h-16 w-16 text-amber-600 dark:text-amber-400" />
                 </div>
               )}
-              <div className="flex-1 min-w-0">
-                <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700 text-xs mb-1">
+              <div className="flex-1 min-w-0 py-2">
+                <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700 text-xs mb-2">
                   leves
                 </Badge>
-                <h5 className="font-medium">{capitalizeFirst(menuData.soup.item_name)}</h5>
+                <h5 className="font-semibold text-lg">{capitalizeFirst(menuData.soup.item_name)}</h5>
                 {menuData.soup.item_description && (
-                  <p className="text-sm text-muted-foreground line-clamp-2">{menuData.soup.item_description}</p>
+                  <p className="text-sm text-muted-foreground line-clamp-3 mt-1">{menuData.soup.item_description}</p>
                 )}
               </div>
             </div>
           )}
 
           {menuData.main && (
-            <div className="flex items-start gap-3 p-3 bg-background/50 rounded-lg">
+            <div className="flex items-start gap-4 p-4 bg-background/50 rounded-xl">
               {menuData.main.item_image_url ? (
                 <img 
                   src={menuData.main.item_image_url} 
                   alt={menuData.main.item_name}
-                  className="w-12 h-12 rounded-lg object-cover shrink-0"
+                  className="w-36 h-36 rounded-xl object-cover shrink-0 shadow-md hover:scale-105 transition-transform duration-200"
                 />
               ) : (
-                <div className="w-12 h-12 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
-                  <UtensilsCrossed className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                <div className="w-36 h-36 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0 shadow-md">
+                  <UtensilsCrossed className="h-16 w-16 text-emerald-600 dark:text-emerald-400" />
                 </div>
               )}
-              <div className="flex-1 min-w-0">
-                <Badge variant="outline" className="bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-700 text-xs mb-1">
+              <div className="flex-1 min-w-0 py-2">
+                <Badge variant="outline" className="bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-700 text-xs mb-2">
                   főétel
                 </Badge>
-                <h5 className="font-medium">{capitalizeFirst(menuData.main.item_name)}</h5>
+                <h5 className="font-semibold text-lg">{capitalizeFirst(menuData.main.item_name)}</h5>
                 {menuData.main.item_description && (
-                  <p className="text-sm text-muted-foreground line-clamp-2">{menuData.main.item_description}</p>
+                  <p className="text-sm text-muted-foreground line-clamp-3 mt-1">{menuData.main.item_description}</p>
                 )}
               </div>
             </div>
