@@ -20,6 +20,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { TemporaryItemCreator } from "./TemporaryItemCreator";
 import { TemporaryItemsLibrary } from "./TemporaryItemsLibrary";
+import { FoodSearchCommand } from "./FoodSearchCommand";
 
 interface MenuItem {
   id: string;
@@ -934,77 +935,14 @@ const StreamlinedDailyOffers = () => {
 
                 <Separator />
 
-                 {/* Collapsible Food Selection by Category */}
-                 <div className="space-y-3 lg:space-y-4">
-                   <h3 className="text-base lg:text-lg font-semibold">Ételek kiválasztása kategóriánként</h3>
-                   
-                   {/* Search Filter */}
-                   <div className="flex flex-col gap-2 lg:gap-3">
-                     <Input
-                       placeholder="Keresés ételek között..."
-                       value={searchTerm}
-                       onChange={(e) => setSearchTerm(e.target.value)}
-                       className="h-10 text-base"
-                     />
-                   </div>
-
-                   {/* Collapsible Categories */}
-                   <Accordion type="multiple" className="w-full">
-                     {categories.map(category => {
-                       const categoryItems = groupedAvailableItems[category.id]?.filter(item => {
-                         return searchTerm === '' || 
-                           item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase()));
-                       }) || [];
-                       
-                       if (categoryItems.length === 0) return null;
-
-                       return (
-                         <AccordionItem key={category.id} value={category.id}>
-                           <AccordionTrigger className="hover:no-underline">
-                             <div className="flex items-center gap-2">
-                               <span className="font-medium">{category.name}</span>
-                               <Badge variant="secondary" className="text-xs">
-                                 {categoryItems.length}
-                               </Badge>
-                             </div>
-                           </AccordionTrigger>
-                           <AccordionContent>
-                             <div className="space-y-2 pt-2">
-                               {categoryItems.map(item => (
-                                 <div
-                                   key={item.id}
-                                   className="flex items-center justify-between p-3 hover:bg-muted/50 rounded cursor-pointer transition-colors border"
-                                   onClick={() => toggleItem(item.id)}
-                                 >
-                                   <div className="flex items-center gap-3 flex-1 min-w-0">
-                                     {item.image_url && (
-                                       <img src={item.image_url} alt={item.name} className="w-8 h-8 object-cover rounded" />
-                                     )}
-                                     <div className="min-w-0 flex-1">
-                                       <div className="font-medium text-sm truncate">{item.name}</div>
-                                       {item.description && (
-                                         <div className="text-xs text-muted-foreground truncate">{item.description}</div>
-                                       )}
-                                       <div className="flex items-center gap-2">
-                                         <span className="text-xs text-muted-foreground">{item.price_huf} Ft</span>
-                                         {item.is_temporary && (
-                                           <Badge variant="outline" className="text-xs">Ideiglenes</Badge>
-                                         )}
-                                       </div>
-                                     </div>
-                                   </div>
-                                   <Button size="sm" variant="outline" className="h-8 w-8 p-0 shrink-0">
-                                     <Plus className="h-4 w-4" />
-                                   </Button>
-                                 </div>
-                               ))}
-                             </div>
-                           </AccordionContent>
-                         </AccordionItem>
-                       );
-                     })}
-                   </Accordion>
+                 {/* Enhanced Food Search Command */}
+                 <FoodSearchCommand
+                   items={availableItems}
+                   categories={categories}
+                   selectedItemIds={offerForm.selectedItems.map(item => item.id)}
+                   onSelectItem={toggleItem}
+                   recentlyUsedIds={[]}
+                 />
 
                    {offerForm.selectedItems.length === 0 && (
                      <div className="text-center py-8">
@@ -1014,7 +952,7 @@ const StreamlinedDailyOffers = () => {
                            Nincs napi ajánlat beállítva
                          </p>
                          <p className="text-muted-foreground/70 text-sm">
-                           Válasszon ételeket a fenti kategóriákból az ajánlat összeállításához
+                           Keress rá egy ételre a fenti mezőben az ajánlat összeállításához
                          </p>
                        </div>
                      </div>
@@ -1035,7 +973,6 @@ const StreamlinedDailyOffers = () => {
                        onItemToggle={toggleItem}
                      />
                    </div>
-                 </div>
 
                 <Separator />
 
