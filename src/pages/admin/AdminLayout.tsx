@@ -2,6 +2,8 @@ import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
+import { useGlobalOrderNotifications } from "@/hooks/useGlobalOrderNotifications";
+import { useEffect } from "react";
 import { 
   Package, 
   Calendar, 
@@ -15,16 +17,24 @@ import {
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const { profile, signOut } = useAuth();
+  const { newOrdersCount, clearNewOrdersCount } = useGlobalOrderNotifications();
+
+  // Clear badge when viewing orders page
+  useEffect(() => {
+    if (location.pathname === '/admin/orders') {
+      clearNewOrdersCount();
+    }
+  }, [location.pathname, clearNewOrdersCount]);
 
   const handleSignOut = async () => {
     await signOut();
   };
 
   const adminNavItems = [
-    { href: "/admin/orders", label: "Rendelések", mobileLabel: "Rendelés", icon: ShoppingBag },
-    { href: "/admin/menu", label: "Étlap kezelés", mobileLabel: "Étlap", icon: Package },
-    { href: "/admin/daily-menu", label: "Napi ajánlat", mobileLabel: "Napi", icon: Calendar },
-    { href: "/admin/gallery", label: "Galéria", mobileLabel: "Galéria", icon: Image },
+    { href: "/admin/orders", label: "Rendelések", mobileLabel: "Rendelés", icon: ShoppingBag, showBadge: true },
+    { href: "/admin/menu", label: "Étlap kezelés", mobileLabel: "Étlap", icon: Package, showBadge: false },
+    { href: "/admin/daily-menu", label: "Napi ajánlat", mobileLabel: "Napi", icon: Calendar, showBadge: false },
+    { href: "/admin/gallery", label: "Galéria", mobileLabel: "Galéria", icon: Image, showBadge: false },
   ];
 
   return (
@@ -86,7 +96,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
               <li key={item.href} className={index < adminNavItems.length - 1 ? "mr-6" : ""}>
                 <Link
                   to={item.href}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-md font-medium transition-all duration-200 whitespace-nowrap min-h-[36px] ${
+                  className={`relative flex items-center gap-2 px-3 py-2 rounded-md font-medium transition-all duration-200 whitespace-nowrap min-h-[36px] ${
                     location.pathname === item.href 
                       ? "bg-primary text-primary-foreground border-b-2 border-primary" 
                       : "text-muted-foreground hover:text-foreground hover:bg-muted"
@@ -95,6 +105,14 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
                   <item.icon className="h-4 w-4" />
                   <span className="hidden sm:inline">{item.label}</span>
                   <span className="sm:hidden text-sm">{item.mobileLabel}</span>
+                  {item.showBadge && newOrdersCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive opacity-75"></span>
+                      <span className="relative inline-flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                        {newOrdersCount > 9 ? '9+' : newOrdersCount}
+                      </span>
+                    </span>
+                  )}
                 </Link>
               </li>
             ))}
