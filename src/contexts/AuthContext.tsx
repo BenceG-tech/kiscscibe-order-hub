@@ -38,8 +38,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdminState, setIsAdminState] = useState(false);
 
-  // Fetch user profile
+  // Fetch user profile and check admin status
   const fetchProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
@@ -55,10 +56,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       setProfile(data || null);
       
-      // Bootstrap first admin if needed
+      // Bootstrap first admin if needed (uses new user_roles table)
       if (data) {
         await supabase.rpc('bootstrap_first_admin');
       }
+      
+      // Check admin status from secure user_roles table via RPC
+      const { data: isAdminResult } = await supabase.rpc('is_admin');
+      setIsAdminState(isAdminResult === true);
     } catch (error) {
       console.error('Error fetching profile:', error);
     }
@@ -129,8 +134,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await supabase.auth.signOut();
   };
 
-  // Temporary fallback for admin access during RLS issues
-  const isAdmin = profile?.role === 'admin' || user?.email === 'gataibence@gmail.com';
+  // Admin status from secure user_roles table (no client-side fallbacks)
+  const isAdmin = isAdminState;
 
   const value = {
     user,
