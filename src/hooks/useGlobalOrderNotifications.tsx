@@ -1,60 +1,133 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
 
-interface NewOrder {
+interface PendingOrder {
   id: string;
   code: string;
+  total_huf: number;
+  pickup_time: string | null;
   created_at: string;
 }
 
 export const useGlobalOrderNotifications = () => {
+  const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([]);
   const [newOrdersCount, setNewOrdersCount] = useState(0);
-  const [lastOrderIds, setLastOrderIds] = useState<Set<string>>(new Set());
-  const { toast } = useToast();
-  const navigate = useNavigate();
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [knownOrderIds, setKnownOrderIds] = useState<Set<string>>(new Set());
+  const [audioUnlocked, setAudioUnlocked] = useState(false);
+  const audioContextRef = useRef<AudioContext | null>(null);
 
-  // Initialize audio element
+  // Current order to show in modal (first in queue)
+  const currentNotification = pendingOrders[0] || null;
+
+  // Unlock audio on first user interaction
   useEffect(() => {
-    // Create a more noticeable notification sound using Web Audio API
-    audioRef.current = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1sbW1xdHZ4eXl4d3Z1c3FvbGpmYl5aVlJOSkZCPjo2Mi4qJiIeGhYSEA4MCggGBAIAAQMFBwkLDQ8RExUXGRsdHyEjJScoKistLzEzNTc5Oz0/QUJERVZXX2dvc3uAhoyRlpuepKmusbW4u77BxMfKzc/S1NfZ29ze4OLk5ufo6err7O3u7u/w8PHx8vLy8/P09PT09fX19fX19fX19fX19fT09PPz8/Ly8fHw7+7t7Ovq6Ofm5OPh397c2dfV09DOy8nGw8C9ureyraijnoqFgHt2cWxnYl1YU05JRD86NTErJiEcFxMOCgYCAP///fr28e3o5ODc2NTQzMjEwLy4tLCsqKSgnJiUkIyIhIB8eHRwbGhkYFxYVFBMSERAODQwKCQgHBgUEAwIAAABAwUHCQsNDxETFRcZGx0fISMlJygqKy0vMTM1Nzk7PT9BQkRGR0lLTE5PUVNUV1laXF1fYGJjZGZnaWprbG1ub3BxcnN0dXZ3d3h5eXp7e3x9fX5+f4CAgYGCgoODhISFhYaGh4eIiImJioqLi4yMjY2Ojo+PkJCRkZKSk5OUlJWVlpaXl5iYmZmampubm5ycnZ2enp+foKChoaKio6OkpKWlpqanp6ioqamqqqqrrKysra2urq+vsLCxsbKys7O0tLW1tra3t7i4ubm6uru7vLy9vb6+v7/AwMHBwsLDw8TExcXGxsfHyMjJycrKy8vMzM3Nzs7Pz9DQ0dHS0tPT1NTV1dbW19fY2NnZ2trb29zc3d3e3t/f4ODh4eLi4+Pk5OXl5ubn5+jo6enq6uvr7Ozs7e7u7+/w8PHx8vLz8/T09fX29vf3+Pj5+fr6+/v8/P39/v7//w==');
-    audioRef.current.volume = 0.7;
-  }, []);
+    const unlockAudio = () => {
+      if (!audioUnlocked) {
+        // Create AudioContext to unlock audio
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+        // Resume if suspended
+        if (audioContextRef.current.state === 'suspended') {
+          audioContextRef.current.resume();
+        }
+        setAudioUnlocked(true);
+        console.log('Audio unlocked');
+      }
+    };
 
+    // Listen for any user interaction
+    document.addEventListener('click', unlockAudio, { once: true });
+    document.addEventListener('keydown', unlockAudio, { once: true });
+    document.addEventListener('touchstart', unlockAudio, { once: true });
+
+    return () => {
+      document.removeEventListener('click', unlockAudio);
+      document.removeEventListener('keydown', unlockAudio);
+      document.removeEventListener('touchstart', unlockAudio);
+    };
+  }, [audioUnlocked]);
+
+  // Play notification sound using Web Audio API
   const playNotificationSound = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(err => {
-        console.log('Could not play notification sound:', err);
-      });
+    if (!audioContextRef.current) {
+      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+
+    const ctx = audioContextRef.current;
+    
+    try {
+      // Resume context if suspended
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+
+      // Create a more noticeable multi-tone notification
+      const playTone = (frequency: number, startTime: number, duration: number) => {
+        const oscillator = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        
+        oscillator.frequency.value = frequency;
+        oscillator.type = 'sine';
+        
+        gainNode.gain.setValueAtTime(0, ctx.currentTime + startTime);
+        gainNode.gain.linearRampToValueAtTime(0.3, ctx.currentTime + startTime + 0.05);
+        gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + startTime + duration);
+        
+        oscillator.start(ctx.currentTime + startTime);
+        oscillator.stop(ctx.currentTime + startTime + duration);
+      };
+
+      // Play a pleasant ding-dong pattern (3 tones)
+      playTone(880, 0, 0.2);      // A5
+      playTone(1100, 0.15, 0.2);  // C#6
+      playTone(1320, 0.3, 0.3);   // E6
+      
+      // Second set for emphasis
+      setTimeout(() => {
+        playTone(880, 0, 0.2);
+        playTone(1100, 0.15, 0.2);
+        playTone(1320, 0.3, 0.3);
+      }, 600);
+
+      console.log('Notification sound played');
+    } catch (err) {
+      console.log('Could not play notification sound:', err);
     }
   }, []);
 
+  // Dismiss current notification
+  const dismissNotification = useCallback(() => {
+    setPendingOrders(prev => prev.slice(1));
+  }, []);
+
+  // Clear badge count
   const clearNewOrdersCount = useCallback(() => {
     setNewOrdersCount(0);
   }, []);
 
+  // Initialize: fetch existing order IDs
   useEffect(() => {
-    // Fetch initial order IDs to avoid notifying for existing orders
     const fetchInitialOrders = async () => {
       const { data } = await supabase
         .from('orders')
         .select('id')
         .order('created_at', { ascending: false })
-        .limit(50);
+        .limit(100);
       
       if (data) {
-        setLastOrderIds(new Set(data.map(o => o.id)));
+        setKnownOrderIds(new Set(data.map(o => o.id)));
       }
     };
 
     fetchInitialOrders();
+  }, []);
 
-    // Set up real-time subscription
+  // Set up real-time subscription
+  useEffect(() => {
     const channel = supabase
-      .channel('global-admin-orders')
+      .channel('global-admin-orders-v2')
       .on(
         'postgres_changes',
         {
@@ -63,33 +136,21 @@ export const useGlobalOrderNotifications = () => {
           table: 'orders'
         },
         (payload) => {
-          const newOrder = payload.new as NewOrder;
+          const newOrder = payload.new as PendingOrder;
           
           // Check if this is truly a new order we haven't seen
-          if (!lastOrderIds.has(newOrder.id)) {
+          if (!knownOrderIds.has(newOrder.id)) {
             console.log('New order received:', newOrder.code);
             
             // Play sound
             playNotificationSound();
             
-            // Show toast with action
-            toast({
-              title: "🔔 Új rendelés érkezett!",
-              description: `Rendelés: #${newOrder.code}`,
-              action: (
-                <button
-                  onClick={() => navigate('/admin/orders')}
-                  className="bg-primary text-primary-foreground px-3 py-1 rounded text-sm font-medium hover:bg-primary/90"
-                >
-                  Megtekintés
-                </button>
-              ),
-              duration: 10000,
-            });
+            // Add to pending orders queue
+            setPendingOrders(prev => [...prev, newOrder]);
             
             // Update count and tracked IDs
             setNewOrdersCount(prev => prev + 1);
-            setLastOrderIds(prev => new Set([...prev, newOrder.id]));
+            setKnownOrderIds(prev => new Set([...prev, newOrder.id]));
           }
         }
       )
@@ -98,10 +159,15 @@ export const useGlobalOrderNotifications = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [playNotificationSound, toast, navigate, lastOrderIds]);
+  }, [playNotificationSound, knownOrderIds]);
 
   return {
+    currentNotification,
+    pendingOrders,
+    pendingCount: pendingOrders.length,
     newOrdersCount,
+    dismissNotification,
     clearNewOrdersCount,
+    audioUnlocked,
   };
 };

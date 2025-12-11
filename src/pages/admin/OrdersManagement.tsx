@@ -49,37 +49,9 @@ const OrdersManagement = () => {
   useEffect(() => {
     fetchOrders();
     
-    // Set up real-time subscription with sound notification
+    // Set up real-time subscription for order updates (not INSERT - that's handled globally)
     const channel = supabase
-      .channel('orders-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'orders'
-        },
-        (payload) => {
-          console.log('New order received:', payload);
-          
-          // Play notification sound
-          try {
-            const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+H0u2oeBDSG0fPTgjMGKm++7qV5Nw0');
-            audio.play().catch(e => console.log('Audio play failed:', e));
-          } catch (e) {
-            console.log('Audio not supported:', e);
-          }
-          
-          // Show toast notification
-          toast({
-            title: "Új rendelés érkezett!",
-            description: `Rendelés kód: ${payload.new.code}`,
-            duration: 5000,
-          });
-          
-          fetchOrders();
-        }
-      )
+      .channel('orders-updates')
       .on(
         'postgres_changes',
         {
@@ -96,7 +68,7 @@ const OrdersManagement = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [toast]);
+  }, []);
 
   const fetchOrders = async () => {
     const { data: ordersData, error: ordersError } = await supabase
