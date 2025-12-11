@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGlobalOrderNotifications } from "@/hooks/useGlobalOrderNotifications";
-import { useEffect } from "react";
+import OrderNotificationModal from "@/components/admin/OrderNotificationModal";
 import { 
   Package, 
   Calendar, 
@@ -17,17 +17,21 @@ import {
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const { profile, signOut } = useAuth();
-  const { newOrdersCount, clearNewOrdersCount } = useGlobalOrderNotifications();
-
-  // Clear badge when viewing orders page
-  useEffect(() => {
-    if (location.pathname === '/admin/orders') {
-      clearNewOrdersCount();
-    }
-  }, [location.pathname, clearNewOrdersCount]);
+  const { 
+    newOrdersCount, 
+    clearNewOrdersCount, 
+    currentNotification, 
+    pendingCount,
+    dismissNotification 
+  } = useGlobalOrderNotifications();
 
   const handleSignOut = async () => {
     await signOut();
+  };
+
+  // Clear badge when navigating to orders
+  const handleOrdersClick = () => {
+    clearNewOrdersCount();
   };
 
   const adminNavItems = [
@@ -39,6 +43,13 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Order Notification Modal */}
+      <OrderNotificationModal 
+        order={currentNotification}
+        onDismiss={dismissNotification}
+        pendingCount={pendingCount}
+      />
+
       {/* Sticky Admin Header */}
       <header className="sticky top-[constant(safe-area-inset-top)] top-[env(safe-area-inset-top)] z-50 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 border-b">
         <div className="mx-auto max-w-screen-xl px-3 sm:px-4 flex items-center gap-2 sm:gap-4 py-2">
@@ -96,6 +107,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
               <li key={item.href} className={index < adminNavItems.length - 1 ? "mr-6" : ""}>
                 <Link
                   to={item.href}
+                  onClick={item.showBadge ? handleOrdersClick : undefined}
                   className={`relative flex items-center gap-2 px-3 py-2 rounded-md font-medium transition-all duration-200 whitespace-nowrap min-h-[36px] ${
                     location.pathname === item.href 
                       ? "bg-primary text-primary-foreground border-b-2 border-primary" 
