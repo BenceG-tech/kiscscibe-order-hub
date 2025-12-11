@@ -91,7 +91,7 @@ const UnifiedDailyManagement = () => {
     max_portions: "50",
     remaining_portions: "50",
     selectedItems: [] as OfferFormItem[],
-    menuPrice: "1800",
+    menuPrice: "2200",
     menuMaxPortions: "30",
     menuRemainingPortions: "30"
   });
@@ -171,7 +171,7 @@ const UnifiedDailyManagement = () => {
         max_portions: offer.max_portions?.toString() || "50",
         remaining_portions: offer.remaining_portions?.toString() || "50",
         selectedItems,
-        menuPrice: offerMenu?.menu_price_huf?.toString() || "1800",
+        menuPrice: offerMenu?.menu_price_huf?.toString() || "2200",
         menuMaxPortions: offerMenu?.max_portions?.toString() || "30",
         menuRemainingPortions: offerMenu?.remaining_portions?.toString() || "30"
       });
@@ -183,7 +183,7 @@ const UnifiedDailyManagement = () => {
         max_portions: "50",
         remaining_portions: "50",
         selectedItems: [],
-        menuPrice: "1800",
+        menuPrice: "2200",
         menuMaxPortions: "30",
         menuRemainingPortions: "30"
       });

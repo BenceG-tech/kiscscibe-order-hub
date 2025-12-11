@@ -102,7 +102,7 @@ const MenuScheduling = () => {
     selectedDays: [1, 2, 3, 4, 5], // Monday to Friday
     template: null,
     offerPrice: 2200,
-    menuPrice: 1800,
+    menuPrice: 2200,
     maxPortions: 50
   });
 
