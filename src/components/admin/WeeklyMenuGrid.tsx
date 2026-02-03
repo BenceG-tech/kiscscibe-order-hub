@@ -5,11 +5,12 @@ import { format, startOfWeek, addDays, addWeeks, subWeeks } from "date-fns";
 import { hu } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { ChevronLeft, ChevronRight, X, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { WeeklyGridCell } from "./WeeklyGridCell";
 import { WeeklyGridMobile } from "./WeeklyGridMobile";
+import { DailyPriceInput } from "./DailyPriceInput";
 
 // Category color mapping based on Excel design
 const CATEGORY_COLORS: Record<string, string> = {
@@ -28,6 +29,7 @@ interface MenuItem {
   name: string;
   category_id: string | null;
   price_huf: number;
+  image_url?: string | null;
 }
 
 interface Category {
@@ -46,7 +48,16 @@ interface DailyOfferItem {
 interface DailyOffer {
   id: string;
   date: string;
+  price_huf: number | null;
   daily_offer_items: DailyOfferItem[];
+}
+
+interface SelectedItem {
+  itemId: string;
+  itemName: string;
+  offerId: string;
+  offerItemId: string;
+  imageUrl?: string | null;
 }
 
 export default function WeeklyMenuGrid() {
@@ -88,7 +99,7 @@ export default function WeeklyMenuGrid() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("menu_items")
-        .select("id, name, category_id, price_huf")
+        .select("id, name, category_id, price_huf, image_url")
         .eq("is_active", true)
         .order("name");
       
@@ -123,6 +134,7 @@ export default function WeeklyMenuGrid() {
         .select(`
           id,
           date,
+          price_huf,
           daily_offer_items (
             id,
             daily_offer_id,
@@ -131,7 +143,8 @@ export default function WeeklyMenuGrid() {
               id,
               name,
               category_id,
-              price_huf
+              price_huf,
+              image_url
             )
           )
         `)
@@ -143,9 +156,9 @@ export default function WeeklyMenuGrid() {
     },
   });
 
-  // Build a lookup: date -> category_id -> item
+  // Build a lookup: date -> category_id -> items array
   const gridData = useMemo(() => {
-    const lookup: Record<string, Record<string, { itemId: string; itemName: string; offerId: string; offerItemId: string }>> = {};
+    const lookup: Record<string, Record<string, SelectedItem[]>> = {};
     
     dailyOffers.forEach(offer => {
       if (!lookup[offer.date]) {
@@ -154,16 +167,30 @@ export default function WeeklyMenuGrid() {
       
       offer.daily_offer_items?.forEach(item => {
         if (item.menu_items && item.menu_items.category_id) {
-          lookup[offer.date][item.menu_items.category_id] = {
+          const categoryId = item.menu_items.category_id;
+          if (!lookup[offer.date][categoryId]) {
+            lookup[offer.date][categoryId] = [];
+          }
+          lookup[offer.date][categoryId].push({
             itemId: item.menu_items.id,
             itemName: item.menu_items.name,
             offerId: offer.id,
             offerItemId: item.id,
-          };
+            imageUrl: item.menu_items.image_url,
+          });
         }
       });
     });
     
+    return lookup;
+  }, [dailyOffers]);
+
+  // Build price lookup: date -> price
+  const priceData = useMemo(() => {
+    const lookup: Record<string, { offerId: string; price: number | null }> = {};
+    dailyOffers.forEach(offer => {
+      lookup[offer.date] = { offerId: offer.id, price: offer.price_huf };
+    });
     return lookup;
   }, [dailyOffers]);
 
@@ -229,72 +256,52 @@ export default function WeeklyMenuGrid() {
     },
   });
 
-  // Mutation to replace item (remove old, add new)
-  const replaceItemMutation = useMutation({
-    mutationFn: async ({ date, itemId, oldOfferItemId }: { date: string; itemId: string; oldOfferItemId?: string }) => {
-      // If there's an old item, remove it first
-      if (oldOfferItemId) {
-        const { error: deleteError } = await supabase
-          .from("daily_offer_items")
-          .delete()
-          .eq("id", oldOfferItemId);
-        
-        if (deleteError) throw deleteError;
-      }
-      
-      // Now add the new item
-      let offerId: string;
+  // Mutation to update price
+  const updatePriceMutation = useMutation({
+    mutationFn: async ({ date, price }: { date: string; price: number | null }) => {
       const existingOffer = dailyOffers.find(o => o.date === date);
       
       if (existingOffer) {
-        offerId = existingOffer.id;
-      } else {
-        const { data: newOffer, error: offerError } = await supabase
+        const { error } = await supabase
           .from("daily_offers")
-          .insert({ date })
-          .select("id")
-          .single();
+          .update({ price_huf: price })
+          .eq("id", existingOffer.id);
         
-        if (offerError) throw offerError;
-        offerId = newOffer.id;
+        if (error) throw error;
+      } else {
+        // Create new daily_offer with price
+        const { error } = await supabase
+          .from("daily_offers")
+          .insert({ date, price_huf: price });
+        
+        if (error) throw error;
       }
-      
-      const { error } = await supabase
-        .from("daily_offer_items")
-        .insert({
-          daily_offer_id: offerId,
-          item_id: itemId,
-        });
-      
-      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["daily-offers-week"] });
-      toast.success("Étel módosítva");
+      toast.success("Ár mentve");
     },
     onError: (error) => {
-      console.error("Error replacing item:", error);
-      toast.error("Hiba történt az étel módosításakor");
+      console.error("Error updating price:", error);
+      toast.error("Hiba történt az ár mentésekor");
     },
   });
 
-  const handleSelectItem = (date: string | Date, categoryId: string, itemId: string) => {
-    const dateStr = typeof date === 'string' ? date : format(date, "yyyy-MM-dd");
-    const existingItem = gridData[dateStr]?.[categoryId];
-    
-    if (existingItem) {
-      replaceItemMutation.mutate({ 
-        date: dateStr, 
-        itemId, 
-        oldOfferItemId: existingItem.offerItemId 
-      });
-    } else {
-      addItemMutation.mutate({ date: dateStr, itemId });
-    }
+  const handleAddItem = (date: string, itemId: string) => {
+    addItemMutation.mutate({ date, itemId });
   };
 
   const handleRemoveItem = (offerItemId: string) => {
     removeItemMutation.mutate({ offerItemId });
+  };
+
+  const handlePriceChange = (date: string, price: number | null) => {
+    updatePriceMutation.mutate({ date, price });
+  };
+
+  const handleImageUpdated = () => {
+    queryClient.invalidateQueries({ queryKey: ["daily-offers-week"] });
+    queryClient.invalidateQueries({ queryKey: ["menu-items-all"] });
   };
 
   const goToPreviousWeek = () => {
@@ -312,8 +319,10 @@ export default function WeeklyMenuGrid() {
   const isCurrentWeek = format(currentWeekStart, "yyyy-MM-dd") === 
     format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
 
-  const isLoading = offersLoading || addItemMutation.isPending || 
-    removeItemMutation.isPending || replaceItemMutation.isPending;
+  const isPending = addItemMutation.isPending || 
+    removeItemMutation.isPending || updatePriceMutation.isPending;
+  
+  const isLoading = offersLoading;
 
   if (isMobile) {
     return (
@@ -322,14 +331,18 @@ export default function WeeklyMenuGrid() {
         categories={foodCategories}
         itemsByCategory={itemsByCategory}
         gridData={gridData}
+        priceData={priceData}
         categoryColors={CATEGORY_COLORS}
-        onSelectItem={handleSelectItem}
+        onAddItem={handleAddItem}
         onRemoveItem={handleRemoveItem}
+        onPriceChange={handlePriceChange}
+        onImageUpdated={handleImageUpdated}
         onPreviousWeek={goToPreviousWeek}
         onNextWeek={goToNextWeek}
         onCurrentWeek={goToCurrentWeek}
         isCurrentWeek={isCurrentWeek}
         isLoading={isLoading}
+        isPending={isPending}
       />
     );
   }
@@ -356,9 +369,22 @@ export default function WeeklyMenuGrid() {
           {format(currentWeekStart, "yyyy. MMMM d.", { locale: hu })} – {format(addDays(currentWeekStart, 4), "MMMM d.", { locale: hu })}
         </div>
         
-        {isLoading && (
-          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-        )}
+        <div className="flex items-center gap-2">
+          {isPending ? (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              <span>Mentés...</span>
+            </div>
+          ) : !isLoading && (
+            <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+              <Check className="h-3 w-3" />
+              <span>Mentve</span>
+            </div>
+          )}
+          {isLoading && (
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          )}
+        </div>
       </div>
 
       {/* Grid Table */}
@@ -381,6 +407,28 @@ export default function WeeklyMenuGrid() {
               </tr>
             </thead>
             <tbody>
+              {/* Price Row */}
+              <tr className="bg-primary/5">
+                <td className="border-b p-3 font-medium text-sm">
+                  Napi menü ár
+                </td>
+                {weekDates.map((date, idx) => {
+                  const dateStr = format(date, "yyyy-MM-dd");
+                  const priceInfo = priceData[dateStr];
+                  
+                  return (
+                    <td key={idx} className="border-b border-l p-2">
+                      <DailyPriceInput
+                        value={priceInfo?.price ?? null}
+                        onChange={(price) => handlePriceChange(dateStr, price)}
+                        isPending={updatePriceMutation.isPending}
+                      />
+                    </td>
+                  );
+                })}
+              </tr>
+              
+              {/* Category Rows */}
               {foodCategories.map(category => {
                 const rowColor = CATEGORY_COLORS[category.name] || "";
                 
@@ -391,19 +439,20 @@ export default function WeeklyMenuGrid() {
                     </td>
                     {weekDates.map((date, idx) => {
                       const dateStr = format(date, "yyyy-MM-dd");
-                      const cellData = gridData[dateStr]?.[category.id];
+                      const cellItems = gridData[dateStr]?.[category.id] || [];
                       const categoryItems = itemsByCategory[category.id] || [];
                       
                       return (
-                        <td key={idx} className="border-b border-l p-2">
+                        <td key={idx} className="border-b border-l p-2 align-top">
                           <WeeklyGridCell
                             date={dateStr}
                             categoryId={category.id}
                             categoryName={category.name}
                             items={categoryItems}
-                            selectedItem={cellData}
-                            onSelect={(itemId) => handleSelectItem(dateStr, category.id, itemId)}
-                            onRemove={() => cellData && handleRemoveItem(cellData.offerItemId)}
+                            selectedItems={cellItems}
+                            onAddItem={(itemId) => handleAddItem(dateStr, itemId)}
+                            onRemoveItem={handleRemoveItem}
+                            onImageUpdated={handleImageUpdated}
                           />
                         </td>
                       );

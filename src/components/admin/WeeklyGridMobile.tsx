@@ -2,8 +2,9 @@ import { format } from "date-fns";
 import { hu } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronLeft, ChevronRight, ChevronDown, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Loader2, Check } from "lucide-react";
 import { WeeklyGridCell } from "./WeeklyGridCell";
+import { DailyPriceInput } from "./DailyPriceInput";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -12,6 +13,7 @@ interface MenuItem {
   name: string;
   price_huf: number;
   category_id: string | null;
+  image_url?: string | null;
 }
 
 interface Category {
@@ -25,21 +27,26 @@ interface SelectedItem {
   itemName: string;
   offerId: string;
   offerItemId: string;
+  imageUrl?: string | null;
 }
 
 interface WeeklyGridMobileProps {
   weekDates: Date[];
   categories: Category[];
   itemsByCategory: Record<string, MenuItem[]>;
-  gridData: Record<string, Record<string, SelectedItem>>;
+  gridData: Record<string, Record<string, SelectedItem[]>>;
+  priceData: Record<string, { offerId: string; price: number | null }>;
   categoryColors: Record<string, string>;
-  onSelectItem: (date: string, categoryId: string, itemId: string) => void;
+  onAddItem: (date: string, itemId: string) => void;
   onRemoveItem: (offerItemId: string) => void;
+  onPriceChange: (date: string, price: number | null) => void;
+  onImageUpdated: () => void;
   onPreviousWeek: () => void;
   onNextWeek: () => void;
   onCurrentWeek: () => void;
   isCurrentWeek: boolean;
   isLoading: boolean;
+  isPending: boolean;
 }
 
 const WEEKDAYS = ["Hétfő", "Kedd", "Szerda", "Csütörtök", "Péntek"];
@@ -49,14 +56,18 @@ export function WeeklyGridMobile({
   categories,
   itemsByCategory,
   gridData,
+  priceData,
   categoryColors,
-  onSelectItem,
+  onAddItem,
   onRemoveItem,
+  onPriceChange,
+  onImageUpdated,
   onPreviousWeek,
   onNextWeek,
   onCurrentWeek,
   isCurrentWeek,
   isLoading,
+  isPending,
 }: WeeklyGridMobileProps) {
   const [openDays, setOpenDays] = useState<Record<number, boolean>>({ 0: true });
 
@@ -86,9 +97,16 @@ export function WeeklyGridMobile({
           {format(weekDates[0], "MM.dd.", { locale: hu })} – {format(weekDates[4], "MM.dd.", { locale: hu })}
         </div>
         
-        {isLoading && (
-          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-        )}
+        <div className="flex items-center gap-1">
+          {isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          ) : !isLoading && (
+            <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
+          )}
+          {isLoading && (
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          )}
+        </div>
       </div>
 
       {/* Day Accordions */}
@@ -96,7 +114,8 @@ export function WeeklyGridMobile({
         {weekDates.map((date, dayIdx) => {
           const dateStr = format(date, "yyyy-MM-dd");
           const dayData = gridData[dateStr] || {};
-          const itemCount = Object.keys(dayData).length;
+          const priceInfo = priceData[dateStr];
+          const itemCount = Object.values(dayData).reduce((acc, items) => acc + items.length, 0);
           
           return (
             <Collapsible
@@ -131,8 +150,21 @@ export function WeeklyGridMobile({
               
               <CollapsibleContent className="pt-2">
                 <div className="space-y-2 pl-2 border-l-2 border-muted ml-2">
+                  {/* Price Input */}
+                  <div className="p-2 rounded-lg bg-primary/5">
+                    <div className="text-xs font-medium text-muted-foreground mb-1">
+                      Napi menü ár
+                    </div>
+                    <DailyPriceInput
+                      value={priceInfo?.price ?? null}
+                      onChange={(price) => onPriceChange(dateStr, price)}
+                      isPending={isPending}
+                    />
+                  </div>
+                  
+                  {/* Category Cells */}
                   {categories.map(category => {
-                    const cellData = dayData[category.id];
+                    const cellItems = dayData[category.id] || [];
                     const categoryItems = itemsByCategory[category.id] || [];
                     const rowColor = categoryColors[category.name] || "";
                     
@@ -149,9 +181,10 @@ export function WeeklyGridMobile({
                           categoryId={category.id}
                           categoryName={category.name}
                           items={categoryItems}
-                          selectedItem={cellData}
-                          onSelect={(itemId) => onSelectItem(dateStr, category.id, itemId)}
-                          onRemove={() => cellData && onRemoveItem(cellData.offerItemId)}
+                          selectedItems={cellItems}
+                          onAddItem={(itemId) => onAddItem(dateStr, itemId)}
+                          onRemoveItem={onRemoveItem}
+                          onImageUpdated={onImageUpdated}
                         />
                       </div>
                     );
