@@ -3,10 +3,11 @@ import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, X, Phone, ShoppingCart } from "lucide-react";
+import { Menu, Phone, ShoppingCart } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { CartDialog } from "@/components/CartDialog";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useAuth } from "@/contexts/AuthContext";
 
 const ModernNavigation = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -15,6 +16,7 @@ const ModernNavigation = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const location = useLocation();
   const { state: cart } = useCart();
+  const { isAdmin, isStaff, canViewOrders } = useAuth();
 
   useEffect(() => {
     let lastScrollY = window.scrollY;
@@ -34,15 +36,26 @@ const ModernNavigation = () => {
 
   const closeMenu = () => setIsOpen(false);
 
+  // Build navigation links based on user role
   const navLinks = [
     { href: "/", label: "Főoldal" },
     { href: "/etlap", label: "Napi Ajánlat" },
     { href: "/about", label: "Rólunk" },
     { href: "/contact", label: "Kapcsolat" },
-    { href: "/admin/daily-menu", label: "Admin" },
+    // Only show admin/staff links to authorized users
+    ...(isAdmin ? [{ href: "/admin/daily-menu", label: "Admin" }] : []),
+    ...(isStaff && !isAdmin ? [{ href: "/staff/orders", label: "Rendelések" }] : []),
   ];
 
   return (
+    <>
+      {/* Skip to main content link for accessibility */}
+      <a 
+        href="#main-content" 
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[60] focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-lg focus:outline-none"
+      >
+        Ugrás a tartalomra
+      </a>
     <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-in-out transform ${
       visible 
         ? "translate-y-0 opacity-100" 
@@ -233,6 +246,7 @@ const ModernNavigation = () => {
       {/* Cart Dialog */}
       <CartDialog open={isCartOpen} onOpenChange={setIsCartOpen} />
     </nav>
+    </>
   );
 };
 

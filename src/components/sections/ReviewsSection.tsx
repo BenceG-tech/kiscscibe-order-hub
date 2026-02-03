@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Star } from "lucide-react";
 
 const ReviewsSection = () => {
@@ -128,20 +129,25 @@ const ReviewsSection = () => {
             Próbálja ki Ön is éttermünket!
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <button 
+            <Button 
               onClick={() => document.getElementById('napi-ajanlat')?.scrollIntoView({ behavior: 'smooth' })}
-              className="bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm text-primary-foreground font-semibold px-6 py-3 rounded-lg transition-all duration-300"
+              className="bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm text-primary-foreground font-semibold px-6 py-3"
             >
               Napi menü megtekintése
-            </button>
-            <a 
-              href="https://maps.google.com/?q=1141+Budapest,+Vezér+u.+110" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="border border-primary text-primary hover:bg-primary hover:text-primary-foreground font-semibold px-6 py-3 rounded-lg transition-all duration-300 text-center"
+            </Button>
+            <Button
+              variant="outline"
+              asChild
+              className="border-primary text-primary hover:bg-primary hover:text-primary-foreground font-semibold px-6 py-3"
             >
-              Útvonalterv
-            </a>
+              <a 
+                href="https://maps.google.com/?q=1141+Budapest,+Vezér+u.+110" 
+                target="_blank" 
+                rel="noopener noreferrer"
+              >
+                Útvonalterv
+              </a>
+            </Button>
           </div>
         </div>
       </div>
