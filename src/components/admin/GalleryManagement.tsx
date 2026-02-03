@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Plus, Trash2, ArrowUp, ArrowDown, Pencil, Image as ImageIcon, Loader2, Utensils, Building2 } from "lucide-react";
+import { Plus, Trash2, ArrowUp, ArrowDown, Pencil, Image as ImageIcon, Loader2, Utensils, Building2, ArrowRightLeft } from "lucide-react";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import MultiImageUpload from "./MultiImageUpload";
 
@@ -144,6 +144,26 @@ const GalleryManagement = () => {
     }
   });
 
+  const moveToOtherGalleryMutation = useMutation({
+    mutationFn: async ({ id, currentType }: { id: string; currentType: GalleryType }) => {
+      const newType: GalleryType = currentType === 'food' ? 'interior' : 'food';
+      const targetImages = newType === 'food' ? foodImages : interiorImages;
+      const maxSortOrder = targetImages.length > 0 ? Math.max(...targetImages.map(i => i.sort_order)) : -1;
+      
+      const { error } = await supabase
+        .from('gallery_images')
+        .update({ gallery_type: newType, sort_order: maxSortOrder + 1 })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-gallery-images'] });
+      queryClient.invalidateQueries({ queryKey: ['gallery-images'] });
+      toast.success("Kép áthelyezve!");
+    },
+    onError: () => toast.error("Hiba az áthelyezéskor")
+  });
+
   const handleOpenAddDialog = () => {
     setAddGalleryType(activeTab);
     setIsAddDialogOpen(true);
@@ -202,6 +222,17 @@ const GalleryManagement = () => {
                 disabled={index === images.length - 1}
               >
                 <ArrowDown className="h-4 w-4" />
+              </Button>
+              <Button 
+                size="icon" 
+                variant="secondary"
+                title={image.gallery_type === 'food' ? 'Áthelyezés az Étterem galériába' : 'Áthelyezés az Ételek galériába'}
+                onClick={() => moveToOtherGalleryMutation.mutate({ 
+                  id: image.id, 
+                  currentType: image.gallery_type 
+                })}
+              >
+                <ArrowRightLeft className="h-4 w-4" />
               </Button>
               <Button 
                 size="icon" 
