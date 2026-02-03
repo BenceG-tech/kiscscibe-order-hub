@@ -266,28 +266,34 @@ export type Database = {
         Row: {
           alt_text: string
           created_at: string | null
+          gallery_type: string
           id: string
           image_url: string
           is_active: boolean
           sort_order: number
+          title: string | null
           updated_at: string | null
         }
         Insert: {
           alt_text: string
           created_at?: string | null
+          gallery_type?: string
           id?: string
           image_url: string
           is_active?: boolean
           sort_order?: number
+          title?: string | null
           updated_at?: string | null
         }
         Update: {
           alt_text?: string
           created_at?: string | null
+          gallery_type?: string
           id?: string
           image_url?: string
           is_active?: boolean
           sort_order?: number
+          title?: string | null
           updated_at?: string | null
         }
         Relationships: []

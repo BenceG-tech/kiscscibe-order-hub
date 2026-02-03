@@ -14,6 +14,7 @@ import Etlap from "./pages/Etlap";
 import Auth from "./pages/Auth";
 import Checkout from "./pages/Checkout";
 import OrderConfirmation from "./pages/OrderConfirmation";
+import Gallery from "./pages/Gallery";
 import AdminOrders from "./pages/admin/Orders";
 import AdminMenu from "./pages/admin/Menu";
 import AdminMenuSchedule from "./pages/admin/MenuSchedule";
@@ -42,6 +43,7 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/order-confirmation" element={<OrderConfirmation />} />
+              <Route path="/gallery" element={<Gallery />} />
               
               {/* Staff routes - read-only access */}
               <Route path="/staff/orders" element={
