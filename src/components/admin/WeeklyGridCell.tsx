@@ -6,6 +6,7 @@ import { Plus, X, ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { QuickImageUpload } from "./QuickImageUpload";
 import { QuickPriceEdit } from "./QuickPriceEdit";
+import { MenuPartToggle } from "./MenuPartToggle";
 
 interface MenuItem {
   id: string;
@@ -21,6 +22,8 @@ interface SelectedItem {
   offerItemId: string;
   imageUrl?: string | null;
   price?: number;
+  isMenuPart: boolean;
+  menuRole?: string | null;
 }
 
 interface WeeklyGridCellProps {
@@ -33,6 +36,7 @@ interface WeeklyGridCellProps {
   onRemoveItem: (offerItemId: string) => void;
   onImageUpdated?: () => void;
   onPriceChange?: (itemId: string, newPrice: number) => void;
+  onMenuPartToggle?: (offerItemId: string, isMenuPart: boolean, menuRole: string | null) => void;
 }
 
 export function WeeklyGridCell({
@@ -43,6 +47,7 @@ export function WeeklyGridCell({
   onRemoveItem,
   onImageUpdated,
   onPriceChange,
+  onMenuPartToggle,
 }: WeeklyGridCellProps) {
   const [open, setOpen] = useState(false);
 
@@ -81,8 +86,19 @@ export function WeeklyGridCell({
             {selectedItem.itemName}
           </span>
           
+          {/* Menu Part Toggle */}
+          {onMenuPartToggle && (
+            <MenuPartToggle
+              offerItemId={selectedItem.offerItemId}
+              isMenuPart={selectedItem.isMenuPart}
+              menuRole={selectedItem.menuRole ?? null}
+              categoryName={categoryName}
+              onToggle={onMenuPartToggle}
+            />
+          )}
+          
           {/* Quick Price Edit */}
-          {onPriceChange && selectedItem.price && (
+          {onPriceChange && selectedItem.price !== undefined && (
             <QuickPriceEdit
               itemId={selectedItem.itemId}
               itemName={selectedItem.itemName}
