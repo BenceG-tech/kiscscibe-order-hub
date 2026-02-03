@@ -20,6 +20,7 @@ import AdminMenuSchedule from "./pages/admin/MenuSchedule";
 import AdminDailyMenu from "./pages/admin/DailyMenu";
 import AdminCapacity from "./pages/admin/Capacity";
 import AdminGallery from "./pages/admin/Gallery";
+import StaffOrders from "./pages/staff/StaffOrders";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,6 +42,15 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/order-confirmation" element={<OrderConfirmation />} />
+              
+              {/* Staff routes - read-only access */}
+              <Route path="/staff/orders" element={
+                <ProtectedRoute requireStaff>
+                  <StaffOrders />
+                </ProtectedRoute>
+              } />
+              
+              {/* Admin routes - full access */}
               <Route path="/admin/orders" element={
                 <ProtectedRoute requireAdmin>
                   <AdminOrders />
