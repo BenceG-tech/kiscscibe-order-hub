@@ -1,4 +1,5 @@
 import ModernNavigation from "@/components/ModernNavigation";
+import Footer from "@/components/Footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Heart, Users, Clock, Award } from "lucide-react";
 
@@ -136,6 +137,7 @@ const About = () => {
           </section>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

@@ -36,15 +36,12 @@ const ModernNavigation = () => {
 
   const closeMenu = () => setIsOpen(false);
 
-  // Build navigation links based on user role
+  // Navigation links - admin access is hidden in footer (5 clicks on logo)
   const navLinks = [
     { href: "/", label: "Főoldal" },
     { href: "/etlap", label: "Napi Ajánlat" },
     { href: "/about", label: "Rólunk" },
     { href: "/contact", label: "Kapcsolat" },
-    // Only show admin/staff links to authorized users
-    ...(isAdmin ? [{ href: "/admin/daily-menu", label: "Admin" }] : []),
-    ...(isStaff && !isAdmin ? [{ href: "/staff/orders", label: "Rendelések" }] : []),
   ];
 
   return (

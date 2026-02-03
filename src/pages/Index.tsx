@@ -1,7 +1,6 @@
 import ModernNavigation from "@/components/ModernNavigation";
 import HeroSection from "@/components/sections/HeroSection";
 import DailyMenuSection from "@/components/sections/DailyMenuSection";
-
 import USPSection from "@/components/sections/USPSection";
 import ReviewsSection from "@/components/sections/ReviewsSection";
 import GallerySection from "@/components/sections/GallerySection";
@@ -11,7 +10,7 @@ import MapSection from "@/components/sections/MapSection";
 import FAQSection from "@/components/sections/FAQSection";
 import NewsletterSection from "@/components/sections/NewsletterSection";
 import StickyMobileCTA from "@/components/StickyMobileCTA";
-
+import Footer from "@/components/Footer";
 
 const Index = () => {
   return (
@@ -39,6 +38,7 @@ const Index = () => {
           <NewsletterSection />
         </div>
       </main>
+      <Footer />
       <StickyMobileCTA />
       
       {/* Mobil sticky CTA-hoz helykitöltés */}
