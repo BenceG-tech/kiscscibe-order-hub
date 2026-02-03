@@ -2,9 +2,10 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Check, Plus, X, ImageIcon } from "lucide-react";
+import { Plus, X, ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { QuickImageUpload } from "./QuickImageUpload";
+import { QuickPriceEdit } from "./QuickPriceEdit";
 
 interface MenuItem {
   id: string;
@@ -19,6 +20,7 @@ interface SelectedItem {
   offerId: string;
   offerItemId: string;
   imageUrl?: string | null;
+  price?: number;
 }
 
 interface WeeklyGridCellProps {
@@ -30,17 +32,17 @@ interface WeeklyGridCellProps {
   onAddItem: (itemId: string) => void;
   onRemoveItem: (offerItemId: string) => void;
   onImageUpdated?: () => void;
+  onPriceChange?: (itemId: string, newPrice: number) => void;
 }
 
 export function WeeklyGridCell({
-  date,
-  categoryId,
   categoryName,
   items,
   selectedItems,
   onAddItem,
   onRemoveItem,
   onImageUpdated,
+  onPriceChange,
 }: WeeklyGridCellProps) {
   const [open, setOpen] = useState(false);
 
@@ -78,6 +80,16 @@ export function WeeklyGridCell({
           <span className="flex-1 text-xs font-medium truncate" title={selectedItem.itemName}>
             {selectedItem.itemName}
           </span>
+          
+          {/* Quick Price Edit */}
+          {onPriceChange && selectedItem.price && (
+            <QuickPriceEdit
+              itemId={selectedItem.itemId}
+              itemName={selectedItem.itemName}
+              currentPrice={selectedItem.price}
+              onPriceChange={onPriceChange}
+            />
+          )}
           
           {/* Quick Image Upload */}
           <QuickImageUpload
