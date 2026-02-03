@@ -762,7 +762,9 @@ export type Database = {
       is_admin:
         | { Args: never; Returns: boolean }
         | { Args: { check_user_id?: string }; Returns: boolean }
+      is_admin_or_staff: { Args: { _user_id?: string }; Returns: boolean }
       is_date_in_past: { Args: { check_date: string }; Returns: boolean }
+      is_staff: { Args: { _user_id?: string }; Returns: boolean }
       is_weekend: { Args: { check_date: string }; Returns: boolean }
       update_daily_portions: {
         Args: { daily_id: string; quantity_needed: number; table_name: string }
@@ -778,7 +780,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "customer"
+      app_role: "admin" | "customer" | "staff"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -906,7 +908,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "customer"],
+      app_role: ["admin", "customer", "staff"],
     },
   },
 } as const

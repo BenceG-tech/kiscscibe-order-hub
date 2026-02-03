@@ -1,19 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
-interface AuthContextType {
-  user: User | null;
-  session: Session | null;
-  profile: UserProfile | null;
-  loading: boolean;
-  signUp: (email: string, password: string, fullName?: string) => Promise<{ error: any }>;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signOut: () => Promise<void>;
-  isAdmin: boolean;
-}
-
-interface UserProfile {
+interface Profile {
   id: string;
   user_id: string;
   email: string;
@@ -21,6 +10,19 @@ interface UserProfile {
   role: string;
   created_at: string;
   updated_at: string;
+}
+
+interface AuthContextType {
+  user: User | null;
+  session: Session | null;
+  profile: Profile | null;
+  loading: boolean;
+  isAdmin: boolean;
+  isStaff: boolean;
+  canViewOrders: boolean;
+  signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
+  signUp: (email: string, password: string, fullName?: string) => Promise<{ error: AuthError | null }>;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -36,11 +38,11 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdminState, setIsAdminState] = useState(false);
+  const [isStaffState, setIsStaffState] = useState(false);
 
-  // Fetch user profile and check admin status
   const fetchProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
@@ -64,13 +66,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Check admin status from secure user_roles table via RPC
       const { data: isAdminResult } = await supabase.rpc('is_admin');
       setIsAdminState(isAdminResult === true);
+
+      // Check staff status from secure user_roles table via RPC
+      const { data: isStaffResult } = await supabase.rpc('is_staff');
+      setIsStaffState(isStaffResult === true);
     } catch (error) {
       console.error('Error fetching profile:', error);
     }
   };
 
   useEffect(() => {
-    // Set up auth state listener
+    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         setSession(session);
@@ -83,13 +89,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }, 0);
         } else {
           setProfile(null);
+          setIsAdminState(false);
+          setIsStaffState(false);
         }
         
         setLoading(false);
       }
     );
 
-    // Check for existing session
+    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -134,8 +142,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await supabase.auth.signOut();
   };
 
-  // Admin status from secure user_roles table (no client-side fallbacks)
+  // Role flags from secure user_roles table (no client-side fallbacks)
   const isAdmin = isAdminState;
+  const isStaff = isStaffState;
+  const canViewOrders = isAdminState || isStaffState;
 
   const value = {
     user,
@@ -146,6 +156,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signIn,
     signOut,
     isAdmin,
+    isStaff,
+    canViewOrders,
   };
 
   return (

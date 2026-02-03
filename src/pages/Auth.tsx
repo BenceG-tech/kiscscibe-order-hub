@@ -20,18 +20,30 @@ const Auth: React.FC = () => {
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('signin');
   
-  const { user, signIn, signUp } = useAuth();
+  const { user, signIn, signUp, isAdmin, isStaff, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   
   const from = location.state?.from?.pathname || '/';
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated - route based on role
   useEffect(() => {
-    if (user) {
-      navigate(from, { replace: true });
+    if (user && !authLoading) {
+      // If coming from a specific page, go back there (if authorized)
+      if (from !== '/' && from !== '/auth') {
+        navigate(from, { replace: true });
+      } else if (isAdmin) {
+        // Admins go to admin orders
+        navigate('/admin/orders', { replace: true });
+      } else if (isStaff) {
+        // Staff go to staff orders (read-only)
+        navigate('/staff/orders', { replace: true });
+      } else {
+        // Regular users go home
+        navigate('/', { replace: true });
+      }
     }
-  }, [user, navigate, from]);
+  }, [user, authLoading, isAdmin, isStaff, navigate, from]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
