@@ -1,126 +1,76 @@
 
-# Plan: Weekly Grid Menu Management Redesign
+# Plan: Fix Admin Login - Database Function Overload Conflict
 
-## Overview
+## Problem Identified
 
-Based on the Excel screenshot, we'll redesign the admin menu management to use a **weekly grid layout** where:
-- **Columns** = Days of the week (Hétfő, Kedd, Szerda, Csütörtök, Péntek)
-- **Rows** = Food categories (Levesek, Tészta, Főételek, Halételek, etc.)
-- **Cells** = Dropdown selectors to pick items from the master menu library
+The admin login is broken because the `is_admin` RPC call is returning a **300 error**:
 
-This is significantly more intuitive than the current calendar + form approach, allowing admins to see and edit the entire week at a glance.
-
-## Current State
-
-The existing interface uses:
-- A calendar picker to select one date at a time
-- A separate form area to add/remove items for that date
-- Multiple tabs (Napi ajánlatok, Ütemezés, Sablonok, Kapacitás, Import)
-
-## New Design
-
-```text
-+------------------+----------+----------+----------+----------+----------+
-| Kategória        | Hétfő    | Kedd     | Szerda   | Csütörtök| Péntek   |
-+------------------+----------+----------+----------+----------+----------+
-| Menü Leves       | [▼ ...]  | [▼ ...]  | [▼ ...]  | [▼ ...]  | [▼ ...]  |
-| (yellow)         |          |          |          |          |          |
-+------------------+----------+----------+----------+----------+----------+
-| Tészta           | [▼ ...]  | [▼ ...]  | [▼ ...]  | [▼ ...]  | [▼ ...]  |
-| (peach)          |          |          |          |          |          |
-+------------------+----------+----------+----------+----------+----------+
-| Halételek        | [▼ ...]  | [▼ ...]  | [▼ ...]  | [▼ ...]  | [▼ ...]  |
-| (tan)            |          |          |          |          |          |
-+------------------+----------+----------+----------+----------+----------+
-| Marhahúsos       | [▼ ...]  | [▼ ...]  | [▼ ...]  | [▼ ...]  | [▼ ...]  |
-+------------------+----------+----------+----------+----------+----------+
-| Prémium ételek   | [▼ ...]  | [▼ ...]  | [▼ ...]  | [▼ ...]  | [▼ ...]  |
-| (orange)         |          |          |          |          |          |
-+------------------+----------+----------+----------+----------+----------+
-| Főzelék          | [▼ ...]  | [▼ ...]  | [▼ ...]  | [▼ ...]  | [▼ ...]  |
-| (green)          |          |          |          |          |          |
-+------------------+----------+----------+----------+----------+----------+
+```
+"Could not choose the best candidate function between: 
+public.is_admin(), public.is_admin(check_user_id => uuid)"
 ```
 
-### Key Features
+There are **two versions** of the `is_admin` function in the database:
+1. `is_admin()` - no parameters
+2. `is_admin(check_user_id uuid DEFAULT NULL)` - with optional parameter
 
-1. **Week Navigation**: Buttons to go to previous/next week
-2. **Dropdown Selectors**: Each cell has a searchable dropdown filtered to that category's items
-3. **Color-Coded Rows**: Categories have distinct background colors matching the Excel design
-4. **Auto-Save**: Changes save automatically when a selection is made
-5. **Quick Clear**: Click X to remove an item from a cell
-6. **Mobile Responsive**: On mobile, show a day-by-day accordion view
+When the frontend calls `supabase.rpc('is_admin')`, PostgREST cannot determine which function to use.
 
-## Technical Implementation
+## Solution
 
-### Step 1: Create WeeklyMenuGrid Component
+**Drop the duplicate parameterless function** from the database. Keep only the version with the optional parameter, which already defaults to `NULL` and uses `auth.uid()` when no parameter is provided.
 
-Create a new component `src/components/admin/WeeklyMenuGrid.tsx` that:
-- Fetches the current week's daily offers
-- Fetches all menu items grouped by category
-- Renders a table with categories as rows and days as columns
-- Uses Combobox/Command for searchable dropdowns in each cell
+## Implementation Steps
 
-### Step 2: Database Queries
+### Step 1: Database Migration
 
-For each cell (category + day combination):
-- Check if there's an existing `daily_offer` for that date
-- Check if there's a `daily_offer_item` linking to an item in that category
-- When user selects an item:
-  1. Create/update `daily_offers` record for that date if needed
-  2. Create/update `daily_offer_items` record for the selected item
+Run a SQL migration to drop the duplicate `is_admin()` function (the one without parameters):
 
-### Step 3: Update DailyMenuManagement Page
+```sql
+-- Drop the parameterless version of is_admin
+-- Keep only is_admin(check_user_id uuid DEFAULT NULL) which handles both cases
+DROP FUNCTION IF EXISTS public.is_admin();
+```
 
-Replace the current "Napi ajánlatok" tab content with the new `WeeklyMenuGrid` component. Keep other tabs (Sablonok, Kapacitás, Import) as-is.
+The remaining `is_admin(check_user_id uuid DEFAULT NULL)` function will work correctly when called without parameters because:
+- PostgREST will call it with `NULL` as the default
+- The function uses `COALESCE(check_user_id, auth.uid())` to fall back to the current user's ID
 
-### Step 4: Mobile Optimization
+### Step 2: Verify the Fix
 
-On mobile devices:
-- Show a horizontal scrollable table OR
-- Use an accordion where each category expands to show the week's selections
+After the migration, the login flow will work:
+1. User signs in at `/auth`
+2. `AuthContext` calls `supabase.rpc('is_admin')` 
+3. PostgREST correctly routes to `is_admin(check_user_id => NULL)`
+4. Function returns `true` for admin users
+5. User is redirected to `/admin/orders`
 
 ## File Changes
 
 | File | Change Type | Description |
 |------|-------------|-------------|
-| `src/components/admin/WeeklyMenuGrid.tsx` | CREATE | New weekly grid component |
-| `src/pages/admin/DailyMenuManagement.tsx` | MODIFY | Replace first tab with WeeklyMenuGrid |
-| `src/components/admin/StreamlinedDailyOffers.tsx` | KEEP | Keep as fallback or remove later |
+| Database Migration | CREATE | Drop the duplicate `is_admin()` function |
 
-## Category Row Colors
+## No Frontend Changes Needed
 
-Based on the Excel screenshot, we'll use these color categories:
-- **Levesek** (Menü Leves): Yellow/Gold (`#FFF9E3` or `bg-yellow-50`)
-- **Tészta**: Peach (`#FFE8D4` or `bg-orange-50`)
-- **Sütőben/Főételek**: Light tan
-- **Halételek**: Neutral
-- **Marhahúsos ételek**: Neutral
-- **Prémium ételek**: Orange (`#FFD9B3` or `bg-amber-100`)
-- **Főzelék**: Green (`#E8F5E9` or `bg-green-50`)
+The frontend code in `AuthContext.tsx` (line 70) will continue to work as-is once the database has only one function signature.
 
-## UI Components Used
+## Technical Details
 
-- `Table` from shadcn/ui for the grid structure
-- `Popover` + `Command` for searchable dropdowns
-- `Button` for week navigation
-- `Badge` to show selected items
-- `ScrollArea` for horizontal scroll on mobile
+The kept function signature:
+```sql
+CREATE OR REPLACE FUNCTION public.is_admin(check_user_id uuid DEFAULT NULL::uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  SELECT public.has_role(COALESCE(check_user_id, auth.uid()), 'admin')
+$function$
+```
 
-## User Flow
-
-1. Admin opens "Napi ajánlatok" tab
-2. Sees the current week's grid (Mon-Fri columns, categories as rows)
-3. Clicks any cell to open a searchable dropdown
-4. Types to filter items within that category
-5. Selects an item - it saves automatically
-6. Clicks X on a selected item to remove it
-7. Uses arrow buttons to navigate to next/previous week
-
-## Technical Notes
-
-- The grid auto-creates `daily_offers` records when first item is added to a day
-- Empty days (no items) don't have database records until an item is added
-- Weekend columns are not shown (restaurant closed on weekends)
-- Each category can have 0-1 items per day (matching the Excel single-dropdown design)
-- Menu composition (leves + főétel = combined price) remains handled separately
+This function:
+- Accepts an optional `check_user_id` parameter
+- Defaults to `NULL` if not provided
+- Uses `COALESCE` to fall back to `auth.uid()` (current authenticated user)
+- Securely checks the `user_roles` table via the `has_role` helper
