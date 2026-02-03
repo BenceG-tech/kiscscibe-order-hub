@@ -14,10 +14,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requireAdmin = false,
   requireStaff = false
 }) => {
-  const { user, loading, isAdmin, canViewOrders } = useAuth();
+  const { user, loading, rolesLoading, isAdmin, canViewOrders } = useAuth();
   const location = useLocation();
 
-  if (loading) {
+  // Wait for both auth AND roles to load
+  if (loading || rolesLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner />
@@ -31,12 +32,12 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // If requireAdmin is set, only admins can access
   if (requireAdmin && !isAdmin) {
-    return <Navigate to="/auth" state={{ from: location }} replace />;
+    return <Navigate to="/" replace />;
   }
 
   // If requireStaff is set, both admin and staff can access
   if (requireStaff && !canViewOrders) {
-    return <Navigate to="/auth" state={{ from: location }} replace />;
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;
