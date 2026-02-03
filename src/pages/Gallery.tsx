@@ -1,5 +1,6 @@
 import { useState } from "react";
 import ModernNavigation from "@/components/ModernNavigation";
+import Footer from "@/components/Footer";
 import FoodGallery from "@/components/gallery/FoodGallery";
 import InteriorGallery from "@/components/gallery/InteriorGallery";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -78,6 +79,7 @@ const Gallery = () => {
           )}
         </div>
       </section>
+      <Footer />
     </div>
   );
 };
