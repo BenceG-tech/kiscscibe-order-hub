@@ -1,6 +1,6 @@
 import AdminLayout from "./AdminLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import StreamlinedDailyOffers from "@/components/admin/StreamlinedDailyOffers";
+import WeeklyMenuGrid from "@/components/admin/WeeklyMenuGrid";
 import MenuScheduling from "@/components/admin/MenuScheduling";
 import CapacityManagement from "@/components/admin/CapacityManagement";
 import TemplateManagement from "@/components/admin/TemplateManagement";
@@ -61,7 +61,7 @@ const DailyMenuManagement = () => {
           </div>
           
           <TabsContent value="daily" className="mt-0">
-            <StreamlinedDailyOffers />
+            <WeeklyMenuGrid />
           </TabsContent>
           
           <TabsContent value="scheduling" className="mt-0">
