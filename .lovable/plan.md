@@ -1,148 +1,104 @@
 
-# Footer Komponens és Rejtett Admin Belépés Implementálása
 
-## Összefoglaló
+# Gyors Galéria Áthelyezés Funkció
 
-Létrehozunk egy elegáns Footer komponenst a feltöltött Kiscsibe logóval, amelyben rejtett admin belépési pont lesz: a logóra 5-ször kattintva előjön a bejelentkezési oldal.
+## Jelenlegi Helyzet
 
----
+A "Galéria típus" váltás már **létezik** a szerkesztés dialógusban (ceruza ikon → "Galéria típus" dropdown). De ez nem nyilvánvaló és több kattintást igényel.
 
-## Előkészítés
+## Javasolt Fejlesztés
 
-### Logo Fájl Másolása
-A feltöltött `kiscsibe_logo.jpeg` képet átmásoljuk a `src/assets/` mappába:
-```
-user-uploads://kiscsibe_logo.jpeg → src/assets/kiscsibe_logo.jpeg
-```
+Egy új, egyértelmű **"Áthelyezés" gomb** hozzáadása a kép hover overlay-éhez, amely egyetlen kattintással átmozgatja a képet a másik galériába.
 
 ---
 
 ## Változtatások
 
-### 1. Új Footer Komponens Létrehozása
+### Fájl: `src/components/admin/GalleryManagement.tsx`
 
-**Fájl:** `src/components/Footer.tsx`
+#### 1. Új "Áthelyezés" Mutation Hozzáadása
 
-A footer tartalma:
-- **Logó** (kattintásszámlálóval - 5 kattintás → /auth)
-- **Elérhetőségek** (cím, telefon, email)
-- **Nyitvatartás**
-- **Linkek** (Főoldal, Napi Ajánlat, Rólunk, Kapcsolat)
-- **Copyright szöveg**
+```tsx
+const moveToOtherGalleryMutation = useMutation({
+  mutationFn: async ({ id, currentType }: { id: string; currentType: GalleryType }) => {
+    const newType: GalleryType = currentType === 'food' ? 'interior' : 'food';
+    const targetImages = newType === 'food' ? foodImages : interiorImages;
+    const maxSortOrder = targetImages.length > 0 ? Math.max(...targetImages.map(i => i.sort_order)) : -1;
+    
+    const { error } = await supabase
+      .from('gallery_images')
+      .update({ gallery_type: newType, sort_order: maxSortOrder + 1 })
+      .eq('id', id);
+    if (error) throw error;
+  },
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ['admin-gallery-images'] });
+    queryClient.invalidateQueries({ queryKey: ['gallery-images'] });
+    toast.success("Kép áthelyezve!");
+  },
+  onError: () => toast.error("Hiba az áthelyezéskor")
+});
+```
+
+#### 2. Új Ikon Importálása
+
+```tsx
+import { ArrowRightLeft } from "lucide-react";
+```
+
+#### 3. Áthelyezés Gomb a Hover Overlay-ben
+
+A meglévő gombok mellé (fel, le, szerkesztés, törlés) egy új gomb:
+
+```tsx
+<Button 
+  size="icon" 
+  variant="secondary"
+  title={image.gallery_type === 'food' ? 'Áthelyezés az Étterem galériába' : 'Áthelyezés az Ételek galériába'}
+  onClick={() => moveToOtherGalleryMutation.mutate({ 
+    id: image.id, 
+    currentType: image.gallery_type 
+  })}
+>
+  <ArrowRightLeft className="h-4 w-4" />
+</Button>
+```
+
+---
+
+## Vizuális Terv
 
 ```text
-┌─────────────────────────────────────────────────────────────┐
-│                                                             │
-│    [LOGO]          Elérhetőség         Nyitvatartás        │
-│   Kiscsibe         Budapest...          H-P: 7-16          │
-│   gyorsétterem     +36 1 234...         Szo-V: Zárva       │
-│                                                             │
-│    Linkek                                                   │
-│    Főoldal | Étlap | Rólunk | Kapcsolat                    │
-│                                                             │
-│    ─────────────────────────────────────────                │
-│    © 2025 Kiscsibe. Minden jog fenntartva.                 │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-```
+Kép Hover Overlay - Jelenlegi:
+┌────────────────────────────┐
+│  [↑] [↓] [✏️] [🗑️]         │
+└────────────────────────────┘
 
-### 2. Rejtett Admin Belépés Logika
-
-A logóra kattintva egy számláló növekszik. Ha 5-öt elér 2 másodpercen belül, akkor átirányít a `/auth` oldalra.
-
-```tsx
-const [clickCount, setClickCount] = useState(0);
-const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-const handleLogoClick = () => {
-  const newCount = clickCount + 1;
-  setClickCount(newCount);
-  
-  // Reset timeout minden kattintáskor
-  if (clickTimeoutRef.current) {
-    clearTimeout(clickTimeoutRef.current);
-  }
-  
-  if (newCount >= 5) {
-    navigate('/auth');
-    setClickCount(0);
-  } else {
-    // 2 másodperc után reset
-    clickTimeoutRef.current = setTimeout(() => {
-      setClickCount(0);
-    }, 2000);
-  }
-};
-```
-
-### 3. Admin Link Végleges Eltávolítása a Navigációból
-
-**Fájl:** `src/components/ModernNavigation.tsx`
-
-Az admin/staff linkek teljesen eltávolítódnak a navigációs menüből - ezeket a linkeket csak a footer rejtett módon tartalmazza majd.
-
-```tsx
-// Módosítás: Eltávolítjuk az admin/staff linkeket
-const navLinks = [
-  { href: "/", label: "Főoldal" },
-  { href: "/etlap", label: "Napi Ajánlat" },
-  { href: "/about", label: "Rólunk" },
-  { href: "/contact", label: "Kapcsolat" },
-  // Admin linkek eltávolítva - footer logón keresztül elérhető
-];
-```
-
-### 4. Footer Hozzáadása az Oldalakhoz
-
-Minden oldal aljára hozzáadjuk a Footer komponenst:
-
-| Fájl | Változás |
-|------|----------|
-| `src/pages/Index.tsx` | + `<Footer />` a main után |
-| `src/pages/About.tsx` | + `<Footer />` |
-| `src/pages/Contact.tsx` | + `<Footer />` |
-| `src/pages/Etlap.tsx` | + `<Footer />` |
-| `src/pages/Gallery.tsx` | + `<Footer />` |
-
----
-
-## Footer Komponens Részletes Terv
-
-### Design
-- Háttér: `bg-gray-900` (sötét)
-- Szöveg: `text-gray-300` / `text-white`
-- Logo: kerek formátum, megtartva a feltöltött képet
-- Responsive: 1 oszlop mobilon, 3-4 oszlop desktopon
-
-### Reszponzív Layout
-
-**Mobil (1 oszlop):**
-```
-Logo + Név
-Elérhetőségek
-Nyitvatartás
-Linkek
-Copyright
-```
-
-**Desktop (3 oszlop):**
-```
-[Logo + Név] | [Elérhetőségek + Nyitva] | [Linkek]
-                   [Copyright]
+Kép Hover Overlay - Új:
+┌────────────────────────────┐
+│  [↑] [↓] [⇄] [✏️] [🗑️]     │
+└────────────────────────────┘
+          ↑
+    Áthelyezés gomb
 ```
 
 ---
 
-## Vizuális Visszajelzés (opcionális)
+## Működés
 
-A logón való kattintáskor finom vizuális visszajelzés (pulse animáció), de nem túl feltűnő, hogy a rejtett funkció ne legyen nyilvánvaló:
+| Aktuális Galéria | Kattintás Eredménye |
+|------------------|---------------------|
+| Ételek (food) | → Átkerül az Étterem galériába |
+| Étterem (interior) | → Átkerül az Ételek galériába |
 
-```css
-/* Logo hover */
-.logo-container:active {
-  transform: scale(0.95);
-}
-```
+A kép automatikusan az új galéria **végére** kerül (sort_order).
+
+---
+
+## Tooltip Szövegek
+
+- Food galériában: "Áthelyezés az Étterem galériába"
+- Interior galériában: "Áthelyezés az Ételek galériába"
 
 ---
 
@@ -150,52 +106,14 @@ A logón való kattintáskor finom vizuális visszajelzés (pulse animáció), d
 
 | Művelet | Fájl |
 |---------|------|
-| COPY | `user-uploads://kiscsibe_logo.jpeg` → `src/assets/kiscsibe_logo.jpeg` |
-| CREATE | `src/components/Footer.tsx` |
-| MODIFY | `src/components/ModernNavigation.tsx` (admin linkek eltávolítása) |
-| MODIFY | `src/pages/Index.tsx` (+ Footer) |
-| MODIFY | `src/pages/About.tsx` (+ Footer) |
-| MODIFY | `src/pages/Contact.tsx` (+ Footer) |
-| MODIFY | `src/pages/Etlap.tsx` (+ Footer) |
-| MODIFY | `src/pages/Gallery.tsx` (+ Footer) |
+| MODIFY | `src/components/admin/GalleryManagement.tsx` |
 
 ---
 
-## Technikai Részletek
+## Összefoglalás
 
-### Footer Props Interface
-```typescript
-interface FooterProps {
-  className?: string;
-}
-```
+- **1 kattintás** = kép átkerül a másik galériába
+- Vizuálisan egyértelmű `⇄` ikon
+- Tooltip jelzi a célgalériát
+- A meglévő szerkesztés dialógusban is megmarad a váltás lehetősége
 
-### Click Counter Hook (opcionális kiemelés)
-```typescript
-// A számláló ref-ben tárolódik, nem okoz felesleges renderelést
-const clickCountRef = useRef(0);
-```
-
-### Navigation Import
-```typescript
-import { useNavigate } from 'react-router-dom';
-import kiscsibeLogo from '@/assets/kiscsibe_logo.jpeg';
-```
-
----
-
-## Biztonsági Megjegyzés
-
-Ez a rejtett admin belépési pont nem biztonsági rés, mert:
-1. Az `/auth` oldal publikus (bárki elérheti a címet közvetlenül)
-2. A valódi védelem a bejelentkezésnél és a `ProtectedRoute` komponensnél van
-3. Ez csak UX döntés, hogy az admin link ne legyen látható a normál vendégeknek
-
----
-
-## Előnyök
-
-1. **Tisztább felhasználói felület** - Vendégek nem látják az "Admin" linket
-2. **Diszkrét belépés** - Alkalmazottak tudják a trükköt (5x logo kattintás)
-3. **Professzionális megjelenés** - Nem zavar az admin link a navigációban
-4. **Elegáns footer** - Modern, informatív lábrész az oldalhoz
