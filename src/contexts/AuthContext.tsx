@@ -17,6 +17,7 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
+  rolesLoading: boolean;
   isAdmin: boolean;
   isStaff: boolean;
   canViewOrders: boolean;
@@ -40,10 +41,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [rolesLoading, setRolesLoading] = useState(false);
   const [isAdminState, setIsAdminState] = useState(false);
   const [isStaffState, setIsStaffState] = useState(false);
 
   const fetchProfile = async (userId: string) => {
+    setRolesLoading(true);
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -72,6 +75,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsStaffState(isStaffResult === true);
     } catch (error) {
       console.error('Error fetching profile:', error);
+    } finally {
+      setRolesLoading(false);
     }
   };
 
@@ -152,6 +157,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     session,
     profile,
     loading,
+    rolesLoading,
     signUp,
     signIn,
     signOut,
