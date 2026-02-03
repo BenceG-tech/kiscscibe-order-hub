@@ -42,6 +42,8 @@ interface DailyOfferItem {
   id: string;
   daily_offer_id: string | null;
   item_id: string | null;
+  is_menu_part: boolean;
+  menu_role: string | null;
   menu_items: MenuItem | null;
 }
 
@@ -59,6 +61,8 @@ interface SelectedItem {
   offerItemId: string;
   imageUrl?: string | null;
   price?: number;
+  isMenuPart: boolean;
+  menuRole?: string | null;
 }
 
 export default function WeeklyMenuGrid() {
@@ -140,6 +144,8 @@ export default function WeeklyMenuGrid() {
             id,
             daily_offer_id,
             item_id,
+            is_menu_part,
+            menu_role,
             menu_items (
               id,
               name,
@@ -179,6 +185,8 @@ export default function WeeklyMenuGrid() {
             offerItemId: item.id,
             imageUrl: item.menu_items.image_url,
             price: item.menu_items.price_huf,
+            isMenuPart: item.is_menu_part,
+            menuRole: item.menu_role,
           });
         }
       });
@@ -331,6 +339,41 @@ export default function WeeklyMenuGrid() {
     queryClient.invalidateQueries({ queryKey: ["menu-items-all"] });
   };
 
+  // Mutation to update menu part status
+  const updateMenuPartMutation = useMutation({
+    mutationFn: async ({ 
+      offerItemId, 
+      isMenuPart, 
+      menuRole 
+    }: { 
+      offerItemId: string; 
+      isMenuPart: boolean; 
+      menuRole: string | null;
+    }) => {
+      const { error } = await supabase
+        .from("daily_offer_items")
+        .update({ 
+          is_menu_part: isMenuPart, 
+          menu_role: menuRole 
+        })
+        .eq("id", offerItemId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["daily-offers-week"] });
+      toast.success("Menü beállítás mentve");
+    },
+    onError: (error) => {
+      console.error("Error updating menu part:", error);
+      toast.error("Hiba történt a menü beállításakor");
+    },
+  });
+
+  const handleMenuPartToggle = (offerItemId: string, isMenuPart: boolean, menuRole: string | null) => {
+    updateMenuPartMutation.mutate({ offerItemId, isMenuPart, menuRole });
+  };
+
   const goToPreviousWeek = () => {
     setCurrentWeekStart(prev => subWeeks(prev, 1));
   };
@@ -348,6 +391,7 @@ export default function WeeklyMenuGrid() {
 
   const isPending = addItemMutation.isPending || 
     removeItemMutation.isPending || updatePriceMutation.isPending || 
+    updateMenuPartMutation.isPending ||
     updateItemPriceMutation.isPending;
   
   const isLoading = offersLoading;
@@ -366,6 +410,7 @@ export default function WeeklyMenuGrid() {
         onDailyPriceChange={handleDailyPriceChange}
         onItemPriceChange={handleItemPriceChange}
         onImageUpdated={handleImageUpdated}
+        onMenuPartToggle={handleMenuPartToggle}
         onPreviousWeek={goToPreviousWeek}
         onNextWeek={goToNextWeek}
         onCurrentWeek={goToCurrentWeek}
@@ -483,6 +528,7 @@ export default function WeeklyMenuGrid() {
                             onRemoveItem={handleRemoveItem}
                             onImageUpdated={handleImageUpdated}
                             onPriceChange={handleItemPriceChange}
+                            onMenuPartToggle={handleMenuPartToggle}
                           />
                         </td>
                       );

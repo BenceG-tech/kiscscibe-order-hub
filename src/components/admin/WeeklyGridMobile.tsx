@@ -29,6 +29,8 @@ interface SelectedItem {
   offerItemId: string;
   imageUrl?: string | null;
   price?: number;
+  isMenuPart: boolean;
+  menuRole?: string | null;
 }
 
 interface WeeklyGridMobileProps {
@@ -43,6 +45,7 @@ interface WeeklyGridMobileProps {
   onDailyPriceChange: (date: string, price: number | null) => void;
   onItemPriceChange: (itemId: string, price: number) => void;
   onImageUpdated: () => void;
+  onMenuPartToggle: (offerItemId: string, isMenuPart: boolean, menuRole: string | null) => void;
   onPreviousWeek: () => void;
   onNextWeek: () => void;
   onCurrentWeek: () => void;
@@ -65,6 +68,7 @@ export function WeeklyGridMobile({
   onDailyPriceChange,
   onItemPriceChange,
   onImageUpdated,
+  onMenuPartToggle,
   onPreviousWeek,
   onNextWeek,
   onCurrentWeek,
@@ -189,6 +193,7 @@ export function WeeklyGridMobile({
                           onRemoveItem={onRemoveItem}
                           onImageUpdated={onImageUpdated}
                           onPriceChange={onItemPriceChange}
+                          onMenuPartToggle={onMenuPartToggle}
                         />
                       </div>
                     );
