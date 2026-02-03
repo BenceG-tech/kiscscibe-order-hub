@@ -759,9 +759,7 @@ export type Database = {
         Args: { template_id: string }
         Returns: undefined
       }
-      is_admin:
-        | { Args: never; Returns: boolean }
-        | { Args: { check_user_id?: string }; Returns: boolean }
+      is_admin: { Args: { check_user_id?: string }; Returns: boolean }
       is_admin_or_staff: { Args: { _user_id?: string }; Returns: boolean }
       is_date_in_past: { Args: { check_date: string }; Returns: boolean }
       is_staff: { Args: { _user_id?: string }; Returns: boolean }
