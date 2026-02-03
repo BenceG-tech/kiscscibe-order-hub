@@ -1,94 +1,230 @@
 
 
-# Plan: Termékenkénti Ár Szerkesztés a Heti Rácsban
+# Plan: Fix Login, Price Editing, and Add Daily Menu Combo Selection
 
-## Jelenlegi helyzet
+## Issues Identified
 
-- A "Napi menü ár" sor beállítja az egész nap kombinált árát
-- Az egyes ételek árai a `menu_items.price_huf` oszlopból jönnek (törzsadat)
-- Az árak jelenleg csak az "Étlap kezelés" oldalon szerkeszthetők
+### 1. Login "Failed to Fetch" Error
+The auth logs show successful logins for `gataibence@gmail.com`. The "Failed to fetch" errors are **network connectivity issues** with the preview environment, not code problems. The previous fix for the `is_admin` function overload was successfully applied. No code changes needed - just retry login.
 
-## Új funkció
+### 2. Per-Item Price Not Visible
+The `QuickPriceEdit` component doesn't show when an item has price = 0.
 
-Minden ételnél közvetlenül a heti rácsban szerkeszthető lesz az ár, ugyanúgy mint a kép.
-
-### Új UI terv
-
-```text
-+------------------------------------------+
-| [📷] [Paradicsom leves] [2490 Ft] [X]    |
-|       ^kép  ^név         ^ár szerk ^töröl|
-+------------------------------------------+
+**Root Cause**: Line 85 in `WeeklyGridCell.tsx`:
+```typescript
+{onPriceChange && selectedItem.price && (  // 0 is falsy!
 ```
 
-Minden kiválasztott ételnél:
-1. Kép gomb (már megvan)
-2. Étel neve
-3. **Ár szerkesztő** - kattintásra szerkeszthető
-4. Törlés gomb (már megvan)
-
-## Technikai megvalósítás
-
-### 1. Új komponens: QuickPriceEdit
-
-Létrehozok egy `QuickPriceEdit.tsx` komponenst, ami:
-- Megjelenít egy kis "Ft" szöveget az aktuális árral
-- Kattintásra megnyit egy kis input mezőt
-- Blur-ra vagy Enter-re elmenti az új árat a `menu_items.price_huf` mezőbe
-
-### 2. WeeklyGridCell módosítás
-
-A `WeeklyGridCell.tsx`-ben hozzáadom a `QuickPriceEdit` komponenst minden kiválasztott étel mellé:
-- A kép és a név mellé kerül
-- Közvetlenül a cellában szerkeszthető
-
-### 3. WeeklyMenuGrid mutation
-
-Új mutation az ár frissítésére:
+**Fix**: Change condition to check for undefined instead of truthy:
 ```typescript
-const updateItemPriceMutation = useMutation({
-  mutationFn: async ({ itemId, price }: { itemId: string; price: number }) => {
-    await supabase
-      .from("menu_items")
-      .update({ price_huf: price })
-      .eq("id", itemId);
+{onPriceChange && selectedItem.price !== undefined && (
+```
+
+### 3. Daily Menu Combo Selection Missing
+The database already supports daily menu combos (`is_menu_part`, `menu_role` columns), but the admin UI doesn't expose this feature.
+
+**Solution**: Add toggle buttons in each grid cell to mark items as part of the daily menu:
+- A "Menü" toggle for each item
+- When toggled, show a role selector: "Leves" or "Főétel"
+- Create/update `daily_offer_menus` record with the combo price
+
+---
+
+## Implementation Steps
+
+### Step 1: Fix Price Condition in WeeklyGridCell
+
+**File:** `src/components/admin/WeeklyGridCell.tsx`
+
+Change line 85 from:
+```typescript
+{onPriceChange && selectedItem.price && (
+```
+to:
+```typescript
+{onPriceChange && selectedItem.price !== undefined && (
+```
+
+---
+
+### Step 2: Update Grid Data to Include Menu Part Info
+
+**File:** `src/components/admin/WeeklyMenuGrid.tsx`
+
+Modify the query to fetch `is_menu_part` and `menu_role` from `daily_offer_items`, and add mutations to update these fields.
+
+```typescript
+// Updated query in daily offers fetch
+daily_offer_items (
+  id,
+  daily_offer_id,
+  item_id,
+  is_menu_part,    // Add this
+  menu_role,       // Add this
+  menu_items (...)
+)
+
+// Updated SelectedItem interface
+interface SelectedItem {
+  itemId: string;
+  itemName: string;
+  offerId: string;
+  offerItemId: string;
+  imageUrl?: string | null;
+  price?: number;
+  isMenuPart: boolean;    // Add this
+  menuRole?: string;      // Add this
+}
+
+// New mutation for toggling menu part
+const updateMenuPartMutation = useMutation({
+  mutationFn: async ({ 
+    offerItemId, 
+    isMenuPart, 
+    menuRole 
+  }: { 
+    offerItemId: string; 
+    isMenuPart: boolean; 
+    menuRole: string | null;
+  }) => {
+    const { error } = await supabase
+      .from("daily_offer_items")
+      .update({ 
+        is_menu_part: isMenuPart, 
+        menu_role: menuRole 
+      })
+      .eq("id", offerItemId);
+    
+    if (error) throw error;
   },
   onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ["menu-items-all"] });
     queryClient.invalidateQueries({ queryKey: ["daily-offers-week"] });
-    toast.success("Ár mentve");
+    toast.success("Menü beállítás mentve");
   },
 });
 ```
 
-## Fájl változások
+---
 
-| Fájl | Művelet | Leírás |
-|------|---------|--------|
-| `src/components/admin/QuickPriceEdit.tsx` | CREATE | Új inline ár szerkesztő komponens |
-| `src/components/admin/WeeklyGridCell.tsx` | MODIFY | Ár szerkesztő hozzáadása minden étel mellé |
-| `src/components/admin/WeeklyMenuGrid.tsx` | MODIFY | Ár frissítő mutation és callback hozzáadása |
-| `src/components/admin/WeeklyGridMobile.tsx` | MODIFY | Mobil nézetben is működjön az ár szerkesztés |
+### Step 3: Create MenuPartToggle Component
 
-## UI Elrendezés (módosított cella)
+**New File:** `src/components/admin/MenuPartToggle.tsx`
 
-```text
-Kiválasztott étel kártya:
-┌────────────────────────────────────────┐
-│ [🖼️] Étel neve         [💰 2490] [✕]  │
-│  ^    ^                  ^        ^    │
-│  kép  név                ár      törlés│
-│       gomb               gomb     gomb │
-└────────────────────────────────────────┘
+A compact toggle button that shows:
+- Gray when not part of menu
+- Colored when part of menu, with role indicator (L = Leves, F = Főétel)
+
+```typescript
+interface MenuPartToggleProps {
+  offerItemId: string;
+  isMenuPart: boolean;
+  menuRole: string | null;
+  categoryName: string;
+  onToggle: (offerItemId: string, isMenuPart: boolean, menuRole: string | null) => void;
+}
 ```
 
-## Automatikus mentés megerősítve
+UI Design:
+```text
+Item not in menu:     [M]  (gray, outlined)
+Item is soup:         [L]  (orange, filled)
+Item is main:         [F]  (green, filled)
+```
 
-A rendszer már **automatikusan ment** minden változtatást - nincs szükség külön "Mentés" gombra. A jobb felső sarokban látható:
-- **"Mentés..."** + spinner amikor folyamatban van
-- **"Mentve" ✓** zöld pipa amikor minden el van mentve
+Clicking toggles through: Off → Leves → Főétel → Off
 
-## Adatbázis hatás
+---
 
-Nincs séma változtatás szükséges. A `menu_items.price_huf` oszlop már létezik és használjuk.
+### Step 4: Add Toggle to WeeklyGridCell
+
+**File:** `src/components/admin/WeeklyGridCell.tsx`
+
+Add the `MenuPartToggle` component to each selected item in the grid cell:
+
+```typescript
+<div className="flex items-center gap-1 p-1 bg-background rounded border">
+  {/* Image Thumbnail */}
+  ...
+  
+  {/* Item Name */}
+  <span className="flex-1 text-xs font-medium truncate">
+    {selectedItem.itemName}
+  </span>
+  
+  {/* Menu Part Toggle - NEW */}
+  <MenuPartToggle
+    offerItemId={selectedItem.offerItemId}
+    isMenuPart={selectedItem.isMenuPart}
+    menuRole={selectedItem.menuRole}
+    categoryName={categoryName}
+    onToggle={onMenuPartToggle}
+  />
+  
+  {/* Price Edit */}
+  ...
+  
+  {/* Image Upload */}
+  ...
+  
+  {/* Remove Button */}
+  ...
+</div>
+```
+
+---
+
+### Step 5: Update Mobile Grid
+
+**File:** `src/components/admin/WeeklyGridMobile.tsx`
+
+Apply the same changes to the mobile view to ensure consistency.
+
+---
+
+## File Changes Summary
+
+| File | Action | Description |
+|------|--------|-------------|
+| `src/components/admin/WeeklyGridCell.tsx` | MODIFY | Fix price condition; add MenuPartToggle |
+| `src/components/admin/WeeklyMenuGrid.tsx` | MODIFY | Fetch is_menu_part/menu_role; add mutation; pass callback |
+| `src/components/admin/MenuPartToggle.tsx` | CREATE | New toggle component for daily menu selection |
+| `src/components/admin/WeeklyGridMobile.tsx` | MODIFY | Add MenuPartToggle support for mobile |
+
+---
+
+## Database Impact
+
+No schema changes needed. The required columns already exist:
+- `daily_offer_items.is_menu_part` (boolean)
+- `daily_offer_items.menu_role` (text: "leves" or "főétel")
+- `daily_offer_menus` table for combo pricing
+
+---
+
+## UI Flow
+
+```text
+1. Admin adds items to a day's menu grid
+2. For each item, admin can click the [M] toggle:
+   - First click: Item becomes "Leves" (soup) → [L] orange
+   - Second click: Item becomes "Főétel" (main) → [F] green  
+   - Third click: Item removed from menu → [M] gray
+3. Items marked as menu parts appear in the "Napi Menü" combo on the public Etlap page
+4. The combo price is set via the "Napi menü ár" row at the top of the grid
+```
+
+---
+
+## Visual Example
+
+After implementation, each item in the grid will look like:
+
+```text
+┌─────────────────────────────────────────────────────┐
+│ [🖼️] Bableves      [L] [💰 1290] [📷] [✕]          │
+│      ^name          ^   ^price   ^img  ^delete      │
+│                     │                               │
+│                     └── Menu toggle (Leves = orange)│
+└─────────────────────────────────────────────────────┘
+```
 
