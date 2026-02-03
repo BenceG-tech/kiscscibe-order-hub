@@ -1,193 +1,208 @@
 
-# Galéria Stílus Frissítése - ACAIA Dizájn
+# Komplex Weboldal Audit - Kiscsibe Reggeliző & Étterem
 
-## Referencia Elemzés
+## Összefoglaló
 
-A csatolt képek alapján az ACAIA weboldal galériájának főbb jellemzői:
-
-### Desktop Grid (3 oszlop)
-- Nagyobb, kerekítettebb sarkok (`rounded-2xl` vagy `rounded-3xl`)
-- Meleg bézs/krém háttérszín
-- Dekoratív levél minták a háttérben (SVG pattern)
-- Hover overlay: sötét gradiens, cím, leírás, "Kattints a nagyításhoz" link
-- Elegáns serif/display font a címekhez
-
-### Mobile Grid (2 oszlop)
-- Még kerekebb sarkok (`rounded-2xl`)
-- Tab gombok: kitöltött pill az aktívnál, outline a másiknál
-- Nincs overlay alapból - tap-to-reveal viselkedés
-
-### Lightbox Modal
-- Fehér/világos háttér (nem fekete!)
-- Képszámláló badge középen fent (sötét pill: "1 / 9")
-- Bezárás gomb jobb fent (X)
-- Kerek navigációs nyilak a kép mellett
-- Cím és leírás a kép alatt
-- Kerekített sarkok a modalon
+Átfogó elemzés a jelenlegi weboldalról, amely feltárja a felhasználói élmény, vizuális design, mobil optimalizáció, teljesítmény és technikai architektúra terén javítandó területeket.
 
 ---
 
-## Változtatások
+## 1. ELSŐ BENYOMÁSOK - ÉRZELMI HATÁS
 
-### 1. GalleryGrid.tsx
+### Erősségek
+- Meleg, vendégszerető színvilág (arany/sárga primary, sötétkék háttér)
+- Hero szekció vonzó, világos felhívással a cselekvésre
+- A "Napi Ajánlat" koncepció egyértelmű és releváns éttermi kontextusban
 
-| Jelenlegi | Új (ACAIA stílus) |
-|-----------|-------------------|
-| `rounded-lg md:rounded-xl` | `rounded-2xl md:rounded-3xl` |
-| `gap-3 md:gap-4` | `gap-4 md:gap-6` |
-| Fekete overlay | Bézs-barna gradiens overlay |
-| Egyszerű szöveg | "Kattints a nagyításhoz" link stílus |
+### Gyengeségek
+| Probléma | Hatás | Prioritás |
+|----------|-------|-----------|
+| Navigációban "Admin" link látható minden felhasználónak | Zavaró, nem professzionális | Magas |
+| A naptár komponens túl technikai, nem éttermi hangulatú | Csökkenti a prémium érzetet | Közepes |
+| Nincs animált hero vagy video háttér | Modern oldalakhoz képest statikus | Alacsony |
+| Túl sok szekció a főoldalon (10+) | Túlterheli a látogatót | Közepes |
 
-```tsx
-// Overlay stílus
-className="bg-gradient-to-t from-black/70 via-black/30 to-transparent"
+---
 
-// Kép konténer
-className="rounded-2xl md:rounded-3xl shadow-lg hover:shadow-xl transition-shadow"
+## 2. MOBIL ÉLMÉNY ÉS HASZNÁLHATÓSÁG
 
-// "Kattints a nagyításhoz" link
-<span className="text-white/80 text-sm underline underline-offset-2 hover:text-white">
-  Kattints a nagyításhoz
-</span>
+### Kritikus Javítások
+
+**Navigáció:**
+- A felső info sáv (nyitvatartás) mobilon 2 soros, túl sok helyet foglal
+- A mobil menü Sheet komponens alapértelmezett, nem egyedi dizájn
+
+**Érintési Célpontok:**
+- A naptár napjai kicsik mobilon (< 44px ajánlott minimum)
+- A "Menü kosárba" gomb mérete megfelelő (min-h-[44px])
+
+**Javaslatok:**
+| Változtatás | Fájl | Leírás |
+|-------------|------|--------|
+| Bottom navigation bar | `ModernNavigation.tsx` | Mobilon alsó navigáció (Főoldal, Étlap, Kosár, Profil) |
+| Sticky date picker | `UnifiedDailySection.tsx` | Horizontális dátumválasztó a naptár helyett mobilon |
+| Collapse info bar | `ModernNavigation.tsx` | Görgetéskor eltűnő info sáv |
+| Haptic feedback | Gombok | vibrate() API visszajelzéshez |
+
+---
+
+## 3. VIZUÁLIS DESIGN ÉS MODERNITÁS
+
+### Tipográfia
+| Elem | Jelenlegi | Javasolt |
+|------|-----------|----------|
+| Font család | Sofia Regular (serif) | Jó választás, konzisztens |
+| Heading méretezés | Változó (text-2xl - text-5xl) | Szabványosítani scale-t |
+| Line-height | Alapértelmezett | Nagyobb leading olvashatóságért |
+
+### Színhasználat - Kontrasztproblémák
+```
+PROBLÉMA: muted-foreground kontrasztja
+- Light mode: hsl(24 15% 35%) - elfogadható
+- Dark mode: hsl(220 5% 85%) - jó
+
+PROBLÉMA: Badge-ek olvashatósága
+- variant="secondary" dark mode-ban alacsony kontraszt
 ```
 
-### 2. ImageLightbox.tsx - Fehér Modal Dizájn
+### Micro-interakciók - Hiányzó Elemek
+- Nincs skeleton loading a képeknél
+- Nincs page transition animáció útvonalváltáskor
+- Nincs hover micro-animation gombokban (scale + shadow kombináció)
+- Toast üzenetek túl egyszerűek
 
-| Jelenlegi | Új (ACAIA stílus) |
-|-----------|-------------------|
-| `bg-black/95` teljes képernyő | Fehér modal középen, blur háttér |
-| Sötét téma | Világos téma |
-| Nyilak a képen | Kerek nyilgombok a kép mellett |
-| Cím alul fehér | Cím alul sötét szöveg |
+---
 
-```tsx
-// Modal háttér
-className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center"
+## 4. KONZISZTENCIA ÉS DESIGN SYSTEM
 
-// Modal konténer
-className="relative bg-white rounded-2xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden shadow-2xl"
+### Komponens Inkonzisztenciák
 
-// Képszámláló badge
-className="absolute top-4 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-4 py-1.5 rounded-full text-sm font-medium"
+| Komponens | Probléma | Fájlok |
+|-----------|----------|--------|
+| Card border-radius | `rounded-lg` vs `rounded-2xl` keveredik | Több komponens |
+| Shadow használat | `shadow-md`, `shadow-lg`, `shadow-soft` random | Több szekció |
+| Spacing | `py-12 md:py-16` vs `py-16` inkonzisztens | Szekciók |
+| Button variants | Néhol raw `<button>`, néhol `<Button>` | ReviewsSection.tsx |
 
-// Bezárás gomb
-className="absolute top-4 right-4 bg-white/80 hover:bg-white rounded-full p-2"
+### Javasolt Design Token Szabványosítás
 
-// Navigációs nyilak
-className="absolute top-1/2 -translate-y-1/2 left-4 bg-white/90 hover:bg-white rounded-full p-3 shadow-lg"
-```
+```typescript
+// Javasolt spacing scale
+spacing: {
+  section: "py-16 md:py-24",
+  sectionCompact: "py-12 md:py-16",
+  card: "p-6",
+  cardCompact: "p-4",
+}
 
-### 3. Gallery.tsx Oldal - Section Headers
-
-Új section header stílus az ACAIA mintára:
-
-```tsx
-{/* Section header */}
-<div className="text-center mb-12">
-  <span className="text-xs md:text-sm uppercase tracking-[0.3em] text-muted-foreground font-medium">
-    Fedezd fel
-  </span>
-  <h2 className="text-3xl md:text-5xl font-serif mt-2 text-foreground">
-    Ételek & Italok
-  </h2>
-  <div className="w-16 h-1 bg-primary mx-auto mt-4 rounded-full" />
-  <p className="text-muted-foreground mt-4 max-w-xl mx-auto">
-    Friss, házi készítésű ételek meleg vendégszeretettel
-  </p>
-</div>
-```
-
-### 4. Mobile Tabs Stílus
-
-Az ACAIA mobilos tab-jaihoz hasonló pill gombok:
-
-```tsx
-// TabsList - átlátszó háttér
-className="inline-flex bg-transparent p-0 gap-2"
-
-// TabsTrigger - pill stílus
-className="rounded-full px-6 py-3 border-2 border-primary/30 
-           data-[state=active]:bg-primary data-[state=active]:border-primary 
-           data-[state=active]:text-primary-foreground"
-```
-
-### 5. Háttér Dekoráció
-
-Dekoratív háttér elemek (opcionális):
-
-```tsx
-{/* Dekoratív háttér */}
-<div className="absolute inset-0 overflow-hidden pointer-events-none opacity-10">
-  {/* Levél minták SVG-ként vagy háttérképként */}
-  <div className="absolute top-0 right-0 w-64 h-64 bg-[url('/decorations/leaf.svg')] bg-no-repeat" />
-  <div className="absolute bottom-0 left-0 w-48 h-48 bg-[url('/decorations/leaf.svg')] bg-no-repeat transform rotate-180" />
-</div>
+// Javasolt border-radius
+borderRadius: {
+  card: "rounded-2xl",
+  button: "rounded-lg",
+  input: "rounded-lg",
+  image: "rounded-xl md:rounded-2xl",
+}
 ```
 
 ---
 
-## Fájl Lista
+## 5. TECHNIKAI ÉS TELJESÍTMÉNY
 
-| Fájl | Művelet | Változtatások |
-|------|---------|---------------|
-| `src/components/gallery/GalleryGrid.tsx` | MODIFY | Kerekebb sarkok, nagyobb gap, frissített overlay |
-| `src/components/gallery/ImageLightbox.tsx` | MODIFY | Fehér modal dizájn, kerek nyilak |
-| `src/components/gallery/FoodGallery.tsx` | MODIFY | Új section header stílus |
-| `src/components/gallery/InteriorGallery.tsx` | MODIFY | Új section header stílus |
-| `src/pages/Gallery.tsx` | MODIFY | Pill tabok, elegáns háttér |
-| `src/components/sections/GallerySection.tsx` | MODIFY | Háttér dekoráció |
+### Képkezelés
+| Probléma | Megoldás |
+|----------|----------|
+| Nincs explicit width/height az img elemeken | CLS (layout shift) csökkentésére |
+| Nincs srcset responsive képekhez | Mobil sávszélesség optimalizálás |
+| loading="lazy" csak néhány helyen | Konzisztens lazy loading |
+| Nincs blur placeholder | Perceived performance javítás |
 
----
+### Bundle Méret
+- Embla Carousel betöltődik minden oldalon (csak galériánál kellene)
+- Recharts importálva de nem használt (package.json)
 
-## Vizuális Összehasonlítás
-
-### Grid Card - Előtte vs Utána
-
-```text
-ELŐTTE:                          UTÁNA:
-┌───────────────┐               ╭───────────────╮
-│               │               │               │
-│     KÉP       │               │     KÉP       │
-│               │               │               │
-│ ░░░░░░░░░░░░░ │               │               │
-│ ░ Cím        ░│               │ ▒▒▒▒▒▒▒▒▒▒▒▒▒ │
-│ ░ kattints   ░│               │ ▒ Cím        ▒│
-└───────────────┘               │ ▒ Kattints → ▒│
- ↑ rounded-xl                   ╰───────────────╯
-                                 ↑ rounded-3xl + shadow
-```
-
-### Lightbox - Előtte vs Utána
-
-```text
-ELŐTTE (sötét):                  UTÁNA (világos):
-┌─────────────────────┐         ┌─────────────────────┐
-│ 1/9           [X]   │         │      ┌─────┐        │
-│                     │         │      │ 1/9 │  [X]   │
-│  ┌───────────────┐  │         │      └─────┘        │
-│  │               │  │         │  ╭───────────────╮  │
-│<─│     KÉP       │─>│         │(◀)│     KÉP      │(▶)│
-│  │               │  │         │  │               │  │
-│  └───────────────┘  │         │  ╰───────────────╯  │
-│      Cím            │         │  Cím                │
-│      ○ ○ ○          │         │  Leírás szöveg...   │
-└─────────────────────┘         └─────────────────────┘
- ↑ fekete háttér                 ↑ fehér modal + blur
-```
+### Accessibility Hiányosságok
+| Elem | Probléma |
+|------|----------|
+| Lightbox | Nincs aria-label a navigációs gombokon |
+| Calendar | Keyboard navigation korlátozott |
+| Forms | Hiányzó error announcements (aria-live) |
+| Skip link | Nincs "Skip to content" link |
 
 ---
 
-## Technikai Részletek
+## 6. BACKEND ÉS ADATFOLYAM
 
-### Lightbox Scroll Lock
-A jelenlegi implementáció már kezeli a body scroll lock-ot.
+### Pozitívumok
+- Supabase RPC használat (`get_daily_data`) - hatékony
+- React Query cache kezelés
+- Real-time subscriptions rendelésekhez
 
-### Embla Carousel
-A meglévő Embla Carousel megmarad, csak a stílus változik.
+### Fejlesztendő
+| Terület | Probléma | Megoldás |
+|---------|----------|----------|
+| Cart persistence | Csak memória, oldal újratöltéskor elvész | localStorage sync |
+| Optimistic updates | Kosár műveletek nem optimisták | useMutation optimistic |
+| Error boundaries | Nincs globális error handling | ErrorBoundary komponens |
 
-### Responsive Breakpoints
-- Mobil: 2 oszlop, `rounded-2xl`
-- Desktop: 3 oszlop, `rounded-3xl`
+---
 
-### Háttér Gradiens
-A meleg bézs háttérhez az existing `primary/5` használata megfelelő.
+## 7. ÚJ FUNKCIÓK ÉS ELMULASZTOTT LEHETŐSÉGEK
+
+### Magas Prioritás
+| Funkció | Leírás | Üzleti érték |
+|---------|--------|--------------|
+| **PWA support** | Installable app, offline menü | Visszatérő felhasználók |
+| **Push notifications** | Rendelés státusz értesítések | Jobb felhasználói élmény |
+| **Kedvencek/újrarendelés** | Előző rendelések gyors megismétlése | Konverzió növelés |
+| **Kereső funkció** | Ételek keresése névvel/allergénnel | Gyorsabb navigáció |
+
+### Közepes Prioritás
+| Funkció | Leírás |
+|---------|--------|
+| Animált hero videó/slideshow | Modernebb első benyomás |
+| Scroll progress indicator | Főoldalon orientáció |
+| Sticky "Rendelj most" CTA | Folyamatos konverziós lehetőség |
+| Social proof widget | Élő rendelésszámláló |
+
+### Alacsony Prioritás
+| Funkció | Leírás |
+|---------|--------|
+| Dark/light mode auto-detect | Rendszer preferencia követése |
+| Allergén szűrő | Étlap szűrése allergének alapján |
+| Heti menü PDF export | Letölthető menü |
+
+---
+
+## 8. PRIORITIZÁLT JAVASLATOK
+
+### Quick Wins (1-2 óra)
+1. Admin link elrejtése nem-admin felhasználóktól
+2. Skip to content link hozzáadása
+3. Image alt textek auditálása
+4. Button komponens konzisztens használata
+
+### Közepes Erőfeszítés (4-8 óra)
+1. Mobil bottom navigation implementálása
+2. Horizontal date picker mobilon
+3. Skeleton loading hozzáadása
+4. Cart localStorage persistence
+
+### Nagyobb Fejlesztések (1+ nap)
+1. PWA manifest és service worker
+2. Page transitions (Framer Motion)
+3. Design token rendszer szabványosítása
+4. Accessibility audit és javítások
+
+---
+
+## ÖSSZEFOGLALÁS
+
+Az oldal szilárd alapokon nyugszik, de a **modern premium élmény** eléréséhez szükséges:
+
+1. **Mobil-first átgondolás** - Bottom nav, touch-optimized controls
+2. **Micro-interakciók** - Page transitions, loading states, hover effects
+3. **Konzisztencia** - Design token rendszer bevezetése
+4. **Teljesítmény** - Képoptimalizálás, code splitting
+5. **Accessibility** - WCAG 2.1 AA szint elérése
+
+A legnagyobb üzleti értéket a **PWA support** és a **kedvencek/újrarendelés** funkció hozná, mivel ezek közvetlenül növelik a visszatérő vásárlók számát.
