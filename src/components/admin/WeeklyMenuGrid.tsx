@@ -58,6 +58,7 @@ interface SelectedItem {
   offerId: string;
   offerItemId: string;
   imageUrl?: string | null;
+  price?: number;
 }
 
 export default function WeeklyMenuGrid() {
@@ -177,6 +178,7 @@ export default function WeeklyMenuGrid() {
             offerId: offer.id,
             offerItemId: item.id,
             imageUrl: item.menu_items.image_url,
+            price: item.menu_items.price_huf,
           });
         }
       });
@@ -287,6 +289,27 @@ export default function WeeklyMenuGrid() {
     },
   });
 
+  // Mutation to update item price
+  const updateItemPriceMutation = useMutation({
+    mutationFn: async ({ itemId, price }: { itemId: string; price: number }) => {
+      const { error } = await supabase
+        .from("menu_items")
+        .update({ price_huf: price })
+        .eq("id", itemId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["daily-offers-week"] });
+      queryClient.invalidateQueries({ queryKey: ["menu-items-all"] });
+      toast.success("Ár mentve");
+    },
+    onError: (error) => {
+      console.error("Error updating item price:", error);
+      toast.error("Hiba történt az ár mentésekor");
+    },
+  });
+
   const handleAddItem = (date: string, itemId: string) => {
     addItemMutation.mutate({ date, itemId });
   };
@@ -295,8 +318,12 @@ export default function WeeklyMenuGrid() {
     removeItemMutation.mutate({ offerItemId });
   };
 
-  const handlePriceChange = (date: string, price: number | null) => {
+  const handleDailyPriceChange = (date: string, price: number | null) => {
     updatePriceMutation.mutate({ date, price });
+  };
+
+  const handleItemPriceChange = (itemId: string, price: number) => {
+    updateItemPriceMutation.mutate({ itemId, price });
   };
 
   const handleImageUpdated = () => {
@@ -320,7 +347,8 @@ export default function WeeklyMenuGrid() {
     format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
 
   const isPending = addItemMutation.isPending || 
-    removeItemMutation.isPending || updatePriceMutation.isPending;
+    removeItemMutation.isPending || updatePriceMutation.isPending || 
+    updateItemPriceMutation.isPending;
   
   const isLoading = offersLoading;
 
@@ -335,7 +363,8 @@ export default function WeeklyMenuGrid() {
         categoryColors={CATEGORY_COLORS}
         onAddItem={handleAddItem}
         onRemoveItem={handleRemoveItem}
-        onPriceChange={handlePriceChange}
+        onDailyPriceChange={handleDailyPriceChange}
+        onItemPriceChange={handleItemPriceChange}
         onImageUpdated={handleImageUpdated}
         onPreviousWeek={goToPreviousWeek}
         onNextWeek={goToNextWeek}
@@ -420,7 +449,7 @@ export default function WeeklyMenuGrid() {
                     <td key={idx} className="border-b border-l p-2">
                       <DailyPriceInput
                         value={priceInfo?.price ?? null}
-                        onChange={(price) => handlePriceChange(dateStr, price)}
+                        onChange={(price) => handleDailyPriceChange(dateStr, price)}
                         isPending={updatePriceMutation.isPending}
                       />
                     </td>
@@ -453,6 +482,7 @@ export default function WeeklyMenuGrid() {
                             onAddItem={(itemId) => handleAddItem(dateStr, itemId)}
                             onRemoveItem={handleRemoveItem}
                             onImageUpdated={handleImageUpdated}
+                            onPriceChange={handleItemPriceChange}
                           />
                         </td>
                       );
