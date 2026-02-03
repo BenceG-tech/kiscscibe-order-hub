@@ -88,7 +88,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Defer profile fetch to avoid blocking auth state change
+          // Set rolesLoading immediately before async fetch
+          setRolesLoading(true);
+          // Use setTimeout to avoid blocking, but rolesLoading is already true
           setTimeout(() => {
             fetchProfile(session.user.id);
           }, 0);
@@ -96,6 +98,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setProfile(null);
           setIsAdminState(false);
           setIsStaffState(false);
+          setRolesLoading(false);
         }
         
         setLoading(false);
@@ -108,6 +111,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(session?.user ?? null);
       
       if (session?.user) {
+        setRolesLoading(true);
         fetchProfile(session.user.id);
       }
       
