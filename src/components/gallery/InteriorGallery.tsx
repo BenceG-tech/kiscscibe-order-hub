@@ -57,19 +57,23 @@ const InteriorGallery = ({ compact = false }: InteriorGalleryProps) => {
       {/* Decorative background elements */}
       {!compact && (
         <>
-          <div className="absolute -top-10 -right-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-secondary/10 rounded-full blur-2xl pointer-events-none" />
+          <div className="absolute -top-20 -right-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-20 -left-20 w-48 h-48 bg-secondary/10 rounded-full blur-3xl pointer-events-none" />
         </>
       )}
       
       {!compact && (
-        <div className="mb-6 relative z-10">
-          <h3 className="text-xl md:text-2xl font-bold text-foreground flex items-center gap-2">
-            <Building2 className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+        <div className="text-center mb-10 md:mb-12 relative z-10">
+          <span className="text-xs md:text-sm uppercase tracking-[0.2em] text-muted-foreground font-medium flex items-center justify-center gap-2">
+            <Building2 className="h-4 w-4" />
+            Ismerj meg minket
+          </span>
+          <h3 className="text-2xl md:text-4xl font-bold text-foreground mt-2">
             Éttermünk
           </h3>
-          <p className="text-muted-foreground text-sm mt-1">
-            Ismerje meg hangulatos belső terünket
+          <div className="w-12 h-1 bg-primary mx-auto mt-4 rounded-full" />
+          <p className="text-muted-foreground text-sm md:text-base mt-4 max-w-md mx-auto">
+            Hangulatos belső tér, ahol minden vendég otthon érzi magát
           </p>
         </div>
       )}

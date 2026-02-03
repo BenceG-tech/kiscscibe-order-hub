@@ -55,13 +55,17 @@ const FoodGallery = ({ compact = false }: FoodGalleryProps) => {
   return (
     <>
       {!compact && (
-        <div className="mb-6">
-          <h3 className="text-xl md:text-2xl font-bold text-foreground flex items-center gap-2">
-            <Utensils className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+        <div className="text-center mb-10 md:mb-12">
+          <span className="text-xs md:text-sm uppercase tracking-[0.2em] text-muted-foreground font-medium flex items-center justify-center gap-2">
+            <Utensils className="h-4 w-4" />
+            Fedezd fel
+          </span>
+          <h3 className="text-2xl md:text-4xl font-bold text-foreground mt-2">
             Ételek & Italok
           </h3>
-          <p className="text-muted-foreground text-sm mt-1">
-            Fedezze fel ízletes kínálatunkat
+          <div className="w-12 h-1 bg-primary mx-auto mt-4 rounded-full" />
+          <p className="text-muted-foreground text-sm md:text-base mt-4 max-w-md mx-auto">
+            Friss, házi készítésű ételek meleg vendégszeretettel
           </p>
         </div>
       )}

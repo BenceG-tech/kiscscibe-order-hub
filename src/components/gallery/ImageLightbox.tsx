@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ interface ImageLightboxProps {
 }
 
 const ImageLightbox = ({ images, initialIndex, isOpen, onClose }: ImageLightboxProps) => {
+  const [currentSlide, setCurrentSlide] = useState(initialIndex);
   const [emblaRef, emblaApi] = useEmblaCarousel({ 
     startIndex: initialIndex,
     loop: true 
@@ -31,7 +32,29 @@ const ImageLightbox = ({ images, initialIndex, isOpen, onClose }: ImageLightboxP
     emblaApi?.scrollNext();
   }, [emblaApi]);
 
-  const currentIndex = emblaApi?.selectedScrollSnap() ?? initialIndex;
+  // Track current slide
+  useEffect(() => {
+    if (!emblaApi) return;
+    
+    const onSelect = () => {
+      setCurrentSlide(emblaApi.selectedScrollSnap());
+    };
+    
+    emblaApi.on("select", onSelect);
+    onSelect();
+    
+    return () => {
+      emblaApi.off("select", onSelect);
+    };
+  }, [emblaApi]);
+
+  // Reset to initial index when opening
+  useEffect(() => {
+    if (isOpen && emblaApi) {
+      emblaApi.scrollTo(initialIndex, true);
+      setCurrentSlide(initialIndex);
+    }
+  }, [isOpen, initialIndex, emblaApi]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -63,110 +86,104 @@ const ImageLightbox = ({ images, initialIndex, isOpen, onClose }: ImageLightboxP
     };
   }, [isOpen]);
 
-  // Force re-render when slide changes
-  useEffect(() => {
-    if (!emblaApi) return;
-    emblaApi.on("select", () => {
-      // Force component update
-    });
-  }, [emblaApi]);
-
   if (!isOpen) return null;
 
-  const currentImage = images[emblaApi?.selectedScrollSnap() ?? initialIndex];
+  const currentImage = images[currentSlide];
 
   return (
     <div 
-      className="fixed inset-0 z-50 bg-black/95 flex flex-col"
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
       onClick={onClose}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 text-white">
-        <div className="bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full text-sm font-medium">
-          {(emblaApi?.selectedScrollSnap() ?? initialIndex) + 1} / {images.length}
-        </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-white hover:bg-white/20"
-          onClick={(e) => {
-            e.stopPropagation();
-            onClose();
-          }}
-        >
-          <X className="h-6 w-6" />
-        </Button>
-      </div>
-
-      {/* Carousel */}
+      {/* Modal Container - ACAIA style white modal */}
       <div 
-        className="flex-1 flex items-center justify-center relative"
+        className="relative bg-card rounded-2xl md:rounded-3xl max-w-5xl w-full max-h-[90vh] overflow-hidden shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Previous button - desktop only */}
+        {/* Counter Badge - centered top */}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-foreground text-background px-4 py-1.5 rounded-full text-sm font-medium">
+          {currentSlide + 1} / {images.length}
+        </div>
+
+        {/* Close Button */}
         <Button
           variant="ghost"
           size="icon"
-          className="absolute left-4 z-10 text-white hover:bg-white/20 hidden md:flex h-12 w-12"
-          onClick={scrollPrev}
+          className="absolute top-4 right-4 z-20 bg-background/80 hover:bg-background rounded-full shadow-md h-10 w-10"
+          onClick={onClose}
         >
-          <ChevronLeft className="h-8 w-8" />
+          <X className="h-5 w-5 text-foreground" />
         </Button>
 
-        {/* Embla viewport */}
-        <div className="overflow-hidden w-full h-full" ref={emblaRef}>
-          <div className="flex h-full">
-            {images.map((image) => (
-              <div 
-                key={image.id}
-                className="flex-[0_0_100%] min-w-0 flex items-center justify-center p-4"
-              >
-                <img
-                  src={image.image_url}
-                  alt={image.alt_text}
-                  className="max-w-full max-h-[70vh] object-contain rounded-lg"
-                  draggable={false}
-                />
-              </div>
+        {/* Main Content Area */}
+        <div className="relative flex items-center justify-center pt-16 pb-4 px-4 md:px-16">
+          {/* Previous button - outside image on desktop */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-10 bg-background/90 hover:bg-background rounded-full shadow-lg h-10 w-10 md:h-12 md:w-12"
+            onClick={scrollPrev}
+          >
+            <ChevronLeft className="h-5 w-5 md:h-6 md:w-6 text-foreground" />
+          </Button>
+
+          {/* Embla viewport */}
+          <div className="overflow-hidden w-full max-w-3xl mx-auto" ref={emblaRef}>
+            <div className="flex">
+              {images.map((image) => (
+                <div 
+                  key={image.id}
+                  className="flex-[0_0_100%] min-w-0 flex items-center justify-center px-2"
+                >
+                  <img
+                    src={image.image_url}
+                    alt={image.alt_text}
+                    className="max-w-full max-h-[60vh] object-contain rounded-xl"
+                    draggable={false}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Next button - outside image on desktop */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-10 bg-background/90 hover:bg-background rounded-full shadow-lg h-10 w-10 md:h-12 md:w-12"
+            onClick={scrollNext}
+          >
+            <ChevronRight className="h-5 w-5 md:h-6 md:w-6 text-foreground" />
+          </Button>
+        </div>
+
+        {/* Title and Info - below image */}
+        <div className="px-6 pb-6 text-center">
+          {currentImage?.title && (
+            <h3 className="text-xl md:text-2xl font-semibold text-foreground mb-2">
+              {currentImage.title}
+            </h3>
+          )}
+          
+          {/* Dot indicators for mobile */}
+          <div className="flex justify-center gap-1.5 mt-4 md:hidden">
+            {images.map((_, index) => (
+              <div
+                key={index}
+                className={`w-2 h-2 rounded-full transition-all ${
+                  index === currentSlide
+                    ? "bg-primary w-4"
+                    : "bg-muted-foreground/30"
+                }`}
+              />
             ))}
           </div>
+          
+          {/* Desktop hint */}
+          <p className="text-sm text-muted-foreground hidden md:block mt-2">
+            Nyilakkal vagy swipe-pal navigálhatsz • ESC a bezáráshoz
+          </p>
         </div>
-
-        {/* Next button - desktop only */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute right-4 z-10 text-white hover:bg-white/20 hidden md:flex h-12 w-12"
-          onClick={scrollNext}
-        >
-          <ChevronRight className="h-8 w-8" />
-        </Button>
-      </div>
-
-      {/* Title and swipe indicator */}
-      <div className="p-4 text-center text-white">
-        {currentImage?.title && (
-          <h3 className="text-lg font-semibold mb-2">{currentImage.title}</h3>
-        )}
-        
-        {/* Swipe dots - mobile only */}
-        <div className="flex justify-center gap-1.5 md:hidden">
-          {images.map((_, index) => (
-            <div
-              key={index}
-              className={`w-2 h-2 rounded-full transition-all ${
-                index === (emblaApi?.selectedScrollSnap() ?? initialIndex)
-                  ? "bg-white w-4"
-                  : "bg-white/40"
-              }`}
-            />
-          ))}
-        </div>
-        
-        {/* Desktop hint */}
-        <p className="text-sm text-white/60 hidden md:block">
-          Nyilakkal vagy swipe-pal navigálhatsz • ESC a bezáráshoz
-        </p>
       </div>
     </div>
   );
