@@ -79,7 +79,7 @@ const GalleryGrid = ({ images, onImageClick, compact = false }: GalleryGridProps
   return (
     <div
       ref={gridRef}
-      className={`grid ${compact ? "gap-2" : "gap-3 md:gap-4"} ${
+      className={`grid ${compact ? "gap-3" : "gap-4 md:gap-6"} ${
         compact 
           ? "grid-cols-2 md:grid-cols-4" 
           : "grid-cols-2 md:grid-cols-3"
@@ -89,7 +89,7 @@ const GalleryGrid = ({ images, onImageClick, compact = false }: GalleryGridProps
         <div
           key={image.id}
           data-index={index}
-          className={`relative group cursor-pointer overflow-hidden rounded-lg md:rounded-xl transition-all duration-700 ${
+          className={`relative group cursor-pointer overflow-hidden rounded-2xl md:rounded-3xl shadow-lg hover:shadow-xl transition-all duration-700 ${
             visibleItems.has(index)
               ? "opacity-100 translate-y-0"
               : "opacity-0 translate-y-4"
@@ -104,9 +104,9 @@ const GalleryGrid = ({ images, onImageClick, compact = false }: GalleryGridProps
               loading="lazy"
             />
             
-            {/* Overlay - always visible on hover (desktop) or when active (mobile) */}
+            {/* Overlay - ACAIA style with warm gradient */}
             <div
-              className={`absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex flex-col justify-end p-3 md:p-4 transition-opacity duration-300 ${
+              className={`absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex flex-col justify-end p-4 md:p-5 transition-opacity duration-300 ${
                 isMobile
                   ? activeIndex === index
                     ? "opacity-100"
@@ -115,13 +115,13 @@ const GalleryGrid = ({ images, onImageClick, compact = false }: GalleryGridProps
               }`}
             >
               {image.title && (
-                <h4 className="text-white font-semibold text-sm md:text-base line-clamp-2">
+                <h4 className="text-white font-semibold text-base md:text-lg line-clamp-2 mb-1">
                   {image.title}
                 </h4>
               )}
-              <p className="text-white/70 text-xs md:text-sm mt-1">
-                {isMobile ? "Érintsd meg újra a nagyításhoz" : "Kattints a nagyításhoz"}
-              </p>
+              <span className="text-white/80 text-sm underline underline-offset-2 hover:text-white transition-colors">
+                {isMobile ? "Érintsd meg újra →" : "Kattints a nagyításhoz →"}
+              </span>
             </div>
           </AspectRatio>
         </div>
