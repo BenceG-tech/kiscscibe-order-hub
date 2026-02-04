@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { MapPin, Phone, Mail, Clock } from "lucide-react";
-import kiscsibeLogo from "@/assets/kiscsibe_logo.jpeg";
+import kiscsibeLogo from "@/assets/kiscsibe_logo_round.png";
 
 interface FooterProps {
   className?: string;
