@@ -11,6 +11,7 @@ import { hu } from "date-fns/locale";
 import { capitalizeFirst } from "@/lib/utils";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/components/ui/use-toast";
+import kiscsibeLogo from "@/assets/kiscsibe_logo.jpeg";
 interface MenuItem {
   id: string;
   item_id: string;
@@ -307,18 +308,22 @@ const UnifiedDailySection = () => {
                 <div className="space-y-4">
                   <h4 className="text-lg font-semibold">További napi ételek</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {extraItems.map((item) => (
+                      {extraItems.map((item) => (
                       <Card key={item.id} className="group hover:shadow-lg transition-all duration-300">
                         <CardContent className="p-0">
-                          {item.item_image_url && (
-                            <div className="aspect-video bg-muted overflow-hidden">
+                          <div className="aspect-video bg-muted overflow-hidden">
+                            {item.item_image_url ? (
                               <img 
                                 src={item.item_image_url} 
                                 alt={item.item_name}
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                               />
-                            </div>
-                          )}
+                            ) : (
+                              <div className="w-full h-full bg-amber-100/50 dark:bg-amber-900/20 flex items-center justify-center">
+                                <img src={kiscsibeLogo} alt="Kiscsibe" className="w-20 h-20 object-contain opacity-50" />
+                              </div>
+                            )}
+                          </div>
                           <div className="p-4 space-y-3">
                             <div className="flex items-start justify-between gap-2">
                               <h4 className="font-semibold">{capitalizeFirst(item.item_name)}</h4>

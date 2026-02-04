@@ -2,10 +2,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useCart } from "@/contexts/CartContext";
-import { ChefHat, Soup, UtensilsCrossed, ShoppingCart } from "lucide-react";
+import { ChefHat, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { capitalizeFirst } from "@/lib/utils";
+import kiscsibeLogo from "@/assets/kiscsibe_logo.jpeg";
 
 interface MenuItem {
   id: string;
@@ -146,8 +147,8 @@ const DailyMenuPanel = ({ date, menuData, loading }: DailyMenuPanelProps) => {
                       className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                     />
                   ) : (
-                    <div className="w-full h-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                      <Soup className="h-20 w-20 text-amber-600 dark:text-amber-400" />
+                    <div className="w-full h-full bg-amber-100/50 dark:bg-amber-900/20 flex items-center justify-center">
+                      <img src={kiscsibeLogo} alt="Kiscsibe" className="w-24 h-24 object-contain opacity-50" />
                     </div>
                   )}
                 </div>
@@ -172,8 +173,8 @@ const DailyMenuPanel = ({ date, menuData, loading }: DailyMenuPanelProps) => {
                       className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                     />
                   ) : (
-                    <div className="w-full h-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                      <UtensilsCrossed className="h-20 w-20 text-emerald-600 dark:text-emerald-400" />
+                    <div className="w-full h-full bg-emerald-100/50 dark:bg-emerald-900/20 flex items-center justify-center">
+                      <img src={kiscsibeLogo} alt="Kiscsibe" className="w-24 h-24 object-contain opacity-50" />
                     </div>
                   )}
                 </div>

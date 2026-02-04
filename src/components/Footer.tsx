@@ -9,34 +9,55 @@ interface FooterProps {
 
 const Footer = ({ className }: FooterProps) => {
   const navigate = useNavigate();
-  const [clickCount, setClickCount] = useState(0);
-  const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [adminClickCount, setAdminClickCount] = useState(0);
+  const [staffClickCount, setStaffClickCount] = useState(0);
+  const adminClickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const staffClickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Cleanup timeout on unmount
+  // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
-      if (clickTimeoutRef.current) {
-        clearTimeout(clickTimeoutRef.current);
+      if (adminClickTimeoutRef.current) {
+        clearTimeout(adminClickTimeoutRef.current);
+      }
+      if (staffClickTimeoutRef.current) {
+        clearTimeout(staffClickTimeoutRef.current);
       }
     };
   }, []);
 
-  const handleLogoClick = () => {
-    const newCount = clickCount + 1;
-    setClickCount(newCount);
+  const handleAdminLogoClick = () => {
+    const newCount = adminClickCount + 1;
+    setAdminClickCount(newCount);
 
-    // Clear existing timeout
-    if (clickTimeoutRef.current) {
-      clearTimeout(clickTimeoutRef.current);
+    if (adminClickTimeoutRef.current) {
+      clearTimeout(adminClickTimeoutRef.current);
     }
 
     if (newCount >= 5) {
       navigate('/auth');
-      setClickCount(0);
+      setAdminClickCount(0);
     } else {
-      // Reset after 2 seconds of inactivity
-      clickTimeoutRef.current = setTimeout(() => {
-        setClickCount(0);
+      adminClickTimeoutRef.current = setTimeout(() => {
+        setAdminClickCount(0);
+      }, 2000);
+    }
+  };
+
+  const handleStaffLogoClick = () => {
+    const newCount = staffClickCount + 1;
+    setStaffClickCount(newCount);
+
+    if (staffClickTimeoutRef.current) {
+      clearTimeout(staffClickTimeoutRef.current);
+    }
+
+    if (newCount >= 5) {
+      navigate('/auth');
+      setStaffClickCount(0);
+    } else {
+      staffClickTimeoutRef.current = setTimeout(() => {
+        setStaffClickCount(0);
       }, 2000);
     }
   };
@@ -51,12 +72,12 @@ const Footer = ({ className }: FooterProps) => {
   return (
     <footer className={`bg-gray-900 text-gray-300 ${className || ""}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {/* Logo & Name Section */}
-          <div className="flex flex-col items-center md:items-start">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+          {/* Admin Logo Section - Left */}
+          <div className="flex flex-col items-center lg:items-start">
             <button
-              onClick={handleLogoClick}
-              className="group flex flex-col items-center md:items-start focus:outline-none"
+              onClick={handleAdminLogoClick}
+              className="group flex flex-col items-center focus:outline-none"
               aria-label="Kiscsibe logó"
             >
               <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-primary/30 transition-transform duration-200 group-active:scale-95">
@@ -125,6 +146,23 @@ const Footer = ({ className }: FooterProps) => {
                 </li>
               ))}
             </ul>
+          </div>
+
+          {/* Staff Logo Section - Right */}
+          <div className="hidden lg:flex flex-col items-end">
+            <button
+              onClick={handleStaffLogoClick}
+              className="group flex flex-col items-center focus:outline-none"
+              aria-label="Személyzeti belépés"
+            >
+              <div className="w-16 h-16 rounded-full overflow-hidden border border-gray-700 transition-transform duration-200 group-active:scale-95 opacity-60 hover:opacity-80">
+                <img
+                  src={kiscsibeLogo}
+                  alt="Kiscsibe"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </button>
           </div>
         </div>
 
