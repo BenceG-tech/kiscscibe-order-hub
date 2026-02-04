@@ -309,7 +309,7 @@ const UnifiedDailySection = () => {
                   <h4 className="text-lg font-semibold">További napi ételek</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {extraItems.map((item) => (
-                      <Card key={item.id} className="group hover:shadow-lg transition-all duration-300">
+                      <Card key={item.id} className="group hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                         <CardContent className="p-0">
                           <div className="aspect-video bg-muted overflow-hidden">
                             {item.item_image_url ? (
@@ -319,15 +319,15 @@ const UnifiedDailySection = () => {
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                               />
                             ) : (
-                              <div className="w-full h-full bg-amber-100/50 dark:bg-amber-900/20 flex items-center justify-center">
-                                <img src={kiscsibeLogo} alt="Kiscsibe" className="w-20 h-20 object-contain opacity-50" />
+                              <div className="w-full h-full bg-gradient-to-br from-amber-50 to-amber-100/80 dark:from-amber-950/40 dark:to-amber-900/30 flex items-center justify-center">
+                                <img src={kiscsibeLogo} alt="Kiscsibe" className="w-28 h-28 md:w-32 md:h-32 object-contain opacity-70 drop-shadow-lg" />
                               </div>
                             )}
                           </div>
                           <div className="p-4 space-y-3">
                             <div className="flex items-start justify-between gap-2">
                               <h4 className="font-semibold">{capitalizeFirst(item.item_name)}</h4>
-                              <Badge variant="secondary" className="shrink-0">
+                              <Badge variant="secondary" className="shrink-0 bg-primary/10 text-primary font-semibold">
                                 {item.item_price_huf} Ft
                               </Badge>
                             </div>
