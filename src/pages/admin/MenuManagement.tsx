@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ImageUpload from "@/components/admin/ImageUpload";
 import { capitalizeFirst } from "@/lib/utils";
+import kiscsibeLogo from "@/assets/kiscsibe_logo.jpeg";
 import { 
   Plus, 
   Edit, 
@@ -439,15 +440,13 @@ const MenuManagement = () => {
                   <div className="grid gap-3">
                     {categoryItems.map((item) => (
                        <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                         <div className="flex-1">
+                           <div className="flex-1">
                            <div className="flex items-center gap-3">
-                             {item.image_url && (
-                               <img 
-                                 src={item.image_url} 
-                                 alt={item.name}
-                                 className="w-12 h-12 object-cover rounded-lg"
-                               />
-                             )}
+                             <img 
+                               src={item.image_url || kiscsibeLogo} 
+                               alt={item.name}
+                               className={`w-12 h-12 object-cover rounded-lg ${!item.image_url ? 'opacity-40' : ''}`}
+                             />
                              <h4 className="font-medium">{capitalizeFirst(item.name)}</h4>
                             <div className="flex gap-2">
                               {!item.is_active && (
