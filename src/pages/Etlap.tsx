@@ -7,13 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import { useCart } from "@/contexts/CartContext";
-import { ShoppingCart, Calendar as CalendarIcon, ChefHat, Soup, UtensilsCrossed } from "lucide-react";
+import { ShoppingCart, Calendar as CalendarIcon, ChefHat } from "lucide-react";
 import { CartDialog } from "@/components/CartDialog";
 import { Calendar } from "@/components/ui/calendar";
 import { format, getDay, isPast, isToday } from "date-fns";
 import { hu } from "date-fns/locale";
 import { getSmartInitialDate, getContentLabel } from "@/lib/dateUtils";
 import { capitalizeFirst } from "@/lib/utils";
+import kiscsibeLogo from "@/assets/kiscsibe_logo.jpeg";
 
 interface MenuItem {
   id: string;
@@ -319,7 +320,7 @@ const Etlap = () => {
                         <div className="p-6">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {/* Soup Card */}
-                            <div className="bg-background/50 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300">
+                            <div className="bg-background/50 rounded-2xl overflow-hidden shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                               <div className="aspect-[16/9] w-full overflow-hidden">
                                 {menuData.soup.item_image_url ? (
                                   <img 
@@ -328,8 +329,8 @@ const Etlap = () => {
                                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                                   />
                                 ) : (
-                                  <div className="w-full h-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                                    <Soup className="h-20 w-20 text-amber-600 dark:text-amber-400" />
+                                  <div className="w-full h-full bg-gradient-to-br from-amber-50 to-amber-100/80 dark:from-amber-950/40 dark:to-amber-900/30 flex items-center justify-center">
+                                    <img src={kiscsibeLogo} alt="Kiscsibe" className="w-32 h-32 md:w-40 md:h-40 object-contain opacity-70 drop-shadow-lg" />
                                   </div>
                                 )}
                               </div>
@@ -343,7 +344,7 @@ const Etlap = () => {
                             </div>
 
                             {/* Main Course Card */}
-                            <div className="bg-background/50 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300">
+                            <div className="bg-background/50 rounded-2xl overflow-hidden shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                               <div className="aspect-[16/9] w-full overflow-hidden">
                                 {menuData.main.item_image_url ? (
                                   <img 
@@ -352,8 +353,8 @@ const Etlap = () => {
                                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                                   />
                                 ) : (
-                                  <div className="w-full h-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                                    <UtensilsCrossed className="h-20 w-20 text-emerald-600 dark:text-emerald-400" />
+                                  <div className="w-full h-full bg-gradient-to-br from-amber-50 to-amber-100/80 dark:from-amber-950/40 dark:to-amber-900/30 flex items-center justify-center">
+                                    <img src={kiscsibeLogo} alt="Kiscsibe" className="w-32 h-32 md:w-40 md:h-40 object-contain opacity-70 drop-shadow-lg" />
                                   </div>
                                 )}
                               </div>
@@ -391,21 +392,25 @@ const Etlap = () => {
                       <h3 className="text-lg font-semibold">További napi ételek</h3>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {extraItems.map((item) => (
-                          <Card key={item.id} className="group hover:shadow-lg transition-all duration-300">
+                          <Card key={item.id} className="group hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                             <CardContent className="p-0">
-                              {item.item_image_url && (
-                                <div className="aspect-video bg-muted overflow-hidden">
+                              <div className="aspect-video bg-muted overflow-hidden">
+                                {item.item_image_url ? (
                                   <img 
                                     src={item.item_image_url} 
                                     alt={item.item_name}
                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                   />
-                                </div>
-                              )}
-                              <div className="p-4 space-y-3">
+                                ) : (
+                                  <div className="w-full h-full bg-gradient-to-br from-amber-50 to-amber-100/80 dark:from-amber-950/40 dark:to-amber-900/30 flex items-center justify-center">
+                                    <img src={kiscsibeLogo} alt="Kiscsibe" className="w-28 h-28 md:w-32 md:h-32 object-contain opacity-70 drop-shadow-lg" />
+                                  </div>
+                                )}
+                              </div>
+                              <div className="p-4 md:p-6 space-y-3">
                                 <div className="flex items-start justify-between gap-2">
                                   <h4 className="font-semibold">{capitalizeFirst(item.item_name)}</h4>
-                                  <Badge variant="secondary" className="shrink-0">
+                                  <Badge variant="secondary" className="shrink-0 bg-primary/10 text-primary font-semibold">
                                     {item.item_price_huf} Ft
                                   </Badge>
                                 </div>
