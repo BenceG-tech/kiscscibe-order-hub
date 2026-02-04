@@ -14,7 +14,7 @@ import { format, getDay, isPast, isToday } from "date-fns";
 import { hu } from "date-fns/locale";
 import { getSmartInitialDate, getContentLabel } from "@/lib/dateUtils";
 import { capitalizeFirst } from "@/lib/utils";
-import kiscsibeLogo from "@/assets/kiscsibe_logo.jpeg";
+import kiscsibeLogo from "@/assets/kiscsibe_logo_round.png";
 
 interface MenuItem {
   id: string;
@@ -330,7 +330,7 @@ const Etlap = () => {
                                   />
                                 ) : (
                                   <div className="w-full h-full bg-gradient-to-br from-amber-50 to-amber-100/80 dark:from-amber-950/40 dark:to-amber-900/30 flex items-center justify-center">
-                                    <img src={kiscsibeLogo} alt="Kiscsibe" className="w-32 h-32 md:w-40 md:h-40 object-contain opacity-70 drop-shadow-lg" />
+                                    <img src={kiscsibeLogo} alt="Kiscsibe" className="h-[85%] w-auto object-contain drop-shadow-xl" />
                                   </div>
                                 )}
                               </div>
@@ -354,7 +354,7 @@ const Etlap = () => {
                                   />
                                 ) : (
                                   <div className="w-full h-full bg-gradient-to-br from-amber-50 to-amber-100/80 dark:from-amber-950/40 dark:to-amber-900/30 flex items-center justify-center">
-                                    <img src={kiscsibeLogo} alt="Kiscsibe" className="w-32 h-32 md:w-40 md:h-40 object-contain opacity-70 drop-shadow-lg" />
+                                    <img src={kiscsibeLogo} alt="Kiscsibe" className="h-[85%] w-auto object-contain drop-shadow-xl" />
                                   </div>
                                 )}
                               </div>
@@ -403,7 +403,7 @@ const Etlap = () => {
                                   />
                                 ) : (
                                   <div className="w-full h-full bg-gradient-to-br from-amber-50 to-amber-100/80 dark:from-amber-950/40 dark:to-amber-900/30 flex items-center justify-center">
-                                    <img src={kiscsibeLogo} alt="Kiscsibe" className="w-28 h-28 md:w-32 md:h-32 object-contain opacity-70 drop-shadow-lg" />
+                                    <img src={kiscsibeLogo} alt="Kiscsibe" className="h-[85%] w-auto object-contain drop-shadow-xl" />
                                   </div>
                                 )}
                               </div>

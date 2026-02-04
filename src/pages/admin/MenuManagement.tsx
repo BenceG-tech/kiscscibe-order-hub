@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ImageUpload from "@/components/admin/ImageUpload";
 import { capitalizeFirst } from "@/lib/utils";
-import kiscsibeLogo from "@/assets/kiscsibe_logo.jpeg";
+import kiscsibeLogo from "@/assets/kiscsibe_logo_round.png";
 import { 
   Plus, 
   Edit, 

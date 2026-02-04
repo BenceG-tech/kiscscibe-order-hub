@@ -6,7 +6,7 @@ import { ChefHat, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { capitalizeFirst } from "@/lib/utils";
-import kiscsibeLogo from "@/assets/kiscsibe_logo.jpeg";
+import kiscsibeLogo from "@/assets/kiscsibe_logo_round.png";
 
 interface MenuItem {
   id: string;
@@ -148,7 +148,7 @@ const DailyMenuPanel = ({ date, menuData, loading }: DailyMenuPanelProps) => {
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-amber-50 to-amber-100/80 dark:from-amber-950/40 dark:to-amber-900/30 flex items-center justify-center">
-                      <img src={kiscsibeLogo} alt="Kiscsibe" className="w-32 h-32 md:w-40 md:h-40 object-contain opacity-70 drop-shadow-lg" />
+                      <img src={kiscsibeLogo} alt="Kiscsibe" className="h-[85%] w-auto object-contain drop-shadow-xl" />
                     </div>
                   )}
                 </div>
@@ -174,7 +174,7 @@ const DailyMenuPanel = ({ date, menuData, loading }: DailyMenuPanelProps) => {
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-amber-50 to-amber-100/80 dark:from-amber-950/40 dark:to-amber-900/30 flex items-center justify-center">
-                      <img src={kiscsibeLogo} alt="Kiscsibe" className="w-32 h-32 md:w-40 md:h-40 object-contain opacity-70 drop-shadow-lg" />
+                      <img src={kiscsibeLogo} alt="Kiscsibe" className="h-[85%] w-auto object-contain drop-shadow-xl" />
                     </div>
                   )}
                 </div>
