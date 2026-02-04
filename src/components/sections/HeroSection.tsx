@@ -5,48 +5,57 @@ import heroImage from "@/assets/hero-breakfast.jpg";
 const HeroSection = () => {
 
   return (
-    <section className="relative min-h-[70vh] md:min-h-[80vh] flex items-center justify-center">
-      {/* Background Image */}
+    <section className="relative min-h-[70vh] md:min-h-[80vh] flex items-center justify-center overflow-hidden">
+      {/* Background Image with subtle zoom animation */}
       <div className="absolute inset-0">
         <img
           src={heroImage}
           alt="Kiscsibe Reggeliző & Étterem friss ételek"
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover transform-gpu scale-105 motion-safe:animate-subtle-zoom"
           loading="eager"
         />
-        <div className="absolute inset-0 bg-black/40 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/40 to-black/50 pointer-events-none" />
       </div>
 
-      {/* Content */}
+      {/* Content with staggered animations */}
       <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
-        <h1 className="text-3xl md:text-5xl lg:text-6xl font-sofia font-bold mb-6 leading-tight">
+        <h1 
+          className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-sofia font-bold mb-6 leading-tight animate-fade-in-up opacity-0"
+          style={{ animationDelay: '0.1s', animationFillMode: 'forwards' }}
+        >
           Kiscsibe Reggeliző & Étterem
-          <span className="block text-2xl md:text-4xl lg:text-5xl mt-2 text-primary font-sofia">
+          <span className="block text-xl sm:text-2xl md:text-4xl lg:text-5xl mt-2 text-primary font-sofia">
             házias ízek minden nap
           </span>
         </h1>
         
-        <p className="text-lg md:text-xl mb-8 text-gray-200 max-w-2xl mx-auto leading-relaxed">
+        <p 
+          className="text-base sm:text-lg md:text-xl mb-8 text-gray-200 max-w-2xl mx-auto leading-relaxed animate-fade-in-up opacity-0"
+          style={{ animationDelay: '0.3s', animationFillMode: 'forwards' }}
+        >
           Friss levesek, kiadós főételek, gyors átvétel Zuglóban.
         </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in">
-              <Button 
-                size="lg"
-                className="bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm text-primary-foreground font-sofia font-bold px-8 hover-scale"
-                onClick={() => document.getElementById('napi-ajanlat')?.scrollIntoView({ behavior: 'smooth' })}
-              >
-                Mai ajánlat
-              </Button>
-              <Button 
-                variant="outline" 
-                size="lg"
-                asChild
-                className="border-2 border-white/90 text-white bg-white/10 hover:bg-white hover:text-gray-900 font-sofia font-bold backdrop-blur-md px-8 hover-scale shadow-lg"
-              >
-                <Link to="/etlap">Teljes étlap</Link>
-              </Button>
-            </div>
+        <div 
+          className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up opacity-0"
+          style={{ animationDelay: '0.5s', animationFillMode: 'forwards' }}
+        >
+          <Button 
+            size="lg"
+            className="bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm text-primary-foreground font-sofia font-bold px-8 hover-scale min-h-[44px]"
+            onClick={() => document.getElementById('napi-ajanlat')?.scrollIntoView({ behavior: 'smooth' })}
+          >
+            Mai ajánlat
+          </Button>
+          <Button 
+            variant="outline" 
+            size="lg"
+            asChild
+            className="border-2 border-white/90 text-white bg-white/10 hover:bg-white hover:text-gray-900 font-sofia font-bold backdrop-blur-md px-8 hover-scale shadow-lg min-h-[44px]"
+          >
+            <Link to="/etlap">Teljes étlap</Link>
+          </Button>
+        </div>
       </div>
     </section>
   );

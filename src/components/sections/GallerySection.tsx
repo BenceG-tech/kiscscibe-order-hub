@@ -14,17 +14,7 @@ const GallerySection = () => {
       </div>
       
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        {/* Section header */}
-        <div className="text-center mb-12 md:mb-16">
-          <span className="text-xs md:text-sm uppercase tracking-[0.2em] text-muted-foreground font-medium">
-            Képek & Élmények
-          </span>
-          <h2 className="text-2xl md:text-4xl font-bold text-foreground mt-2">
-            Galéria
-          </h2>
-          <div className="w-12 h-1 bg-primary mx-auto mt-4 rounded-full" />
-        </div>
-        
+        {/* No redundant header - FoodGallery and InteriorGallery have their own headers */}
         <div className="space-y-16 md:space-y-20">
           <FoodGallery compact={isMobile} />
           <InteriorGallery compact={isMobile} />

@@ -66,13 +66,17 @@ const ReviewsSection = () => {
   };
 
   return (
-    <section className="py-12 md:py-16">
+    <section className="py-12 md:py-20">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-12">
-          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
+          <span className="text-xs md:text-sm uppercase tracking-[0.2em] text-muted-foreground font-medium">
+            Vélemények
+          </span>
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground mt-2 mb-4 font-sofia">
             Mit mondanak vendégeink?
           </h2>
+          <div className="w-12 h-1 bg-primary mx-auto mb-6 rounded-full" />
           
           {/* Overall Rating */}
           <div className="flex items-center justify-center gap-2 mb-2">
@@ -87,26 +91,40 @@ const ReviewsSection = () => {
           </p>
         </div>
 
-        {/* Reviews Grid */}
+        {/* Reviews Grid - First review featured */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {reviews.slice(0, 3).map((review, index) => (
             <Card 
               key={index} 
-              className="hover:shadow-cozy transition-shadow duration-300 shadow-soft"
+              className={`rounded-3xl hover:shadow-xl hover:-translate-y-1 transition-all duration-300 shadow-soft relative overflow-hidden ${
+                index === 0 ? 'md:col-span-2 lg:col-span-1' : ''
+              }`}
+              style={{ animationDelay: `${index * 100}ms` }}
             >
-              <CardContent className="p-6">
+              {/* Quotation mark decoration */}
+              <div className="absolute top-4 right-4 text-6xl text-primary/10 font-serif leading-none pointer-events-none">
+                "
+              </div>
+              
+              <CardContent className="p-6 md:p-8">
                 {/* Header */}
                 <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-semibold text-foreground">{review.name}</h4>
-                      {review.verified && (
-                        <Badge variant="secondary" className="text-xs">
-                          ✓ Ellenőrzött
-                        </Badge>
-                      )}
+                  <div className="flex items-center gap-3">
+                    {/* Avatar placeholder */}
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-warmth/20 flex items-center justify-center text-primary font-bold text-sm">
+                      {review.name.split(' ').map(n => n[0]).join('')}
                     </div>
-                    <p className="text-sm text-muted-foreground">{review.date}</p>
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="font-semibold text-foreground">{review.name}</h4>
+                        {review.verified && (
+                          <Badge variant="secondary" className="text-xs bg-green-500/10 text-green-600 dark:text-green-400">
+                            ✓ Ellenőrzött
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground">{review.date}</p>
+                    </div>
                   </div>
                   
                   <div className="flex items-center gap-1">
@@ -115,7 +133,7 @@ const ReviewsSection = () => {
                 </div>
 
                 {/* Review Text */}
-                <p className="text-muted-foreground text-sm leading-relaxed">
+                <p className="text-muted-foreground text-base leading-relaxed relative z-10">
                   "{review.text}"
                 </p>
               </CardContent>
