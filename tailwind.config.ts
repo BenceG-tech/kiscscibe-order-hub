@@ -74,6 +74,8 @@ export default {
         'warm': 'var(--shadow-warm)',
         'cozy': 'var(--shadow-cozy)', 
         'soft': 'var(--shadow-soft)',
+        'glow': '0 0 20px hsl(var(--primary) / 0.3)',
+        'float': '0 20px 40px -10px rgba(0,0,0,0.1)',
       },
       keyframes: {
         "accordion-down": {

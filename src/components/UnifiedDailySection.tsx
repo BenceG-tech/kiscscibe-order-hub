@@ -1,17 +1,19 @@
 import { useState, useEffect } from "react";
-import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import DailyMenuPanel from "@/components/DailyMenuPanel";
+import WeeklyDateStrip from "@/components/WeeklyDateStrip";
 import { supabase } from "@/integrations/supabase/client";
-import { format, isToday, isPast, isSunday, getDay } from "date-fns";
+import { format, isPast, getDay } from "date-fns";
 import { getSmartInitialDate, getContentLabel } from "@/lib/dateUtils";
 import { hu } from "date-fns/locale";
 import { capitalizeFirst } from "@/lib/utils";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/components/ui/use-toast";
 import kiscsibeLogo from "@/assets/kiscsibe_logo_round.png";
+import StickyMenuCTA from "@/components/StickyMenuCTA";
+
 interface MenuItem {
   id: string;
   item_id: string;
@@ -42,8 +44,6 @@ interface DailyMenuData {
   soup: MenuItem | null;
   main: MenuItem | null;
 }
-
-import StickyMenuCTA from "@/components/StickyMenuCTA";
 
 const UnifiedDailySection = () => {
   const { toast } = useToast();
@@ -77,8 +77,6 @@ const UnifiedDailySection = () => {
     if (!menuData || !menuData.soup || !menuData.main) return;
     
     try {
-      // This would be called from the sticky CTA
-      const { addCompleteMenu } = require("@/contexts/CartContext");
       addCompleteMenu({
         id: menuData.menu_id,
         date: format(selectedDate, 'yyyy-MM-dd'),
@@ -190,30 +188,33 @@ const UnifiedDailySection = () => {
     fetchDailyData(selectedDate);
   }, [selectedDate]);
 
-  const handleDateSelect = (date: Date | undefined) => {
-    if (date && !isPast(date) && getDay(date) !== 0 && getDay(date) !== 6) {
+  const handleDateSelect = (date: Date) => {
+    if (!isPast(date) && getDay(date) !== 0 && getDay(date) !== 6) {
       setSelectedDate(date);
     }
-  };
-
-  const handleTodayClick = () => {
-    const smartDate = getSmartInitialDate();
-    setSelectedDate(smartDate);
   };
 
   const isDateDisabled = (date: Date) => {
     return isPast(date) || getDay(date) === 0 || getDay(date) === 6;
   };
 
-  const hasContentOnDate = (date: Date) => {
-    return availableDates.some(availableDate => 
-      format(availableDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
-    );
-  };
-
   return (
     <>
-      {/* Daily Menu Panel - First thing visitors see */}
+      {/* Weekly Date Strip - Modern horizontal picker */}
+      <div className="mb-8">
+        <Card className="border-0 bg-card/80 backdrop-blur-sm shadow-lg rounded-3xl">
+          <CardContent className="p-4 md:p-6">
+            <WeeklyDateStrip
+              selectedDate={selectedDate}
+              onSelect={handleDateSelect}
+              availableDates={availableDates}
+              isDateDisabled={isDateDisabled}
+            />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Daily Menu Panel */}
       <div className="mb-6">
         <DailyMenuPanel 
           date={selectedDate}
@@ -222,149 +223,75 @@ const UnifiedDailySection = () => {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
-        {/* Calendar Section - Compact */}
-        <div className="space-y-3">
+      {/* Extra Items Section */}
+      {!loading && dailyData && extraItems.length > 0 && (
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-sofia font-semibold">Naptár</h3>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleTodayClick}
-              disabled={isPast(new Date()) || getDay(new Date()) === 0 || getDay(new Date()) === 6}
-              className="h-7 text-xs px-2"
-            >
-              Ma
-            </Button>
+            <h3 className="text-xl font-sofia font-semibold">
+              További napi ételek
+            </h3>
+            <Badge variant="outline" className="text-sm">
+              {format(selectedDate, "MMMM d.", { locale: hu })}
+            </Badge>
           </div>
           
-          <Card>
-            <CardContent className="p-2">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={handleDateSelect}
-                disabled={isDateDisabled}
-                locale={hu}
-                modifiers={{
-                  hasContent: hasContentOnDate,
-                  weekend: (date: Date) => getDay(date) === 0 || getDay(date) === 6,
-                  today: isToday
-                }}
-                modifiersStyles={{
-                  hasContent: { 
-                    backgroundColor: 'hsl(var(--primary) / 0.1)',
-                    border: '2px solid hsl(var(--primary))',
-                    fontWeight: 'bold'
-                  },
-                  weekend: { 
-                    color: 'hsl(var(--muted-foreground))',
-                    textDecoration: 'line-through'
-                  },
-                  today: {
-                    backgroundColor: 'hsl(var(--accent))',
-                    fontWeight: 'bold'
-                  }
-                }}
-                className="w-full"
-              />
-              <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <div className="w-2.5 h-2.5 bg-primary/10 border border-primary rounded"></div>
-                  <span>Ajánlat</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-2.5 h-2.5 bg-muted-foreground/20 rounded"></div>
-                  <span>Zárva</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Content Section - More space for daily offers */}
-        <div className="space-y-4">
-          {/* Daily Offers - Interactive Selector */}
-          {loading ? (
-            <Card>
-              <CardContent className="p-6">
-                <div className="animate-pulse space-y-4">
-                  <div className="h-4 bg-muted rounded w-3/4"></div>
-                  <div className="h-4 bg-muted rounded w-1/2"></div>
-                </div>
-              </CardContent>
-            </Card>
-          ) : dailyData && dailyData.items.length > 0 ? (
-            <div className="space-y-4">
-              <h3 className="text-xl font-sofia font-semibold">
-                {format(selectedDate, "MMMM d. (EEEE)", { locale: hu })} - {(() => {
-                  const { title } = getContentLabel(selectedDate);
-                  return title;
-                })()}
-              </h3>
-              
-              {/* Extra Items - Grid layout exactly like on /etlap */}
-              {extraItems.length > 0 && (
-                <div className="space-y-4">
-                  <h4 className="text-lg font-semibold">További napi ételek</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {extraItems.map((item) => (
-                      <Card key={item.id} className="group hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                        <CardContent className="p-0">
-                          <div className="aspect-video bg-muted overflow-hidden">
-                            {item.item_image_url ? (
-                              <img 
-                                src={item.item_image_url} 
-                                alt={item.item_name}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                              />
-                            ) : (
-                              <div className="w-full h-full bg-gradient-to-br from-amber-50 to-amber-100/80 dark:from-amber-950/40 dark:to-amber-900/30 flex items-center justify-center">
-                                <img src={kiscsibeLogo} alt="Kiscsibe" className="h-[85%] w-auto object-contain drop-shadow-xl" />
-                              </div>
-                            )}
-                          </div>
-                          <div className="p-4 space-y-3">
-                            <div className="flex items-start justify-between gap-2">
-                              <h4 className="font-semibold">{capitalizeFirst(item.item_name)}</h4>
-                              <Badge variant="secondary" className="shrink-0 bg-primary/10 text-primary font-semibold">
-                                {item.item_price_huf} Ft
-                              </Badge>
-                            </div>
-                            {item.item_description && (
-                              <p className="text-sm text-muted-foreground line-clamp-2">
-                                {item.item_description}
-                              </p>
-                            )}
-                            <Button
-                              onClick={() => handleAddItemToCart(item)}
-                              className="w-full"
-                            >
-                              Kosárba
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {extraItems.map((item) => (
+              <Card 
+                key={item.id} 
+                className="group border-0 bg-card/95 backdrop-blur-sm shadow-lg rounded-3xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+              >
+                <CardContent className="p-0">
+                  <div className="aspect-video overflow-hidden">
+                    {item.item_image_url ? (
+                      <img 
+                        src={item.item_image_url} 
+                        alt={item.item_name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center">
+                        <img src={kiscsibeLogo} alt="Kiscsibe" className="h-[70%] w-auto object-contain opacity-80 drop-shadow-lg" />
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <Card>
-              <CardContent className="p-6">
-                <h3 className="text-xl font-sofia font-semibold mb-2">
-                  {format(selectedDate, "MMMM d. (EEEE)", { locale: hu })} - {(() => {
-                    const { title } = getContentLabel(selectedDate);
-                    return title;
-                  })()}
-                </h3>
-                <p className="text-muted-foreground">Még nincs felvéve ajánlat erre a napra.</p>
-              </CardContent>
-            </Card>
-          )}
+                  <div className="p-4 space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <h4 className="font-semibold">{capitalizeFirst(item.item_name)}</h4>
+                      <Badge variant="secondary" className="shrink-0 bg-primary/10 text-primary font-semibold">
+                        {item.item_price_huf} Ft
+                      </Badge>
+                    </div>
+                    {item.item_description && (
+                      <p className="text-sm text-muted-foreground line-clamp-2">
+                        {item.item_description}
+                      </p>
+                    )}
+                    <Button
+                      onClick={() => handleAddItemToCart(item)}
+                      className="w-full"
+                    >
+                      Kosárba
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* No content state */}
+      {!loading && (!dailyData || dailyData.items.length === 0) && !menuData && (
+        <Card className="border-0 bg-card/95 backdrop-blur-sm shadow-lg rounded-3xl">
+          <CardContent className="p-6 text-center">
+            <h3 className="text-xl font-sofia font-semibold mb-2">
+              {format(selectedDate, "MMMM d. (EEEE)", { locale: hu })}
+            </h3>
+            <p className="text-muted-foreground">Még nincs felvéve ajánlat erre a napra.</p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Mobile Sticky CTA */}
       <StickyMenuCTA 
