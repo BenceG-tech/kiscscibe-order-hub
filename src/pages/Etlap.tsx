@@ -7,10 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import { useCart } from "@/contexts/CartContext";
-import { ShoppingCart, Calendar as CalendarIcon, ChefHat } from "lucide-react";
+import { ShoppingCart, ChefHat } from "lucide-react";
 import { CartDialog } from "@/components/CartDialog";
-import { Calendar } from "@/components/ui/calendar";
-import { format, getDay, isPast, isToday } from "date-fns";
+import WeeklyDateStrip from "@/components/WeeklyDateStrip";
+import { format, getDay, isPast } from "date-fns";
 import { hu } from "date-fns/locale";
 import { getSmartInitialDate, getContentLabel } from "@/lib/dateUtils";
 import { capitalizeFirst } from "@/lib/utils";
@@ -144,20 +144,14 @@ const Etlap = () => {
     fetchDailyData(selectedDate);
   }, [selectedDate]);
 
-  const handleDateSelect = (date: Date | undefined) => {
-    if (date && !isPast(date) && getDay(date) !== 0 && getDay(date) !== 6) {
+  const handleDateSelect = (date: Date) => {
+    if (!isPast(date) && getDay(date) !== 0 && getDay(date) !== 6) {
       setSelectedDate(date);
     }
   };
 
   const isDateDisabled = (date: Date) => {
     return isPast(date) || getDay(date) === 0 || getDay(date) === 6;
-  };
-
-  const hasContentOnDate = (date: Date) => {
-    return availableDates.some(availableDate => 
-      format(availableDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
-    );
   };
 
   const handleAddItemToCart = (item: MenuItem) => {
@@ -212,7 +206,7 @@ const Etlap = () => {
       <ModernNavigation />
       
       <div className="pt-32 pb-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-warmth bg-clip-text text-transparent">
@@ -223,249 +217,214 @@ const Etlap = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Calendar Section */}
-            <div className="lg:col-span-1">
-              <Card className="sticky top-32">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-4">
-                    <CalendarIcon className="h-5 w-5 text-primary" />
-                    <h3 className="font-semibold">Válassz napot</h3>
-                  </div>
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={handleDateSelect}
-                    disabled={isDateDisabled}
-                    locale={hu}
-                    modifiers={{
-                      hasContent: hasContentOnDate,
-                      weekend: (date: Date) => getDay(date) === 0 || getDay(date) === 6,
-                      today: isToday
-                    }}
-                    modifiersStyles={{
-                      hasContent: { 
-                        backgroundColor: 'hsl(var(--primary) / 0.1)',
-                        border: '2px solid hsl(var(--primary))',
-                        fontWeight: 'bold'
-                      },
-                      weekend: { 
-                        color: 'hsl(var(--muted-foreground))',
-                        textDecoration: 'line-through'
-                      },
-                      today: {
-                        backgroundColor: 'hsl(var(--accent))',
-                        fontWeight: 'bold'
-                      }
-                    }}
-                    className="w-full"
-                  />
-                  <div className="mt-4 space-y-2 text-xs text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-primary/10 border-2 border-primary rounded"></div>
-                      <span>Elérhető ajánlat</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-muted-foreground/20 rounded"></div>
-                      <span>Zárva (hétvége)</span>
-                    </div>
+          {/* Weekly Date Strip - Compact horizontal calendar */}
+          <div className="mb-8">
+            <Card className="border-0 bg-card/80 backdrop-blur-sm shadow-lg rounded-3xl">
+              <CardContent className="p-4 md:p-6">
+                <WeeklyDateStrip
+                  selectedDate={selectedDate}
+                  onSelect={handleDateSelect}
+                  availableDates={availableDates}
+                  isDateDisabled={isDateDisabled}
+                />
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Content Section - Centered */}
+          <div className="space-y-6">
+            {/* Date Title */}
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold">
+                {format(selectedDate, "MMMM d. (EEEE)", { locale: hu })}
+              </h2>
+              <Badge variant="outline" className="text-sm">
+                {getContentLabel(selectedDate).title}
+              </Badge>
+            </div>
+
+            {loading ? (
+              <Card className="border-0 bg-card/95 backdrop-blur-sm shadow-lg rounded-3xl">
+                <CardContent className="p-8">
+                  <div className="animate-pulse space-y-4">
+                    <div className="h-6 bg-muted rounded w-1/2"></div>
+                    <div className="h-4 bg-muted rounded w-3/4"></div>
+                    <div className="h-4 bg-muted rounded w-1/4"></div>
                   </div>
                 </CardContent>
               </Card>
-            </div>
-
-            {/* Content Section */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Date Title */}
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold">
-                  {format(selectedDate, "MMMM d. (EEEE)", { locale: hu })}
-                </h2>
-                <Badge variant="outline" className="text-sm">
-                  {getContentLabel(selectedDate).title}
-                </Badge>
-              </div>
-
-              {loading ? (
-                <Card>
-                  <CardContent className="p-8">
-                    <div className="animate-pulse space-y-4">
-                      <div className="h-6 bg-muted rounded w-1/2"></div>
-                      <div className="h-4 bg-muted rounded w-3/4"></div>
-                      <div className="h-4 bg-muted rounded w-1/4"></div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ) : dailyData && dailyData.items.length > 0 ? (
-                <>
-                  {/* Daily Menu Card */}
-                  {menuData && menuData.soup && menuData.main && (
-                    <Card className="border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-transparent overflow-hidden">
-                      <CardContent className="p-0">
-                        <div className="bg-primary/10 px-6 py-4 border-b border-primary/20">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <ChefHat className="h-6 w-6 text-primary" />
-                              <h3 className="text-xl font-bold">Napi Menü</h3>
-                            </div>
-                            <Badge className="bg-primary text-primary-foreground text-lg px-4 py-1">
-                              {menuData.menu_price_huf} Ft
-                            </Badge>
+            ) : dailyData && dailyData.items.length > 0 ? (
+              <>
+                {/* Daily Menu Card */}
+                {menuData && menuData.soup && menuData.main && (
+                  <Card className="border-0 bg-card/95 backdrop-blur-sm shadow-xl rounded-3xl overflow-hidden">
+                    <CardContent className="p-0">
+                      <div className="bg-primary/10 px-6 py-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <ChefHat className="h-6 w-6 text-primary" />
+                            <h3 className="text-xl font-bold">Napi Menü</h3>
                           </div>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            Leves + Főétel kedvezményes áron
-                          </p>
+                          <Badge className="bg-primary text-primary-foreground text-lg px-4 py-1 shadow-lg">
+                            {menuData.menu_price_huf} Ft
+                          </Badge>
                         </div>
-                        
-                        <div className="p-6">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {/* Soup Card */}
-                            <div className="bg-background/50 rounded-2xl overflow-hidden shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                              <div className="aspect-[16/9] w-full overflow-hidden">
-                                {menuData.soup.item_image_url ? (
-                                  <img 
-                                    src={menuData.soup.item_image_url} 
-                                    alt={menuData.soup.item_name}
-                                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                                  />
-                                ) : (
-                                  <div className="w-full h-full bg-gradient-to-br from-amber-50 to-amber-100/80 dark:from-amber-950/40 dark:to-amber-900/30 flex items-center justify-center">
-                                    <img src={kiscsibeLogo} alt="Kiscsibe" className="h-[85%] w-auto object-contain drop-shadow-xl" />
-                                  </div>
-                                )}
-                              </div>
-                              <div className="p-4">
-                                <span className="text-xs font-medium text-amber-600 dark:text-amber-400 uppercase">Leves</span>
-                                <h4 className="font-semibold text-lg mt-1">{capitalizeFirst(menuData.soup.item_name)}</h4>
-                                {menuData.soup.item_description && (
-                                  <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{menuData.soup.item_description}</p>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Main Course Card */}
-                            <div className="bg-background/50 rounded-2xl overflow-hidden shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                              <div className="aspect-[16/9] w-full overflow-hidden">
-                                {menuData.main.item_image_url ? (
-                                  <img 
-                                    src={menuData.main.item_image_url} 
-                                    alt={menuData.main.item_name}
-                                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                                  />
-                                ) : (
-                                  <div className="w-full h-full bg-gradient-to-br from-amber-50 to-amber-100/80 dark:from-amber-950/40 dark:to-amber-900/30 flex items-center justify-center">
-                                    <img src={kiscsibeLogo} alt="Kiscsibe" className="h-[85%] w-auto object-contain drop-shadow-xl" />
-                                  </div>
-                                )}
-                              </div>
-                              <div className="p-4">
-                                <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 uppercase">Főétel</span>
-                                <h4 className="font-semibold text-lg mt-1">{capitalizeFirst(menuData.main.item_name)}</h4>
-                                {menuData.main.item_description && (
-                                  <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{menuData.main.item_description}</p>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between pt-4 border-t">
-                            <div className="text-sm text-muted-foreground">
-                              Elérhető: {menuData.menu_remaining_portions} adag
-                            </div>
-                            <Button 
-                              onClick={handleAddMenuToCart}
-                              className="bg-gradient-to-r from-primary to-primary-glow"
-                              disabled={menuData.menu_remaining_portions <= 0}
-                            >
-                              <ShoppingCart className="h-4 w-4 mr-2" />
-                              Menü kosárba
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {/* Extra Items */}
-                  {extraItems.length > 0 && (
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold">További napi ételek</h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {extraItems.map((item) => (
-                          <Card key={item.id} className="group hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                            <CardContent className="p-0">
-                              <div className="aspect-video bg-muted overflow-hidden">
-                                {item.item_image_url ? (
-                                  <img 
-                                    src={item.item_image_url} 
-                                    alt={item.item_name}
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                  />
-                                ) : (
-                                  <div className="w-full h-full bg-gradient-to-br from-amber-50 to-amber-100/80 dark:from-amber-950/40 dark:to-amber-900/30 flex items-center justify-center">
-                                    <img src={kiscsibeLogo} alt="Kiscsibe" className="h-[85%] w-auto object-contain drop-shadow-xl" />
-                                  </div>
-                                )}
-                              </div>
-                              <div className="p-4 md:p-6 space-y-3">
-                                <div className="flex items-start justify-between gap-2">
-                                  <h4 className="font-semibold">{capitalizeFirst(item.item_name)}</h4>
-                                  <Badge variant="secondary" className="shrink-0 bg-primary/10 text-primary font-semibold">
-                                    {item.item_price_huf} Ft
-                                  </Badge>
-                                </div>
-                                {item.item_description && (
-                                  <p className="text-sm text-muted-foreground line-clamp-2">
-                                    {item.item_description}
-                                  </p>
-                                )}
-                                {item.item_allergens && item.item_allergens.length > 0 && (
-                                  <div className="flex flex-wrap gap-1">
-                                    {item.item_allergens.map((allergen, idx) => (
-                                      <Badge key={idx} variant="outline" className="text-xs">
-                                        {allergen}
-                                      </Badge>
-                                    ))}
-                                  </div>
-                                )}
-                                <Button 
-                                  onClick={() => handleAddItemToCart(item)}
-                                  className="w-full"
-                                  size="sm"
-                                >
-                                  Kosárba
-                                </Button>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Note */}
-                  {dailyData.offer_note && (
-                    <Card className="bg-muted/50">
-                      <CardContent className="p-4">
-                        <p className="text-sm text-muted-foreground italic">
-                          {dailyData.offer_note}
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Leves + Főétel kedvezményes áron
                         </p>
-                      </CardContent>
-                    </Card>
-                  )}
-                </>
-              ) : (
-                <Card>
-                  <CardContent className="p-8 text-center">
-                    <ChefHat className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">Nincs ajánlat erre a napra</h3>
-                    <p className="text-muted-foreground">
-                      Válassz egy másik napot a naptárból, vagy nézz vissza később!
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+                      </div>
+                      
+                      <div className="p-4 md:p-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* Soup Card */}
+                          <div className="bg-card rounded-3xl overflow-hidden shadow-lg ring-1 ring-black/5 dark:ring-white/5 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                            <div className="aspect-[16/9] w-full overflow-hidden">
+                              {menuData.soup.item_image_url ? (
+                                <img 
+                                  src={menuData.soup.item_image_url} 
+                                  alt={menuData.soup.item_name}
+                                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center">
+                                  <img src={kiscsibeLogo} alt="Kiscsibe" className="h-[70%] w-auto object-contain opacity-80 drop-shadow-lg" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="p-4">
+                              <span className="text-xs font-medium text-primary uppercase tracking-wide">Leves</span>
+                              <h4 className="font-semibold text-lg mt-1">{capitalizeFirst(menuData.soup.item_name)}</h4>
+                              {menuData.soup.item_description && (
+                                <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{menuData.soup.item_description}</p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Main Course Card */}
+                          <div className="bg-card rounded-3xl overflow-hidden shadow-lg ring-1 ring-black/5 dark:ring-white/5 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                            <div className="aspect-[16/9] w-full overflow-hidden">
+                              {menuData.main.item_image_url ? (
+                                <img 
+                                  src={menuData.main.item_image_url} 
+                                  alt={menuData.main.item_name}
+                                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center">
+                                  <img src={kiscsibeLogo} alt="Kiscsibe" className="h-[70%] w-auto object-contain opacity-80 drop-shadow-lg" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="p-4">
+                              <span className="text-xs font-medium text-primary uppercase tracking-wide">Főétel</span>
+                              <h4 className="font-semibold text-lg mt-1">{capitalizeFirst(menuData.main.item_name)}</h4>
+                              {menuData.main.item_description && (
+                                <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{menuData.main.item_description}</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-4 mt-4 border-t border-border/50">
+                          <div className="text-sm text-muted-foreground">
+                            Elérhető: <span className="font-semibold text-foreground">{menuData.menu_remaining_portions}</span> adag
+                          </div>
+                          <Button 
+                            onClick={handleAddMenuToCart}
+                            className="bg-gradient-to-r from-primary to-primary/80 shadow-lg"
+                            disabled={menuData.menu_remaining_portions <= 0}
+                          >
+                            <ShoppingCart className="h-4 w-4 mr-2" />
+                            Menü kosárba
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Extra Items */}
+                {extraItems.length > 0 && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">További napi ételek</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {extraItems.map((item) => (
+                        <Card 
+                          key={item.id} 
+                          className="group border-0 bg-card/95 backdrop-blur-sm shadow-lg rounded-3xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                        >
+                          <CardContent className="p-0">
+                            <div className="aspect-video overflow-hidden">
+                              {item.item_image_url ? (
+                                <img 
+                                  src={item.item_image_url} 
+                                  alt={item.item_name}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center">
+                                  <img src={kiscsibeLogo} alt="Kiscsibe" className="h-[70%] w-auto object-contain opacity-80 drop-shadow-lg" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="p-4 md:p-6 space-y-3">
+                              <div className="flex items-start justify-between gap-2">
+                                <h4 className="font-semibold">{capitalizeFirst(item.item_name)}</h4>
+                                <Badge variant="secondary" className="shrink-0 bg-primary/10 text-primary font-semibold">
+                                  {item.item_price_huf} Ft
+                                </Badge>
+                              </div>
+                              {item.item_description && (
+                                <p className="text-sm text-muted-foreground line-clamp-2">
+                                  {item.item_description}
+                                </p>
+                              )}
+                              {item.item_allergens && item.item_allergens.length > 0 && (
+                                <div className="flex flex-wrap gap-1">
+                                  {item.item_allergens.map((allergen, idx) => (
+                                    <Badge key={idx} variant="outline" className="text-xs">
+                                      {allergen}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
+                              <Button 
+                                onClick={() => handleAddItemToCart(item)}
+                                className="w-full"
+                                size="sm"
+                              >
+                                Kosárba
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Note */}
+                {dailyData.offer_note && (
+                  <Card className="border-0 bg-muted/50 rounded-2xl">
+                    <CardContent className="p-4">
+                      <p className="text-sm text-muted-foreground italic">
+                        {dailyData.offer_note}
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+              </>
+            ) : (
+              <Card className="border-0 bg-card/95 backdrop-blur-sm shadow-lg rounded-3xl">
+                <CardContent className="p-8 text-center">
+                  <ChefHat className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Nincs ajánlat erre a napra</h3>
+                  <p className="text-muted-foreground">
+                    Válassz egy másik napot a naptárból, vagy nézz vissza később!
+                  </p>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </div>
@@ -475,7 +434,7 @@ const Etlap = () => {
         <div className="fixed bottom-4 right-4 z-40">
           <Button
             onClick={() => setIsCartOpen(true)}
-            className="rounded-full h-14 w-14 bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm relative transition-all duration-300 hover:scale-110"
+            className="rounded-full h-14 w-14 bg-gradient-to-r from-primary to-primary/80 hover:shadow-xl relative transition-all duration-300 hover:scale-110"
           >
             <ShoppingCart className="h-6 w-6" />
             <Badge className="absolute -top-2 -right-2 bg-warmth text-white min-w-[20px] h-5 flex items-center justify-center text-xs">
