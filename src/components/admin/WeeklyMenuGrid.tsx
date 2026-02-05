@@ -518,7 +518,7 @@ export default function WeeklyMenuGrid() {
       </div>
 
       {/* Grid Table */}
-      <ScrollArea className="w-full rounded-lg border">
+      <ScrollArea className="w-full rounded-lg border touch-pan-x" style={{ overscrollBehavior: 'contain' }}>
         <div className="min-w-[900px]">
           <table className="w-full border-collapse">
             <thead>
