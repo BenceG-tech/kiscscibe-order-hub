@@ -1,268 +1,120 @@
 
-# Étlap Kezelés (Menu Management) - Teljes Újratervezés
 
-## Jelenlegi Állapot Elemzése
+# Hero Title Consistency Fix
 
-Az admin felület jelenleg 2 fő menükezelő oldalt tartalmaz:
+## Problem
 
-### 1. Étlap kezelés (`/admin/menu` - MenuManagement.tsx)
-- 500+ étel kezelése
-- Kategóriánként csoportosított lista
-- Keresés és szűrés
-- Étel hozzáadás/szerkesztés dialog
+The hero section titles across subpages are not consistently positioned:
 
-### 2. Napi ajánlat (`/admin/daily-menu` - DailyMenuManagement.tsx)
-- Heti nézet grid (WeeklyMenuGrid)
-- 5 tab: Napi ajánlatok, Ütemezés, Sablonok, Kapacitás, Excel Import
-- Kategóriánként sorok, naponta oszlopok
+| Page | Current Position |
+|------|-----------------|
+| Etlap (Napi Ajánlat) | Center-center |
+| About (Rólunk) | Bottom-left |
+| Contact (Kapcsolat) | Bottom-center |
+| Gallery (Galéria) | No image hero (different style) |
 
----
+## Solution
 
-## Fő Problémák
-
-| Probléma | Részletek |
-|----------|-----------|
-| **Túl sok tab** | A "Napi ajánlat" oldalon 5 tab van, ami zavaró |
-| **Széttöredezett funkciók** | Étlap kezelés és Napi ajánlat külön oldalon |
-| **Bonyolult WeeklyGrid** | Sok kis gomb egy cellában (M/L/F, ár, kép, törlés) |
-| **Nincs gyors áttekintés** | Nem látszik egy pillantásra a hét összefoglalója |
-| **Nehéz navigáció** | Sablonok és ütemezés külön tab-okon |
-| **Komplex mobil nézet** | Accordion-ok nehezen kezelhetők |
+Update all subpages with image heroes to use center-center positioning, matching the Etlap page design.
 
 ---
 
-## Javasolt Újratervezés
+## Changes Required
 
-### A) Egyszerűsített Információ Architektúra
+### 1. About.tsx (Rólunk)
 
-**Régi struktúra:**
-```text
-Admin
-├── Rendelések
-├── Étlap kezelés (500+ étel lista)
-├── Napi ajánlat
-│   ├── Napi ajánlatok (WeeklyGrid)
-│   ├── Ütemezés
-│   ├── Sablonok
-│   ├── Kapacitás
-│   └── Excel Import
-└── Galéria
+**Current** (lines 51-61):
+```tsx
+<div className="absolute bottom-0 left-0 right-0 p-6 md:p-12 lg:p-16">
+  <div className="max-w-6xl mx-auto">
+    <h1>Rólunk</h1>
+    <p>Családi hagyományok, modern körülmények</p>
+  </div>
+</div>
 ```
 
-**Új struktúra:**
-```text
-Admin
-├── Rendelések
-├── Étel könyvtár (Master Library - 500+ étel)
-├── Heti terv (Egyszerűsített napi ajánlat)
-│   ├── Naptár nézet
-│   └── Sablon alkalmazás
-├── Beállítások (Kapacitás + Import egy helyen)
-└── Galéria
+**New** (centered):
+```tsx
+<div className="absolute inset-0 flex items-center justify-center">
+  <div className="text-center text-white px-6">
+    <h1>Rólunk</h1>
+    <p>Családi hagyományok, modern körülmények</p>
+  </div>
+</div>
 ```
 
 ---
 
-### B) Heti Terv Oldal - Teljesen Új Design
+### 2. Contact.tsx (Kapcsolat)
 
-#### Jelenlegi: Komplex Grid
-```text
-┌──────────┬──────────┬──────────┬──────────┬──────────┬──────────┐
-│ Kategória│  Hétfő   │  Kedd    │  Szerda  │ Csütörtök│  Péntek  │
-├──────────┼──────────┼──────────┼──────────┼──────────┼──────────┤
-│ Ár       │  1890    │  1890    │  1890    │  1890    │  1890    │
-├──────────┼──────────┼──────────┼──────────┼──────────┼──────────┤
-│ Levesek  │ [Gulyás] │ [Húsl.]  │ [Gomb.]  │ [Zöldb.] │ [Tyúkh.] │
-│          │ M L F    │ M L F    │ M L F    │ M L F    │ M L F    │
-├──────────┼──────────┼──────────┼──────────┼──────────┼──────────┤
-│ Főételek │ [Pörk.]  │ [...]    │ [...]    │ [...]    │ [...]    │
-│          │ M L F    │ M L F    │ M L F    │ M L F    │ M L F    │
-└──────────┴──────────┴──────────┴──────────┴──────────┴──────────┘
+**Current** (lines 61-70):
+```tsx
+<div className="absolute bottom-0 left-0 right-0 p-6 md:p-12">
+  <div className="max-w-4xl mx-auto text-center">
+    <h1>Kapcsolat</h1>
+    <p>Vegye fel velünk a kapcsolatot!</p>
+  </div>
+</div>
 ```
 
-#### Új: Kártya-alapú Napi Nézet
-```text
-┌─────────────────────────────────────────────────────────────────────────┐
-│                          Heti Menü Tervező                              │
-│  [< Előző hét]  Február 3-7, 2026  [Következő hét >]  [Sablon ▾]        │
-└─────────────────────────────────────────────────────────────────────────┘
-
-┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐
-│   HÉTFŐ     │ │   KEDD      │ │   SZERDA    │ │ CSÜTÖRTÖK   │ │   PÉNTEK    │
-│   02.03     │ │   02.04     │ │   02.05     │ │   02.06     │ │   02.07     │
-├─────────────┤ ├─────────────┤ ├─────────────┤ ├─────────────┤ ├─────────────┤
-│  ┌───────┐  │ │  ┌───────┐  │ │  ┌───────┐  │ │  ┌───────┐  │ │  ┌───────┐  │
-│  │ 1890  │  │ │  │ 1890  │  │ │  │ 1890  │  │ │  │ 1890  │  │ │  │ 1890  │  │
-│  │  Ft   │  │ │  │  Ft   │  │ │  │  Ft   │  │ │  │  Ft   │  │ │  │  Ft   │  │
-│  └───────┘  │ │  └───────┘  │ │  └───────┘  │ │  └───────┘  │ │  └───────┘  │
-├─────────────┤ ├─────────────┤ ├─────────────┤ ├─────────────┤ ├─────────────┤
-│ 🍲 Leves:   │ │ 🍲 Leves:   │ │ 🍲 Leves:   │ │ 🍲 Leves:   │ │ 🍲 Leves:   │
-│   Gulyás    │ │   Húsleves  │ │   Gombalev. │ │   Zöldbors. │ │   Tyúkhúsl. │
-├─────────────┤ ├─────────────┤ ├─────────────┤ ├─────────────┤ ├─────────────┤
-│ 🍽 Főétel:  │ │ 🍽 Főétel:  │ │ 🍽 Főétel:  │ │ 🍽 Főétel:  │ │ 🍽 Főétel:  │
-│   Pörkölt   │ │   Töltött   │ │   Rántott   │ │   Paprikás  │ │   Sült hal  │
-├─────────────┤ ├─────────────┤ ├─────────────┤ ├─────────────┤ ├─────────────┤
-│ +3 extra    │ │ +2 extra    │ │ +4 extra    │ │ +3 extra    │ │ +2 extra    │
-│ [Szerkeszt] │ │ [Szerkeszt] │ │ [Szerkeszt] │ │ [Szerkeszt] │ │ [Szerkeszt] │
-└─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘
+**New** (centered):
+```tsx
+<div className="absolute inset-0 flex items-center justify-center">
+  <div className="text-center text-white px-6">
+    <h1>Kapcsolat</h1>
+    <p>Vegye fel velünk a kapcsolatot!</p>
+  </div>
+</div>
 ```
 
 ---
 
-### C) Új Komponensek
+### 3. Gallery.tsx (Galéria) - Optional
 
-#### 1. DayCard - Napi Kártya Komponens
-Egy nap összes adata egy kártyában:
-- Ár (inline szerkeszthető)
-- Menü leves (egy kattintással választható)
-- Menü főétel (egy kattintással választható)
-- Extra ételek száma badge-ben
-- "Szerkesztés" gomb a részletes nézethez
+The Gallery page uses a different hero style (no background image, just padding). To make it fully consistent with other subpages, we could add an image hero with centered title. However, this changes the page's current design significantly.
 
-#### 2. DayDetailDrawer - Részletes Szerkesztő Panel
-Sheet/Drawer ami kinyílik oldalsó panelként:
-- Nagy keresőmező az ételekhez
-- Kategóriánként csoportosított lista
-- Drag-and-drop sorrend
-- Könnyű hozzáadás/eltávolítás
-
-#### 3. WeeklyOverview - Heti Összefoglaló
-Kompakt fejléc ami mutatja:
-- Hány nap van kitöltve
-- Hiányzó napok jelzése
-- Egy kattintásos sablon alkalmazás
-
-#### 4. QuickTemplateBar - Gyors Sablon Sáv
-Horizontális sablon választó:
-- Kedvenc sablonok pill-ek formájában
-- Egy kattintás = sablon alkalmazása a kijelölt napra
+**Decision**: Keep Gallery as-is for now, or add image hero if desired.
 
 ---
 
-### D) Étel Könyvtár - Egyszerűsített Nézet
+## Unified Hero Template
 
-**Jelenlegi:** Kategóriánként kártyák, minden étel full row
-**Új:** Kompakt tábla nézet váltási lehetőséggel
+All image-based hero sections will use this structure:
 
-```text
-┌─────────────────────────────────────────────────────────────────────────┐
-│ Étel könyvtár                                      [+ Új étel] [Import] │
-├─────────────────────────────────────────────────────────────────────────┤
-│ 🔍 [Keresés...]  Kategória: [Összes ▾]  Állapot: [Mind ▾]  [🔲] [≡]    │
-├─────────────────────────────────────────────────────────────────────────┤
-│  [□] │ 📷 │ Név              │ Kategória  │  Ár   │ Állapot │ Műveletek │
-├──────┼────┼──────────────────┼────────────┼───────┼─────────┼───────────┤
-│  [□] │ 🖼 │ Gulyásleves      │ Levesek    │ 890Ft │ ● Aktív │ ✏️ 🗑     │
-│  [□] │ 🖼 │ Marhapörkölt     │ Főételek   │ 1990Ft│ ● Aktív │ ✏️ 🗑     │
-│  [□] │ -- │ Rántott sajt    │ Prémium    │ 2290Ft│ ○ Inakt │ ✏️ 🗑     │
-└─────────────────────────────────────────────────────────────────────────┘
-│ 3 kijelölve: [Aktiválás] [Deaktiválás] [Törlés]                        │
-└─────────────────────────────────────────────────────────────────────────┘
+```tsx
+<section className="relative h-[35vh] md:h-[40vh] overflow-hidden">
+  <img src={heroImage} alt="..." className="w-full h-full object-cover" />
+  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent" />
+  <div className="absolute inset-0 flex items-center justify-center">
+    <div className="text-center text-white px-6">
+      <h1 className="text-3xl md:text-5xl font-sofia font-bold mb-2 animate-fade-in-up">
+        {title}
+      </h1>
+      <p className="text-lg md:text-xl text-gray-200 animate-fade-in-up opacity-0" 
+         style={{ animationDelay: '0.2s', animationFillMode: 'forwards' }}>
+        {subtitle}
+      </p>
+    </div>
+  </div>
+</section>
 ```
 
 ---
 
-### E) Mobil Nézet - Swipe Navigáció
+## Files to Modify
 
-**Mobil: Egy nap egyszerre, swipe-olható**
-```text
-┌──────────────────────────────┐
-│  <  SZERDA 02.05  >          │
-│      ● ● ● ● ●               │  <- Nap indikátorok
-├──────────────────────────────┤
-│  ┌────────────────────────┐  │
-│  │    Menü ár: 1890 Ft    │  │
-│  │        [Módosít]       │  │
-│  └────────────────────────┘  │
-├──────────────────────────────┤
-│  🍲 LEVES                    │
-│  ┌────────────────────────┐  │
-│  │ Gombaleves        [×]  │  │
-│  └────────────────────────┘  │
-│  [+ Leves hozzáadása]        │
-├──────────────────────────────┤
-│  🍽 FŐÉTEL                   │
-│  ┌────────────────────────┐  │
-│  │ Rántott hús       [×]  │  │
-│  │ Sertéssült        [×]  │  │
-│  └────────────────────────┘  │
-│  [+ Főétel hozzáadása]       │
-├──────────────────────────────┤
-│  📦 EXTRA ÉTELEK (3)         │
-│  [Részletek megnyitása]      │
-└──────────────────────────────┘
-```
-
----
-
-## Fájl Változtatások
-
-### Új Komponensek (CREATE)
-
-| Fájl | Leírás |
+| File | Change |
 |------|--------|
-| `src/components/admin/WeeklyPlannerV2.tsx` | Új heti tervező fő komponens |
-| `src/components/admin/DayCard.tsx` | Napi kártya komponens |
-| `src/components/admin/DayDetailSheet.tsx` | Részletes szerkesztő drawer |
-| `src/components/admin/QuickTemplateBar.tsx` | Gyors sablon választó |
-| `src/components/admin/WeeklyOverviewHeader.tsx` | Heti összefoglaló fejléc |
-| `src/components/admin/MobileWeeklySwiper.tsx` | Mobil swipe nézet |
-| `src/components/admin/FoodLibraryTable.tsx` | Kompakt étel tábla |
-
-### Módosítandó Fájlok (MODIFY)
-
-| Fájl | Változtatás |
-|------|-------------|
-| `src/pages/admin/DailyMenuManagement.tsx` | Tab-ok csökkentése 3-ra |
-| `src/pages/admin/AdminLayout.tsx` | Navigáció átnevezés |
-| `src/pages/admin/MenuManagement.tsx` | Egyszerűsített tábla nézet |
-
-### Törlendő/Deprecated (OPTIONAL)
-
-| Fájl | Ok |
-|------|-----|
-| `src/components/admin/WeeklyMenuGrid.tsx` | Lecserélve WeeklyPlannerV2-re |
-| `src/components/admin/WeeklyGridMobile.tsx` | Lecserélve MobileWeeklySwiper-re |
+| `src/pages/About.tsx` | Center title in hero |
+| `src/pages/Contact.tsx` | Center title in hero |
 
 ---
 
-## UX Javítások Összefoglalója
+## Visual Result
 
-| Jelenlegi | Új |
-|-----------|-----|
-| 5 tab a "Napi ajánlat"-ban | 3 tab: Terv, Sablonok, Beállítások |
-| Komplex grid sok gombbal | Kártya-alapú egyszerű nézet |
-| Minden adat egyszerre látszik | Fokozatos felfedés (progressive disclosure) |
-| Kis M/L/F gombok | Nagy, egyértelmű toggle-ök |
-| Accordion mobilon | Swipe navigáció |
-| Inline price edit popover | Inline text input |
-| Külön "Mentve" jelző | Auto-save indikátor a fejlécben |
-
----
-
-## Implementációs Prioritás
-
-1. **Fázis 1 - Alapok:**
-   - DayCard komponens
-   - WeeklyPlannerV2 desktop nézet
-   - DayDetailSheet szerkesztő
-
-2. **Fázis 2 - Mobil:**
-   - MobileWeeklySwiper
-   - Touch-optimalizált gombok
-
-3. **Fázis 3 - Finomítások:**
-   - QuickTemplateBar
-   - FoodLibraryTable
-   - Animációk és átmenetek
-
----
-
-## Technikai Megjegyzések
-
-- A meglévő adatbázis struktúra változatlan marad
-- Ugyanazokat a mutation-öket használjuk (addItem, removeItem, updatePrice)
-- shadcn/ui komponenseket használunk: Sheet, Card, Tabs, Command
-- Framer Motion opcionális a swipe gesztusokhoz
-- React Query cache-elés optimalizálása a gyors interakciókhoz
+All subpages will have:
+- Same hero height: `h-[35vh] md:h-[40vh]`
+- Same gradient overlay
+- Title centered both horizontally and vertically
+- Consistent text styling and animations
 
