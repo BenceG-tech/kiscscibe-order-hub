@@ -1,6 +1,8 @@
 import FoodGallery from "@/components/gallery/FoodGallery";
 import InteriorGallery from "@/components/gallery/InteriorGallery";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Utensils, Building2 } from "lucide-react";
 
 const GallerySection = () => {
   const isMobile = useIsMobile();
@@ -14,11 +16,33 @@ const GallerySection = () => {
       </div>
       
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        {/* No redundant header - FoodGallery and InteriorGallery have their own headers */}
-        <div className="space-y-16 md:space-y-20">
-          <FoodGallery compact={isMobile} />
-          <InteriorGallery compact={isMobile} />
-        </div>
+        {isMobile ? (
+          /* Mobile: Tab-based navigation */
+          <Tabs defaultValue="food" className="w-full">
+            <TabsList className="w-full grid grid-cols-2 mb-6">
+              <TabsTrigger value="food" className="flex items-center gap-2">
+                <Utensils className="h-4 w-4" />
+                Ételek
+              </TabsTrigger>
+              <TabsTrigger value="interior" className="flex items-center gap-2">
+                <Building2 className="h-4 w-4" />
+                Éttermünk
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="food">
+              <FoodGallery compact noHeader />
+            </TabsContent>
+            <TabsContent value="interior">
+              <InteriorGallery compact noHeader />
+            </TabsContent>
+          </Tabs>
+        ) : (
+          /* Desktop: Stacked layout with headers */
+          <div className="space-y-16 md:space-y-20">
+            <FoodGallery compact={false} />
+            <InteriorGallery compact={false} />
+          </div>
+        )}
       </div>
     </section>
   );

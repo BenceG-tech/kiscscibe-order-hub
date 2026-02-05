@@ -189,18 +189,36 @@ const DailyMenuPanel = ({ date, menuData, loading }: DailyMenuPanelProps) => {
             )}
           </div>
 
-          <div className="flex items-center justify-between pt-4 mt-4 border-t border-border/50">
-            <div className="text-sm text-muted-foreground">
-              Elérhető: <span className="font-semibold text-foreground">{menuData.menu_remaining_portions}</span> adag
+            {/* Premium CTA Section */}
+            <div className="mt-6 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-2xl p-4 md:p-5">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                {/* Left side - Availability badge */}
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 bg-primary/20 rounded-full flex items-center justify-center">
+                    <ChefHat className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground font-medium">Elérhető adagok</p>
+                    <p className="text-2xl font-bold text-primary">{menuData.menu_remaining_portions}</p>
+                  </div>
+                </div>
+                
+                {/* Right side - CTA Button */}
+                <Button 
+                  onClick={handleAddMenuToCart}
+                  size="lg"
+                  className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80 shadow-lg hover:shadow-xl transition-all px-6"
+                  disabled={!isAvailable}
+                >
+                  <ShoppingCart className="h-5 w-5 mr-2" />
+                  {isAvailable ? "Menü kosárba" : "Elfogyott"}
+                  {isAvailable && (
+                    <span className="ml-2 bg-white/20 px-2.5 py-0.5 rounded-full text-sm font-semibold">
+                      {menuData.menu_price_huf} Ft
+                    </span>
+                  )}
+                </Button>
             </div>
-            <Button 
-              onClick={handleAddMenuToCart}
-              className="bg-gradient-to-r from-primary to-primary/80 shadow-lg hover:shadow-xl transition-all"
-              disabled={!isAvailable}
-            >
-              <ShoppingCart className="h-4 w-4 mr-2" />
-              {isAvailable ? "Menü kosárba" : "Elfogyott"}
-            </Button>
           </div>
         </div>
       </CardContent>
