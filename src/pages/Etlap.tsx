@@ -207,7 +207,7 @@ const Etlap = () => {
       <ModernNavigation />
       <main className="pt-20">
         {/* Hero Section with image */}
-        <section className="relative h-[35vh] md:h-[40vh] overflow-hidden">
+        <section className="relative h-[50vh] md:h-[55vh] overflow-hidden">
           <img 
             src={heroImage} 
             alt="Napi ajánlat"
@@ -296,8 +296,8 @@ const Etlap = () => {
                                   className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                                 />
                               ) : (
-                                <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center">
-                                  <img src={kiscsibeLogo} alt="Kiscsibe" className="h-[70%] w-auto object-contain opacity-80 drop-shadow-lg" />
+                                <div className="w-full h-full bg-gradient-to-br from-stone-100 to-stone-200/80 dark:from-stone-900/80 dark:to-stone-800/60 flex items-center justify-center">
+                                  <img src={kiscsibeLogo} alt="Kiscsibe" className="h-[50%] w-auto object-contain opacity-60 drop-shadow-md" />
                                 </div>
                               )}
                             </div>
@@ -320,8 +320,8 @@ const Etlap = () => {
                                   className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                                 />
                               ) : (
-                                <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center">
-                                  <img src={kiscsibeLogo} alt="Kiscsibe" className="h-[70%] w-auto object-contain opacity-80 drop-shadow-lg" />
+                                <div className="w-full h-full bg-gradient-to-br from-stone-100 to-stone-200/80 dark:from-stone-900/80 dark:to-stone-800/60 flex items-center justify-center">
+                                  <img src={kiscsibeLogo} alt="Kiscsibe" className="h-[50%] w-auto object-contain opacity-60 drop-shadow-md" />
                                 </div>
                               )}
                             </div>
@@ -372,8 +372,8 @@ const Etlap = () => {
                                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                 />
                               ) : (
-                                <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center">
-                                  <img src={kiscsibeLogo} alt="Kiscsibe" className="h-[70%] w-auto object-contain opacity-80 drop-shadow-lg" />
+                                <div className="w-full h-full bg-gradient-to-br from-stone-100 to-stone-200/80 dark:from-stone-900/80 dark:to-stone-800/60 flex items-center justify-center">
+                                  <img src={kiscsibeLogo} alt="Kiscsibe" className="h-[50%] w-auto object-contain opacity-60 drop-shadow-md" />
                                 </div>
                               )}
                             </div>
