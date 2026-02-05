@@ -11,7 +11,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ImageUpload from "@/components/admin/ImageUpload";
-import { capitalizeFirst } from "@/lib/utils";
+import { capitalizeFirst, normalizeText } from "@/lib/utils";
 import kiscsibeLogo from "@/assets/kiscsibe_logo_round.png";
 import { 
   Plus, 
@@ -62,16 +62,6 @@ const MenuManagement = () => {
     is_active: true,
     is_featured: false
   });
-
-  // Normalize text for accent-insensitive search
-  const normalizeText = (text: string) => {
-    return text
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/ő/g, 'o')
-      .replace(/ű/g, 'u');
-  };
 
   // Filter menu items based on search and category
   const filteredMenuItems = menuItems.filter(item => {
@@ -152,7 +142,7 @@ const MenuManagement = () => {
       .filter(a => a.length > 0);
 
     const itemData = {
-      name: itemForm.name,
+      name: capitalizeFirst(itemForm.name.trim()),
       description: itemForm.description,
       price_huf: parseInt(itemForm.price_huf),
       category_id: itemForm.category_id,

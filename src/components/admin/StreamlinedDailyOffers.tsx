@@ -21,6 +21,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { TemporaryItemCreator } from "./TemporaryItemCreator";
 import { TemporaryItemsLibrary } from "./TemporaryItemsLibrary";
 import { FoodSearchCommand } from "./FoodSearchCommand";
+import { normalizeText } from "@/lib/utils";
 
 interface MenuItem {
   id: string;
@@ -412,8 +413,10 @@ const StreamlinedDailyOffers = () => {
   };
 
   const filteredItems = availableItems.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase()));
+    const normalizedSearch = normalizeText(searchTerm);
+    const matchesSearch = searchTerm === "" || 
+                         normalizeText(item.name).includes(normalizedSearch) ||
+                         (item.description && normalizeText(item.description).includes(normalizedSearch));
     const matchesCategory = selectedCategory === 'all' || item.category_id === selectedCategory;
     const notSelected = !offerForm.selectedItems.some(selected => selected.id === item.id);
     return matchesSearch && matchesCategory && notSelected;
