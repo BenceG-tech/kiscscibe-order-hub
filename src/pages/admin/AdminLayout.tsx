@@ -36,8 +36,8 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
 
   const adminNavItems = [
     { href: "/admin/orders", label: "Rendelések", mobileLabel: "Rendelés", icon: ShoppingBag, showBadge: true },
-    { href: "/admin/menu", label: "Étlap kezelés", mobileLabel: "Étlap", icon: Package, showBadge: false },
-    { href: "/admin/daily-menu", label: "Napi ajánlat", mobileLabel: "Napi", icon: Calendar, showBadge: false },
+     { href: "/admin/menu", label: "Étel könyvtár", mobileLabel: "Ételek", icon: Package, showBadge: false },
+     { href: "/admin/daily-menu", label: "Heti terv", mobileLabel: "Heti", icon: Calendar, showBadge: false },
     { href: "/admin/gallery", label: "Galéria", mobileLabel: "Galéria", icon: Image, showBadge: false },
   ];
 
