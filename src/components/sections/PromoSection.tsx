@@ -1,44 +1,83 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Receipt } from "lucide-react";
+ import { Button } from "@/components/ui/button";
+ import { UtensilsCrossed, Package, GraduationCap, ArrowRight } from "lucide-react";
 
 const PromoSection = () => {
   return (
-    <section className="py-12 md:py-16">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <Card className="bg-gradient-to-r from-primary/10 to-warmth/10 border-primary/20 shadow-cozy">
-          <CardHeader>
-            <div className="flex items-center justify-center space-x-3 mb-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-primary to-warmth rounded-full flex items-center justify-center">
-                <Receipt className="h-6 w-6 text-white" />
+     <section className="py-8 md:py-10">
+       <div className="max-w-5xl mx-auto px-4">
+         <div className="bg-card/80 backdrop-blur-sm rounded-2xl shadow-lg border border-border/50 p-4 md:p-6">
+           
+           {/* Desktop: flex row */}
+           <div className="hidden md:flex items-center justify-between gap-6">
+             
+             {/* Left: Icon + Title */}
+             <div className="flex items-center gap-4">
+               <div className="w-14 h-14 bg-gradient-to-br from-primary to-warmth rounded-2xl flex items-center justify-center shadow-lg">
+                 <UtensilsCrossed className="h-7 w-7 text-white" />
+              </div>
+               <div>
+                 <p className="text-sm text-muted-foreground">Napi menü helyben</p>
+                 <p className="text-2xl font-bold text-primary">2 200 Ft</p>
+               </div>
+            </div>
+             
+             {/* Middle: Info Badges */}
+             <div className="flex items-center gap-3">
+               <div className="bg-primary/10 rounded-xl px-4 py-2 flex items-center gap-2">
+                 <Package className="h-4 w-4 text-primary" />
+                 <span className="text-sm font-medium">+200 Ft elvitel</span>
+              </div>
+               <div className="bg-primary/10 rounded-xl px-4 py-2 flex items-center gap-2">
+                 <GraduationCap className="h-4 w-4 text-primary" />
+                 <span className="text-sm font-medium">-10% diák 11:30-13:00</span>
               </div>
             </div>
-            <CardTitle className="text-2xl md:text-3xl text-center">
-              Napi menü helyben: 2 200 Ft
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4 mb-6">
-              <div className="flex items-center space-x-2">
-                <span className="w-2 h-2 bg-primary rounded-full"></span>
-                <span className="text-muted-foreground">Elvitel doboz: +200 Ft/doboz</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className="w-2 h-2 bg-primary rounded-full"></span>
-                <span className="text-muted-foreground">Diák/nyugdíjas: –10% 11:30–13:00</span>
-              </div>
+             
+             {/* Right: CTA */}
+             <Button variant="outline" className="group" asChild>
+               <a href="/etlap">
+                 Részletek
+                 <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+               </a>
+             </Button>
+             
+           </div>
+           
+           {/* Mobile: vertical compact layout */}
+           <div className="md:hidden space-y-4">
+             {/* Icon + Title row */}
+             <div className="flex items-center gap-3">
+               <div className="w-12 h-12 bg-gradient-to-br from-primary to-warmth rounded-xl flex items-center justify-center">
+                 <UtensilsCrossed className="h-6 w-6 text-white" />
+               </div>
+               <div>
+                 <p className="text-sm text-muted-foreground">Napi menü helyben</p>
+                 <p className="text-xl font-bold text-primary">2 200 Ft</p>
+               </div>
             </div>
-            
-            <div className="text-center">
-              <Button 
-                className="bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm text-primary-foreground w-full sm:w-auto"
-                asChild
-              >
-                <a href="/etlap">Részletek</a>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+             
+             {/* Info badges grid */}
+             <div className="grid grid-cols-2 gap-2">
+               <div className="bg-primary/10 rounded-xl px-3 py-2.5 text-center">
+                 <Package className="h-4 w-4 text-primary mx-auto mb-1" />
+                 <p className="text-xs font-medium">+200 Ft elvitel</p>
+               </div>
+               <div className="bg-primary/10 rounded-xl px-3 py-2.5 text-center">
+                 <GraduationCap className="h-4 w-4 text-primary mx-auto mb-1" />
+                 <p className="text-xs font-medium">-10% 11:30-13:00</p>
+               </div>
+             </div>
+             
+             {/* CTA Button */}
+             <Button variant="outline" className="w-full group" asChild>
+               <a href="/etlap">
+                 Részletek
+                 <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+               </a>
+             </Button>
+           </div>
+           
+         </div>
       </div>
     </section>
   );
