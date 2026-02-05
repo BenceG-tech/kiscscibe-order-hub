@@ -202,14 +202,14 @@ export const SidePickerModal: React.FC<SidePickerModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={!isRequired && !mainItemRequiresSideSelection ? onOpenChange : undefined}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-md max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>
             {isRequired || mainItemRequiresSideSelection ? "Köret választása szükséges" : "Válassz köretet"}
           </DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4">
+        <div className="flex-1 overflow-y-auto space-y-4">
           <p className="text-sm text-muted-foreground">
             <strong>{mainItemName}</strong> főételhez köret választása {isRequired || mainItemRequiresSideSelection ? 'kötelező' : 'opcionális'}.
             {minSelect === maxSelect ? (
@@ -272,21 +272,21 @@ export const SidePickerModal: React.FC<SidePickerModalProps> = ({
               ))}
             </div>
           )}
+        </div>
 
-          <div className="flex gap-3 pt-4">
-            {!isRequired && !mainItemRequiresSideSelection && (
-              <Button variant="outline" onClick={handleCancel} className="flex-1">
-                Mégse
-              </Button>
-            )}
-            <Button 
-              onClick={handleConfirm} 
-              disabled={!isValidSelection}
-              className={!isRequired && !mainItemRequiresSideSelection ? "flex-1" : "w-full"}
-            >
-              Hozzáadás
+        <div className="flex-shrink-0 flex gap-3 pt-4 border-t">
+          {!isRequired && !mainItemRequiresSideSelection && (
+            <Button variant="outline" onClick={handleCancel} className="flex-1">
+              Mégse
             </Button>
-          </div>
+          )}
+          <Button 
+            onClick={handleConfirm} 
+            disabled={!isValidSelection}
+            className={!isRequired && !mainItemRequiresSideSelection ? "flex-1" : "w-full"}
+          >
+            Hozzáadás
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
