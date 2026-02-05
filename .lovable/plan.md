@@ -1,180 +1,186 @@
 
 
-# Egységes Design & Galéria Tab Redesign
+# PromoSection Modern Redesign
 
 ## Összefoglaló
 
-A felhasználó kérése alapján 4 fő területen történik módosítás:
-1. Hero szekciók egységes magassága minden aloldalon
-2. Dátumválasztó (WeeklyDateStrip) modernebb megjelenése
-3. Galéria szekció mobilon: Tab-ok az Ételek és Éttermünk között váltáshoz
-4. Napi menü doboz (kosárba gomb rész) modernizálása
+A jelenlegi "Napi menü helyben" szekció túl nagy és régi stílusú. A redesign céljai:
+- Kompaktabb megjelenés (kevesebb vertical padding)
+- Modern, inline horizontal layout desktopon
+- Stílusos mobile megjelenés
+- Egységes design a többi szekcióval
 
 ---
 
-## 1. Hero Szekciók Egységesítése
+## Jelenlegi vs. Új Design
 
-**Probléma**: Az Etlap oldal `h-[35vh] md:h-[40vh]`, míg az About `h-[50vh] md:h-[60vh]` és a Contact `h-[40vh] md:h-[50vh]` - nem egységesek.
-
-**Megoldás**: Minden aloldalon ugyanazt a hero magasságot használjuk, mint az Etlap-on.
-
-| Oldal | Jelenlegi | Új |
-|-------|-----------|-----|
-| Etlap | `h-[35vh] md:h-[40vh]` | Marad |
-| About | `h-[50vh] md:h-[60vh]` | `h-[35vh] md:h-[40vh]` |
-| Contact | `h-[40vh] md:h-[50vh]` | `h-[35vh] md:h-[40vh]` |
-
-**Fájlok**: `src/pages/About.tsx`, `src/pages/Contact.tsx`
-
----
-
-## 2. Dátumválasztó Modernizálása (WeeklyDateStrip)
-
-**Probléma**: A jelenlegi design egyszerű, nem elég "premium" hatású.
-
-**Megoldás**: Modern, card-alapú megjelenés háttérrel és árnyékkal.
-
-**Új design elemek**:
-- Háttér card: `bg-card/80 backdrop-blur-sm shadow-lg rounded-2xl`
-- Hónap megjelenítése a strip felett (pl. "Február 2026")
-- Kiválasztott nap: erősebb glow effekt és scaling
-- Nagyobb touch target mobilon
-
+### Jelenlegi (nagy, vertikális):
 ```text
-┌─────────────────────────────────────────────┐
-│              Február 2026                   │
-│  ┌───┬───┬───┬───┬───┐                     │
-│  │ H │ K │SZE│ Cs│ P │  ← / →              │
-│  │ 3 │ 4 │[5]│ 6 │ 7 │     [kiválasztott]  │
-│  └───┴───┴───┴───┴───┘                     │
-└─────────────────────────────────────────────┘
+┌────────────────────────────────────────────┐
+│                    🧾                       │
+│                                            │
+│       Napi menü helyben: 2 200 Ft          │
+│                                            │
+│  ● Elvitel doboz: +200 Ft/doboz            │
+│  ● Diák/nyugdíjas: –10% 11:30–13:00        │
+│                                            │
+│              [Részletek]                    │
+│                                            │
+└────────────────────────────────────────────┘
 ```
 
-**Nap gomb stílus változások**:
-- Kiválasztott: `bg-primary text-primary-foreground shadow-lg scale-105`
-- Elérhető tartalom: `bg-primary/10 hover:bg-primary/20`
+### Új Design - Desktop (inline, horizontal):
+```text
+┌───────────────────────────────────────────────────────────────────────┐
+│  ╭────╮                                                               │
+│  │ 🍽 │  Napi menü helyben         📦 +200 Ft    👨‍🎓 -10%   [Részletek]│
+│  ╰────╯      2 200 Ft              elvitel    11:30-13:00            │
+└───────────────────────────────────────────────────────────────────────┘
+```
 
-**Fájl**: `src/components/WeeklyDateStrip.tsx`
+### Új Design - Mobile (compact vertical):
+```text
+┌────────────────────────────────────────┐
+│  ╭────╮  Napi menü helyben            │
+│  │ 🍽 │       2 200 Ft                │
+│  ╰────╯                               │
+│  ┌──────────────┐ ┌──────────────┐    │
+│  │ 📦 +200 Ft   │ │ 👨‍🎓 -10%     │    │
+│  │   elvitel    │ │  11:30-13:00 │    │
+│  └──────────────┘ └──────────────┘    │
+│           [Részletek →]               │
+└────────────────────────────────────────┘
+```
 
 ---
 
-## 3. Galéria Szekció - Mobil Tab-ok
+## Részletes Design
 
-**Probléma**: 
-- Mobilon az "Éttermünk" felirat nem látszik a képek felett
-- Nem lehet váltani a két galéria között mobilon
+### Desktop Layout
+- **Egy sorban** minden elem
+- Bal oldalon: ikon + ár cím
+- Középen: 2 info badge (inline pill-ek)
+- Jobb oldalon: CTA gomb
+- Minimális padding: `py-8` (jelenleg `py-12 md:py-16`)
 
-**Megoldás**: Mobil nézetben tab-ok az "Ételek" és "Éttermünk" között.
+### Mobile Layout  
+- Ikon + cím felül
+- 2 info badge egymás mellett (grid-2)
+- CTA gomb alul, teljes szélesség
 
-**Új struktúra mobilon**:
-```text
-┌────────────────────────────────────┐
-│  ┌─────────────┬─────────────┐     │
-│  │   Ételek    │  Éttermünk  │     │  <- Tab-ok
-│  │  [active]   │             │     │
-│  └─────────────┴─────────────┘     │
-├────────────────────────────────────┤
-│      [Galéria képek grid]          │
-│                                    │
-└────────────────────────────────────┘
-```
-
-**Desktop** (marad a jelenlegi):
-```text
-┌────────────────────────────────────┐
-│        Ételek & Italok             │
-│      [Galéria képek grid]          │
-├────────────────────────────────────┤
-│          Éttermünk                 │
-│      [Interior képek grid]         │
-└────────────────────────────────────┘
-```
-
-**Implementáció**:
-- `GallerySection.tsx`: Mobil esetén `Tabs` komponens használata
-- `FoodGallery.tsx` és `InteriorGallery.tsx`: Új `noHeader?: boolean` prop hozzáadása
-
-**Fájlok**: 
-- `src/components/sections/GallerySection.tsx`
-- `src/components/gallery/FoodGallery.tsx`
-- `src/components/gallery/InteriorGallery.tsx`
+### Stílus Elemek
+- Card: `rounded-2xl`, backdrop blur, subtle border
+- Info Badge-ek: `bg-primary/10 rounded-xl` pill stílus
+- CTA: Outline stílus arrow ikonnal (modernebb)
+- Kisebb spacing: `py-8 md:py-10`
 
 ---
 
-## 4. Napi Menü Doboz Modernizálása
+## Fájl Változtatások
 
-**Probléma**: A "Helyben doboz" (elérhető adagok + kosárba gomb) kinézete egyszerű.
+**Fájl:** `src/components/sections/PromoSection.tsx`
 
-**Jelenlegi**:
-```text
-┌─────────────────────────────────────────┐
-│ Elérhető: 15 adag    [Menü kosárba]     │
-└─────────────────────────────────────────┘
+### Új Struktúra (Desktop):
+
+```tsx
+<section className="py-8 md:py-10">
+  <div className="max-w-5xl mx-auto px-4">
+    <div className="bg-card/80 backdrop-blur-sm rounded-2xl shadow-lg border border-border/50 p-4 md:p-6">
+      
+      {/* Desktop: flex row */}
+      <div className="hidden md:flex items-center justify-between gap-6">
+        
+        {/* Left: Icon + Title */}
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 bg-gradient-to-br from-primary to-warmth rounded-2xl flex items-center justify-center shadow-lg">
+            <UtensilsCrossed className="h-7 w-7 text-white" />
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Napi menü helyben</p>
+            <p className="text-2xl font-bold text-primary">2 200 Ft</p>
+          </div>
+        </div>
+        
+        {/* Middle: Info Badges */}
+        <div className="flex items-center gap-3">
+          <div className="bg-primary/10 rounded-xl px-4 py-2 flex items-center gap-2">
+            <Package className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium">+200 Ft elvitel</span>
+          </div>
+          <div className="bg-primary/10 rounded-xl px-4 py-2 flex items-center gap-2">
+            <GraduationCap className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium">-10% diák 11:30-13:00</span>
+          </div>
+        </div>
+        
+        {/* Right: CTA */}
+        <Button variant="outline" className="group">
+          Részletek
+          <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+        </Button>
+        
+      </div>
+      
+      {/* Mobile: vertical compact layout */}
+      <div className="md:hidden space-y-4">
+        {/* Icon + Title row */}
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 bg-gradient-to-br from-primary to-warmth rounded-xl flex items-center justify-center">
+            <UtensilsCrossed className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Napi menü helyben</p>
+            <p className="text-xl font-bold text-primary">2 200 Ft</p>
+          </div>
+        </div>
+        
+        {/* Info badges grid */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="bg-primary/10 rounded-xl px-3 py-2.5 text-center">
+            <Package className="h-4 w-4 text-primary mx-auto mb-1" />
+            <p className="text-xs font-medium">+200 Ft elvitel</p>
+          </div>
+          <div className="bg-primary/10 rounded-xl px-3 py-2.5 text-center">
+            <GraduationCap className="h-4 w-4 text-primary mx-auto mb-1" />
+            <p className="text-xs font-medium">-10% 11:30-13:00</p>
+          </div>
+        </div>
+        
+        {/* CTA Button */}
+        <Button variant="outline" className="w-full group">
+          Részletek
+          <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+        </Button>
+      </div>
+      
+    </div>
+  </div>
+</section>
 ```
-
-**Új design - Prémium CTA Section**:
-```text
-┌─────────────────────────────────────────────────┐
-│  ╭────────╮                                     │
-│  │  👨‍🍳   │  Elérhető adagok                   │
-│  │ ikon   │  15                                │
-│  ╰────────╯                                     │
-│                                                 │
-│       ╭───────────────────────────────────╮    │
-│       │  🛒 Menü kosárba       1890 Ft    │    │
-│       ╰───────────────────────────────────╯    │
-└─────────────────────────────────────────────────┘
-```
-
-**Új stílus elemek**:
-- Gradient háttér: `bg-gradient-to-r from-primary/10 via-primary/5 to-transparent`
-- Ikon badge az elérhető adagokhoz
-- Nagyobb, látványosabb gomb árral együtt
-
-**Fájlok**:
-- `src/components/DailyMenuPanel.tsx`
-- `src/pages/Etlap.tsx`
 
 ---
 
-## 5. Fájl Lista
+## Vizuális Eredmény
 
-| Prioritás | Művelet | Fájl |
-|-----------|---------|------|
-| 1 | MODIFY | `src/pages/About.tsx` - Hero magasság csökkentése |
-| 2 | MODIFY | `src/pages/Contact.tsx` - Hero magasság csökkentése |
-| 3 | MODIFY | `src/components/WeeklyDateStrip.tsx` - Modern redesign |
-| 4 | MODIFY | `src/components/sections/GallerySection.tsx` - Tab-ok mobilon |
-| 5 | MODIFY | `src/components/gallery/FoodGallery.tsx` - noHeader prop |
-| 6 | MODIFY | `src/components/gallery/InteriorGallery.tsx` - noHeader prop |
-| 7 | MODIFY | `src/components/DailyMenuPanel.tsx` - CTA modernizálás |
-| 8 | MODIFY | `src/pages/Etlap.tsx` - CTA modernizálás |
+### Desktop - Modern Inline:
+- Minden egy sorban, áttekinthető
+- Ikon balra, ár kiemelve, info pill-ek középen, CTA jobbra
+- Kisebb padding → kompaktabb
 
----
-
-## 6. Technikai Részletek
-
-### Hero Konzisztencia
-- Minden aloldal: `h-[35vh] md:h-[40vh]`
-- Gradient overlay: `bg-gradient-to-t from-black/70 via-black/40 to-transparent`
-
-### Galéria Tab-ok Mobilon
-- shadcn/ui `Tabs` komponens használata
-- `TabsList`: `grid grid-cols-2` elrendezés
-- `TabsTrigger`: Ikon + szöveg (`Utensils` és `Building2`)
-
-### CTA Doboz
-- Gradient háttér rounded-2xl-lel
-- ChefHat ikon az elérhető adagok mellett
-- Gomb: `size="lg"` és ár megjelenítése badge-ben
+### Mobile - Grid Badges:
+- 2x2 info badge rács, könnyebb áttekinthetőség
+- Teljes szélességű CTA gomb
+- Vertical stack, de kompakt spacing
 
 ---
 
 ## Összegzés
 
-A változtatások eredményeként:
-1. **Egységes hero szekciók** - minden aloldal azonos magassággal
-2. **Prémium dátumválasztó** - card háttér, glow effekt, hónap megjelenítés
-3. **Mobil galéria tab-ok** - könnyű váltás Ételek és Éttermünk között
-4. **Modern CTA doboz** - gradiens háttér, badge-ek, nagyobb gomb
+| Elem | Régi | Új |
+|------|------|-----|
+| Vertical padding | `py-12 md:py-16` | `py-8 md:py-10` |
+| Layout | Vertikális mindig | Desktop: horizontal, Mobile: compact vertical |
+| Info megjelenítés | Bullet lista | Modern badge pill-ek |
+| CTA stílus | Filled button | Outline + arrow ikon |
+| Card stílus | Gradient bg | Backdrop blur + subtle border |
 
