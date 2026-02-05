@@ -518,12 +518,12 @@ export default function WeeklyMenuGrid() {
       </div>
 
       {/* Grid Table */}
-      <ScrollArea className="w-full rounded-lg border touch-pan-x" style={{ overscrollBehavior: 'contain' }}>
+      <ScrollArea className="w-full rounded-lg border">
         <div className="min-w-[900px]">
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-muted/50">
-                <th className="border-b p-3 text-left font-medium text-sm w-48">
+                <th className="sticky left-0 z-10 bg-muted/50 border-b p-3 text-left font-medium text-sm w-48">
                   Kategória
                 </th>
                 {weekDates.map((date, idx) => (
@@ -539,7 +539,7 @@ export default function WeeklyMenuGrid() {
             <tbody>
               {/* Price Row */}
               <tr className="bg-primary/5">
-                <td className="border-b p-3 font-medium text-sm">
+                <td className="sticky left-0 z-10 bg-primary/5 border-b p-3 font-medium text-sm">
                   Napi menü ár
                 </td>
                 {weekDates.map((date, idx) => {
@@ -564,7 +564,7 @@ export default function WeeklyMenuGrid() {
                 
                 return (
                   <tr key={category.id} className={rowColor}>
-                    <td className="border-b p-3 font-medium text-sm">
+                    <td className="sticky left-0 z-10 border-b p-3 font-medium text-sm bg-inherit">
                       {category.name}
                     </td>
                     {weekDates.map((date, idx) => {
