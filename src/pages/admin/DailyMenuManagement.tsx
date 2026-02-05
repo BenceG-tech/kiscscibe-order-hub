@@ -1,9 +1,7 @@
 import AdminLayout from "./AdminLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import WeeklyMenuGrid from "@/components/admin/WeeklyMenuGrid";
-import MenuScheduling from "@/components/admin/MenuScheduling";
 import CapacityManagement from "@/components/admin/CapacityManagement";
-import TemplateManagement from "@/components/admin/TemplateManagement";
 import MasterMenuImport from "@/components/admin/MasterMenuImport";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -34,18 +32,6 @@ const DailyMenuManagement = () => {
                 {isMobile ? "Ajánlatok" : "Napi ajánlatok"}
               </TabsTrigger>
               <TabsTrigger 
-                value="scheduling" 
-                className="min-h-[36px] px-3 py-2 text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-background data-[state=active]:text-foreground"
-              >
-                Ütemezés
-              </TabsTrigger>
-              <TabsTrigger 
-                value="templates" 
-                className="min-h-[36px] px-3 py-2 text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-background data-[state=active]:text-foreground"
-              >
-                Sablonok
-              </TabsTrigger>
-              <TabsTrigger 
                 value="capacity" 
                 className="min-h-[36px] px-3 py-2 text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-background data-[state=active]:text-foreground"
               >
@@ -62,14 +48,6 @@ const DailyMenuManagement = () => {
           
           <TabsContent value="daily" className="mt-0">
             <WeeklyMenuGrid />
-          </TabsContent>
-          
-          <TabsContent value="scheduling" className="mt-0">
-            <MenuScheduling />
-          </TabsContent>
-          
-          <TabsContent value="templates" className="mt-0">
-            <TemplateManagement />
           </TabsContent>
           
           <TabsContent value="capacity" className="mt-0">
