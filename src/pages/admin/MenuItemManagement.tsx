@@ -193,7 +193,7 @@ const MenuItemManagement = () => {
     setSaving(true);
     try {
       const itemData = {
-        name: itemForm.name,
+        name: capitalizeFirst(itemForm.name.trim()),
         description: itemForm.description,
         price_huf: parseInt(itemForm.price_huf),
         category_id: itemForm.category_id,

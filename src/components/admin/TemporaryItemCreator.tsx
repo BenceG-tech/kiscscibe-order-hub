@@ -9,6 +9,7 @@ import { Plus, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import ImageUpload from './ImageUpload';
+import { capitalizeFirst } from '@/lib/utils';
 
 interface MenuCategory {
   id: string;
@@ -64,7 +65,7 @@ export const TemporaryItemCreator: React.FC<TemporaryItemCreatorProps> = ({
       const { data, error } = await supabase
         .from('menu_items')
         .insert({
-          name: formData.name.trim(),
+          name: capitalizeFirst(formData.name.trim()),
           description: formData.description.trim() || null,
           price_huf: priceNum,
           category_id: formData.category_id,

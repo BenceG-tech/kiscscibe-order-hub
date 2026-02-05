@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search, Plus, X, Clock, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
-import { cn, capitalizeFirst } from "@/lib/utils";
+import { cn, capitalizeFirst, normalizeText } from "@/lib/utils";
 
 interface MenuItem {
   id: string;
@@ -43,16 +43,6 @@ export const FoodSearchCommand = ({
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
-
-  // Normalize text for accent-insensitive search
-  const normalizeText = (text: string) => {
-    return text
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/ő/g, 'o')
-      .replace(/ű/g, 'u');
-  };
 
   // Filter items based on search and category, excluding already selected
   const availableItems = items.filter(item => !selectedItemIds.includes(item.id));

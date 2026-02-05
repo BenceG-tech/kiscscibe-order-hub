@@ -9,6 +9,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useCart } from "@/contexts/CartContext";
 import { ShoppingCart, ChefHat } from "lucide-react";
 import { CartDialog } from "@/components/CartDialog";
+import { SidePickerModal } from "@/components/SidePickerModal";
 import WeeklyDateStrip from "@/components/WeeklyDateStrip";
 import { format, getDay, isPast } from "date-fns";
 import { hu } from "date-fns/locale";
@@ -57,6 +58,8 @@ const Etlap = () => {
   const [loading, setLoading] = useState(true);
   const [availableDates, setAvailableDates] = useState<Date[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [sidePickerOpen, setSidePickerOpen] = useState(false);
+  const [pendingCartItem, setPendingCartItem] = useState<MenuItem | null>(null);
 
   const fetchDailyData = async (date: Date) => {
     setLoading(true);
@@ -155,20 +158,55 @@ const Etlap = () => {
     return isPast(date) || getDay(date) === 0 || getDay(date) === 6;
   };
 
-  const handleAddItemToCart = (item: MenuItem) => {
+  const handleAddItemToCart = async (item: MenuItem) => {
+    // Check if item has menu_role of 'leves' - if so, add directly to cart
+    if (item.menu_role === 'leves') {
+      addItem({
+        id: item.item_id,
+        name: item.item_name,
+        price_huf: item.item_price_huf,
+        modifiers: [],
+        sides: [],
+        image_url: item.item_image_url
+      });
+      toast({
+        title: "Kosárba tetve",
+        description: `${item.item_name} hozzáadva a kosárhoz`
+      });
+      return;
+    }
+    
+    // For non-soup items (főétel), open side picker modal
+    setPendingCartItem(item);
+    setSidePickerOpen(true);
+  };
+
+  const handleSideSelected = (selectedSides: { id: string; name: string; price_huf: number }[]) => {
+    if (!pendingCartItem) return;
+    
     addItem({
-      id: item.item_id,
-      name: item.item_name,
-      price_huf: item.item_price_huf,
+      id: pendingCartItem.item_id,
+      name: pendingCartItem.item_name,
+      price_huf: pendingCartItem.item_price_huf,
       modifiers: [],
-      sides: [],
-      image_url: item.item_image_url
+      sides: selectedSides.map(side => ({
+        id: side.id,
+        name: side.name,
+        price_huf: 0 // Sides included in price
+      })),
+      image_url: pendingCartItem.item_image_url
     });
+    
+    const sideText = selectedSides.length > 0 
+      ? ` (köret: ${selectedSides.map(s => s.name).join(', ')})`
+      : '';
     
     toast({
       title: "Kosárba tetve",
-      description: `${item.item_name} hozzáadva a kosárhoz`
+      description: `${pendingCartItem.item_name}${sideText} hozzáadva a kosárhoz`
     });
+    
+    setPendingCartItem(null);
   };
 
   const handleAddMenuToCart = () => {
@@ -457,6 +495,34 @@ const Etlap = () => {
       </main>
       <Footer />
       <CartDialog open={isCartOpen} onOpenChange={setIsCartOpen} />
+      
+      {/* Side Picker Modal for main courses */}
+      <SidePickerModal
+        open={sidePickerOpen}
+        onOpenChange={(open) => {
+          setSidePickerOpen(open);
+          if (!open && pendingCartItem) {
+            // If closed without selecting, add item without sides
+            addItem({
+              id: pendingCartItem.item_id,
+              name: pendingCartItem.item_name,
+              price_huf: pendingCartItem.item_price_huf,
+              modifiers: [],
+              sides: [],
+              image_url: pendingCartItem.item_image_url
+            });
+            toast({
+              title: "Kosárba tetve",
+              description: `${pendingCartItem.item_name} hozzáadva köret nélkül`
+            });
+            setPendingCartItem(null);
+          }
+        }}
+        mainItemId={pendingCartItem?.item_id || ""}
+        mainItemName={pendingCartItem?.item_name || ""}
+        mainItemRequiresSideSelection={false}
+        onSideSelected={handleSideSelected}
+      />
     </div>
   );
 };

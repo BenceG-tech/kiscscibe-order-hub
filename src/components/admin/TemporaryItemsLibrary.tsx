@@ -8,7 +8,7 @@ import { Search, Check, Clock, Star, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { useToast } from '@/hooks/use-toast';
-import { capitalizeFirst } from '@/lib/utils';
+import { capitalizeFirst, normalizeText } from '@/lib/utils';
 
 interface MenuItem {
   id: string;
@@ -70,8 +70,10 @@ export const TemporaryItemsLibrary: React.FC<TemporaryItemsLibraryProps> = ({
   };
 
   const filteredItems = temporaryItems.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase()));
+    const normalizedSearch = normalizeText(searchTerm);
+    const matchesSearch = searchTerm === "" || 
+                         normalizeText(item.name).includes(normalizedSearch) ||
+                         (item.description && normalizeText(item.description).includes(normalizedSearch));
     const matchesCategory = selectedCategory === 'all' || item.category_id === selectedCategory;
     return matchesSearch && matchesCategory;
   });

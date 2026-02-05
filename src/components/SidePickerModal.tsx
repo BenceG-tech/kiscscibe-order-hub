@@ -7,6 +7,13 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { capitalizeFirst } from '@/lib/utils';
 
+// Köretek kategória ID-k
+const SIDE_CATEGORY_IDS = [
+  'a4c74b22-3789-45e0-b09d-24315e43b8a2', // Köretek
+  '7e4e0f97-e553-43f1-bf05-40a36dd176d7', // Extra köretek
+  '49ea156d-3cc7-4f08-9b3d-083f7049cb88', // Hagyományos köretek
+];
+
 interface SideItem {
   id: string;
   name: string;
@@ -88,8 +95,31 @@ export const SidePickerModal: React.FC<SidePickerModalProps> = ({
       }
 
       if (!configs || configs.length === 0) {
-        // No side configurations - should not happen if modal is opened
-        onOpenChange(false);
+        // No specific side configurations - fetch general sides from Köretek categories
+        const { data: generalSides, error: sidesError } = await supabase
+          .from('menu_items')
+          .select('id, name, description, image_url, price_huf')
+          .in('category_id', SIDE_CATEGORY_IDS)
+          .eq('is_active', true)
+          .order('name');
+        
+        if (sidesError) {
+          console.error('Error fetching general sides:', sidesError);
+          onOpenChange(false);
+          return;
+        }
+        
+        if (!generalSides || generalSides.length === 0) {
+          // No sides available at all
+          onOpenChange(false);
+          return;
+        }
+        
+        setSideItems(generalSides);
+        setMinSelect(0); // Optional
+        setMaxSelect(1); // Max 1 side
+        setIsRequired(false);
+        setLoading(false);
         return;
       }
 

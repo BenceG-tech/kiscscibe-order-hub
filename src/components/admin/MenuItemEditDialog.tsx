@@ -21,6 +21,7 @@
  } from "@/components/ui/select";
  import { toast } from "sonner";
 import { Loader2, Upload, X, ImageIcon } from "lucide-react";
+import { capitalizeFirst } from "@/lib/utils";
  
  const ALLERGENS = [
    "Glutén",
@@ -141,7 +142,7 @@ import { Loader2, Upload, X, ImageIcon } from "lucide-react";
        const { error } = await supabase
          .from("menu_items")
          .update({
-           name,
+            name: capitalizeFirst(name.trim()),
            description: description || null,
            price_huf: parseInt(price) || 0,
            category_id: categoryId,
