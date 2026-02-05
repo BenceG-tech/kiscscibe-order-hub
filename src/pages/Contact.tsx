@@ -58,9 +58,9 @@ const Contact = () => {
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 p-6 md:p-12">
-            <div className="max-w-4xl mx-auto text-center">
-              <h1 className="text-4xl md:text-5xl font-sofia font-bold text-white mb-2 animate-fade-in-up">
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-center text-white px-6">
+              <h1 className="text-3xl md:text-5xl font-sofia font-bold mb-2 animate-fade-in-up">
                 Kapcsolat
               </h1>
               <p className="text-lg md:text-xl text-gray-200 animate-fade-in-up opacity-0" style={{ animationDelay: '0.2s', animationFillMode: 'forwards' }}>
