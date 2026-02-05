@@ -117,28 +117,33 @@ const DailyMenuPanel = ({ date, menuData, loading }: DailyMenuPanelProps) => {
   const isAvailable = menuData.menu_remaining_portions > 0;
 
   return (
-    <Card className="border-0 bg-card/95 backdrop-blur-sm shadow-xl rounded-3xl overflow-hidden">
+    <Card className="border-0 bg-card/80 backdrop-blur-md shadow-xl rounded-3xl overflow-hidden border border-white/10 dark:border-white/5">
       <CardContent className="p-0">
-        <div className="bg-primary/10 px-6 py-4">
-          <div className="flex items-center justify-between">
+        <div className="bg-gradient-to-r from-primary/20 via-primary/10 to-transparent px-6 py-5 relative overflow-hidden">
+          {/* Decorative blur */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+          
+          <div className="flex items-center justify-between relative z-10">
             <div className="flex items-center gap-3">
-              <ChefHat className="h-6 w-6 text-primary" />
-              <h3 className="text-xl font-bold">Napi Menü</h3>
+              <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
+                <ChefHat className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold">Napi Menü</h3>
+                <p className="text-xs text-muted-foreground">Leves + Főétel</p>
+              </div>
             </div>
-            <Badge className="bg-primary text-primary-foreground text-lg px-4 py-1 shadow-lg">
+            <Badge className="bg-primary text-primary-foreground text-lg px-4 py-1.5 shadow-lg font-bold">
               {menuData.menu_price_huf} Ft
             </Badge>
           </div>
-          <p className="text-sm text-muted-foreground mt-1">
-            Leves + Főétel kedvezményes áron
-          </p>
         </div>
         
         <div className="p-4 md:p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Soup Card */}
             {menuData.soup && (
-              <div className="bg-card rounded-3xl overflow-hidden shadow-lg ring-1 ring-black/5 dark:ring-white/5 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+              <div className="bg-card/80 backdrop-blur-md rounded-3xl overflow-hidden shadow-lg border border-white/10 dark:border-white/5 hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-300">
                 <div className="aspect-[16/9] w-full overflow-hidden">
                   {menuData.soup.item_image_url ? (
                     <img 
@@ -147,8 +152,8 @@ const DailyMenuPanel = ({ date, menuData, loading }: DailyMenuPanelProps) => {
                       className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                     />
                   ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center">
-                      <img src={kiscsibeLogo} alt="Kiscsibe" className="h-[70%] w-auto object-contain opacity-80 drop-shadow-lg" />
+                    <div className="w-full h-full bg-gradient-to-br from-stone-100 to-stone-200/80 dark:from-stone-900/80 dark:to-stone-800/60 flex items-center justify-center">
+                      <img src={kiscsibeLogo} alt="Kiscsibe" className="h-[50%] w-auto object-contain opacity-60 drop-shadow-md" />
                     </div>
                   )}
                 </div>
@@ -164,7 +169,7 @@ const DailyMenuPanel = ({ date, menuData, loading }: DailyMenuPanelProps) => {
 
             {/* Main Course Card */}
             {menuData.main && (
-              <div className="bg-card rounded-3xl overflow-hidden shadow-lg ring-1 ring-black/5 dark:ring-white/5 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+              <div className="bg-card/80 backdrop-blur-md rounded-3xl overflow-hidden shadow-lg border border-white/10 dark:border-white/5 hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-300">
                 <div className="aspect-[16/9] w-full overflow-hidden">
                   {menuData.main.item_image_url ? (
                     <img 
@@ -173,8 +178,8 @@ const DailyMenuPanel = ({ date, menuData, loading }: DailyMenuPanelProps) => {
                       className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                     />
                   ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center">
-                      <img src={kiscsibeLogo} alt="Kiscsibe" className="h-[70%] w-auto object-contain opacity-80 drop-shadow-lg" />
+                    <div className="w-full h-full bg-gradient-to-br from-stone-100 to-stone-200/80 dark:from-stone-900/80 dark:to-stone-800/60 flex items-center justify-center">
+                      <img src={kiscsibeLogo} alt="Kiscsibe" className="h-[50%] w-auto object-contain opacity-60 drop-shadow-md" />
                     </div>
                   )}
                 </div>

@@ -235,10 +235,10 @@ const UnifiedDailySection = () => {
             {extraItems.map((item) => (
               <Card 
                 key={item.id} 
-                className="group border-0 bg-card/95 backdrop-blur-sm shadow-lg rounded-3xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                className="group bg-card/80 backdrop-blur-md shadow-lg rounded-3xl overflow-hidden border border-white/10 dark:border-white/5 hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-300"
               >
                 <CardContent className="p-0">
-                  <div className="aspect-video overflow-hidden">
+                  <div className="aspect-[3/2] overflow-hidden">
                     {item.item_image_url ? (
                       <img 
                         src={item.item_image_url} 
@@ -246,8 +246,8 @@ const UnifiedDailySection = () => {
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center">
-                        <img src={kiscsibeLogo} alt="Kiscsibe" className="h-[70%] w-auto object-contain opacity-80 drop-shadow-lg" />
+                      <div className="w-full h-full bg-gradient-to-br from-stone-100 to-stone-200/80 dark:from-stone-900/80 dark:to-stone-800/60 flex items-center justify-center">
+                        <img src={kiscsibeLogo} alt="Kiscsibe" className="h-[50%] w-auto object-contain opacity-60 drop-shadow-md" />
                       </div>
                     )}
                   </div>
