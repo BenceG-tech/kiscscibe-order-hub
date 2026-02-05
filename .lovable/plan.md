@@ -1,273 +1,180 @@
 
-# Komplett Hero Kép & Napi Ajánlat Layout Redesign
+
+# Egységes Design & Galéria Tab Redesign
 
 ## Összefoglaló
 
-A felhasználó kérése alapján:
-1. **Új hero képek** - Desktop és mobile verzió a főoldalra
-2. **Kompaktabb napi menü szekció** - A naptár túl sok helyet foglal, a menü azonnal látható kell legyen
-3. **Egységes hero képek** - Rólunk és Kapcsolat oldalak is kapják meg a hero képet
+A felhasználó kérése alapján 4 fő területen történik módosítás:
+1. Hero szekciók egységes magassága minden aloldalon
+2. Dátumválasztó (WeeklyDateStrip) modernebb megjelenése
+3. Galéria szekció mobilon: Tab-ok az Ételek és Éttermünk között váltáshoz
+4. Napi menü doboz (kosárba gomb rész) modernizálása
 
 ---
 
-## 1. Új Hero Képek Másolása
+## 1. Hero Szekciók Egységesítése
 
-**Műveletek:**
+**Probléma**: Az Etlap oldal `h-[35vh] md:h-[40vh]`, míg az About `h-[50vh] md:h-[60vh]` és a Contact `h-[40vh] md:h-[50vh]` - nem egységesek.
 
-| Forrás | Cél | Használat |
-|--------|-----|-----------|
-| `user-uploads://Set10_Full_Menu_Showcase_Desktop.png` | `src/assets/hero-desktop.png` | Főoldal desktop |
-| `user-uploads://Set10_Full_Menu_Showcase_Mobile.png` | `src/assets/hero-mobile.png` | Főoldal mobile |
+**Megoldás**: Minden aloldalon ugyanazt a hero magasságot használjuk, mint az Etlap-on.
 
----
+| Oldal | Jelenlegi | Új |
+|-------|-----------|-----|
+| Etlap | `h-[35vh] md:h-[40vh]` | Marad |
+| About | `h-[50vh] md:h-[60vh]` | `h-[35vh] md:h-[40vh]` |
+| Contact | `h-[40vh] md:h-[50vh]` | `h-[35vh] md:h-[40vh]` |
 
-## 2. Főoldal Hero Redesign - Responsive Képek
-
-**Fájl:** `src/components/sections/HeroSection.tsx`
-
-**Változások:**
-- Két különböző kép: desktop és mobile
-- CSS-ben `<picture>` elem vagy responsive háttérkép technika
-- A sötét háttéren a piros-fehér kockás papíros ételek gyönyörűen fognak kinézni
-
-```tsx
-import heroDesktop from "@/assets/hero-desktop.png";
-import heroMobile from "@/assets/hero-mobile.png";
-
-// Responsive image loading
-<picture>
-  <source media="(min-width: 768px)" srcSet={heroDesktop} />
-  <img src={heroMobile} alt="..." className="w-full h-full object-cover" />
-</picture>
-```
+**Fájlok**: `src/pages/About.tsx`, `src/pages/Contact.tsx`
 
 ---
 
-## 3. Napi Ajánlat Szekció - Radikális Egyszerűsítés
+## 2. Dátumválasztó Modernizálása (WeeklyDateStrip)
 
-### 3.1 Probléma
-A jelenlegi layout:
-```
-┌────────────────────────────────────────┐
-│         Napi ajánlataink               │
-│    Válassz napot és tekintsd meg...    │
-├────────────────────────────────────────┤
-│  ┌────── Nagy naptár card ──────┐      │  ← Túl sok hely!
-│  │  Februar 2026                │      │
-│  │  ← H  K Sze Cs P       →     │      │
-│  │    3  4  5  6  7              │      │
-│  │  Elérhető / Zárva legenda    │      │
-│  └──────────────────────────────┘      │
-│                                        │
-│  [Leves card]  [Főétel card]           │  ← Csak itt kezdődik a tartalom
-└────────────────────────────────────────┘
-```
+**Probléma**: A jelenlegi design egyszerű, nem elég "premium" hatású.
 
-### 3.2 Megoldás - Inline Compact Date Picker
+**Megoldás**: Modern, card-alapú megjelenés háttérrel és árnyékkal.
 
-**Új layout:**
-```
-┌────────────────────────────────────────┐
-│         Mai ajánlatunk                 │
-│  ┌───┬───┬───┬───┬───┐                │  ← Inline nap gombok
-│  │ H │ K │SZE│ Cs│ P │  ← / → hét     │
-│  │ 3 │ 4 │ 5 │ 6 │ 7 │                │
-│  └───┴───┴───┴───┴───┘                │
-├────────────────────────────────────────┤
-│  ┌──────────┐  ┌──────────┐           │  ← Azonnal látható!
-│  │ 🍲 Leves │  │ 🍖 Főétel│           │
-│  │  [kép]   │  │  [kép]   │           │
-│  │  Cím     │  │  Cím     │           │
-│  └──────────┘  └──────────┘           │
-│                                        │
-│       [ Menü kosárba - 1890 Ft ]      │
-└────────────────────────────────────────┘
+**Új design elemek**:
+- Háttér card: `bg-card/80 backdrop-blur-sm shadow-lg rounded-2xl`
+- Hónap megjelenítése a strip felett (pl. "Február 2026")
+- Kiválasztott nap: erősebb glow effekt és scaling
+- Nagyobb touch target mobilon
+
+```text
+┌─────────────────────────────────────────────┐
+│              Február 2026                   │
+│  ┌───┬───┬───┬───┬───┐                     │
+│  │ H │ K │SZE│ Cs│ P │  ← / →              │
+│  │ 3 │ 4 │[5]│ 6 │ 7 │     [kiválasztott]  │
+│  └───┴───┴───┴───┴───┘                     │
+└─────────────────────────────────────────────┘
 ```
 
-**Változások:**
+**Nap gomb stílus változások**:
+- Kiválasztott: `bg-primary text-primary-foreground shadow-lg scale-105`
+- Elérhető tartalom: `bg-primary/10 hover:bg-primary/20`
 
-| Fájl | Mit csinálunk |
-|------|---------------|
-| `src/components/WeeklyDateStrip.tsx` | Kompaktabb: hónap label eltávolítása, legenda eltávolítása, kisebb padding |
-| `src/components/sections/DailyMenuSection.tsx` | Cím egyszerűsítés: "Napi ajánlataink" → "Mai ajánlatunk" |
-| `src/components/UnifiedDailySection.tsx` | Card wrapper eltávolítása a WeeklyDateStrip-ről - legyen inline |
-
-### 3.3 WeeklyDateStrip Kompakt Verzió
-
-```tsx
-// Előtte:
-<Card className="border-0 bg-card/80 backdrop-blur-sm shadow-lg rounded-3xl">
-  <CardContent className="p-4 md:p-6">
-    <WeeklyDateStrip ... />
-  </CardContent>
-</Card>
-
-// Utána:
-<div className="flex items-center justify-center mb-4">
-  <WeeklyDateStrip ... />
-</div>
-```
-
-**WeeklyDateStrip módosítások:**
-- Hónap label: eltávolítás vagy kisebbre (`text-sm`)
-- Legenda: eltávolítás (felesleges)
-- Nap gombok: kisebb (`min-w-[44px]`)
-- Padding: `p-2` helyett `p-1`
-- Teljes komponens: inline, nem card-ban
+**Fájl**: `src/components/WeeklyDateStrip.tsx`
 
 ---
 
-## 4. Etlap.tsx (Napi Ajánlat oldal) - Hasonló egyszerűsítés
+## 3. Galéria Szekció - Mobil Tab-ok
 
-**Fájl:** `src/pages/Etlap.tsx`
+**Probléma**: 
+- Mobilon az "Éttermünk" felirat nem látszik a képek felett
+- Nem lehet váltani a két galéria között mobilon
 
-**Változások:**
-- Header + date picker egy sorban (desktop)
-- Card wrapper eltávolítása
-- Tartalom azonnal látható a page load-nál
+**Megoldás**: Mobil nézetben tab-ok az "Ételek" és "Éttermünk" között.
 
-```tsx
-// Új layout
-<div className="text-center mb-6">
-  <h1>Napi Ajánlat</h1>
-  <div className="mt-4">
-    <WeeklyDateStrip ... />  // Nincs külön card
-  </div>
-</div>
-
-// Tartalom azonnal
-<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-  ...
-</div>
+**Új struktúra mobilon**:
+```text
+┌────────────────────────────────────┐
+│  ┌─────────────┬─────────────┐     │
+│  │   Ételek    │  Éttermünk  │     │  <- Tab-ok
+│  │  [active]   │             │     │
+│  └─────────────┴─────────────┘     │
+├────────────────────────────────────┤
+│      [Galéria képek grid]          │
+│                                    │
+└────────────────────────────────────┘
 ```
+
+**Desktop** (marad a jelenlegi):
+```text
+┌────────────────────────────────────┐
+│        Ételek & Italok             │
+│      [Galéria képek grid]          │
+├────────────────────────────────────┤
+│          Éttermünk                 │
+│      [Interior képek grid]         │
+└────────────────────────────────────┘
+```
+
+**Implementáció**:
+- `GallerySection.tsx`: Mobil esetén `Tabs` komponens használata
+- `FoodGallery.tsx` és `InteriorGallery.tsx`: Új `noHeader?: boolean` prop hozzáadása
+
+**Fájlok**: 
+- `src/components/sections/GallerySection.tsx`
+- `src/components/gallery/FoodGallery.tsx`
+- `src/components/gallery/InteriorGallery.tsx`
 
 ---
 
-## 5. Rólunk Oldal - Hero Kép Csere
+## 4. Napi Menü Doboz Modernizálása
 
-**Fájl:** `src/pages/About.tsx`
+**Probléma**: A "Helyben doboz" (elérhető adagok + kosárba gomb) kinézete egyszerű.
 
-**Változások:**
-- Jelenlegi `restaurantInterior` → Új hero kép (desktop verzió)
-- Ugyanaz a modern ételfotó mint a főoldalon
-- Konzisztens brand megjelenés
-
-```tsx
-// Régi:
-import restaurantInterior from "@/assets/restaurant-interior.jpg";
-
-// Új:
-import heroImage from "@/assets/hero-desktop.png";
+**Jelenlegi**:
+```text
+┌─────────────────────────────────────────┐
+│ Elérhető: 15 adag    [Menü kosárba]     │
+└─────────────────────────────────────────┘
 ```
+
+**Új design - Prémium CTA Section**:
+```text
+┌─────────────────────────────────────────────────┐
+│  ╭────────╮                                     │
+│  │  👨‍🍳   │  Elérhető adagok                   │
+│  │ ikon   │  15                                │
+│  ╰────────╯                                     │
+│                                                 │
+│       ╭───────────────────────────────────╮    │
+│       │  🛒 Menü kosárba       1890 Ft    │    │
+│       ╰───────────────────────────────────╯    │
+└─────────────────────────────────────────────────┘
+```
+
+**Új stílus elemek**:
+- Gradient háttér: `bg-gradient-to-r from-primary/10 via-primary/5 to-transparent`
+- Ikon badge az elérhető adagokhoz
+- Nagyobb, látványosabb gomb árral együtt
+
+**Fájlok**:
+- `src/components/DailyMenuPanel.tsx`
+- `src/pages/Etlap.tsx`
 
 ---
 
-## 6. Kapcsolat Oldal - Hero Szekció Hozzáadása
-
-**Fájl:** `src/pages/Contact.tsx`
-
-**Változások:**
-- Jelenlegi gradient háttér → Full-width hero kép
-- Hasonló design mint a Rólunk oldalnál
-- Szöveg overlay a kép alján
-
-```tsx
-// Régi:
-<div className="bg-gradient-to-br from-primary/10 to-warmth/10 py-16">
-  <div className="text-center">
-    <h1>Kapcsolat</h1>
-  </div>
-</div>
-
-// Új:
-<section className="relative h-[40vh] md:h-[50vh] overflow-hidden">
-  <img src={heroImage} className="w-full h-full object-cover" />
-  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent" />
-  <div className="absolute bottom-0 left-0 right-0 p-6 md:p-12 text-white">
-    <h1>Kapcsolat</h1>
-    <p>Vegye fel velünk a kapcsolatot!</p>
-  </div>
-</section>
-```
-
----
-
-## 7. Fájl Lista
+## 5. Fájl Lista
 
 | Prioritás | Művelet | Fájl |
 |-----------|---------|------|
-| 1 | COPY | `user-uploads://Set10_Full_Menu_Showcase_Desktop.png` → `src/assets/hero-desktop.png` |
-| 1 | COPY | `user-uploads://Set10_Full_Menu_Showcase_Mobile.png` → `src/assets/hero-mobile.png` |
-| 2 | MODIFY | `src/components/sections/HeroSection.tsx` - Responsive hero képek |
-| 3 | MODIFY | `src/components/WeeklyDateStrip.tsx` - Kompaktabb design |
-| 4 | MODIFY | `src/components/sections/DailyMenuSection.tsx` - Egyszerűbb cím |
-| 5 | MODIFY | `src/components/UnifiedDailySection.tsx` - Card wrapper eltávolítása |
-| 6 | MODIFY | `src/pages/Etlap.tsx` - Kompakt date picker |
-| 7 | MODIFY | `src/pages/About.tsx` - Új hero kép |
-| 8 | MODIFY | `src/pages/Contact.tsx` - Hero szekció hozzáadása |
+| 1 | MODIFY | `src/pages/About.tsx` - Hero magasság csökkentése |
+| 2 | MODIFY | `src/pages/Contact.tsx` - Hero magasság csökkentése |
+| 3 | MODIFY | `src/components/WeeklyDateStrip.tsx` - Modern redesign |
+| 4 | MODIFY | `src/components/sections/GallerySection.tsx` - Tab-ok mobilon |
+| 5 | MODIFY | `src/components/gallery/FoodGallery.tsx` - noHeader prop |
+| 6 | MODIFY | `src/components/gallery/InteriorGallery.tsx` - noHeader prop |
+| 7 | MODIFY | `src/components/DailyMenuPanel.tsx` - CTA modernizálás |
+| 8 | MODIFY | `src/pages/Etlap.tsx` - CTA modernizálás |
 
 ---
 
-## 8. Vizuális Eredmény
+## 6. Technikai Részletek
 
-### Főoldal - Above the fold:
-```
-┌─────────────────────────────────────────────────────────────┐
-│                                                             │
-│              [ÚJ HERO KÉP - ÉTELEK]                        │
-│                                                             │
-│         Kiscsibe Reggeliző & Étterem                       │
-│            házias ízek minden nap                          │
-│                                                             │
-│        [Mai ajánlat]    [Teljes étlap]                     │
-│                                                             │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│              Mai ajánlatunk                                │
-│         H  K  Sze  Cs  P   ← →                             │  ← Kompakt inline
-│         3  4   5   6  7                                    │
-│                                                             │
-│   ┌─────────────────┐  ┌─────────────────┐                │  ← Azonnal látható!
-│   │    LEVES KÉP    │  │   FŐÉTEL KÉP    │                │
-│   │   Tyúkhúsleves  │  │  Csirkepörkölt  │                │
-│   └─────────────────┘  └─────────────────┘                │
-│                                                             │
-│           [ Menü kosárba - 1890 Ft ]                       │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-```
+### Hero Konzisztencia
+- Minden aloldal: `h-[35vh] md:h-[40vh]`
+- Gradient overlay: `bg-gradient-to-t from-black/70 via-black/40 to-transparent`
 
-### Konzisztens Hero minden oldalon:
-- **Főoldal**: Desktop/Mobile specifikus ételképek
-- **Rólunk**: Ugyanaz a desktop ételfotó
-- **Kapcsolat**: Ugyanaz a desktop ételfotó
+### Galéria Tab-ok Mobilon
+- shadcn/ui `Tabs` komponens használata
+- `TabsList`: `grid grid-cols-2` elrendezés
+- `TabsTrigger`: Ikon + szöveg (`Utensils` és `Building2`)
 
----
-
-## 9. Technikai Megjegyzések
-
-### Responsive Hero Kép
-- `<picture>` element a legjobb megoldás
-- `srcSet` media query-vel
-- Mobile: portrait orientáció optimalizált
-- Desktop: landscape orientáció optimalizált
-
-### WeeklyDateStrip Kompakt
-- Nincs külön Card wrapper
-- Kisebb touch targetek de minimum 44px
-- Legenda eltávolítva (egyértelmű a használat)
-- Hónap label inline vagy eltávolítva
-
-### Performance
-- Lazy loading megtartása ahol nincs "eager"
-- Hero képeknél `loading="eager"` - azonnal kell
+### CTA Doboz
+- Gradient háttér rounded-2xl-lel
+- ChefHat ikon az elérhető adagok mellett
+- Gomb: `size="lg"` és ár megjelenítése badge-ben
 
 ---
 
 ## Összegzés
 
 A változtatások eredményeként:
-1. **Gyönyörű új hero képek** - Professzionális ételfotók a főoldalon
-2. **Azonnal látható napi menü** - A naptár nem "lop" helyet
-3. **Konzisztens brand** - Minden oldal ugyanazt a prémium érzést adja
-4. **Mobile-first** - Külön optimalizált kép mobil eszközökre
+1. **Egységes hero szekciók** - minden aloldal azonos magassággal
+2. **Prémium dátumválasztó** - card háttér, glow effekt, hónap megjelenítés
+3. **Mobil galéria tab-ok** - könnyű váltás Ételek és Éttermünk között
+4. **Modern CTA doboz** - gradiens háttér, badge-ek, nagyobb gomb
+
