@@ -1,158 +1,99 @@
 
 
-# PromoSection Modern Redesign
+# Hero Title Consistency Fix
 
-## Összefoglaló
+## Problem
 
-A jelenlegi "Napi menü helyben" szekció túl nagy és régi stílusú. A redesign céljai:
-- Kompaktabb megjelenés (kevesebb vertical padding)
-- Modern, inline horizontal layout desktopon
-- Stílusos mobile megjelenés
-- Egységes design a többi szekcióval
+The hero section titles across subpages are not consistently positioned:
+
+| Page | Current Position |
+|------|-----------------|
+| Etlap (Napi Ajánlat) | Center-center |
+| About (Rólunk) | Bottom-left |
+| Contact (Kapcsolat) | Bottom-center |
+| Gallery (Galéria) | No image hero (different style) |
+
+## Solution
+
+Update all subpages with image heroes to use center-center positioning, matching the Etlap page design.
 
 ---
 
-## Jelenlegi vs. Új Design
+## Changes Required
 
-### Jelenlegi (nagy, vertikális):
-```text
-┌────────────────────────────────────────────┐
-│                    🧾                       │
-│                                            │
-│       Napi menü helyben: 2 200 Ft          │
-│                                            │
-│  ● Elvitel doboz: +200 Ft/doboz            │
-│  ● Diák/nyugdíjas: –10% 11:30–13:00        │
-│                                            │
-│              [Részletek]                    │
-│                                            │
-└────────────────────────────────────────────┘
+### 1. About.tsx (Rólunk)
+
+**Current** (lines 51-61):
+```tsx
+<div className="absolute bottom-0 left-0 right-0 p-6 md:p-12 lg:p-16">
+  <div className="max-w-6xl mx-auto">
+    <h1>Rólunk</h1>
+    <p>Családi hagyományok, modern körülmények</p>
+  </div>
+</div>
 ```
 
-### Új Design - Desktop (inline, horizontal):
-```text
-┌───────────────────────────────────────────────────────────────────────┐
-│  ╭────╮                                                               │
-│  │ 🍽 │  Napi menü helyben         📦 +200 Ft    👨‍🎓 -10%   [Részletek]│
-│  ╰────╯      2 200 Ft              elvitel    11:30-13:00            │
-└───────────────────────────────────────────────────────────────────────┘
-```
-
-### Új Design - Mobile (compact vertical):
-```text
-┌────────────────────────────────────────┐
-│  ╭────╮  Napi menü helyben            │
-│  │ 🍽 │       2 200 Ft                │
-│  ╰────╯                               │
-│  ┌──────────────┐ ┌──────────────┐    │
-│  │ 📦 +200 Ft   │ │ 👨‍🎓 -10%     │    │
-│  │   elvitel    │ │  11:30-13:00 │    │
-│  └──────────────┘ └──────────────┘    │
-│           [Részletek →]               │
-└────────────────────────────────────────┘
+**New** (centered):
+```tsx
+<div className="absolute inset-0 flex items-center justify-center">
+  <div className="text-center text-white px-6">
+    <h1>Rólunk</h1>
+    <p>Családi hagyományok, modern körülmények</p>
+  </div>
+</div>
 ```
 
 ---
 
-## Részletes Design
+### 2. Contact.tsx (Kapcsolat)
 
-### Desktop Layout
-- **Egy sorban** minden elem
-- Bal oldalon: ikon + ár cím
-- Középen: 2 info badge (inline pill-ek)
-- Jobb oldalon: CTA gomb
-- Minimális padding: `py-8` (jelenleg `py-12 md:py-16`)
+**Current** (lines 61-70):
+```tsx
+<div className="absolute bottom-0 left-0 right-0 p-6 md:p-12">
+  <div className="max-w-4xl mx-auto text-center">
+    <h1>Kapcsolat</h1>
+    <p>Vegye fel velünk a kapcsolatot!</p>
+  </div>
+</div>
+```
 
-### Mobile Layout  
-- Ikon + cím felül
-- 2 info badge egymás mellett (grid-2)
-- CTA gomb alul, teljes szélesség
-
-### Stílus Elemek
-- Card: `rounded-2xl`, backdrop blur, subtle border
-- Info Badge-ek: `bg-primary/10 rounded-xl` pill stílus
-- CTA: Outline stílus arrow ikonnal (modernebb)
-- Kisebb spacing: `py-8 md:py-10`
+**New** (centered):
+```tsx
+<div className="absolute inset-0 flex items-center justify-center">
+  <div className="text-center text-white px-6">
+    <h1>Kapcsolat</h1>
+    <p>Vegye fel velünk a kapcsolatot!</p>
+  </div>
+</div>
+```
 
 ---
 
-## Fájl Változtatások
+### 3. Gallery.tsx (Galéria) - Optional
 
-**Fájl:** `src/components/sections/PromoSection.tsx`
+The Gallery page uses a different hero style (no background image, just padding). To make it fully consistent with other subpages, we could add an image hero with centered title. However, this changes the page's current design significantly.
 
-### Új Struktúra (Desktop):
+**Decision**: Keep Gallery as-is for now, or add image hero if desired.
+
+---
+
+## Unified Hero Template
+
+All image-based hero sections will use this structure:
 
 ```tsx
-<section className="py-8 md:py-10">
-  <div className="max-w-5xl mx-auto px-4">
-    <div className="bg-card/80 backdrop-blur-sm rounded-2xl shadow-lg border border-border/50 p-4 md:p-6">
-      
-      {/* Desktop: flex row */}
-      <div className="hidden md:flex items-center justify-between gap-6">
-        
-        {/* Left: Icon + Title */}
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 bg-gradient-to-br from-primary to-warmth rounded-2xl flex items-center justify-center shadow-lg">
-            <UtensilsCrossed className="h-7 w-7 text-white" />
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Napi menü helyben</p>
-            <p className="text-2xl font-bold text-primary">2 200 Ft</p>
-          </div>
-        </div>
-        
-        {/* Middle: Info Badges */}
-        <div className="flex items-center gap-3">
-          <div className="bg-primary/10 rounded-xl px-4 py-2 flex items-center gap-2">
-            <Package className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium">+200 Ft elvitel</span>
-          </div>
-          <div className="bg-primary/10 rounded-xl px-4 py-2 flex items-center gap-2">
-            <GraduationCap className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium">-10% diák 11:30-13:00</span>
-          </div>
-        </div>
-        
-        {/* Right: CTA */}
-        <Button variant="outline" className="group">
-          Részletek
-          <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-        </Button>
-        
-      </div>
-      
-      {/* Mobile: vertical compact layout */}
-      <div className="md:hidden space-y-4">
-        {/* Icon + Title row */}
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-gradient-to-br from-primary to-warmth rounded-xl flex items-center justify-center">
-            <UtensilsCrossed className="h-6 w-6 text-white" />
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Napi menü helyben</p>
-            <p className="text-xl font-bold text-primary">2 200 Ft</p>
-          </div>
-        </div>
-        
-        {/* Info badges grid */}
-        <div className="grid grid-cols-2 gap-2">
-          <div className="bg-primary/10 rounded-xl px-3 py-2.5 text-center">
-            <Package className="h-4 w-4 text-primary mx-auto mb-1" />
-            <p className="text-xs font-medium">+200 Ft elvitel</p>
-          </div>
-          <div className="bg-primary/10 rounded-xl px-3 py-2.5 text-center">
-            <GraduationCap className="h-4 w-4 text-primary mx-auto mb-1" />
-            <p className="text-xs font-medium">-10% 11:30-13:00</p>
-          </div>
-        </div>
-        
-        {/* CTA Button */}
-        <Button variant="outline" className="w-full group">
-          Részletek
-          <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-        </Button>
-      </div>
-      
+<section className="relative h-[35vh] md:h-[40vh] overflow-hidden">
+  <img src={heroImage} alt="..." className="w-full h-full object-cover" />
+  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent" />
+  <div className="absolute inset-0 flex items-center justify-center">
+    <div className="text-center text-white px-6">
+      <h1 className="text-3xl md:text-5xl font-sofia font-bold mb-2 animate-fade-in-up">
+        {title}
+      </h1>
+      <p className="text-lg md:text-xl text-gray-200 animate-fade-in-up opacity-0" 
+         style={{ animationDelay: '0.2s', animationFillMode: 'forwards' }}>
+        {subtitle}
+      </p>
     </div>
   </div>
 </section>
@@ -160,27 +101,20 @@ A jelenlegi "Napi menü helyben" szekció túl nagy és régi stílusú. A redes
 
 ---
 
-## Vizuális Eredmény
+## Files to Modify
 
-### Desktop - Modern Inline:
-- Minden egy sorban, áttekinthető
-- Ikon balra, ár kiemelve, info pill-ek középen, CTA jobbra
-- Kisebb padding → kompaktabb
-
-### Mobile - Grid Badges:
-- 2x2 info badge rács, könnyebb áttekinthetőség
-- Teljes szélességű CTA gomb
-- Vertical stack, de kompakt spacing
+| File | Change |
+|------|--------|
+| `src/pages/About.tsx` | Center title in hero |
+| `src/pages/Contact.tsx` | Center title in hero |
 
 ---
 
-## Összegzés
+## Visual Result
 
-| Elem | Régi | Új |
-|------|------|-----|
-| Vertical padding | `py-12 md:py-16` | `py-8 md:py-10` |
-| Layout | Vertikális mindig | Desktop: horizontal, Mobile: compact vertical |
-| Info megjelenítés | Bullet lista | Modern badge pill-ek |
-| CTA stílus | Filled button | Outline + arrow ikon |
-| Card stílus | Gradient bg | Backdrop blur + subtle border |
+All subpages will have:
+- Same hero height: `h-[35vh] md:h-[40vh]`
+- Same gradient overlay
+- Title centered both horizontally and vertically
+- Consistent text styling and animations
 
