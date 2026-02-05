@@ -41,7 +41,7 @@ const About = () => {
       <ModernNavigation />
       <main className="pt-20">
         {/* Hero Section - Full width image */}
-        <section className="relative h-[50vh] md:h-[60vh] overflow-hidden">
+        <section className="relative h-[35vh] md:h-[40vh] overflow-hidden">
           <img 
             src={heroImage} 
             alt="Kiscsibe Reggeliző belső tere"

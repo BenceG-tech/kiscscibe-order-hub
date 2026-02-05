@@ -15,9 +15,10 @@ interface GalleryImage {
 
 interface FoodGalleryProps {
   compact?: boolean;
+  noHeader?: boolean;
 }
 
-const FoodGallery = ({ compact = false }: FoodGalleryProps) => {
+const FoodGallery = ({ compact = false, noHeader = false }: FoodGalleryProps) => {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const { data: images = [], isLoading } = useQuery({
@@ -55,7 +56,7 @@ const FoodGallery = ({ compact = false }: FoodGalleryProps) => {
   return (
     <div className="relative">
       {/* Decorative background */}
-      {!compact && (
+      {!compact && !noHeader && (
         <>
           <div className="absolute -top-20 -left-20 w-64 h-64 bg-warmth/5 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute -bottom-20 -right-20 w-48 h-48 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
@@ -63,19 +64,21 @@ const FoodGallery = ({ compact = false }: FoodGalleryProps) => {
       )}
       
       {/* Section header - now the primary header for Gallery */}
-      <div className="text-center mb-10 md:mb-12 relative z-10">
-        <span className="text-xs md:text-sm uppercase tracking-[0.2em] text-muted-foreground font-medium flex items-center justify-center gap-2">
-          <Utensils className="h-4 w-4" />
-          Galéria
-        </span>
-        <h2 className="text-3xl md:text-4xl font-bold text-foreground mt-2 font-sofia">
-          Ételek & Italok
-        </h2>
-        <div className="w-12 h-1 bg-primary mx-auto mt-4 rounded-full" />
-        <p className="text-muted-foreground text-sm md:text-base mt-4 max-w-md mx-auto">
-          Friss, házi készítésű ételek meleg vendégszeretettel
-        </p>
-      </div>
+      {!noHeader && (
+        <div className="text-center mb-10 md:mb-12 relative z-10">
+          <span className="text-xs md:text-sm uppercase tracking-[0.2em] text-muted-foreground font-medium flex items-center justify-center gap-2">
+            <Utensils className="h-4 w-4" />
+            Galéria
+          </span>
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground mt-2 font-sofia">
+            Ételek & Italok
+          </h2>
+          <div className="w-12 h-1 bg-primary mx-auto mt-4 rounded-full" />
+          <p className="text-muted-foreground text-sm md:text-base mt-4 max-w-md mx-auto">
+            Friss, házi készítésű ételek meleg vendégszeretettel
+          </p>
+        </div>
+      )}
       
       <div className="relative z-10">
         <GalleryGrid

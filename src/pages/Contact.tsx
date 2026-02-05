@@ -51,7 +51,7 @@ const Contact = () => {
       <ModernNavigation />
       <main className="pt-20">
         {/* Hero Section with image */}
-        <section className="relative h-[40vh] md:h-[50vh] overflow-hidden">
+        <section className="relative h-[35vh] md:h-[40vh] overflow-hidden">
           <img 
             src={heroImage} 
             alt="Kapcsolat"
