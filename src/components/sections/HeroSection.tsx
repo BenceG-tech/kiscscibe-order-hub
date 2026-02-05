@@ -1,19 +1,23 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import heroImage from "@/assets/hero-breakfast.jpg";
+import heroDesktop from "@/assets/hero-desktop.png";
+import heroMobile from "@/assets/hero-mobile.png";
 
 const HeroSection = () => {
 
   return (
     <section className="relative min-h-[70vh] md:min-h-[80vh] flex items-center justify-center overflow-hidden">
-      {/* Background Image with subtle zoom animation */}
+      {/* Background Image with responsive desktop/mobile versions */}
       <div className="absolute inset-0">
-        <img
-          src={heroImage}
-          alt="Kiscsibe Reggeliző & Étterem friss ételek"
-          className="w-full h-full object-cover transform-gpu scale-105 motion-safe:animate-subtle-zoom"
-          loading="eager"
-        />
+        <picture>
+          <source media="(min-width: 768px)" srcSet={heroDesktop} />
+          <img
+            src={heroMobile}
+            alt="Kiscsibe Reggeliző & Étterem friss ételek"
+            className="w-full h-full object-cover transform-gpu scale-105 motion-safe:animate-subtle-zoom"
+            loading="eager"
+          />
+        </picture>
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/40 to-black/50 pointer-events-none" />
       </div>
 

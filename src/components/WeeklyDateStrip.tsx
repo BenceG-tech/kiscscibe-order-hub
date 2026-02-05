@@ -31,7 +31,6 @@ const WeeklyDateStrip = ({
   };
 
   const weekDays = getWeekDays(weekOffset);
-  const currentMonth = format(weekDays[2], 'MMMM yyyy', { locale: hu }); // Middle of week for month display
 
   const hasContentOnDate = (date: Date) => {
     return availableDates.some(availableDate => 
@@ -46,91 +45,69 @@ const WeeklyDateStrip = ({
   };
 
   return (
-    <div className="w-full">
-      {/* Month label */}
-      <div className="text-center mb-4">
-        <span className="text-lg font-sofia font-semibold text-foreground capitalize">
-          {currentMonth}
-        </span>
+    <div className="flex items-center justify-center gap-2 md:gap-3">
+      {/* Previous week button */}
+      <Button 
+        variant="ghost" 
+        size="icon"
+        onClick={() => setWeekOffset(w => w - 1)}
+        className="h-9 w-9 rounded-full hover:bg-muted shrink-0"
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </Button>
+      
+      {/* Days - compact inline */}
+      <div className="flex gap-1 md:gap-2">
+        {weekDays.map((day) => {
+          const isSelected = isSameDay(day, selectedDate);
+          const hasContent = hasContentOnDate(day);
+          const disabled = isDateDisabled?.(day) ?? false;
+          
+          return (
+            <button
+              key={day.toISOString()}
+              onClick={() => !disabled && onSelect(day)}
+              disabled={disabled}
+              className={cn(
+                "flex flex-col items-center justify-center p-1.5 md:p-2 rounded-xl transition-all duration-200 min-w-[44px] md:min-w-[52px]",
+                isSelected 
+                  ? "bg-primary text-primary-foreground shadow-lg scale-105"
+                  : hasContent
+                    ? "bg-primary/10 hover:bg-primary/20"
+                    : "hover:bg-muted",
+                disabled && "opacity-40 cursor-not-allowed line-through"
+              )}
+            >
+              <span className={cn(
+                "text-[10px] md:text-xs font-medium uppercase",
+                isSelected ? "text-primary-foreground" : "text-muted-foreground"
+              )}>
+                {getDayLabel(day)}
+              </span>
+              <span className={cn(
+                "text-lg md:text-xl font-bold",
+                isSelected ? "text-primary-foreground" : "text-foreground"
+              )}>
+                {format(day, 'd')}
+              </span>
+              {/* Dot indicator for available content */}
+              {hasContent && !isSelected && (
+                <div className="w-1 h-1 bg-primary rounded-full mt-0.5" />
+              )}
+            </button>
+          );
+        })}
       </div>
-
-      {/* Week navigation strip */}
-      <div className="flex items-center justify-center gap-2 md:gap-4">
-        {/* Previous week button */}
-        <Button 
-          variant="ghost" 
-          size="icon"
-          onClick={() => setWeekOffset(w => w - 1)}
-          className="h-10 w-10 rounded-full hover:bg-muted shrink-0"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </Button>
-        
-        {/* Days */}
-        <div className="flex gap-1 md:gap-2 overflow-x-auto no-scrollbar">
-          {weekDays.map((day) => {
-            const isSelected = isSameDay(day, selectedDate);
-            const hasContent = hasContentOnDate(day);
-            const disabled = isDateDisabled?.(day) ?? false;
-            
-            return (
-              <button
-                key={day.toISOString()}
-                onClick={() => !disabled && onSelect(day)}
-                disabled={disabled}
-                className={cn(
-                  "flex flex-col items-center justify-center p-2 md:p-3 rounded-2xl transition-all duration-200 min-w-[52px] md:min-w-[60px]",
-                  isSelected 
-                    ? "bg-primary text-primary-foreground shadow-lg scale-105"
-                    : hasContent
-                      ? "bg-primary/10 hover:bg-primary/20"
-                      : "hover:bg-muted",
-                  disabled && "opacity-40 cursor-not-allowed line-through"
-                )}
-              >
-                <span className={cn(
-                  "text-xs font-medium uppercase",
-                  isSelected ? "text-primary-foreground" : "text-muted-foreground"
-                )}>
-                  {getDayLabel(day)}
-                </span>
-                <span className={cn(
-                  "text-xl md:text-2xl font-bold",
-                  isSelected ? "text-primary-foreground" : "text-foreground"
-                )}>
-                  {format(day, 'd')}
-                </span>
-                {/* Dot indicator for available content */}
-                {hasContent && !isSelected && (
-                  <div className="w-1.5 h-1.5 bg-primary rounded-full mt-1" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-        
-        {/* Next week button */}
-        <Button 
-          variant="ghost" 
-          size="icon"
-          onClick={() => setWeekOffset(w => w + 1)}
-          className="h-10 w-10 rounded-full hover:bg-muted shrink-0"
-        >
-          <ChevronRight className="h-5 w-5" />
-        </Button>
-      </div>
-
-      {/* Legend */}
-      <div className="flex justify-center gap-4 mt-4 text-xs text-muted-foreground">
-        <div className="flex items-center gap-1.5">
-          <div className="w-2 h-2 bg-primary rounded-full" />
-          <span>Elérhető</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-2 h-2 bg-muted-foreground/30 rounded-full" />
-          <span>Zárva</span>
-        </div>
-      </div>
+      
+      {/* Next week button */}
+      <Button 
+        variant="ghost" 
+        size="icon"
+        onClick={() => setWeekOffset(w => w + 1)}
+        className="h-9 w-9 rounded-full hover:bg-muted shrink-0"
+      >
+        <ChevronRight className="h-4 w-4" />
+      </Button>
     </div>
   );
 };

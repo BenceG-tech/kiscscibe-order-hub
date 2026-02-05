@@ -200,18 +200,14 @@ const UnifiedDailySection = () => {
 
   return (
     <>
-      {/* Weekly Date Strip - Modern horizontal picker */}
-      <div className="mb-8">
-        <Card className="border-0 bg-card/80 backdrop-blur-sm shadow-lg rounded-3xl">
-          <CardContent className="p-4 md:p-6">
-            <WeeklyDateStrip
-              selectedDate={selectedDate}
-              onSelect={handleDateSelect}
-              availableDates={availableDates}
-              isDateDisabled={isDateDisabled}
-            />
-          </CardContent>
-        </Card>
+      {/* Weekly Date Strip - Compact inline picker */}
+      <div className="flex justify-center mb-6">
+        <WeeklyDateStrip
+          selectedDate={selectedDate}
+          onSelect={handleDateSelect}
+          availableDates={availableDates}
+          isDateDisabled={isDateDisabled}
+        />
       </div>
 
       {/* Daily Menu Panel */}
