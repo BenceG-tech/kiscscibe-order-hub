@@ -15,6 +15,7 @@ import { hu } from "date-fns/locale";
 import { getSmartInitialDate, getContentLabel } from "@/lib/dateUtils";
 import { capitalizeFirst } from "@/lib/utils";
 import kiscsibeLogo from "@/assets/kiscsibe_logo_round.png";
+import heroImage from "@/assets/hero-desktop.png";
 
 interface MenuItem {
   id: string;
@@ -204,35 +205,44 @@ const Etlap = () => {
   return (
     <div className="min-h-screen bg-background">
       <ModernNavigation />
-      
-      <div className="pt-32 pb-24">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-warmth bg-clip-text text-transparent">
-              Napi Ajánlat
-            </h1>
-            <p className="text-xl text-muted-foreground">
-              Válassz a napi friss ételek közül!
-            </p>
+      <main className="pt-20">
+        {/* Hero Section with image */}
+        <section className="relative h-[35vh] md:h-[40vh] overflow-hidden">
+          <img 
+            src={heroImage} 
+            alt="Napi ajánlat"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 p-6 md:p-12">
+            <div className="max-w-4xl mx-auto text-center text-white">
+              <h1 className="text-3xl md:text-5xl font-sofia font-bold mb-2 animate-fade-in-up">
+                Napi Ajánlat
+              </h1>
+              <p className="text-lg md:text-xl text-gray-200 animate-fade-in-up opacity-0" style={{ animationDelay: '0.2s', animationFillMode: 'forwards' }}>
+                Friss, házias ételek minden nap
+              </p>
+            </div>
           </div>
+        </section>
 
-          {/* Weekly Date Strip - Compact horizontal calendar */}
-          <div className="mb-8">
-            <Card className="border-0 bg-card/80 backdrop-blur-sm shadow-lg rounded-3xl">
-              <CardContent className="p-4 md:p-6">
-                <WeeklyDateStrip
-                  selectedDate={selectedDate}
-                  onSelect={handleDateSelect}
-                  availableDates={availableDates}
-                  isDateDisabled={isDateDisabled}
-                />
-              </CardContent>
-            </Card>
+        {/* Compact Date Picker */}
+        <section className="py-6 bg-background">
+          <div className="max-w-4xl mx-auto px-4">
+            <div className="flex justify-center">
+              <WeeklyDateStrip
+                selectedDate={selectedDate}
+                onSelect={handleDateSelect}
+                availableDates={availableDates}
+                isDateDisabled={isDateDisabled}
+              />
+            </div>
           </div>
+        </section>
 
-          {/* Content Section - Centered */}
-          <div className="space-y-6">
+        {/* Content Section */}
+        <section className="py-6 pb-24">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
             {/* Date Title */}
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold">
@@ -408,7 +418,7 @@ const Etlap = () => {
                   <Card className="border-0 bg-muted/50 rounded-2xl">
                     <CardContent className="p-4">
                       <p className="text-sm text-muted-foreground italic">
-                        {dailyData.offer_note}
+                        📝 {dailyData.offer_note}
                       </p>
                     </CardContent>
                   </Card>
@@ -417,36 +427,18 @@ const Etlap = () => {
             ) : (
               <Card className="border-0 bg-card/95 backdrop-blur-sm shadow-lg rounded-3xl">
                 <CardContent className="p-8 text-center">
-                  <ChefHat className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Nincs ajánlat erre a napra</h3>
+                  <h3 className="text-xl font-semibold mb-2">Nincs elérhető ajánlat</h3>
                   <p className="text-muted-foreground">
-                    Válassz egy másik napot a naptárból, vagy nézz vissza később!
+                    Erre a napra még nem töltöttünk fel napi menüt.
                   </p>
                 </CardContent>
               </Card>
             )}
           </div>
-        </div>
-      </div>
-
-      {/* Floating Cart Button */}
-      {cart.itemCount > 0 && (
-        <div className="fixed bottom-4 right-4 z-40">
-          <Button
-            onClick={() => setIsCartOpen(true)}
-            className="rounded-full h-14 w-14 bg-gradient-to-r from-primary to-primary/80 hover:shadow-xl relative transition-all duration-300 hover:scale-110"
-          >
-            <ShoppingCart className="h-6 w-6" />
-            <Badge className="absolute -top-2 -right-2 bg-warmth text-white min-w-[20px] h-5 flex items-center justify-center text-xs">
-              {cart.itemCount}
-            </Badge>
-          </Button>
-        </div>
-      )}
-
-      {/* Cart Dialog */}
-      <CartDialog open={isCartOpen} onOpenChange={setIsCartOpen} />
+        </section>
+      </main>
       <Footer />
+      <CartDialog open={isCartOpen} onOpenChange={setIsCartOpen} />
     </div>
   );
 };

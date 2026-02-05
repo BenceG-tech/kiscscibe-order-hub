@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { MapPin, Phone, Mail, Clock, Car, Bus, ExternalLink } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import heroImage from "@/assets/hero-desktop.png";
 
 const Contact = () => {
   const { toast } = useToast();
@@ -48,30 +49,39 @@ const Contact = () => {
   return (
     <div className="min-h-screen bg-background">
       <ModernNavigation />
-      
-      <div className="pt-20 pb-12">
-        {/* Hero Section */}
-        <div className="bg-gradient-to-br from-primary/10 to-warmth/10 py-16">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h1 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-primary to-warmth bg-clip-text text-transparent">
-              Kapcsolat
-            </h1>
-            <p className="text-xl text-muted-foreground">
-              Vegye fel velünk a kapcsolatot! Szívesen válaszolunk kérdéseire.
-            </p>
+      <main className="pt-20">
+        {/* Hero Section with image */}
+        <section className="relative h-[40vh] md:h-[50vh] overflow-hidden">
+          <img 
+            src={heroImage} 
+            alt="Kapcsolat"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 p-6 md:p-12">
+            <div className="max-w-4xl mx-auto text-center">
+              <h1 className="text-4xl md:text-5xl font-sofia font-bold text-white mb-2 animate-fade-in-up">
+                Kapcsolat
+              </h1>
+              <p className="text-lg md:text-xl text-gray-200 animate-fade-in-up opacity-0" style={{ animationDelay: '0.2s', animationFillMode: 'forwards' }}>
+                Vegye fel velünk a kapcsolatot!
+              </p>
+            </div>
           </div>
-        </div>
+        </section>
 
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12">
             
             {/* Contact Information */}
-            <div className="space-y-8">
+            <div className="space-y-6">
               {/* Basic Info */}
-              <Card>
+              <Card className="border-0 bg-card shadow-lg rounded-3xl">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-3">
-                    <MapPin className="h-6 w-6 text-primary" />
+                    <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                      <MapPin className="h-5 w-5 text-primary" />
+                    </div>
                     Elérhetőségek
                   </CardTitle>
                 </CardHeader>
@@ -101,19 +111,21 @@ const Contact = () => {
               </Card>
 
               {/* Opening Hours */}
-              <Card>
+              <Card className="border-0 bg-card shadow-lg rounded-3xl">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-3">
-                    <Clock className="h-6 w-6 text-primary" />
+                    <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                      <Clock className="h-5 w-5 text-primary" />
+                    </div>
                     Nyitvatartás
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
                     {openingHours.map((day, index) => (
-                      <div key={index} className="flex justify-between items-center py-1">
+                      <div key={index} className="flex justify-between items-center py-2 px-3 rounded-xl bg-muted/30">
                         <span className="font-medium">{day.day}</span>
-                        <span className={`${day.isOpen ? 'text-green-600' : 'text-red-500'} font-semibold`}>
+                        <span className={`${day.isOpen ? 'text-primary' : 'text-muted-foreground'} font-semibold`}>
                           {day.hours}
                         </span>
                       </div>
@@ -123,7 +135,7 @@ const Contact = () => {
               </Card>
 
               {/* Transportation */}
-              <Card>
+              <Card className="border-0 bg-card shadow-lg rounded-3xl">
                 <CardHeader>
                   <CardTitle>Megközelítés</CardTitle>
                 </CardHeader>
@@ -152,7 +164,7 @@ const Contact = () => {
 
               {/* Map Button */}
               <Button 
-                className="w-full bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm" 
+                className="w-full bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm rounded-xl" 
                 asChild
               >
                 <a 
@@ -168,7 +180,7 @@ const Contact = () => {
             </div>
 
             {/* Contact Form */}
-            <Card>
+            <Card className="border-0 bg-card shadow-lg rounded-3xl">
               <CardHeader>
                 <CardTitle>Írjon nekünk!</CardTitle>
               </CardHeader>
@@ -183,6 +195,7 @@ const Contact = () => {
                         onChange={(e) => setFormData(prev => ({...prev, name: e.target.value}))}
                         required
                         placeholder="Az Ön neve"
+                        className="rounded-xl"
                       />
                     </div>
                     
@@ -194,6 +207,7 @@ const Contact = () => {
                         value={formData.phone}
                         onChange={(e) => setFormData(prev => ({...prev, phone: e.target.value}))}
                         placeholder="+36 30 123 4567"
+                        className="rounded-xl"
                       />
                     </div>
                   </div>
@@ -207,6 +221,7 @@ const Contact = () => {
                       onChange={(e) => setFormData(prev => ({...prev, email: e.target.value}))}
                       required
                       placeholder="pelda@email.com"
+                      className="rounded-xl"
                     />
                   </div>
                   
@@ -219,12 +234,13 @@ const Contact = () => {
                       required
                       placeholder="Írja ide kérdését vagy üzenetét..."
                       rows={5}
+                      className="rounded-xl"
                     />
                   </div>
                   
                   <Button 
                     type="submit" 
-                    className="w-full bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm"
+                    className="w-full bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm rounded-xl"
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? "Küldés..." : "Üzenet küldése"}
@@ -239,9 +255,9 @@ const Contact = () => {
           </div>
 
           {/* Embedded Map */}
-          <div className="mt-16">
+          <div className="mt-12 md:mt-16">
             <h2 className="text-2xl font-bold text-center text-foreground mb-8">Találjon meg minket!</h2>
-            <div className="rounded-2xl overflow-hidden shadow-lg">
+            <div className="rounded-3xl overflow-hidden shadow-lg">
               <iframe
                 src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2695.4692819165434!2d19.1213!3d47.5597!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNDfCsDMzJzM1LjAiTiAxOcKwMDcnMTYuNyJF!5e0!3m2!1shu!2shu!4v1642782234567!5m2!1shu!2shu"
                 width="100%"
@@ -255,7 +271,7 @@ const Contact = () => {
             </div>
           </div>
         </div>
-      </div>
+      </main>
       <Footer />
     </div>
   );
