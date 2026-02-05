@@ -5,12 +5,13 @@ import { format, startOfWeek, addDays, addWeeks, subWeeks } from "date-fns";
 import { hu } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { ChevronLeft, ChevronRight, Loader2, Check } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, Check, Download } from "lucide-react";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { WeeklyGridCell } from "./WeeklyGridCell";
 import { WeeklyGridMobile } from "./WeeklyGridMobile";
 import { DailyPriceInput } from "./DailyPriceInput";
+import * as XLSX from "xlsx";
 
 // Category color mapping based on Excel design
 const CATEGORY_COLORS: Record<string, string> = {
@@ -374,6 +375,56 @@ export default function WeeklyMenuGrid() {
     updateMenuPartMutation.mutate({ offerItemId, isMenuPart, menuRole });
   };
 
+  // Excel export function
+  const exportToExcel = () => {
+    const exportData: (string | number)[][] = [];
+    
+    // Header row
+    exportData.push([
+      "Kategória",
+      ...weekDates.map((d) => format(d, "EEEE MM.dd.", { locale: hu })),
+    ]);
+    
+    // Daily menu price row
+    exportData.push([
+      "Napi menü ár",
+      ...weekDates.map((d) => {
+        const price = priceData[format(d, "yyyy-MM-dd")]?.price;
+        return price ? `${price} Ft` : "-";
+      }),
+    ]);
+    
+    // Category rows
+    foodCategories.forEach((category) => {
+      const row: (string | number)[] = [category.name];
+      weekDates.forEach((date) => {
+        const dateStr = format(date, "yyyy-MM-dd");
+        const items = gridData[dateStr]?.[category.id] || [];
+        row.push(items.map((i) => i.itemName).join(", ") || "-");
+      });
+      exportData.push(row);
+    });
+    
+    // Create workbook
+    const ws = XLSX.utils.aoa_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Heti Ajánlat");
+    
+    // Set column widths
+    ws["!cols"] = [
+      { wch: 20 },
+      ...weekDates.map(() => ({ wch: 30 })),
+    ];
+    
+    // Download file
+    const startDateStr = format(currentWeekStart, "yyyy-MM-dd");
+    const endDateStr = format(addDays(currentWeekStart, 4), "yyyy-MM-dd");
+    const fileName = `napi_ajanlatok_${startDateStr}_${endDateStr}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+    
+    toast.success("Excel exportálva");
+  };
+
   const goToPreviousWeek = () => {
     setCurrentWeekStart(prev => subWeeks(prev, 1));
   };
@@ -417,6 +468,7 @@ export default function WeeklyMenuGrid() {
         isCurrentWeek={isCurrentWeek}
         isLoading={isLoading}
         isPending={isPending}
+        onExport={exportToExcel}
       />
     );
   }
@@ -458,6 +510,10 @@ export default function WeeklyMenuGrid() {
           {isLoading && (
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           )}
+          <Button variant="outline" size="sm" onClick={exportToExcel}>
+            <Download className="h-4 w-4 mr-1" />
+            Export
+          </Button>
         </div>
       </div>
 

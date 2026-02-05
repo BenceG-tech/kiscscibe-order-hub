@@ -2,7 +2,7 @@ import { format } from "date-fns";
 import { hu } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronLeft, ChevronRight, ChevronDown, Loader2, Check } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Loader2, Check, Download } from "lucide-react";
 import { WeeklyGridCell } from "./WeeklyGridCell";
 import { DailyPriceInput } from "./DailyPriceInput";
 import { useState } from "react";
@@ -52,6 +52,7 @@ interface WeeklyGridMobileProps {
   isCurrentWeek: boolean;
   isLoading: boolean;
   isPending: boolean;
+  onExport?: () => void;
 }
 
 const WEEKDAYS = ["Hétfő", "Kedd", "Szerda", "Csütörtök", "Péntek"];
@@ -75,6 +76,7 @@ export function WeeklyGridMobile({
   isCurrentWeek,
   isLoading,
   isPending,
+  onExport,
 }: WeeklyGridMobileProps) {
   const [openDays, setOpenDays] = useState<Record<number, boolean>>({ 0: true });
 
@@ -105,6 +107,11 @@ export function WeeklyGridMobile({
         </div>
         
         <div className="flex items-center gap-1">
+          {onExport && (
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={onExport} title="Excel export">
+              <Download className="h-4 w-4" />
+            </Button>
+          )}
           {isPending ? (
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           ) : !isLoading && (

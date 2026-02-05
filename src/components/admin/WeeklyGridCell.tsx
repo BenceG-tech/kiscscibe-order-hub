@@ -2,11 +2,12 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Plus, X, ImageIcon } from "lucide-react";
+import { Plus, X, ImageIcon, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { QuickImageUpload } from "./QuickImageUpload";
 import { QuickPriceEdit } from "./QuickPriceEdit";
 import { MenuPartToggle } from "./MenuPartToggle";
+import { MenuItemEditDialog } from "./MenuItemEditDialog";
 
 interface MenuItem {
   id: string;
@@ -37,6 +38,7 @@ interface WeeklyGridCellProps {
   onImageUpdated?: () => void;
   onPriceChange?: (itemId: string, newPrice: number) => void;
   onMenuPartToggle?: (offerItemId: string, isMenuPart: boolean, menuRole: string | null) => void;
+  onItemEdit?: (itemId: string) => void;
 }
 
 export function WeeklyGridCell({
@@ -48,12 +50,24 @@ export function WeeklyGridCell({
   onImageUpdated,
   onPriceChange,
   onMenuPartToggle,
+  onItemEdit,
 }: WeeklyGridCellProps) {
   const [open, setOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
 
   const handleSelect = (itemId: string) => {
     onAddItem(itemId);
     setOpen(false);
+  };
+
+  const handleEditClick = (itemId: string) => {
+    setEditingItemId(itemId);
+    setEditDialogOpen(true);
+  };
+
+  const handleEditSaved = () => {
+    onImageUpdated?.();
   };
 
   // Filter out already selected items from the dropdown
@@ -96,6 +110,20 @@ export function WeeklyGridCell({
               onToggle={onMenuPartToggle}
             />
           )}
+          
+          {/* Edit Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-5 w-5 shrink-0 opacity-60 hover:opacity-100 hover:bg-primary/10 hover:text-primary"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleEditClick(selectedItem.itemId);
+            }}
+            title="Szerkesztés"
+          >
+            <Pencil className="h-3 w-3" />
+          </Button>
           
           {/* Quick Price Edit */}
           {onPriceChange && selectedItem.price !== undefined && (
@@ -176,6 +204,14 @@ export function WeeklyGridCell({
           </Command>
         </PopoverContent>
       </Popover>
+
+      {/* Edit Dialog */}
+      <MenuItemEditDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        itemId={editingItemId}
+        onSaved={handleEditSaved}
+      />
     </div>
   );
 }
