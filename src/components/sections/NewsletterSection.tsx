@@ -4,6 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Mail } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { z } from "zod";
+
+const emailSchema = z.string().trim().email("Érvénytelen email cím").max(255, "Az email cím túl hosszú");
 
 const NewsletterSection = () => {
   const [email, setEmail] = useState("");
@@ -12,28 +16,43 @@ const NewsletterSection = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) {
+
+    const result = emailSchema.safeParse(email);
+    if (!result.success) {
       toast({
         title: "Hiba",
-        description: "Kérlek add meg az email címedet!",
+        description: result.error.errors[0]?.message || "Érvénytelen email cím!",
         variant: "destructive",
       });
       return;
     }
 
     setIsLoading(true);
-    
-    // Simulate newsletter signup - később Supabase integráció
+
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast({
-        title: "Sikeres feliratkozás!",
-        description: "Köszönjük! Hamarosan elküldjük a heti menüt.",
-      });
-      
-      setEmail("");
+      const { error } = await supabase
+        .from("subscribers")
+        .insert({ email: result.data });
+
+      if (error) {
+        // Postgres unique constraint violation
+        if (error.code === "23505") {
+          toast({
+            title: "Már feliratkoztál!",
+            description: "Ezzel az email címmel már feliratkoztál a hírlevélre.",
+          });
+        } else {
+          throw error;
+        }
+      } else {
+        toast({
+          title: "Sikeres feliratkozás!",
+          description: "Köszönjük! Hamarosan elküldjük a heti menüt.",
+        });
+        setEmail("");
+      }
     } catch (error) {
+      console.error("Newsletter signup error:", error);
       toast({
         title: "Hiba történt",
         description: "Próbáld újra később!",
@@ -69,8 +88,9 @@ const NewsletterSection = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   className="flex-1 min-h-[44px] text-base"
                   disabled={isLoading}
+                  maxLength={255}
                 />
-                <Button 
+                <Button
                   type="submit"
                   className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold min-h-[44px] px-8"
                   disabled={isLoading}
