@@ -1,122 +1,118 @@
 
-# Táblázat és Tab Layout Javítások
+## Mit látok a képen (miért “csúszott el”)
+1) **A sticky (fix) bal oszlop nem takarja ki rendesen az alatta lévő oszlopokat**  
+   - A fejléc bal cellája (`bg-muted/50`) és a “Napi menü ár” bal cellája (`bg-primary/5`) **átlátszó** (opacity-s Tailwind osztály), ezért a mögötte lévő nap/oszlop feliratok “átütnek” (pl. “Hétfő” és a dátum látszik a “Kategória” alatt).
 
-## Azonosított Problémák
+2) **A kategória-sticky háttér dark módban hibás**  
+   - A jelenlegi kód `CATEGORY_COLORS[...].split(' ')[0]`-t használ, ami **csak a light módos** `bg-...` osztályt hagyja meg, a `dark:bg-...` részt eldobja.  
+   - Emiatt dark témában a bal oszlop világos (szinte fehér) lesz, és összhatásra “szétcsúszottnak” tűnik.
 
-### 1. Kategória oszlop átlátszó
-**Ok**: A `bg-inherit` CSS osztály nem működik `position: sticky` elemekkel, mert a sticky elem kikerül a normál document flow-ból és nem örökli a szülő háttérszínét.
-
-**A képen látható**: A kategória nevek (pl. "Rantott étel", "Desszertek") átfedésben vannak a "Válassz..." gombokkal, mert nincs háttérszín a sticky cellán.
-
-### 2. Felső tab layout probléma  
-**Ok**: A `DailyMenuManagement.tsx` TabsList komponense felülírja az alap stílusokat, de nem teljesen. A `tabs.tsx` alap stílusai (`h-12 md:h-14`) ütköznek a helyi beállításokkal.
+3) **A három fül (Napi ajánlatok / Kapacitás / Excel Import) “fel van csúszva”**  
+   - A `src/components/ui/tabs.tsx` alapból nagyon erősen “dizájnolt” (magasság `h-12 md:h-14`, shadow, aktív skálázás `scale-105`, touch-pan-x stb.).  
+   - A `DailyMenuManagement.tsx`-ben most csak ráadás osztályokat adunk hozzá, így **nem cseréljük le** az alap stílust, hanem keveredik → ettől tud vizuálisan elcsúszni / ugrálni.
 
 ---
 
-## Megoldási Terv
+## Cél
+- A bal “Kategória” oszlop legyen fix (sticky) és **teljesen nem átlátszó**.
+- Dark módban is normálisan nézzen ki (ne legyen világos blokk).
+- A fülek legyenek stabilak (ne skálázódjanak / ne legyen ütköző magasság).
 
-### 1. Kategória oszlop háttérszín javítása
+---
 
-A `bg-inherit` helyett explicit háttérszíneket kell használni minden sticky cellánál. A kategória soroknál a `CATEGORY_COLORS` értékeket kell alkalmazni, de a fallback esetén (amikor nincs szín definiálva) egy alapértelmezett háttérszínt kell beállítani.
+## Konkrét javítási lépések
 
-**Változtatás a `WeeklyMenuGrid.tsx`-ben:**
+### 1) WeeklyMenuGrid: sticky cellák teljesen fedjenek (nincs áttűnés)
+**Fájl:** `src/components/admin/WeeklyMenuGrid.tsx`
 
-| Elem | Jelenlegi | Javított |
-|------|-----------|----------|
-| Kategória fejléc | `bg-muted/50` | OK, marad |
-| Ár sor cella | `bg-primary/5` | OK, marad |
-| Kategória cella | `bg-inherit` | Explicit szín a CATEGORY_COLORS-ból vagy `bg-background` |
+**Módosítások:**
+- Fejléc sor: a `<tr className="bg-muted/50">` maradhat, de a sticky `<th>` legyen **OPAQUE**:
+  - `bg-muted/50` → `bg-muted` (vagy `bg-card`)
+  - Adjunk hozzá `border-r`-t és nagyobb z-indexet: `z-30`
+- Ár sor: a sticky bal `<td>` legyen **OPAQUE**:
+  - `bg-primary/5` (átlátszó) helyett `bg-accent` vagy `bg-muted` (ezek tipikusan nem áttetszők)
+  - `border-r`, `z-20`
 
-**Kód:**
-```tsx
-// Kategória sorok - explicit háttérszín
-{foodCategories.map(category => {
-  // Explicit background color for sticky cell
-  const cellBgColor = CATEGORY_COLORS[category.name] 
-    ? CATEGORY_COLORS[category.name].replace('dark:', '').split(' ')[0] 
-    : 'bg-background';
-    
-  return (
-    <tr key={category.id} className={rowColor}>
-      <td className={`sticky left-0 z-10 border-b p-3 font-medium text-sm ${cellBgColor}`}>
-        {category.name}
-      </td>
-      ...
-    </tr>
-  );
-})}
+**Miért:** így a bal oszlop tényleg “kitakar”, és nem fog a hét nap felirata átlátszani alatta.
+
+---
+
+### 2) WeeklyMenuGrid: kategória sticky háttér legyen jó dark módban is + ne legyen áttetsző
+**Fájl:** `src/components/admin/WeeklyMenuGrid.tsx`
+
+**Jelenlegi gond:**
+```ts
+const stickyBgColor = CATEGORY_COLORS[category.name]
+  ? CATEGORY_COLORS[category.name].split(' ')[0]  // eldobja a dark: részt
+  : 'bg_background';
 ```
 
-### 2. TabsList stílusok egyszerűsítése
+**Javítás elve:**
+- A sticky cellára **mindkét** (light + dark) class menjen rá.
+- A dark oldalon az `/30`, `/40` áttetszőséget vegyük le a sticky verzióban, hogy ne üssön át semmi.
 
-A `DailyMenuManagement.tsx`-ben a TabsList felülíró className-nek teljesen el kell takarnia az alap stílusokat.
+**Megoldás:**
+- A `stickyBgColor` számításnál:
+  - használjuk a teljes stringet (ne split)
+  - és alakítsuk “opaque”-ra: `dark:bg-.../30` → `dark:bg-...` (csak a sticky cellán)
+- Példa logika (implementációban egyszerű regex csere):
+  - `CATEGORY_COLORS[name].replace(/\/\d{1,3}(?=$|\s)/g, "")`
 
-**Változtatás:**
-```tsx
-<TabsList className="inline-flex h-10 items-center justify-start bg-muted p-1 rounded-lg w-auto">
-```
-
-### 3. CATEGORY_COLORS bővítése
-
-A képen látható kategóriáknak (pl. "Desszertek", "Csirke-zöldséges ételek", "Extra köretek", stb.) nincs definiálva színük, ezért `bg-inherit` próbál öröklődni (ami sticky-nél nem működik).
-
-**Új színek hozzáadása:**
-```tsx
-const CATEGORY_COLORS: Record<string, string> = {
-  "Levesek": "bg-yellow-50 dark:bg-yellow-950/30",
-  "Tészta ételek": "bg-orange-50 dark:bg-orange-950/30",
-  "Főzelékek": "bg-green-50 dark:bg-green-950/30",
-  "Prémium ételek": "bg-amber-100 dark:bg-amber-950/40",
-  "Halételek": "bg-blue-50 dark:bg-blue-950/30",
-  "Marhahúsos ételek": "bg-red-50 dark:bg-red-950/30",
-  // Új kategóriák
-  "Rantott ételek": "bg-orange-100 dark:bg-orange-950/40",
-  "Desszertek": "bg-pink-50 dark:bg-pink-950/30",
-  "Csirke-zöldséges ételek": "bg-lime-50 dark:bg-lime-950/30",
-  "Csirkemájas ételek": "bg-amber-50 dark:bg-amber-950/30",
-  "Extra köretek": "bg-teal-50 dark:bg-teal-950/30",
-  "Hagyományos köretek": "bg-cyan-50 dark:bg-cyan-950/30",
-  "Egytálételek": "bg-indigo-50 dark:bg-indigo-950/30",
-  "Saláták": "bg-emerald-50 dark:bg-emerald-950/30",
-  "Főételek": "bg-violet-50 dark:bg-violet-950/30",
-};
-```
-
-### 4. Fallback háttérszín biztosítása
-
-Ha egy kategóriának nincs definiálva színe, akkor `bg-background` legyen az alapértelmezett (ami mindig látható, nem átlátszó).
+**Plusz:**
+- A sticky kategória cellák kapjanak `border-r`-t + `z-10` oké, de a fejléc legyen felette `z-30`.
 
 ---
 
-## Fájl Módosítások
+### 3) WeeklyMenuGrid: border-collapse okozta “furcsa” elcsúszás (opcionális, ha még mindig glitch-el)
+**Fájl:** `src/components/admin/WeeklyMenuGrid.tsx`
 
-| Fájl | Változtatás |
-|------|-------------|
-| `src/components/admin/WeeklyMenuGrid.tsx` | Sticky cella háttérszín javítása + új kategória színek |
-| `src/pages/admin/DailyMenuManagement.tsx` | TabsList stílusok egyszerűsítése |
-
----
-
-## Technikai Részletek
-
-### Miért nem működik a `bg-inherit`?
-
-A CSS `inherit` érték a szülő elem computed style-ját örökli. Azonban a `position: sticky` elemek speciálisak:
-
-1. Sticky elem "kilép" a normál flow-ból görgetéskor
-2. A vizuális háttér nem örökli a szülő háttérszínét
-3. Explicit háttérszínt kell beállítani
-
-### Sticky + Z-index
-
-A sticky elemeknek magasabb z-index kell, hogy a többi cella fölött legyenek görgetéskor. A jelenlegi `z-10` megfelelő.
+Ha a sticky + border vizuálisan még mindig “szétcsúszik” bizonyos böngészőkben:
+- `table`:
+  - `border-collapse` helyett `border-separate border-spacing-0`
+Ez sokszor stabilabb sticky oszlopnál.
 
 ---
 
-## Összefoglaló
+### 4) Admin oldali belső Tabs (Napi ajánlatok/Kapacitás/Excel Import) stabilizálása
+**Fájl:** `src/pages/admin/DailyMenuManagement.tsx`
 
-| Probléma | Ok | Megoldás |
-|----------|-----|----------|
-| Átlátszó sticky oszlop | `bg-inherit` nem működik sticky-vel | Explicit háttérszín minden sticky cellának |
-| Hiányzó kategória színek | Sok kategória nincs a CATEGORY_COLORS-ban | Bővíteni a szín mappinget + fallback |
-| Tab elcsúszás | TabsList stílus konfliktus | Egyszerűsíteni a felülíró stílusokat |
+**Ok:** a `TabsList` és `TabsTrigger` alap stílusai a `src/components/ui/tabs.tsx`-ből ráégnek (h-12, md:h-14, shadow, active:scale-105). A mostani admin-os className nem “kikapcsolja”, hanem keveri.
+
+**Javítás:**
+- Admin oldalon használjunk **Tailwind `!` (important)** felülírásokat, hogy ténylegesen neutralizáljuk az alapot:
+  - TabsList: `!h-10 md:!h-10 !rounded-lg !p-1 !shadow-none !border ...`
+  - TabsTrigger: `data-[state=active]:!scale-100 data-[state=active]:!shadow-none ...`
+- Ezzel nem kell globálisan átírni a Tabs komponenst (más oldalak designját nem borítjuk).
+
+---
+
+### 5) Felső admin navigáció (Rendelések/Étlap kezelés/Napi ajánlat/Galéria) “felcsúszás” (ha még mindig zavaró)
+**Fájl:** `src/pages/admin/AdminLayout.tsx`
+
+**Lehetséges ok:** az aktív elemnél van extra `border-b-2`, a nem aktívnál nincs → magasság / baseline eltérés.
+
+**Javítás:**
+- Minden nav link kapjon alapból `border-b-2 border-transparent`
+- Aktív állapotban csak a border színe változzon `border-primary`-ra
+→ így nincs layout-ugrás, minden elem azonos magasságú.
+
+---
+
+## Ellenőrző lista (amit végigtesztelek implement után)
+1) Dark módban: vízszintes scroll jobbra (csütörtök/péntek), **a bal “Kategória” oszlop nem átlátszó**, nem üt át “Hétfő”/dátum.
+2) “Napi menü ár” sor bal cellája nem átlátszó, és nem látszik alatta input.
+3) A belső 3 fül nem skálázódik, nem “ugrál”, nem csúszik el desktopon (md breakpointnál sem).
+4) Admin felső nav aktív elem nem lóg le / nem ugrik magasságban.
+
+---
+
+## Érintett fájlok
+- `src/components/admin/WeeklyMenuGrid.tsx` (sticky háttér + z-index + border + opcionális border-separate)
+- `src/pages/admin/DailyMenuManagement.tsx` (TabsList/TabsTrigger important override-ok)
+- `src/pages/admin/AdminLayout.tsx` (felső admin nav fix border-kezelés, ha szükséges)
+
+---
+
+## Kockázat minimalizálás
+- Funkciót nem változtatunk (csak CSS/Tailwind class).
+- A Tabs globális komponensét nem írjuk át (csak ezen az oldalon “! override”), így más oldalak tab dizájnja nem borul.
