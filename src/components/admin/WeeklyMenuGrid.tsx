@@ -529,10 +529,10 @@ export default function WeeklyMenuGrid() {
       {/* Grid Table */}
       <ScrollArea className="w-full rounded-lg border">
         <div className="min-w-[900px]">
-          <table className="w-full border-collapse">
+          <table className="w-full border-separate border-spacing-0">
             <thead>
-              <tr className="bg-muted/50">
-                <th className="sticky left-0 z-10 bg-muted/50 border-b p-3 text-left font-medium text-sm w-48">
+              <tr className="bg-muted">
+                <th className="sticky left-0 z-30 bg-muted border-b border-r p-3 text-left font-medium text-sm w-48">
                   Kategória
                 </th>
                 {weekDates.map((date, idx) => (
@@ -547,8 +547,8 @@ export default function WeeklyMenuGrid() {
             </thead>
             <tbody>
               {/* Price Row */}
-              <tr className="bg-primary/5">
-                <td className="sticky left-0 z-10 bg-primary/5 border-b p-3 font-medium text-sm">
+              <tr className="bg-accent">
+                <td className="sticky left-0 z-20 bg-accent border-b border-r p-3 font-medium text-sm">
                   Napi menü ár
                 </td>
                 {weekDates.map((date, idx) => {
@@ -570,14 +570,14 @@ export default function WeeklyMenuGrid() {
               {/* Category Rows */}
               {foodCategories.map(category => {
                 const rowColor = CATEGORY_COLORS[category.name] || "";
-                // Extract just the light mode bg class for sticky cell
+                // Use full color string but remove opacity for sticky cell (e.g., /30 -> "")
                 const stickyBgColor = CATEGORY_COLORS[category.name] 
-                  ? CATEGORY_COLORS[category.name].split(' ')[0]
-                  : 'bg-background';
+                  ? CATEGORY_COLORS[category.name].replace(/\/\d{1,3}/g, "")
+                  : 'bg-background dark:bg-background';
                 
                 return (
                   <tr key={category.id} className={rowColor}>
-                    <td className={`sticky left-0 z-10 border-b p-3 font-medium text-sm ${stickyBgColor}`}>
+                    <td className={`sticky left-0 z-10 border-b border-r p-3 font-medium text-sm ${stickyBgColor}`}>
                       {category.name}
                     </td>
                     {weekDates.map((date, idx) => {

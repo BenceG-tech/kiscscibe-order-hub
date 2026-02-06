@@ -24,22 +24,22 @@ const DailyMenuManagement = () => {
       <div className="pb-6">
         <Tabs defaultValue="daily" className="w-full">
           <div className="mb-6">
-            <TabsList className="inline-flex h-10 items-center justify-start bg-muted p-1 rounded-lg w-auto">
+            <TabsList className="!h-10 md:!h-10 !rounded-lg !p-1 !shadow-none !border-0 inline-flex items-center justify-start bg-muted w-auto gap-0">
               <TabsTrigger 
                 value="daily" 
-                className="h-8 px-3 text-xs sm:text-sm whitespace-nowrap rounded-md data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                className="!h-8 !px-3 !text-xs sm:!text-sm !whitespace-nowrap !rounded-md data-[state=active]:!bg-background data-[state=active]:!text-foreground data-[state=active]:!shadow-sm data-[state=active]:!scale-100"
               >
                 {isMobile ? "Ajánlatok" : "Napi ajánlatok"}
               </TabsTrigger>
               <TabsTrigger 
                 value="capacity" 
-                className="h-8 px-3 text-xs sm:text-sm whitespace-nowrap rounded-md data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                className="!h-8 !px-3 !text-xs sm:!text-sm !whitespace-nowrap !rounded-md data-[state=active]:!bg-background data-[state=active]:!text-foreground data-[state=active]:!shadow-sm data-[state=active]:!scale-100"
               >
                 Kapacitás
               </TabsTrigger>
               <TabsTrigger 
                 value="import" 
-                className="h-8 px-3 text-xs sm:text-sm whitespace-nowrap rounded-md data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                className="!h-8 !px-3 !text-xs sm:!text-sm !whitespace-nowrap !rounded-md data-[state=active]:!bg-background data-[state=active]:!text-foreground data-[state=active]:!shadow-sm data-[state=active]:!scale-100"
               >
                 {isMobile ? "Import" : "Excel Import"}
               </TabsTrigger>
