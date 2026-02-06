@@ -28,6 +28,7 @@ import {
 } from "@/hooks/useLegalContent";
 
 // Default content for initial population
+// Default content in plain-text markdown format (no HTML!)
 const DEFAULT_CONTENT: Record<LegalPageKey, LegalPageContent> = {
   legal_impresszum: {
     heroTitle: "Impresszum",
@@ -37,35 +38,35 @@ const DEFAULT_CONTENT: Record<LegalPageKey, LegalPageContent> = {
       {
         id: "uzemelteto",
         title: "Üzemeltető adatai",
-        content: `<p><strong>Cégnév:</strong> Kiscsibe Reggeliző & Étterem Kft.</p>
-<p><strong>Székhely:</strong> 1145 Budapest, Vezér utca 12.</p>
-<p><strong>Cégjegyzékszám:</strong> [PLACEHOLDER – cégjegyzékszám]</p>
-<p><strong>Adószám:</strong> [PLACEHOLDER – adószám]</p>
-<p><strong>Nyilvántartó bíróság:</strong> [PLACEHOLDER – pl. Fővárosi Törvényszék Cégbírósága]</p>`,
+        content: `**Cégnév:** Kiscsibe Reggeliző & Étterem Kft.
+**Székhely:** 1145 Budapest, Vezér utca 12.
+**Cégjegyzékszám:** [Töltse ki a cégjegyzékszámot]
+**Adószám:** [Töltse ki az adószámot]
+**Nyilvántartó bíróság:** [Töltse ki – pl. Fővárosi Törvényszék Cégbírósága]`,
       },
       {
         id: "kapcsolat",
         title: "Kapcsolattartási adatok",
-        content: `<p><strong>Telefon:</strong> +36 1 234 5678</p>
-<p><strong>E-mail:</strong> <a href="mailto:kiscsibeetterem@gmail.com">kiscsibeetterem@gmail.com</a></p>
-<p><strong>Weboldal:</strong> <a href="/">kiscsibe.hu</a></p>`,
+        content: `**Telefon:** +36 1 234 5678
+**E-mail:** [kiscsibeetterem@gmail.com](mailto:kiscsibeetterem@gmail.com)
+**Weboldal:** [kiscsibe.hu](/)`,
       },
       {
         id: "tarhely",
         title: "Tárhelyszolgáltató",
-        content: `<p><strong>Név:</strong> [PLACEHOLDER – tárhelyszolgáltató neve]</p>
-<p><strong>Cím:</strong> [PLACEHOLDER – tárhelyszolgáltató címe]</p>
-<p><strong>E-mail:</strong> [PLACEHOLDER – tárhelyszolgáltató e-mail]</p>`,
+        content: `**Név:** [Töltse ki a tárhelyszolgáltató nevét]
+**Cím:** [Töltse ki a tárhelyszolgáltató címét]
+**E-mail:** [Töltse ki a tárhelyszolgáltató e-mail címét]`,
       },
       {
         id: "adatvedelem",
         title: "Adatvédelmi tisztviselő",
-        content: `<p>[PLACEHOLDER – Amennyiben az adatkezelő köteles adatvédelmi tisztviselőt kijelölni, itt kell megadni a nevét és elérhetőségeit. Ha nem alkalmazandó, ez a szekció törölhető.]</p>`,
+        content: `[Amennyiben az adatkezelő köteles adatvédelmi tisztviselőt kijelölni, itt kell megadni a nevét és elérhetőségeit. Ha nem alkalmazandó, ez a szekció törölhető.]`,
       },
       {
         id: "szerzoi",
         title: "Szerzői jogok",
-        content: `<p>A weboldalon megjelenő tartalmak (szövegek, képek, logók, arculati elemek) szerzői jogi védelem alatt állnak. Azok felhasználása kizárólag az üzemeltető előzetes írásbeli hozzájárulásával lehetséges.</p>`,
+        content: `A weboldalon megjelenő tartalmak (szövegek, képek, logók, arculati elemek) szerzői jogi védelem alatt állnak. Azok felhasználása kizárólag az üzemeltető előzetes írásbeli hozzájárulásával lehetséges.`,
       },
     ],
   },
@@ -77,38 +78,68 @@ const DEFAULT_CONTENT: Record<LegalPageKey, LegalPageContent> = {
       {
         id: "adatkezelo",
         title: "1. Az adatkezelő",
-        content: `<p>Kiscsibe Reggeliző & Étterem Kft. (székhely: 1145 Budapest, Vezér utca 12., cégjegyzékszám: [PLACEHOLDER], adószám: [PLACEHOLDER])</p>
-<p>E-mail: <a href="mailto:kiscsibeetterem@gmail.com">kiscsibeetterem@gmail.com</a><br/>Telefon: +36 1 234 5678</p>`,
+        content: `Kiscsibe Reggeliző & Étterem Kft. (székhely: 1145 Budapest, Vezér utca 12., cégjegyzékszám: [Töltse ki], adószám: [Töltse ki])
+
+**E-mail:** [kiscsibeetterem@gmail.com](mailto:kiscsibeetterem@gmail.com)
+**Telefon:** +36 1 234 5678`,
       },
       {
         id: "adatok",
         title: "2. Milyen adatokat gyűjtünk?",
-        content: `<table style="width:100%;border-collapse:collapse"><thead><tr style="border-bottom:1px solid"><th style="text-align:left;padding:8px">Adat típusa</th><th style="text-align:left;padding:8px">Cél</th><th style="text-align:left;padding:8px">Jogalap</th></tr></thead><tbody><tr style="border-bottom:1px solid"><td style="padding:8px">Név</td><td style="padding:8px">Rendelés azonosítása</td><td style="padding:8px">Szerződés teljesítése (GDPR 6(1)(b))</td></tr><tr style="border-bottom:1px solid"><td style="padding:8px">Telefonszám</td><td style="padding:8px">Rendelési értesítések</td><td style="padding:8px">Szerződés teljesítése (GDPR 6(1)(b))</td></tr><tr style="border-bottom:1px solid"><td style="padding:8px">E-mail cím</td><td style="padding:8px">Visszaigazolás, hírlevél</td><td style="padding:8px">Szerződés / Hozzájárulás</td></tr><tr style="border-bottom:1px solid"><td style="padding:8px">Rendelési adatok</td><td style="padding:8px">Rendelés feldolgozása</td><td style="padding:8px">Szerződés teljesítése (GDPR 6(1)(b))</td></tr><tr><td style="padding:8px">Hírlevél feliratkozás</td><td style="padding:8px">Promóciók küldése</td><td style="padding:8px">Hozzájárulás (GDPR 6(1)(a))</td></tr></tbody></table>`,
+        content: `- **Név** – Rendelés azonosítása (Jogalap: Szerződés teljesítése, GDPR 6(1)(b))
+- **Telefonszám** – Rendelési értesítések (Jogalap: Szerződés teljesítése, GDPR 6(1)(b))
+- **E-mail cím** – Visszaigazolás, hírlevél (Jogalap: Szerződés / Hozzájárulás)
+- **Rendelési adatok** – Rendelés feldolgozása (Jogalap: Szerződés teljesítése, GDPR 6(1)(b))
+- **Hírlevél feliratkozás** – Promóciók küldése (Jogalap: Hozzájárulás, GDPR 6(1)(a))`,
       },
       {
         id: "idotartam",
         title: "3. Az adatkezelés időtartama",
-        content: `<ul><li><strong>Rendelési adatok:</strong> a számviteli törvény szerinti 8 év</li><li><strong>Hírlevél feliratkozási adatok:</strong> a hozzájárulás visszavonásáig</li><li><strong>Regisztrációs adatok:</strong> a fiók törléséig</li><li><strong>Sütikkel gyűjtött adatok:</strong> lásd a <a href="/cookie-szabalyzat">Süti Szabályzatot</a></li></ul>`,
+        content: `- **Rendelési adatok:** a számviteli törvény szerinti 8 év
+- **Hírlevél feliratkozási adatok:** a hozzájárulás visszavonásáig
+- **Regisztrációs adatok:** a fiók törléséig
+- **Sütikkel gyűjtött adatok:** lásd a [Süti Szabályzatot](/cookie-szabalyzat)`,
       },
       {
         id: "jogok",
         title: "4. Az Ön jogai (érintetti jogok)",
-        content: `<p>A GDPR alapján Ön jogosult:</p><ul><li><strong>Hozzáférés joga:</strong> tájékoztatást kérhet</li><li><strong>Helyesbítés joga:</strong> kérheti pontatlan adatai kijavítását</li><li><strong>Törlés joga:</strong> kérheti adatai törlését</li><li><strong>Adatkezelés korlátozása</strong></li><li><strong>Adathordozhatóság</strong></li><li><strong>Tiltakozás joga</strong></li><li><strong>Hozzájárulás visszavonása</strong></li></ul><p>Jogai gyakorlásához írjon a <a href="mailto:kiscsibeetterem@gmail.com">kiscsibeetterem@gmail.com</a> címre.</p>`,
+        content: `A GDPR alapján Ön jogosult:
+
+- **Hozzáférés joga:** tájékoztatást kérhet
+- **Helyesbítés joga:** kérheti pontatlan adatai kijavítását
+- **Törlés joga:** kérheti adatai törlését
+- **Adatkezelés korlátozása**
+- **Adathordozhatóság**
+- **Tiltakozás joga**
+- **Hozzájárulás visszavonása**
+
+Jogai gyakorlásához írjon a [kiscsibeetterem@gmail.com](mailto:kiscsibeetterem@gmail.com) címre.`,
       },
       {
         id: "tovabbitas",
         title: "5. Adattovábbítás",
-        content: `<p>Személyes adatait harmadik félnek nem adjuk át, kivéve:</p><ul><li>Jogszabályi kötelezettség teljesítése</li><li>E-mail küldéshez használt szolgáltató: [PLACEHOLDER]</li><li>Tárhelyszolgáltató: [PLACEHOLDER]</li></ul>`,
+        content: `Személyes adatait harmadik félnek nem adjuk át, kivéve:
+
+- Jogszabályi kötelezettség teljesítése
+- E-mail küldéshez használt szolgáltató: [Töltse ki]
+- Tárhelyszolgáltató: [Töltse ki]`,
       },
       {
         id: "sutik",
         title: "6. Sütik (cookie-k)",
-        content: `<p>Weboldalunk sütiket és helyi tárolást (localStorage) használ. Részletekért tekintse meg a <a href="/cookie-szabalyzat">Süti Szabályzatunkat</a>.</p>`,
+        content: `Weboldalunk sütiket és helyi tárolást (localStorage) használ. Részletekért tekintse meg a [Süti Szabályzatunkat](/cookie-szabalyzat).`,
       },
       {
         id: "jogorvoslat",
         title: "7. Jogorvoslat",
-        content: `<p>Ha úgy érzi, hogy az adatkezelés sérti a jogait, panasszal fordulhat:</p><ul><li><strong>Nemzeti Adatvédelmi és Információszabadság Hatóság (NAIH)</strong><br/>Cím: 1055 Budapest, Falk Miksa utca 9-11.<br/>Telefon: +36 (1) 391-1400<br/>E-mail: ugyfelszolgalat@naih.hu<br/>Web: <a href="https://naih.hu" target="_blank" rel="noopener noreferrer">naih.hu</a></li><li>Bírósághoz fordulhat az Infotv. és a GDPR alapján.</li></ul>`,
+        content: `Ha úgy érzi, hogy az adatkezelés sérti a jogait, panasszal fordulhat:
+
+- **Nemzeti Adatvédelmi és Információszabadság Hatóság (NAIH)**
+  Cím: 1055 Budapest, Falk Miksa utca 9-11.
+  Telefon: +36 (1) 391-1400
+  E-mail: ugyfelszolgalat@naih.hu
+  Web: [naih.hu](https://naih.hu)
+- Bírósághoz fordulhat az Infotv. és a GDPR alapján.`,
       },
     ],
   },
@@ -120,47 +151,61 @@ const DEFAULT_CONTENT: Record<LegalPageKey, LegalPageContent> = {
       {
         id: "altalanos",
         title: "1. Általános rendelkezések",
-        content: `<p>Jelen Általános Szerződési Feltételek (ÁSZF) a Kiscsibe Reggeliző & Étterem Kft. (székhely: 1145 Budapest, Vezér utca 12.) által üzemeltetett weboldalon (<a href="/">kiscsibe.hu</a>) történő online rendelésekre vonatkoznak.</p><p>A weboldal használatával és a rendelés leadásával a Vásárló elfogadja jelen ÁSZF-et.</p>`,
+        content: `Jelen Általános Szerződési Feltételek (ÁSZF) a Kiscsibe Reggeliző & Étterem Kft. (székhely: 1145 Budapest, Vezér utca 12.) által üzemeltetett weboldalon ([kiscsibe.hu](/)) történő online rendelésekre vonatkoznak.
+
+A weboldal használatával és a rendelés leadásával a Vásárló elfogadja jelen ÁSZF-et.`,
       },
       {
         id: "rendeles",
         title: "2. Rendelés menete",
-        content: `<ul><li>A Vásárló a weboldalon elérhető napi ajánlatból vagy étlapból válogathat.</li><li>A kosárba helyezett tételek után a Vásárló megadja nevét, telefonszámát és az átvétel kívánt időpontját.</li><li>A rendelés leadásával a Vásárló ajánlatot tesz, amelyet a Szolgáltató visszaigazolással fogad el.</li><li>A visszaigazolás e-mailben és/vagy a weboldalon jelzett rendelési kóddal történik.</li></ul>`,
+        content: `- A Vásárló a weboldalon elérhető napi ajánlatból vagy étlapból válogathat.
+- A kosárba helyezett tételek után a Vásárló megadja nevét, telefonszámát és az átvétel kívánt időpontját.
+- A rendelés leadásával a Vásárló ajánlatot tesz, amelyet a Szolgáltató visszaigazolással fogad el.
+- A visszaigazolás e-mailben és/vagy a weboldalon jelzett rendelési kóddal történik.`,
       },
       {
         id: "arak",
         title: "3. Árak és fizetés",
-        content: `<ul><li>Az árak magyar forintban (HUF) értendők, bruttó árak (ÁFA-t tartalmazzák).</li><li>A Szolgáltató fenntartja a jogot az árak előzetes értesítés nélküli módosítására; a már visszaigazolt rendelések ára nem változik.</li><li>Fizetési módok: készpénz átvételkor, bankkártyás fizetés átvételkor.</li></ul>`,
+        content: `- Az árak magyar forintban (HUF) értendők, bruttó árak (ÁFA-t tartalmazzák).
+- A Szolgáltató fenntartja a jogot az árak előzetes értesítés nélküli módosítására; a már visszaigazolt rendelések ára nem változik.
+- Fizetési módok: készpénz átvételkor, bankkártyás fizetés átvételkor.`,
       },
       {
         id: "atvetel",
         title: "4. Átvétel",
-        content: `<ul><li>A rendelések kizárólag személyes átvétellel teljesülnek az étterem címén (1145 Budapest, Vezér utca 12.).</li><li>Az átvételi időpont a rendeléskor kiválasztott idősáv.</li><li>Amennyiben a Vásárló az átvételi időponttól számított 30 percen belül nem jelentkezik, a Szolgáltató jogosult a rendelést törölni.</li></ul>`,
+        content: `- A rendelések kizárólag személyes átvétellel teljesülnek az étterem címén (1145 Budapest, Vezér utca 12.).
+- Az átvételi időpont a rendeléskor kiválasztott idősáv.
+- Amennyiben a Vásárló az átvételi időponttól számított 30 percen belül nem jelentkezik, a Szolgáltató jogosult a rendelést törölni.`,
       },
       {
         id: "lemondas",
         title: "5. Lemondás, módosítás",
-        content: `<ul><li>A rendelés leadása után annak módosítására vagy lemondására telefonon (+36 1 234 5678) vagy e-mailben van lehetőség, legkésőbb az átvételi időpont előtt 1 órával.</li><li>Az elkészült, de át nem vett rendelésekért a Szolgáltató díjat számíthat fel.</li></ul>`,
+        content: `- A rendelés leadása után annak módosítására vagy lemondására telefonon (+36 1 234 5678) vagy e-mailben van lehetőség, legkésőbb az átvételi időpont előtt 1 órával.
+- Az elkészült, de át nem vett rendelésekért a Szolgáltató díjat számíthat fel.`,
       },
       {
         id: "reklamacio",
         title: "6. Reklamáció, panaszkezelés",
-        content: `<ul><li>Minőségi kifogás esetén a Vásárló haladéktalanul, de legkésőbb az átvételt követő 24 órán belül jelezze panaszát.</li><li>A Szolgáltató a panaszt kivizsgálja és 15 munkanapon belül választ ad.</li><li>Amennyiben a Vásárló nem elégedett, a [PLACEHOLDER – illetékes békéltető testület] felé fordulhat.</li></ul>`,
+        content: `- Minőségi kifogás esetén a Vásárló haladéktalanul, de legkésőbb az átvételt követő 24 órán belül jelezze panaszát.
+- A Szolgáltató a panaszt kivizsgálja és 15 munkanapon belül választ ad.
+- Amennyiben a Vásárló nem elégedett, a [Töltse ki – illetékes békéltető testület] felé fordulhat.`,
       },
       {
         id: "felelosseg",
         title: "7. Felelősségkorlátozás",
-        content: `<ul><li>A Szolgáltató mindent megtesz az allergén információk pontos feltüntetéséért, azonban a Vásárló felelőssége az allergének ellenőrzése rendelés előtt.</li><li>A weboldal esetleges technikai hibájából eredő károkért a Szolgáltató felelősségét kizárja, kivéve szándékos magatartás esetén.</li></ul>`,
+        content: `- A Szolgáltató mindent megtesz az allergén információk pontos feltüntetéséért, azonban a Vásárló felelőssége az allergének ellenőrzése rendelés előtt.
+- A weboldal esetleges technikai hibájából eredő károkért a Szolgáltató felelősségét kizárja, kivéve szándékos magatartás esetén.`,
       },
       {
         id: "adatvedelem",
         title: "8. Adatvédelem",
-        content: `<p>A személyes adatok kezelésére vonatkozó részletes tájékoztatást az <a href="/adatvedelem">Adatvédelmi Tájékoztatónkban</a> találja.</p>`,
+        content: `A személyes adatok kezelésére vonatkozó részletes tájékoztatást az [Adatvédelmi Tájékoztatónkban](/adatvedelem) találja.`,
       },
       {
         id: "egyeb",
         title: "9. Egyéb rendelkezések",
-        content: `<ul><li>A Szolgáltató fenntartja a jogot jelen ÁSZF egyoldalú módosítására. A módosítás a weboldalon történő közzététellel lép hatályba.</li><li>A jelen ÁSZF-ben nem szabályozott kérdésekben a magyar jog, különösen a Polgári Törvénykönyv (Ptk.) és a fogyasztóvédelmi jogszabályok rendelkezései az irányadók.</li></ul>`,
+        content: `- A Szolgáltató fenntartja a jogot jelen ÁSZF egyoldalú módosítására. A módosítás a weboldalon történő közzététellel lép hatályba.
+- A jelen ÁSZF-ben nem szabályozott kérdésekben a magyar jog, különösen a Polgári Törvénykönyv (Ptk.) és a fogyasztóvédelmi jogszabályok rendelkezései az irányadók.`,
       },
     ],
   },
@@ -172,22 +217,42 @@ const DEFAULT_CONTENT: Record<LegalPageKey, LegalPageContent> = {
       {
         id: "mi-az",
         title: "1. Mi az a süti (cookie)?",
-        content: `<p>A süti (cookie) egy kis szöveges fájl, amelyet a weboldal az Ön böngészőjében helyez el. A sütik segítségével a weboldal megjegyzi az Ön beállításait és biztosítja a megfelelő működést.</p><p>Weboldalunk a hagyományos süti fájlok mellett helyi tárolást (localStorage) is használ hasonló célokra.</p>`,
+        content: `A süti (cookie) egy kis szöveges fájl, amelyet a weboldal az Ön böngészőjében helyez el. A sütik segítségével a weboldal megjegyzi az Ön beállításait és biztosítja a megfelelő működést.
+
+Weboldalunk a hagyományos süti fájlok mellett helyi tárolást (localStorage) is használ hasonló célokra.`,
       },
       {
         id: "tipusok",
         title: "2. Milyen sütiket használunk?",
-        content: `<h3><strong>2.1. Szükséges (elengedhetetlen) sütik</strong></h3><p>Ezek a sütik a weboldal alapvető működéséhez szükségesek, és nem kapcsolhatók ki.</p><table style="width:100%;border-collapse:collapse"><thead><tr style="border-bottom:1px solid"><th style="text-align:left;padding:8px">Név</th><th style="text-align:left;padding:8px">Típus</th><th style="text-align:left;padding:8px">Cél</th><th style="text-align:left;padding:8px">Élettartam</th></tr></thead><tbody><tr style="border-bottom:1px solid"><td style="padding:8px"><code>sb-*-auth-token</code></td><td style="padding:8px">localStorage</td><td style="padding:8px">Supabase felhasználói azonosítás</td><td style="padding:8px">Session</td></tr><tr style="border-bottom:1px solid"><td style="padding:8px"><code>cookie-consent</code></td><td style="padding:8px">localStorage</td><td style="padding:8px">Süti hozzájárulás állapota</td><td style="padding:8px">Állandó</td></tr><tr style="border-bottom:1px solid"><td style="padding:8px"><code>theme</code></td><td style="padding:8px">localStorage</td><td style="padding:8px">Sötét/világos téma beállítás</td><td style="padding:8px">Állandó</td></tr><tr><td style="padding:8px"><code>cart-items</code></td><td style="padding:8px">Memória</td><td style="padding:8px">Kosár tartalom</td><td style="padding:8px">Oldal bezárásáig</td></tr></tbody></table><h3 style="margin-top:16px"><strong>2.2. Opcionális / analitikai sütik</strong></h3><p>Jelenleg weboldalunk <strong>nem használ</strong> analitikai vagy marketing célú sütiket.</p>`,
+        content: `**2.1. Szükséges (elengedhetetlen) sütik**
+
+Ezek a sütik a weboldal alapvető működéséhez szükségesek, és nem kapcsolhatók ki.
+
+- **sb-*-auth-token** (localStorage) – Supabase felhasználói azonosítás – Session
+- **cookie-consent** (localStorage) – Süti hozzájárulás állapota – Állandó
+- **theme** (localStorage) – Sötét/világos téma beállítás – Állandó
+- **cart-items** (Memória) – Kosár tartalom – Oldal bezárásáig
+
+**2.2. Opcionális / analitikai sütik**
+
+Jelenleg weboldalunk **nem használ** analitikai vagy marketing célú sütiket.`,
       },
       {
         id: "kezeles",
         title: "3. Hogyan kezelheti a sütiket?",
-        content: `<p>A böngészője beállításaiban bármikor törölheti a tárolt sütiket és helyi adatokat:</p><ul><li><strong>Chrome:</strong> Beállítások → Adatvédelem és biztonság → Cookie-k</li><li><strong>Firefox:</strong> Beállítások → Adatvédelem és biztonság → Cookie-k</li><li><strong>Safari:</strong> Beállítások → Adatvédelem → Webhelyadatok kezelése</li><li><strong>Edge:</strong> Beállítások → Cookie-k és webhelyengedélyek</li></ul><p><strong>Figyelem:</strong> A szükséges sütik törlése esetén egyes funkciók nem fognak megfelelően működni.</p>`,
+        content: `A böngészője beállításaiban bármikor törölheti a tárolt sütiket és helyi adatokat:
+
+- **Chrome:** Beállítások → Adatvédelem és biztonság → Cookie-k
+- **Firefox:** Beállítások → Adatvédelem és biztonság → Cookie-k
+- **Safari:** Beállítások → Adatvédelem → Webhelyadatok kezelése
+- **Edge:** Beállítások → Cookie-k és webhelyengedélyek
+
+**Figyelem:** A szükséges sütik törlése esetén egyes funkciók nem fognak megfelelően működni.`,
       },
       {
         id: "info",
         title: "4. További információ",
-        content: `<p>Az adatkezelés részleteiről az <a href="/adatvedelem">Adatvédelmi Tájékoztatónkban</a> tájékozódhat. Kérdés esetén írjon a <a href="mailto:kiscsibeetterem@gmail.com">kiscsibeetterem@gmail.com</a> címre.</p>`,
+        content: `Az adatkezelés részleteiről az [Adatvédelmi Tájékoztatónkban](/adatvedelem) tájékozódhat. Kérdés esetén írjon a [kiscsibeetterem@gmail.com](mailto:kiscsibeetterem@gmail.com) címre.`,
       },
     ],
   },
@@ -405,12 +470,19 @@ const LegalPageEditor = () => {
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <Label>Tartalom (HTML)</Label>
+                          <Label>Tartalom</Label>
+                          <div className="text-xs text-muted-foreground bg-muted/50 rounded-md p-3 space-y-1">
+                            <p className="font-medium text-foreground">Formázási tippek:</p>
+                            <p><code className="bg-muted px-1 rounded">**félkövér szöveg**</code> → <strong>félkövér szöveg</strong></p>
+                            <p><code className="bg-muted px-1 rounded">- listaelem</code> → felsorolás pont</p>
+                            <p><code className="bg-muted px-1 rounded">[szöveg](https://link.hu)</code> → kattintható link</p>
+                            <p>Üres sor → új bekezdés</p>
+                          </div>
                           <Textarea
                             value={section.content}
                             onChange={(e) => updateSection(index, "content", e.target.value)}
-                            placeholder="HTML tartalom..."
-                            className="min-h-[150px] sm:min-h-[200px] font-mono text-xs resize-y"
+                            placeholder="Írja be a szekció tartalmát..."
+                            className="min-h-[150px] sm:min-h-[200px] text-sm resize-y"
                           />
                         </div>
                         <div className="flex flex-wrap gap-2">

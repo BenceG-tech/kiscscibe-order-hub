@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { simpleMarkdownToHtml } from "@/lib/simpleMarkdown";
 
 export interface LegalSection {
   id: string;
@@ -36,7 +37,15 @@ export const useLegalContent = (key: LegalPageKey) => {
       if (error) throw error;
       if (!data) return null;
 
-      return data.value_json as unknown as LegalPageContent;
+      const raw = data.value_json as unknown as LegalPageContent;
+      // Auto-convert markdown content to HTML for rendering
+      return {
+        ...raw,
+        sections: raw.sections.map((s) => ({
+          ...s,
+          content: simpleMarkdownToHtml(s.content),
+        })),
+      };
     },
     staleTime: 5 * 60 * 1000,
   });
