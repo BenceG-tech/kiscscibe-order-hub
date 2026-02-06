@@ -69,10 +69,17 @@ const Footer = ({ className }: FooterProps) => {
     { href: "/contact", label: "Kapcsolat" },
   ];
 
+  const legalLinks = [
+    { href: "/impresszum", label: "Impresszum" },
+    { href: "/adatvedelem", label: "Adatvédelmi Tájékoztató" },
+    { href: "/aszf", label: "ÁSZF" },
+    { href: "/cookie-szabalyzat", label: "Süti Szabályzat" },
+  ];
+
   return (
     <footer className={`bg-gray-900 text-gray-300 ${className || ""}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8">
           {/* Admin Logo Section - Left */}
           <div className="flex flex-col items-center lg:items-start">
             <button
@@ -136,6 +143,23 @@ const Footer = ({ className }: FooterProps) => {
             <h4 className="text-white font-semibold text-lg mb-4">Gyors linkek</h4>
             <ul className="space-y-2">
               {navLinks.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    to={link.href}
+                    className="text-sm hover:text-primary transition-colors"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Legal Links */}
+          <div className="text-center md:text-left">
+            <h4 className="text-white font-semibold text-lg mb-4">Jogi információk</h4>
+            <ul className="space-y-2">
+              {legalLinks.map((link) => (
                 <li key={link.href}>
                   <Link
                     to={link.href}
