@@ -1,150 +1,126 @@
 
 
-# Jogi & GDPR Megfelelesi Csomag
+# Newsletter & Kapcsolati Urlap Backend Bekotes
 
-## Attekintes
+## Jelenlegi allapot
 
-A Kiscsibe weboldal jelenleg nem rendelkezik semmilyen jogi oldallal, cookie consent bannerrel, vagy GDPR-megfelelessel. Ez kritikus hianyossag, mivel a webhely szemelyes adatokat gyujt (nev, email, telefon, rendelesi adatok). A terv 5 fo elemet tartalmaz:
-
-1. Impresszum oldal
-2. Adatvedelmi Tajekoztato (Privacy Policy) oldal
-3. ASZF (Altalanos Szerzodesi Feltetelek) oldal
-4. Cookie (Suti) Szabalyzat oldal
-5. Cookie Consent Banner komponens
-6. Footer es routing frissitesek
+- **Newsletter**: A feliratkozas `setTimeout`-tal szimulalt, nem ment adatbazisba
+- **Kapcsolati urlap**: Szinten `setTimeout`-tal szimulalt, nem kuld emailt
+- **Meglevo infrastruktura**: A `subscribers` tabla mar letezik Supabase-ben (email + created_at), RLS engedelyezi az INSERT-et barki szamara. A `RESEND_API_KEY` secret mar konfiguralt.
 
 ---
 
-## Uj oldalak
+## Valtoztatasok
 
-### 1. Impresszum (`/impresszum`)
+### 1. Newsletter feliratkozas bekotese (Supabase insert)
 
-Tartalom:
-- Uzleti nev, cim (1145 Budapest, Vezer utca 12.)
-- Cegjegyzekszam, adoszam (placeholder - a felhasznalonak kell kitoltenie)
-- Kapcsolattartasi adatok (telefon, email)
-- Tarhelyszolgaltato adatai (placeholder)
-- Adatvedelmi tisztviselo (ha alkalmazhato)
+**Fajl:** `src/components/sections/NewsletterSection.tsx`
 
-### 2. Adatvedelmi Tajekoztato (`/adatvedelem`)
+A szimulalt `setTimeout` lecserelese valodi Supabase insert-re:
+- Import `supabase` kliens
+- `supabase.from('subscribers').insert({ email })` hivas
+- Duplikat email kezeles (ha mar letezik, baratsagos uzenet: "Mar feliratkoztal!")
+- Zod validacio az email formaatumra (max 255 karakter)
+- Sikeres feliratkozas eseten toast uzenetet mutat
 
-Tartalom (GDPR Art. 13 alapjan):
-- Milyen adatokat gyujtunk (nev, email, telefon, rendelesi adatok)
-- Adatkezeles celja (rendelesi visszaigazolas, kapcsolattartas)
-- Jogalapok (szerzodes teljesitese, hozzajarulas)
-- Adatok tarolasi ideje
-- Erintetti jogok (hozzaferes, toroltes, hordozhatosag)
-- Cookie/suti hasznalat osszefoglalasa
-- Kapcsolat az adatvedelmi kerdesekkel
+### 2. Kapcsolati urlap edge function (`send-contact-email`)
 
-### 3. ASZF (`/aszf`)
+**Uj fajl:** `supabase/functions/send-contact-email/index.ts`
 
-Tartalom:
-- Az online rendeles feltételei
-- Fizetesi es atveli feltetelek
-- Lemondas / visszaterittes szabalyok
-- Felelossegi kerdesek
-- Panaszkezeles
+Egy uj edge function ami:
+- Fogadja a nevet, emailt, telefont, uzenetet
+- Zod-szeru validaciot vegez server-oldalon (max hosszak: nev 100, email 255, telefon 30, uzenet 2000 karakter)
+- HTML-escape-eli a felhasznaloi inputot (XSS vedelem az email sablonban)
+- Resend-del emailt kuld a `kiscsibeetterem@gmail.com` cimre
+- Valasz-emailt kuld a feladonak is (megerosites hogy megkaptuk)
+- CORS headerek a web-hivashoz
 
-### 4. Cookie Szabalyzat (`/cookie-szabalyzat`)
+**Config:** `supabase/config.toml` bovul: `[functions.send-contact-email]` `verify_jwt = false`
 
-Tartalom:
-- Milyen cookie-kat / localStorage-ot hasznalunk
-- Szukseges sutik (auth token, session)
-- Opcionalis sutik (ha vannak)
-- Hogyan lehet kezelni a sutiket
+### 3. Kapcsolati oldal bekotese
+
+**Fajl:** `src/pages/Contact.tsx`
+
+- A szimulalt `setTimeout` lecserelese az edge function hivasra
+- Kliens-oldali validacio hozzaadasa (nev, email kotelezo; max hosszak)
+- Hibakezelest (halozati hiba, szerver hiba)
+- Loading allapot megtartasa
 
 ---
 
-## Cookie Consent Banner
+## Technikai reszletek
 
-Egy uj `CookieConsent` komponens, amely:
-- Az oldal aljan jelenik meg, fix pozicioban
-- Ket gomb: "Elfogadom" es "Tovabbi informaciok" (link a cookie szabalyzathoz)
-- A valasztas localStorage-ban tarolodik (`cookie-consent-accepted`)
-- Csak egyszer jelenik meg (amig el nem fogadja a felhasznalo)
-- Nem blokkoloja a lap hasznalatanak (mivel csak szukseges sutiket hasznal az oldal)
-
----
-
-## Footer bovites
-
-A jelenlegi footerben a "Gyors linkek" blokkhoz hozzaadjuk a jogi linkeket:
-- Impresszum
-- Adatvedelmi Tajekoztato
-- ASZF
-- Cookie Szabalyzat
-
----
-
-## HTML lang attributum javitas
-
-Az `index.html` fajlban a `<html lang="en">` modosul `<html lang="hu">`-ra, mivel az oldal magyar nyelvu.
-
----
-
-## Technikai Reszletek
-
-### Uj fajlok
-
-| Fajl | Tipus |
-|------|-------|
-| `src/pages/legal/Impresszum.tsx` | Jogi oldal |
-| `src/pages/legal/PrivacyPolicy.tsx` | Jogi oldal |
-| `src/pages/legal/TermsAndConditions.tsx` | Jogi oldal |
-| `src/pages/legal/CookiePolicy.tsx` | Jogi oldal |
-| `src/components/CookieConsent.tsx` | Cookie banner |
-
-### Modositando fajlok
-
-| Fajl | Valtoztatas |
-|------|-------------|
-| `src/App.tsx` | 4 uj route + CookieConsent import |
-| `src/components/Footer.tsx` | Jogi linkek hozzaadasa |
-| `index.html` | `lang="en"` -> `lang="hu"` |
-| `public/robots.txt` | Admin/staff utak blokolasa |
-
-### Oldal design minta
-
-Minden jogi oldal ugyanazt a layoutot koveti (konzisztens az About.tsx es Contact.tsx oldalakkal):
-- `ModernNavigation` felul
-- Hero szekci (hero-desktop.png keppel, gradienssel, cimmel)
-- Feher/card hatteru tartalom szekci, max-w-4xl, prose-szeru tipografia
-- `Footer` alul
-
-### Route-ok
+### Newsletter flow
 
 ```text
-/impresszum        -> Impresszum
-/adatvedelem       -> Adatvedelmi Tajekoztato
-/aszf              -> ASZF
-/cookie-szabalyzat -> Cookie Szabalyzat
+Felhasznalo megadja emailt
+  -> Kliens oldali email validacio (format + max 255 char)
+  -> supabase.from('subscribers').insert({ email })
+  -> Ha siker: "Sikeres feliratkozas!" toast
+  -> Ha duplikat (23505 error code): "Mar feliratkoztal!" toast  
+  -> Ha egyeb hiba: "Hiba tortent" toast
 ```
 
-### Cookie Consent mukodese
+### Kapcsolati urlap flow
 
 ```text
-1. Oldal betolteskor: ellenorizni localStorage('cookie-consent')
-2. Ha nincs consent -> banner megjelenitese
-3. "Elfogadom" kattintas -> localStorage.setItem('cookie-consent', 'accepted')
-4. Banner eltunese animacioval
-5. Kovetkezo betolteskor: banner nem jelenik meg
+Felhasznalo kitolti az urlapot
+  -> Kliens oldali validacio (nev <= 100, email <= 255, telefon <= 30, uzenet <= 2000)
+  -> supabase.functions.invoke('send-contact-email', { body: formData })
+  -> Edge function:
+     1. Server-oldali validacio (hossz limitek + kotelezo mezok)
+     2. HTML escape a felhasznaloi inputon
+     3. Resend email -> kiscsibeetterem@gmail.com (az urlap tartalmaval)
+     4. Resend email -> felado email (megerosites)
+  -> Ha siker: "Uzenet elkuldve!" toast
+  -> Ha hiba: "Hiba tortent" toast
 ```
 
-### Robots.txt bovites
+### Email sablon (kapcsolati urlap -> admin)
 
-```text
-User-agent: *
-Disallow: /admin/
-Disallow: /staff/
-Disallow: /auth
-Disallow: /checkout
-Disallow: /order-confirmation
-```
+Subject: `Uj uzenet a weboldalrol - [Nev]`
+
+Tartalom:
+- Felado neve, emailje, telefonja
+- Az uzenet szovege
+- Kuldesi idopont
+
+### Email sablon (megerosites -> felado)
+
+Subject: `Kiscsibe - Megkaptuk uzenet`
+
+Tartalom:
+- Koszonjuk az uzenetét
+- 24 oran belul valaszolunk
+- Kiscsibe elerhetosegek
+
+### HTML Escape (XSS vedelem)
+
+Az edge function-ben minden felhasznaloi input HTML-escape-elve lesz mielott az email sablonba kerul:
+- `<` -> `&lt;`
+- `>` -> `&gt;`
+- `&` -> `&amp;`
+- `"` -> `&quot;`
+- `'` -> `&#39;`
 
 ---
 
-## Fontos megjegyzes
+## Erintett fajlok
 
-A jogi oldalak szovege **placeholder/sablon** szoveget fog tartalmazni. A vegso jogi szoveget **jogasznak kell atnezni es jovahagynia** a valos uzleti adatokkal (cegjegyzekszam, adoszam, tarhelyszolgaltato stb.). A placeholderek `[PLACEHOLDER]` jelzéssel lesznek megjelolve a szovegben.
+| Fajl | Tipus | Valtoztatas |
+|------|-------|-------------|
+| `src/components/sections/NewsletterSection.tsx` | Modositas | setTimeout -> Supabase insert |
+| `supabase/functions/send-contact-email/index.ts` | Uj | Edge function emailkuldeshez |
+| `supabase/config.toml` | Modositas | Uj function config |
+| `src/pages/Contact.tsx` | Modositas | setTimeout -> edge function hivas + validacio |
+
+---
+
+## Biztonsagi szempontok
+
+- Server-oldali input validacio (hossz limitek) az edge function-ben
+- HTML escape megakadalyozza az XSS-t az email sablonokban
+- A `subscribers` tabla RLS-e mar engedelyezi a publikus INSERT-et
+- A contact form edge function `verify_jwt = false` (nem kell bejelentkezes az uzenetkuldesthez)
+- A Resend API kulcs mar konfiguralt Supabase secret-kent
 
