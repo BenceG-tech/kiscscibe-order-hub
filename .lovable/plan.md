@@ -1,126 +1,197 @@
 
 
-# Newsletter & Kapcsolati Urlap Backend Bekotes
+# Jogi Oldalak Admin Szerkeszto
 
-## Jelenlegi allapot
+## Attekintes
 
-- **Newsletter**: A feliratkozas `setTimeout`-tal szimulalt, nem ment adatbazisba
-- **Kapcsolati urlap**: Szinten `setTimeout`-tal szimulalt, nem kuld emailt
-- **Meglevo infrastruktura**: A `subscribers` tabla mar letezik Supabase-ben (email + created_at), RLS engedelyezi az INSERT-et barki szamara. A `RESEND_API_KEY` secret mar konfiguralt.
+A 4 jogi oldal (Impresszum, Adatvedelmi Tajekoztato, ASZF, Suti Szabalyzat) tartalmat az admin feluleten szerkeszthetove tesszuk. A tartalom a meglevo `settings` tablaban tarolodik JSON formatumban, es a jogi oldalak dinamikusan toltik be onnan.
 
----
+## Megoldas
 
-## Valtoztatasok
+A `settings` tabla mar letezik (`key` + `value_json` oszlopokkal) es admin-only RLS-sel van vedve. Minden jogi oldalhoz egy-egy settings rekordot hozunk letre (pl. `legal_impresszum`, `legal_privacy`, stb.), ahol a `value_json` tartalmazza a szekciokat strukturalt JSON-kent.
 
-### 1. Newsletter feliratkozas bekotese (Supabase insert)
+### Adatstruktura
 
-**Fajl:** `src/components/sections/NewsletterSection.tsx`
-
-A szimulalt `setTimeout` lecserelese valodi Supabase insert-re:
-- Import `supabase` kliens
-- `supabase.from('subscribers').insert({ email })` hivas
-- Duplikat email kezeles (ha mar letezik, baratsagos uzenet: "Mar feliratkoztal!")
-- Zod validacio az email formaatumra (max 255 karakter)
-- Sikeres feliratkozas eseten toast uzenetet mutat
-
-### 2. Kapcsolati urlap edge function (`send-contact-email`)
-
-**Uj fajl:** `supabase/functions/send-contact-email/index.ts`
-
-Egy uj edge function ami:
-- Fogadja a nevet, emailt, telefont, uzenetet
-- Zod-szeru validaciot vegez server-oldalon (max hosszak: nev 100, email 255, telefon 30, uzenet 2000 karakter)
-- HTML-escape-eli a felhasznaloi inputot (XSS vedelem az email sablonban)
-- Resend-del emailt kuld a `kiscsibeetterem@gmail.com` cimre
-- Valasz-emailt kuld a feladonak is (megerosites hogy megkaptuk)
-- CORS headerek a web-hivashoz
-
-**Config:** `supabase/config.toml` bovul: `[functions.send-contact-email]` `verify_jwt = false`
-
-### 3. Kapcsolati oldal bekotese
-
-**Fajl:** `src/pages/Contact.tsx`
-
-- A szimulalt `setTimeout` lecserelese az edge function hivasra
-- Kliens-oldali validacio hozzaadasa (nev, email kotelezo; max hosszak)
-- Hibakezelest (halozati hiba, szerver hiba)
-- Loading allapot megtartasa
-
----
-
-## Technikai reszletek
-
-### Newsletter flow
+Minden jogi oldal tartalma szekciokkent tarolodik:
 
 ```text
-Felhasznalo megadja emailt
-  -> Kliens oldali email validacio (format + max 255 char)
-  -> supabase.from('subscribers').insert({ email })
-  -> Ha siker: "Sikeres feliratkozas!" toast
-  -> Ha duplikat (23505 error code): "Mar feliratkoztal!" toast  
-  -> Ha egyeb hiba: "Hiba tortent" toast
+settings.key = "legal_impresszum"
+settings.value_json = {
+  "heroTitle": "Impresszum",
+  "heroSubtitle": "Jogi informaciok",
+  "lastUpdated": "2026. februar 6.",
+  "sections": [
+    {
+      "id": "uzemelteto",
+      "title": "Uzemelteto adatai",
+      "content": "<HTML tartalom>"
+    },
+    {
+      "id": "kapcsolat",
+      "title": "Kapcsolattartasi adatok",
+      "content": "<HTML tartalom>"
+    }
+  ]
+}
 ```
 
-### Kapcsolati urlap flow
+### Adminisztracios felulet
+
+Uj admin oldal: `/admin/legal` - "Jogi oldalak" tab az admin navigacioban.
+
+Funkciok:
+- 4 jogi oldal kozotti valtas tabokkal (Impresszum, Adatvedelem, ASZF, Cookie)
+- Minden oldalhoz: hero cim/alcim szerkesztes
+- Szekcionkent: cim szerkesztes + tartalom szerkesztes (textarea, HTML-kent)
+- Szekciok hozzaadasa / torlese / atsortolasa
+- "Utolso frissites" datum automatikus vagy kezi beallitasa
+- Azonnali elo elonezet link az oldalhoz
+- Mentes gomb (upsert a settings tablaba)
+
+### Kepernyoterv (Desktop)
 
 ```text
-Felhasznalo kitolti az urlapot
-  -> Kliens oldali validacio (nev <= 100, email <= 255, telefon <= 30, uzenet <= 2000)
-  -> supabase.functions.invoke('send-contact-email', { body: formData })
-  -> Edge function:
-     1. Server-oldali validacio (hossz limitek + kotelezo mezok)
-     2. HTML escape a felhasznaloi inputon
-     3. Resend email -> kiscsibeetterem@gmail.com (az urlap tartalmaval)
-     4. Resend email -> felado email (megerosites)
-  -> Ha siker: "Uzenet elkuldve!" toast
-  -> Ha hiba: "Hiba tortent" toast
++--------------------------------------------------+
+| Admin Header                                     |
++--------------------------------------------------+
+| Rendelesek | Etlap | Napi | Galeria | [Jogi]     |
++--------------------------------------------------+
+| Jogi oldalak kezelese                            |
+| Szerkessze a weboldal jogi tartalmait            |
++--------------------------------------------------+
+| [Impresszum] [Adatvedelem] [ASZF] [Cookie]      |
++--------------------------------------------------+
+| Hero cim:    [___________________________]       |
+| Hero alcim:  [___________________________]       |
+| Frissites:   [___________________________]       |
++--------------------------------------------------+
+| Szekciok:                                        |
+| +----------------------------------------------+ |
+| | Szekci cim: [Uzemelteto adatai           ]   | |
+| | Tartalom:                                    | |
+| | [                                          ] | |
+| | [  <textarea nagy>                         ] | |
+| | [                                          ] | |
+| | [Torles] [Mozgatas fel/le]                   | |
+| +----------------------------------------------+ |
+| +----------------------------------------------+ |
+| | Szekci cim: [Kapcsolat                   ]   | |
+| | ...                                          | |
+| +----------------------------------------------+ |
+| [+ Uj szekci hozzaadasa]                        |
++--------------------------------------------------+
+| [Mentes]                    [Megtekintes ->]     |
++--------------------------------------------------+
 ```
 
-### Email sablon (kapcsolati urlap -> admin)
+### Kepernyoterv (Mobile)
 
-Subject: `Uj uzenet a weboldalrol - [Nev]`
-
-Tartalom:
-- Felado neve, emailje, telefonja
-- Az uzenet szovege
-- Kuldesi idopont
-
-### Email sablon (megerosites -> felado)
-
-Subject: `Kiscsibe - Megkaptuk uzenet`
-
-Tartalom:
-- Koszonjuk az uzenetét
-- 24 oran belul valaszolunk
-- Kiscsibe elerhetosegek
-
-### HTML Escape (XSS vedelem)
-
-Az edge function-ben minden felhasznaloi input HTML-escape-elve lesz mielott az email sablonba kerul:
-- `<` -> `&lt;`
-- `>` -> `&gt;`
-- `&` -> `&amp;`
-- `"` -> `&quot;`
-- `'` -> `&#39;`
-
----
+```text
++------------------------+
+| Admin Header           |
++------------------------+
+| Tabs: scroll-x         |
++------------------------+
+| Jogi oldalak           |
++------------------------+
+| [Impresszum] [Adatv..] |
+| [ASZF] [Cookie]        |
++------------------------+
+| Hero cim: [________]  |
+| Alcim:    [________]  |
+| Frissites:[________]  |
++------------------------+
+| Szekci 1               |
+| Cim: [______________]  |
+| Tartalom:              |
+| [                    ]  |
+| [  textarea          ]  |
+| [                    ]  |
+| [Torles] [Fel] [Le]    |
++------------------------+
+| Szekci 2               |
+| ...                     |
++------------------------+
+| [+ Uj szekci]          |
++------------------------+
+| [Mentes] [Megtekintes] |
++------------------------+
+```
 
 ## Erintett fajlok
 
-| Fajl | Tipus | Valtoztatas |
-|------|-------|-------------|
-| `src/components/sections/NewsletterSection.tsx` | Modositas | setTimeout -> Supabase insert |
-| `supabase/functions/send-contact-email/index.ts` | Uj | Edge function emailkuldeshez |
-| `supabase/config.toml` | Modositas | Uj function config |
-| `src/pages/Contact.tsx` | Modositas | setTimeout -> edge function hivas + validacio |
+### Uj fajlok
 
----
+| Fajl | Leiras |
+|------|--------|
+| `src/pages/admin/LegalPages.tsx` | Admin oldal komponens (route wrapper) |
+| `src/components/admin/LegalPageEditor.tsx` | Fo szerkeszto komponens tabokkal |
 
-## Biztonsagi szempontok
+### Modositando fajlok
 
-- Server-oldali input validacio (hossz limitek) az edge function-ben
-- HTML escape megakadalyozza az XSS-t az email sablonokban
-- A `subscribers` tabla RLS-e mar engedelyezi a publikus INSERT-et
-- A contact form edge function `verify_jwt = false` (nem kell bejelentkezes az uzenetkuldesthez)
-- A Resend API kulcs mar konfiguralt Supabase secret-kent
+| Fajl | Valtoztatas |
+|------|-------------|
+| `src/pages/admin/AdminLayout.tsx` | Uj "Jogi" nav tab hozzaadasa (Scale/FileText ikon) |
+| `src/App.tsx` | Uj admin route: `/admin/legal` |
+| `src/pages/legal/Impresszum.tsx` | Dinamikus tartalom betoltes a `settings` tablabol |
+| `src/pages/legal/PrivacyPolicy.tsx` | Dinamikus tartalom betoltes a `settings` tablabol |
+| `src/pages/legal/TermsAndConditions.tsx` | Dinamikus tartalom betoltes a `settings` tablabol |
+| `src/pages/legal/CookiePolicy.tsx` | Dinamikus tartalom betoltes a `settings` tablabol |
+
+### Nincs adatbazis migracio szukseges
+
+A `settings` tabla mar letezik es alkalmas a tartalom tarolasara. Az RLS policyk mar helyen vannak (admin-only read/write). A jogi oldalak kezdo tartalma az elso admin szerkesztessel kerul be a tablaba; addig a jelenlegi hardcoded tartalom jelenik meg fallback-kent.
+
+## Technikai reszletek
+
+### Settings tabla hasznalat
+
+4 uj settings rekord (automatikusan letrehozva elso menteskor):
+
+| key | Tartalom |
+|-----|----------|
+| `legal_impresszum` | Impresszum oldal tartalma |
+| `legal_privacy` | Adatvedelmi Tajekoztato tartalma |
+| `legal_terms` | ASZF tartalma |
+| `legal_cookies` | Cookie Szabalyzat tartalma |
+
+### Admin szerkeszto komponens (`LegalPageEditor.tsx`)
+
+Funkciok:
+- `useQuery` a `settings` tabla olvasasara (4 kulcs lekerese)
+- Tabokkal valtas az oldalak kozott
+- Minden szekci Card-ban: cim input + tartalom textarea (nagy, resizable)
+- Szekciok hozzaadasa/torlese/atsortolasa gombokkal
+- `useMutation` upsert-tel a `settings` tablaba mentesk
+- Toast visszajelzes mentes utan
+- "Megtekintes" link ami uj tabon nyitja meg a jogi oldalt
+- Loading es saving allapotok kezelese
+- Responsive: mobile-on a tabok horizontalisan scrollozhatok, a textarea teljes szelessegu
+
+### Jogi oldalak modositasa
+
+A 4 jogi oldal kapni fog egy kozos React hook-ot (`useLegalContent`) ami:
+1. Lekeri a megfelelo `settings` rekordot (pl. `legal_impresszum`)
+2. Ha letezik adat: a JSON-bol epitik fel a szekciokat dinamikusan
+3. Ha nincs adat (ures DB): a jelenlegi hardcoded tartalom jelenik meg (fallback)
+4. Loading allapotban skeleton loader
+
+### HTML rendereles
+
+A szekciok tartalma HTML formatumban tarolodik a textarea-ban es `dangerouslySetInnerHTML`-lel jelenik meg a publikus oldalakon. Ez lehetove teszi tablazatok, listak, linkek hasznalatát a jogi szovegekben. A biztonsag nem problema, mert:
+- Csak admin irhatja a tartalmat (RLS)
+- Nem felhasznaloi input, hanem megbizott admin altal irt tartalom
+
+### Felhasznaloi elmeny
+
+1. Admin bejelentkezik -> Admin panel -> "Jogi" tab
+2. Valaszt egy oldalt (pl. Impresszum)
+3. Szerkeszti a hero cimet, szekciok cimet/tartalmat
+4. "Mentes" gombbal ment
+5. "Megtekintes" gombbal ellenorzi az elo oldalt
+6. A publikus oldalon azonnal megjelenik az uj tartalom
+
+### Elso hasznalat
+
+Az elso admin latasogataskor a szerkeszto ures lesz. A "Feltoltes az alapertelmezett tartalommal" gomb lehetove teszi, hogy az aktualis hardcoded tartalom automatikusan betoltodjon a szerkesztobe - igy az admin nem indul ures lappal, hanem a meglevo tartalmat modosithatja.
 
