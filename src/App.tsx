@@ -22,6 +22,11 @@ import AdminDailyMenu from "./pages/admin/DailyMenu";
 import AdminCapacity from "./pages/admin/Capacity";
 import AdminGallery from "./pages/admin/Gallery";
 import StaffOrders from "./pages/staff/StaffOrders";
+import Impresszum from "./pages/legal/Impresszum";
+import PrivacyPolicy from "./pages/legal/PrivacyPolicy";
+import TermsAndConditions from "./pages/legal/TermsAndConditions";
+import CookiePolicy from "./pages/legal/CookiePolicy";
+import CookieConsent from "./components/CookieConsent";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +39,7 @@ const App = () => (
           <TooltipProvider>
             <Sonner />
             <BrowserRouter>
+            <CookieConsent />
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/menu" element={<Menu />} />
@@ -44,6 +50,12 @@ const App = () => (
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/order-confirmation" element={<OrderConfirmation />} />
               <Route path="/gallery" element={<Gallery />} />
+              
+              {/* Legal pages */}
+              <Route path="/impresszum" element={<Impresszum />} />
+              <Route path="/adatvedelem" element={<PrivacyPolicy />} />
+              <Route path="/aszf" element={<TermsAndConditions />} />
+              <Route path="/cookie-szabalyzat" element={<CookiePolicy />} />
               
               {/* Staff routes - read-only access */}
               <Route path="/staff/orders" element={
