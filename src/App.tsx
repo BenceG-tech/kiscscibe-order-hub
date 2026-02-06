@@ -21,6 +21,7 @@ import AdminMenuSchedule from "./pages/admin/MenuSchedule";
 import AdminDailyMenu from "./pages/admin/DailyMenu";
 import AdminCapacity from "./pages/admin/Capacity";
 import AdminGallery from "./pages/admin/Gallery";
+import AdminLegalPages from "./pages/admin/LegalPages";
 import StaffOrders from "./pages/staff/StaffOrders";
 import Impresszum from "./pages/legal/Impresszum";
 import PrivacyPolicy from "./pages/legal/PrivacyPolicy";
@@ -93,6 +94,11 @@ const App = () => (
               <Route path="/admin/gallery" element={
                 <ProtectedRoute requireAdmin>
                   <AdminGallery />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/legal" element={
+                <ProtectedRoute requireAdmin>
+                  <AdminLegalPages />
                 </ProtectedRoute>
               } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
