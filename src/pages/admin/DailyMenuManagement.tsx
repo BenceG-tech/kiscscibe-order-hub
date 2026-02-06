@@ -23,23 +23,23 @@ const DailyMenuManagement = () => {
       {/* Content Tabs */}
       <div className="pb-6">
         <Tabs defaultValue="daily" className="w-full">
-          <div className="overflow-x-auto no-scrollbar mb-6">
-            <TabsList className="inline-flex h-auto min-w-full sm:w-auto bg-muted p-1">
+          <div className="mb-6">
+            <TabsList className="inline-flex h-10 items-center justify-start bg-muted p-1 rounded-lg w-auto">
               <TabsTrigger 
                 value="daily" 
-                className="min-h-[36px] px-3 py-2 text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-background data-[state=active]:text-foreground"
+                className="h-8 px-3 text-xs sm:text-sm whitespace-nowrap rounded-md data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
                 {isMobile ? "Ajánlatok" : "Napi ajánlatok"}
               </TabsTrigger>
               <TabsTrigger 
                 value="capacity" 
-                className="min-h-[36px] px-3 py-2 text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-background data-[state=active]:text-foreground"
+                className="h-8 px-3 text-xs sm:text-sm whitespace-nowrap rounded-md data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
                 Kapacitás
               </TabsTrigger>
               <TabsTrigger 
                 value="import" 
-                className="min-h-[36px] px-3 py-2 text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-background data-[state=active]:text-foreground"
+                className="h-8 px-3 text-xs sm:text-sm whitespace-nowrap rounded-md data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
                 {isMobile ? "Import" : "Excel Import"}
               </TabsTrigger>

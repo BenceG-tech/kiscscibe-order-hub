@@ -21,6 +21,15 @@ const CATEGORY_COLORS: Record<string, string> = {
   "Prémium ételek": "bg-amber-100 dark:bg-amber-950/40",
   "Halételek": "bg-blue-50 dark:bg-blue-950/30",
   "Marhahúsos ételek": "bg-red-50 dark:bg-red-950/30",
+  "Rantott ételek": "bg-orange-100 dark:bg-orange-950/40",
+  "Desszertek": "bg-pink-50 dark:bg-pink-950/30",
+  "Csirke-zöldséges ételek": "bg-lime-50 dark:bg-lime-950/30",
+  "Csirkemájas ételek": "bg-amber-50 dark:bg-amber-950/30",
+  "Extra köretek": "bg-teal-50 dark:bg-teal-950/30",
+  "Hagyományos köretek": "bg-cyan-50 dark:bg-cyan-950/30",
+  "Egytálételek": "bg-indigo-50 dark:bg-indigo-950/30",
+  "Saláták": "bg-emerald-50 dark:bg-emerald-950/30",
+  "Főételek": "bg-violet-50 dark:bg-violet-950/30",
 };
 
 const WEEKDAYS = ["Hétfő", "Kedd", "Szerda", "Csütörtök", "Péntek"];
@@ -561,10 +570,14 @@ export default function WeeklyMenuGrid() {
               {/* Category Rows */}
               {foodCategories.map(category => {
                 const rowColor = CATEGORY_COLORS[category.name] || "";
+                // Extract just the light mode bg class for sticky cell
+                const stickyBgColor = CATEGORY_COLORS[category.name] 
+                  ? CATEGORY_COLORS[category.name].split(' ')[0]
+                  : 'bg-background';
                 
                 return (
                   <tr key={category.id} className={rowColor}>
-                    <td className="sticky left-0 z-10 border-b p-3 font-medium text-sm bg-inherit">
+                    <td className={`sticky left-0 z-10 border-b p-3 font-medium text-sm ${stickyBgColor}`}>
                       {category.name}
                     </td>
                     {weekDates.map((date, idx) => {
