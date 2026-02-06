@@ -108,10 +108,10 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
                 <Link
                   to={item.href}
                   onClick={item.showBadge ? handleOrdersClick : undefined}
-                  className={`relative flex items-center gap-2 px-3 py-2 rounded-md font-medium transition-all duration-200 whitespace-nowrap min-h-[36px] ${
+                  className={`relative flex items-center gap-2 px-3 py-2 rounded-md font-medium transition-all duration-200 whitespace-nowrap min-h-[36px] border-b-2 ${
                     location.pathname === item.href 
-                      ? "bg-primary text-primary-foreground border-b-2 border-primary" 
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                      ? "bg-primary text-primary-foreground border-primary" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted border-transparent"
                   }`}
                 >
                   <item.icon className="h-4 w-4" />
