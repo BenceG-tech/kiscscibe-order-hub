@@ -1,12 +1,29 @@
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Phone, CreditCard, Banknote, Clock, XCircle, AlertTriangle } from "lucide-react";
+import { Phone, CreditCard, Banknote, Clock, XCircle, AlertTriangle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   formatRelativeTime,
   formatPickupCountdown,
   getOrderUrgency,
 } from "@/hooks/useTickTimer";
+
+interface OrderItemOption {
+  id: string;
+  label_snapshot: string;
+  option_type: string | null;
+  price_delta_huf: number;
+}
 
 interface OrderItem {
   id: string;
@@ -14,6 +31,7 @@ interface OrderItem {
   qty: number;
   unit_price_huf: number;
   line_total_huf: number;
+  options?: OrderItemOption[];
 }
 
 interface Order {
@@ -34,7 +52,7 @@ interface KanbanOrderCardProps {
   order: Order;
   onStatusChange: (orderId: string, newStatus: string) => void;
   updating: boolean;
-  tick: number; // triggers re-render for time updates
+  tick: number;
 }
 
 const STATUS_CONFIG = {
@@ -127,17 +145,35 @@ const KanbanOrderCard = ({ order, onStatusChange, updating, tick }: KanbanOrderC
         {/* Customer name */}
         <p className="text-sm font-medium text-foreground truncate">{order.name}</p>
 
-        {/* Items list */}
+        {/* Items list with options */}
         {order.items && order.items.length > 0 && (
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             {order.items.map((item) => (
-              <div key={item.id} className="flex justify-between text-sm">
-                <span className="text-muted-foreground truncate mr-2">
-                  {item.qty}× {item.name_snapshot}
-                </span>
-                <span className="text-muted-foreground shrink-0">
-                  {item.line_total_huf} Ft
-                </span>
+              <div key={item.id}>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground truncate mr-2">
+                    {item.qty}× {item.name_snapshot}
+                  </span>
+                  <span className="text-muted-foreground shrink-0">
+                    {item.line_total_huf} Ft
+                  </span>
+                </div>
+                {/* Item options (sides, modifiers) */}
+                {item.options && item.options.length > 0 && (
+                  <div className="ml-5 mt-0.5 space-y-0.5">
+                    {item.options.map((opt) => (
+                      <div key={opt.id} className="flex items-center gap-1 text-xs text-muted-foreground/80">
+                        <span className="text-primary/60">↳</span>
+                        <span>{opt.label_snapshot}</span>
+                        {opt.price_delta_huf !== 0 && (
+                          <span className="text-muted-foreground/60">
+                            ({opt.price_delta_huf > 0 ? "+" : ""}{opt.price_delta_huf} Ft)
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -154,17 +190,21 @@ const KanbanOrderCard = ({ order, onStatusChange, updating, tick }: KanbanOrderC
         <div className="flex items-center gap-2 pt-1">
           <Button
             size="sm"
-            className={cn("flex-1 h-10 font-semibold text-sm", config.actionClass)}
+            className={cn("flex-1 h-11 font-semibold text-sm", config.actionClass)}
             onClick={() => onStatusChange(order.id, config.nextStatus)}
             disabled={updating}
           >
-            {config.actionLabel}
+            {updating ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              config.actionLabel
+            )}
           </Button>
 
           <Button
             size="sm"
             variant="ghost"
-            className="h-10 w-10 p-0"
+            className="h-11 w-11 p-0"
             asChild
           >
             <a href={`tel:${order.phone}`} aria-label="Hívás">
@@ -173,16 +213,37 @@ const KanbanOrderCard = ({ order, onStatusChange, updating, tick }: KanbanOrderC
           </Button>
 
           {order.status !== "ready" && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-10 w-10 p-0 text-muted-foreground hover:text-destructive"
-              onClick={() => onStatusChange(order.id, "cancelled")}
-              disabled={updating}
-              aria-label="Lemondás"
-            >
-              <XCircle className="h-4 w-4" />
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-11 w-11 p-0 text-muted-foreground hover:text-destructive"
+                  disabled={updating}
+                  aria-label="Lemondás"
+                >
+                  <XCircle className="h-4 w-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Rendelés lemondása</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Biztosan le akarod mondani a <strong>#{order.code}</strong> számú rendelést?
+                    Ez a művelet nem vonható vissza.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Mégsem</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={() => onStatusChange(order.id, "cancelled")}
+                  >
+                    Igen, lemondás
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
         </div>
       </div>

@@ -4,6 +4,17 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGlobalOrderNotifications } from "@/hooks/useGlobalOrderNotifications";
 import OrderNotificationModal from "@/components/admin/OrderNotificationModal";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { 
   ShoppingBag, 
   ArrowLeft,
@@ -74,15 +85,34 @@ const StaffLayout = ({ children }: { children: React.ReactNode }) => {
             <Badge variant="secondary" className="hidden xs:inline-flex text-[11px] px-2 py-0.5">
               Személyzet
             </Badge>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleSignOut}
-              className="h-9 w-9 sm:w-auto sm:px-3"
-            >
-              <LogOut className="h-4 w-4" />
-              <span className="hidden sm:inline ml-2 text-sm">Kijelentkezés</span>
-            </Button>
+
+            {/* Logout with confirmation dialog */}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-11 min-w-[44px] sm:w-auto sm:px-3"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span className="hidden sm:inline ml-2 text-sm">Kijelentkezés</span>
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Kijelentkezés</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Biztosan ki szeretnél jelentkezni? Az új rendelésekről nem fogsz értesítéseket kapni.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Mégsem</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleSignOut}>
+                    Igen, kijelentkezés
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </header>
