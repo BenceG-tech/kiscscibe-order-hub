@@ -1,90 +1,133 @@
 
-# KDS Gombok Vegleges Javitasa - Bombabiztos Megoldas
 
-## Problema
+# Auth Bejelentkezesi Problema - Javitas
 
-A gombok a KDS feluleten nem mukodnek megbizhatoan. Az eddigi javitasok (trigger fix, RLS policy, try/finally) szuksegesek voltak, de a frontend kod nem ellenorzi megfeloen, hogy a frissites valoban megtortent-e.
+## Azonositott Problemak
 
-## Gyokerok
+A teszteles soran a kovetkezo problemakat talaltan:
 
-A Supabase `.update()` hivas `.select()` nelkul nem ad vissza adatot. Ha a frissites csendben meghiusul (pl. session problema, token lejarat), az `error` mezo `null`, de a valtozas nem tortenik meg. A kod ilyenkor "sikeres" uzenetet mutat, de a kartya nem mozdul.
+### 1. Auth oldal vegtelen loading spinner
+Az Auth.tsx 56. soran:
+```text
+if (user || authLoading || rolesLoading) {
+    return <LoadingSpinner />
+}
+```
+Ha a felhasznalo mar be van jelentkezve (pl. elozo session nem toroldott rendesen), a felhasznalo egy **vegtelen loading spinnert** lat es soha nem jut tovabb. Nincs timeout, nincs "Kijelentkezes" gomb, nincs semmilyen visszajelzes.
 
-## Javitasok
+### 2. Csendes hiba a szerepkor betoltesnel
+Az AuthContext `fetchProfile` fuggvenye a kovetkezo kodot tartalmazza:
+```text
+if (error && error.code !== 'PGRST116') {
+    console.error('Error fetching profile:', error);
+    return;  // Visszater - isAdmin es isStaff HAMIS marad!
+}
+```
+Ha a profil lekerdezes hibat ad (halozati hiba, RLS problema), a `return` vegrehajtodik, az `isAdmin` es `isStaff` hamisak maradnak, es a felhasznalo **csendben a fooldara kerul atiranyitasra** a személyzeti oldal helyett. A felhasznalo ilyenkor nem erti miert nem jut be a staff admin feluletre.
 
-### 1. Bombabiztos handleStatusChange (StaffOrders.tsx)
+### 3. Ketszeres fetchProfile hivas (race condition)
+A `getSession()` es az `onAuthStateChange` is meghivja a `fetchProfile`-t. Ez ket parhuzamos halozati hivast eredmenyez ami felesleges terheles es ido.
 
-- `.update().select()` hasznalata: visszakapjuk a frissitett sort, es ellenorizzuk, hogy valoban frissult-e
-- Ha `data` ures (0 sor frissult): "Nincs jogosultsag" hibauzenet
-- Ha `error` nem null: a pontos Supabase hibauzenet megjelenik a toast-ban
-- `console.error` logolalas minden hiba eseten a debugolashoz
-- A `try/finally` megmarad, hogy a gomb soha ne ragadjon be
+### 4. RPC hiba kezeletlen
+Az `is_admin()` es `is_staff()` RPC hivasok hibait nem ellenorizzuk:
+```text
+const { data: isAdminResult } = await supabase.rpc('is_admin');
+// Ha error van, data null, isAdminResult === true hamis
+```
+Tehat ha barmelyik RPC hivas sikertelen, a felhasznalo csendben elveszti a jogosultsagait.
 
-### 2. Gomb vizualis javitas (KanbanOrderCard.tsx)
+---
 
-- A fo akciogomb (`Elfogadom`, `Kesz!`, `Atveve`) nagyobb es jobban megkulonboztetheto lesz
-- Tapasztalatosabb `touch-manipulation` CSS osztaly a mobilos kattinthato tappable merethez
-- A `z-10` biztositja, hogy semmi nem takarja el a gombokat (z-index)
-- A gomb `relative` pozicioval elkeruli az atfedes problemakat
+## Javitasi terv
 
-### 3. Konzol logolalas
+### 1. Auth oldal: Loading timeout es force logout
 
-Minden gombnyomas reszletesen logolasra kerul a bongeszo konzolba:
-- `[KDS] Updating order X55288: new -> preparing`
-- `[KDS] Update successful for X55288`
-- `[KDS] ERROR updating X55288: {error details}`
-- `[KDS] WARNING: 0 rows affected for X55288 - possible RLS/permission issue`
+Ha 5 masodpercnel tovabb tart a betoltes, megjelenik egy "Ujraprobalkozas" es "Kijelentkezes" gomb. Ez megakadalyozza, hogy a felhasznalo orokre a spinnernel ragadjon.
 
-Ez lehetove teszi, hogy a kovetkezo alkalommal pontosan lassuk, mi tortenik.
+### 2. fetchProfile: Robusztusabb hibakezeles
+
+- Ha a profil lekerdezes sikertelen, NE terjen vissza csondben - folytassa a szerepkor ellenorzest (is_admin/is_staff RPC-k)
+- Az RPC hivasoknal is ellenorizzuk az error-t es logoljuk
+- Konzol logolalas minden lepesnel: `[Auth] Fetching profile...`, `[Auth] Role check: admin=true, staff=false`
+
+### 3. Dupla fetchProfile megelozese
+
+Egy egyszeru flag-el (`isFetchingRef`) megakadalyozzuk, hogy a fetchProfile ketszer fusson parhuzamosan.
+
+### 4. Auth redirect javitas
+
+Ha a felhasznalo be van jelentkezve de a szerepkorok nem toltodtek be rendesen, egyertelmu hibauzenet jelenik meg toast formajaban (nem csendes redirect a fooldara).
 
 ---
 
 ## Technikai Reszletek
 
-### StaffOrders.tsx modositasok
-
-A `handleStatusChange` fuggvenyt az alabbi modon javitjuk:
-
-```text
-handleStatusChange(orderId, newStatus):
-  setUpdatingId(orderId)
-  try:
-    find order code for logging
-    console.log("[KDS] Updating order CODE: oldStatus -> newStatus")
-    
-    result = supabase.update({status}).eq(id).select()
-    
-    if result.error:
-      console.error("[KDS] DB error:", result.error)
-      toast(error: error.message)
-      return
-    
-    if !result.data OR result.data.length === 0:
-      console.error("[KDS] 0 rows affected - permission issue")
-      toast(error: "Nincs jogosultság vagy a rendelés nem található")
-      return
-    
-    console.log("[KDS] Success:", result.data[0].status)
-    toast(success: statusLabel)
-    
-  catch(err):
-    console.error("[KDS] Exception:", err)
-    toast(error: "Váratlan hiba")
-    
-  finally:
-    setUpdatingId(null)
-```
-
-### KanbanOrderCard.tsx modositasok
-
-A fo akciogomb CSS osztalyainak kiegeszitese:
-- `relative z-10` a gomb poziciojahoz
-- `touch-manipulation` a mobilos tapolas jobb kezelesehez
-- `select-none` hogy ne lehessen kivalasztani a szoveget veletlenul
-- Nagyobb gomb meret: `h-12` helyett `h-11` (mar igy van)
-
-### Modositando fajlok osszefoglalasa
+### Modositando fajlok
 
 | Fajl | Valtoztatas |
 |------|-------------|
-| `src/pages/staff/StaffOrders.tsx` | handleStatusChange: .select() hozzaadasa, adatellenorzes, reszletes hibauzenetek, konzol logolalas |
-| `src/components/staff/KanbanOrderCard.tsx` | Gomb CSS javitasok: z-index, touch-manipulation, select-none |
+| `src/pages/Auth.tsx` | Loading timeout hozzaadasa (5mp), force logout gomb, jobb feedback |
+| `src/contexts/AuthContext.tsx` | fetchProfile hibakezeles javitas, dupla hivas megelozes, RPC hiba logolalas, konzol debug |
+
+### Auth.tsx valtozasok
+
+Az uj loading allapot kezeles:
+```text
+JELENLEGI:
+  if (user || authLoading || rolesLoading) {
+    return <LoadingSpinner />
+  }
+
+JAVITOTT:
+  Uj state: loadingTooLong (starts false)
+  useEffect: 5mp utan loadingTooLong = true
+  
+  if (user || authLoading || rolesLoading) {
+    if (loadingTooLong) {
+      return:
+        - Uzenet: "Betoltes folyamatban..."
+        - "Ujra probalkozas" gomb (fetchProfile ujrahivas)
+        - "Kijelentkezes" gomb (signOut + navigate('/auth'))
+    }
+    return <LoadingSpinner />
+  }
+```
+
+### AuthContext.tsx valtozasok
+
+A fetchProfile fuggveny javitasa:
+```text
+JELENLEGI fetchProfile:
+  1. setRolesLoading(true)
+  2. Fetch profile -> ha error, RETURN (szerepkorok nem toltodnek be)
+  3. bootstrap_first_admin
+  4. is_admin RPC (error nincs kezelve)
+  5. is_staff RPC (error nincs kezelve)
+  6. finally: setRolesLoading(false)
+
+JAVITOTT fetchProfile:
+  1. isFetchingRef check - ha mar fut, return
+  2. setRolesLoading(true)
+  3. isFetchingRef = true
+  4. Fetch profile -> ha error, LOGOLAS de NEM return, folytatjuk
+  5. bootstrap_first_admin (try/catch korul)
+  6. is_admin RPC -> error ellenorzes es logolalas
+  7. is_staff RPC -> error ellenorzes es logolalas
+  8. console.log('[Auth] Roles determined: admin=X, staff=Y')
+  9. finally: setRolesLoading(false), isFetchingRef = false
+```
+
+A dupla hivas megelozese:
+```text
+JELENLEGI:
+  getSession -> fetchProfile(userId)
+  onAuthStateChange -> setTimeout(() => fetchProfile(userId), 0)
+  -> Ket parhuzamos fetchProfile hivas
+
+JAVITOTT:
+  useRef isFetchingRef = false
+  fetchProfile elejen: if (isFetchingRef.current) return
+  fetchProfile inditasakor: isFetchingRef.current = true
+  fetchProfile vegeztevel: isFetchingRef.current = false
+```
+
