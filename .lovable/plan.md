@@ -1,171 +1,128 @@
 
+# KDS Felulet Javitasa - Professzionalis es Felhasznalobarati Staff Nezet
 
-# Szemelyzeti Rendeleskezelő Ujratervezese - KDS (Kitchen Display System) Stilus
+## Azonositott Problemak
 
-## Attekintes
+Az alabbi problemakat talaltan a jelenlegi KDS feluleten:
 
-A jelenlegi szemelyzeti rendelesi felulet alapveto, csak megtekintest engedve, szines megkulonboztetes nelkul. A cel egy professzionalis, konyhakepernyő-rendszer (KDS) stilusu felulet letrehozasa, amely vizualisan segiti a szemelyzetet a rendelesek gyors es hatekony kezeleseben.
+1. **Gombok nem kattinthatoak** - Az "Elfogadom" es egyeb akciogombok `disabled` allapotban ragadhatnak, ha a `setUpdatingId(null)` nem fut le hiba eseten. Emellett az `updating` flag globalisan mukodik, igy egyetlen rendeles frissitese kozben az osszes kartya gombja letiltodik.
+2. **Szines status tabok nem kattinthatoak** - A `StatusSummaryBar` pusztan megjelenitesre szolgalo `div` elemeket hasznal, nincs rajtuk click esemenykezeles.
+3. **Kijelentkezes gomb** - Mobilon tul kicsi (9x9), nehezen kattinthato, es nincs vizualis visszajelzes.
+4. **Veletlen lemondas kockazata** - Nincs megerosito dialogs a "Lemondas" gombra kattintaskor.
+5. **Mobil nezetben rossz UX** - Mind a 3 oszlop egymas ala kerul, nagy gorgetesi igeny. Nincs lehetoseg az oszlopok kozott gyorsan navigalni.
+6. **Rendelesi opcikk nem lathatoak** - A `order_item_options` tablabol (pl. koret valasztas, extra feltetek) nincsenek betoltve, igy a staff nem latja a teljes rendelest.
+7. **Nincs ures allapot jelzes** - Ha nincs egyetlen rendeles sem, csak ures oszlopok lathatoak uzenet nelkul az egesz oldalon.
 
-## Fo Valtozasok
+## Javitasok terve
 
-### 1. Szemelyzet is modosithatja a rendelesi statuszokat (Adatbazis)
+### 1. Kattinthato status tabok (StatusSummaryBar)
 
-Jelenleg csak admin tud statuszt frissiteni (RLS policy). A szemelyzet szamara is engedelyezni kell ezt.
+A status szamlalo chipeket interaktivva tesszuk. Mobilon ra kattintva a megfelelo szekciohoz gorget automatikusan (smooth scroll), igy a szemelyzet gyorsan elerhet barmely oszlopot.
 
-Uj RLS policy az `orders` tablahoz:
-- Staff felhasznalok UPDATE jogot kapnak a `status` mezohoz
-- Ezt egy uj migracios SQL-lel oldjuk meg
+- Minden chip `button` elemme valik `div` helyett
+- `onClick` esemeny: mobilon smooth scroll a megfelelo Kanban oszlophoz
+- Vizualis feedback: `cursor-pointer`, hover effekt, `active:scale-95`
+- Scroll target: Minden `KanbanColumn`-nak kap egy `id` attributumot (`column-new`, `column-preparing`, `column-ready`)
 
-### 2. Kanban-szeru oszlopos nezet (fo ujitas)
+### 2. Gombok mukodese - Bugfix
 
-A jelenlegi tab-alapu megjelenitest atalakitjuk egy 3 oszlopos Kanban-stilusu nezetre, ami egyben lathatova teszi az osszes aktiv rendelest:
+- **`updatingId` fix**: A `handleStatusChange` fuggvenyt ugy javitjuk, hogy `finally` blokban MINDIG torolje az `updatingId`-t, nem csak sikeres eset utan. Igy soha nem ragad be disabled allapotban.
+- **Optimistikus UI**: A gombot azonnal lathatoan letiltjuk (spinner ikonnal), de csak az adott kartya gombja legyen disabled, ne az osszes. Ez mar igy van implementalva (`updatingId === order.id`), de a `finally` block hianyzik.
 
-```text
-DESKTOP NEZET:
-+------------------+------------------+------------------+
-|   UJ (piros)     | KESZITES ALATT   |   KESZ (zold)    |
-|                  |   (narancssarga) |                  |
-|  [Rendelés #A1]  |  [Rendelés #B2]  |  [Rendelés #C3]  |
-|  [Rendelés #A4]  |  [Rendelés #B5]  |                  |
-|                  |                  |                  |
-|  "Elfogadom" ->  |  "Kész!" ->      |  "Átvéve" ->     |
-+------------------+------------------+------------------+
+### 3. Kijelentkezes gomb javitasa
 
-MOBIL NEZET:
-+------------------------+
-| [3 UJ] [2 KESZUL] [1 KESZ] |  <- szines szamlalok
-+------------------------+
-| UJ RENDELESEK          |
-| [Rendelés #A1]         |
-|   -> "Elfogadom" gomb  |
-| [Rendelés #A4]         |
-|   -> "Elfogadom" gomb  |
-+------------------------+
-| KESZITES ALATT         |
-| [Rendelés #B2]         |
-|   -> "Kész!" gomb      |
-+------------------------+
-| KESZ - ATVETELRE VAR   |
-| [Rendelés #C3]         |
-|   -> "Átvéve" gomb     |
-+------------------------+
-```
+- Mobilon is legyen lathato "Kilépés" felirat (vagy legalabb nagyobb kattintasi felulet)
+- A gomb kapjon megerosito dialogust: "Biztosan ki szeretnel lepni?"
+- Nagyobb merettel es jobb viualis visszajelzessel
 
-### 3. Szines vizualis rendszer
+### 4. Lemondas megerosito dialog
 
-Minden statusz sajat szinnel rendelkezik, nemcsak a badge-en, hanem a teljes kartya szegeleyen es az oszlop fejlecen is:
+- Az "X" (lemondas) gombra kattintva egy `AlertDialog` jelenik meg: "Biztosan le szeretned mondani a #XXXX szamu rendelest?"
+- Ket gomb: "Igen, lemondas" (piros) es "Megse" (szurke)
+- Ez megakadalyozza a veletlen lemondast
 
-| Statusz | Szin | Kartya szegely | Fejlec hatter |
-|---------|------|----------------|---------------|
-| Uj | Piros | bal oldali 4px piros csik | Piros hatter |
-| Keszites alatt | Narancssarga/sarga | bal oldali 4px narancs csik | Narancs hatter |
-| Kesz (atvetelre var) | Zold | bal oldali 4px zold csik | Zold hatter |
-| Atveve | Szurke | - | - |
-| Lemondva | Sotet piros | - | - |
+### 5. Mobil navigacio javitasa
 
-### 4. Atveteli ido visszaszamlalas es surgosseg
+- A `StatusSummaryBar` sticky lesz (ragad a tetejere gorgeteskor)
+- Minden oszlopnak `id`-t adunk, a chipekre kattintva oda gorget
+- Vizualis separator az oszlopok kozott mobilon
 
-Minden rendeles kartyan megjelenik:
-- Relativ ido ("5 perce erkezett", "23 perce keszul")
-- Ha van atveteli ido: visszaszamlalas ("12 perc mulva atvetel")
-- Surgossegi jelzes: ha a rendeles > 10 perce valtozott, a kartya pulzal/kiemelt lesz
-- Pirossal villogo kartya ha az atveteli ido < 5 perc vagy mar lejart
+### 6. Rendelesi opciok megjelenitiese
 
-### 5. Osszefoglalo sav a tetejere
+- Az `order_item_options` tablat is lekerjuk minden rendeleshez
+- A kartyakon megjelennek a kivalasztott opciok (pl. "Koret: Rizs", "Extra: Sajt") kisebb betumerettel az adott tetel alatt
+- Ez biztositja, hogy a konyhaban a teljes informacio lathato
 
-A fejlec ala egy szines osszefoglalo sav kerul:
+### 7. Ures allapot es altalanos UX
 
-```text
-+-----------------------------------------------+
-| [3 UJ]      [2 KESZUL]     [1 KESZ]          |
-|  piros bg    narancs bg      zold bg           |
-+-----------------------------------------------+
-```
-
-Ez mindig lathato, es gyors attekintest ad a jelenlegi allapotrol.
-
-### 6. Egy gombos gyors akcio
-
-Minden kartyan egyetlen fo akciogomb van, ami a kovetkezo logikus lepest jelzi:
-- Uj rendeles -> **"Elfogadom"** (sarga gomb)
-- Keszites alatt -> **"Kesz!"** (zold gomb) 
-- Kesz -> **"Atveve"** (szurke gomb)
-- Lemondas lehetoseg: kis ikon gomb a sarokban
-
-### 7. Rendelesi kartyak egyszerusitese
-
-A kartya kompaktabb, a legfontosabb informaciokra fokuszalva:
-- Nagy meretu rendelesi kod (#A1234)
-- Atveteli ido kiemelt helyen
-- Tetelek listaja
-- Fizetesi mod ikon
-- Egy fo akciogomb
-- Telefon hivas ikon gomb
-
-### 8. Ertesitesi modal javitasa
-
-Az `OrderNotificationModal` navigacios celpontjat dinamikussa tesszuk: staff felhasznaloknal `/staff/orders`-ra iranyit, admin felhasznaloknal marad `/admin/orders`.
-
-### 9. Multbeli rendelesek kulon tab
-
-Az aktiv Kanban nezet alatt egy osszecsukhato "Multbeli rendelesek" szekci, ami az atvett es lemondott rendeleseket mutatja (ma, tegnap, regyebbiek szurokkel).
+- Ha egyetlen rendeles sincs (ujak, aktiv, kesz), egy barat uzenet jelenik meg: "Jelenleg nincs aktiv rendeles. Varjuk az uj rendeleseket!"
+- Frissites gomb, ha a szemelyzet manualis ujratolitest szeretne
 
 ---
 
 ## Technikai Reszletek
 
-### Adatbazis migracio
-
-Uj RLS policy az `orders` tablara, ami engedelyezi a staff felhasznaloknak a statusz frissiteset:
-
-```sql
-CREATE POLICY "Staff can update order status"
-ON public.orders
-FOR UPDATE
-USING (is_admin_or_staff(auth.uid()))
-WITH CHECK (is_admin_or_staff(auth.uid()));
-```
-
-### Erintett fajlok
+### Modositando fajlok
 
 | Fajl | Valtoztatas |
 |------|-------------|
-| `src/pages/staff/StaffOrders.tsx` | Teljes ujratervezes: Kanban nezet, szines oszlopok, gyors akciogombok, osszefoglalo sav, idoszamlalo, surgossegi jelzesek |
-| `src/components/admin/OrderNotificationModal.tsx` | Dinamikus navigacio (staff vs admin) - prop-alapu |
-| `src/pages/staff/StaffLayout.tsx` | Osszefoglalo szamlalo sav hozzaadasa a fejlechez |
+| `src/components/staff/StatusSummaryBar.tsx` | `div` -> `button`, onClick scroll, sticky pozicio, hover/active effektek |
+| `src/components/staff/KanbanColumn.tsx` | `id` attributum hozzaadasa a scroll targethez |
+| `src/components/staff/KanbanOrderCard.tsx` | Lemondas megerosito dialog, opcio megjeleniites, gomb vizualis javitas |
+| `src/pages/staff/StaffOrders.tsx` | `handleStatusChange` finally block fix, order_item_options lekerdezes, ures allapot uzenet, scroll logika |
+| `src/pages/staff/StaffLayout.tsx` | Kijelentkezes megerosito dialog, gomb meret javitas |
 
-### Kanban kartya komponens
+### StatusSummaryBar ujratervezes
 
-Minden kartya tartalmazza:
-- Bal oldali szines csik (statusz szin)
-- Rendelesi kod (nagy, felkover)
-- Atveteli ido visszaszamlalas
-- "X perce erkezett" relativ ido
-- Tetelek listaja (nev x mennyiseg)
-- Fizetesi mod ikon (penz/kartya)
-- Fo akciogomb (a kovetkezo statusz fele)
-- Telefon hivas gomb
-- Lemondas gomb (kis, szurke)
+A jelenlegi implementacioban a chipek `div` elemek. Az uj implementacioban:
+- `button` elemekre csereljuk
+- Kapnak egy `onClick` handlert ami `scrollIntoView({ behavior: 'smooth' })` -t hiv
+- Sticky pozicio: `sticky top-[calc(env(safe-area-inset-top,0)+112px)] z-30`
+- Vizualis hover: `hover:brightness-110 active:scale-95 cursor-pointer`
 
-### Ido frissites
+### handleStatusChange javitas
 
-`useEffect` + `setInterval` 30 masodpercenkent frissiti a relativ idoket ("5 perce", "12 perc mulva") anelkul, hogy ujra lekerne az adatbazist.
+```text
+JELENLEGI (hibas):
+  setUpdatingId(orderId)
+  ... update ...
+  if (error) { toast error }
+  else { toast success }
+  setUpdatingId(null)  // <-- ha error dob exceptiont, ez nem fut le
 
-### Surgossegi logika
+JAVITOTT:
+  setUpdatingId(orderId)
+  try {
+    ... update ...
+    if (error) { toast error }
+    else { toast success }
+  } finally {
+    setUpdatingId(null)  // <-- MINDIG lefut
+  }
+```
 
-- Uj rendeles > 5 perc: narancssarga keret pulzal
-- Uj rendeles > 10 perc: piros keret pulzal
-- Atveteli ido < 10 perc: sarga hatter
-- Atveteli ido < 5 perc: piros hatter villog
-- Atveteli ido lejart: sotet piros keret, "KESES!" felirat
+### Order item options lekerdezes
 
-### Responsive design
+A `fetchOrders` fuggvenyben az order_items lekerdezese utan az order_item_options-t is lekerjuk:
 
-**Desktop (lg+):** 3 oszlopos Kanban grid egymas mellett
-**Tablet (md):** 3 oszlopos, kompaktabb kartyak
-**Mobil (sm):** Egyoszlopos, szekciokra bontva szines fejlecekkel, osszefoglalo szamlalo sav ragad a tetejere
+```text
+1. Lekerjuk az ordert
+2. Lekerjuk az order_items-t (mar meglevo)
+3. Minden order_item-hez lekerjuk az order_item_options-t
+4. Az opciokat az item objekbe agyazzuk (item.options = [...])
+```
 
-### Hangertesites
+### Lemondas megerosito dialog
 
-A meglevo Web Audio API megoldas marad, az `useGlobalOrderNotifications` hook mar mukodik a `StaffLayout`-ban.
+A `KanbanOrderCard`-ban az "X" gomb helyett egy `AlertDialog` nyilik:
+- Import: `AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger`
+- A dialog szovege: "Biztosan le akarod mondani a #{code} rendelest? Ez a muvelet nem vonhato vissza."
+- "Lemondas" gomb: piros, meghivja `onStatusChange(orderId, "cancelled")`
+- "Megse" gomb: bezarja a dialogust
 
+### Kijelentkezes megerosito
+
+A `StaffLayout`-ban a "Kijelentkezes" gomb korul egy `AlertDialog`:
+- "Biztosan ki szeretnel jelentkezni?"
+- "Igen" es "Megse" gombok
+- Mobilon a gomb 44x44px minimalis merettel rendelkezik (WCAG tapability)
