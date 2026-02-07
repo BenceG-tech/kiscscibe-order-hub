@@ -190,7 +190,10 @@ const KanbanOrderCard = ({ order, onStatusChange, updating, tick }: KanbanOrderC
         <div className="flex items-center gap-2 pt-1">
           <Button
             size="sm"
-            className={cn("flex-1 h-11 font-semibold text-sm", config.actionClass)}
+            className={cn(
+              "flex-1 h-12 font-semibold text-sm relative z-10 touch-manipulation select-none",
+              config.actionClass
+            )}
             onClick={() => onStatusChange(order.id, config.nextStatus)}
             disabled={updating}
           >

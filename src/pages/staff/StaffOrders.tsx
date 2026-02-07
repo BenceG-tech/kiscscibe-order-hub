@@ -153,28 +153,57 @@ const StaffOrders = () => {
     setUpdatingId(orderId);
 
     try {
-      const { error } = await supabase
+      // Find order for logging
+      const order = orders.find((o) => o.id === orderId);
+      const orderCode = order?.code || orderId.slice(0, 8);
+      const oldStatus = order?.status || "unknown";
+
+      console.log(`[KDS] Updating order #${orderCode}: ${oldStatus} -> ${newStatus}`);
+
+      const { data, error } = await supabase
         .from("orders")
         .update({ status: newStatus })
-        .eq("id", orderId);
+        .eq("id", orderId)
+        .select();
 
       if (error) {
+        console.error(`[KDS] DB error for #${orderCode}:`, error);
         toast({
           title: "Hiba",
-          description: "Nem sikerült frissíteni a státuszt",
+          description: error.message || "Nem sikerült frissíteni a státuszt",
           variant: "destructive",
         });
-      } else {
-        const statusLabels: Record<string, string> = {
-          preparing: "Elfogadva – készítés megkezdve",
-          ready: "Elkészült – átvételre vár",
-          completed: "Átvéve – lezárva",
-          cancelled: "Rendelés lemondva",
-        };
-        toast({
-          title: statusLabels[newStatus] || "Státusz frissítve",
-        });
+        return;
       }
+
+      if (!data || data.length === 0) {
+        console.error(`[KDS] WARNING: 0 rows affected for #${orderCode} — possible RLS/permission issue`);
+        toast({
+          title: "Hiba",
+          description: "Nincs jogosultság vagy a rendelés nem található. Próbálj kijelentkezni és újra bejelentkezni.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log(`[KDS] Update successful for #${orderCode}: status is now "${data[0].status}"`);
+
+      const statusLabels: Record<string, string> = {
+        preparing: "Elfogadva – készítés megkezdve",
+        ready: "Elkészült – átvételre vár",
+        completed: "Átvéve – lezárva",
+        cancelled: "Rendelés lemondva",
+      };
+      toast({
+        title: statusLabels[newStatus] || "Státusz frissítve",
+      });
+    } catch (err) {
+      console.error(`[KDS] Exception:`, err);
+      toast({
+        title: "Váratlan hiba",
+        description: "Kérlek próbáld újra, vagy frissítsd az oldalt.",
+        variant: "destructive",
+      });
     } finally {
       setUpdatingId(null);
     }
