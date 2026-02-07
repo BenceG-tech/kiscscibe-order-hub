@@ -73,38 +73,38 @@ const ReviewsSection = () => {
       style={{ animationDelay: `${index * 100}ms` }}
     >
       {/* Quotation mark decoration */}
-      <div className="absolute top-4 right-4 text-6xl text-primary/10 font-serif leading-none pointer-events-none">
+      <div className="absolute top-3 right-3 md:top-4 md:right-4 text-4xl md:text-6xl text-primary/10 font-serif leading-none pointer-events-none">
         "
       </div>
       
-      <CardContent className="p-5 md:p-8">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-3 md:mb-4">
-          <div className="flex items-center gap-3">
+      <CardContent className="p-4 md:p-8">
+        {/* Header - compact single row on mobile */}
+        <div className="flex items-center justify-between mb-2 md:mb-4 gap-2">
+          <div className="flex items-center gap-2 md:gap-3 min-w-0">
             {/* Avatar placeholder */}
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-warmth/20 flex items-center justify-center text-primary font-bold text-sm">
+            <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-primary/20 to-warmth/20 flex items-center justify-center text-primary font-bold text-xs md:text-sm flex-shrink-0">
               {review.name.split(' ').map(n => n[0]).join('')}
             </div>
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <h4 className="font-semibold text-foreground text-sm md:text-base">{review.name}</h4>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 md:gap-2">
+                <h4 className="font-semibold text-foreground text-xs md:text-base truncate">{review.name}</h4>
                 {review.verified && (
-                  <Badge variant="secondary" className="text-xs bg-green-500/10 text-green-600 dark:text-green-400">
+                  <Badge variant="secondary" className="text-[10px] md:text-xs bg-green-500/10 text-green-600 dark:text-green-400 px-1.5 md:px-2.5 flex-shrink-0">
                     ✓
                   </Badge>
                 )}
               </div>
-              <p className="text-xs md:text-sm text-muted-foreground">{review.date}</p>
+              <p className="text-[10px] md:text-sm text-muted-foreground">{review.date}</p>
             </div>
           </div>
           
-          <div className="flex items-center gap-0.5">
+          <div className="flex items-center gap-0.5 flex-shrink-0">
             {renderStars(review.rating)}
           </div>
         </div>
 
         {/* Review Text */}
-        <p className="text-muted-foreground text-sm md:text-base leading-relaxed relative z-10">
+        <p className="text-muted-foreground text-sm md:text-base leading-relaxed relative z-10 line-clamp-3 md:line-clamp-none">
           "{review.text}"
         </p>
       </CardContent>
@@ -137,12 +137,10 @@ const ReviewsSection = () => {
           </p>
         </div>
 
-        {/* Mobile: horizontal snap-scroll carousel */}
-        <div className="md:hidden flex overflow-x-auto snap-x snap-mandatory no-scrollbar -mx-4 px-4 gap-3 pb-2">
+        {/* Mobile: vertical stack */}
+        <div className="md:hidden flex flex-col gap-3">
           {reviews.slice(0, 3).map((review, index) => (
-            <div key={index} className="min-w-[80vw] snap-start flex-shrink-0">
-              <ReviewCard review={review} index={index} />
-            </div>
+            <ReviewCard key={index} review={review} index={index} />
           ))}
         </div>
 
