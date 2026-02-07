@@ -6,43 +6,62 @@ interface StatusSummaryBarProps {
   readyCount: number;
 }
 
+const STATUS_ITEMS = [
+  {
+    label: "Új",
+    status: "new",
+    scrollTarget: "column-new",
+    bg: "bg-red-500 text-white",
+  },
+  {
+    label: "Készül",
+    status: "preparing",
+    scrollTarget: "column-preparing",
+    bg: "bg-orange-500 text-white",
+  },
+  {
+    label: "Kész",
+    status: "ready",
+    scrollTarget: "column-ready",
+    bg: "bg-green-600 text-white",
+  },
+];
+
 const StatusSummaryBar = ({ newCount, preparingCount, readyCount }: StatusSummaryBarProps) => {
-  const items = [
-    {
-      label: "Új",
-      count: newCount,
-      bg: "bg-red-500 text-white",
-      pulse: newCount > 0,
-    },
-    {
-      label: "Készül",
-      count: preparingCount,
-      bg: "bg-orange-500 text-white",
-      pulse: false,
-    },
-    {
-      label: "Kész",
-      count: readyCount,
-      bg: "bg-green-600 text-white",
-      pulse: false,
-    },
-  ];
+  const counts: Record<string, number> = {
+    new: newCount,
+    preparing: preparingCount,
+    ready: readyCount,
+  };
+
+  const handleClick = (scrollTarget: string) => {
+    const el = document.getElementById(scrollTarget);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
 
   return (
     <div className="flex items-center gap-2 py-2 px-3">
-      {items.map((item) => (
-        <div
-          key={item.label}
-          className={cn(
-            "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-bold transition-all",
-            item.bg,
-            item.pulse && item.count > 0 && "animate-pulse"
-          )}
-        >
-          <span>{item.count}</span>
-          <span className="hidden sm:inline">{item.label}</span>
-        </div>
-      ))}
+      {STATUS_ITEMS.map((item) => {
+        const count = counts[item.status];
+        return (
+          <button
+            key={item.status}
+            type="button"
+            onClick={() => handleClick(item.scrollTarget)}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-bold transition-all",
+              "cursor-pointer hover:brightness-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+              item.bg,
+              item.status === "new" && count > 0 && "animate-pulse"
+            )}
+          >
+            <span>{count}</span>
+            <span className="hidden sm:inline">{item.label}</span>
+          </button>
+        );
+      })}
     </div>
   );
 };

@@ -32,6 +32,7 @@ interface KanbanColumnProps {
   updatingId: string | null;
   tick: number;
   emptyMessage: string;
+  columnId?: string;
 }
 
 const KanbanColumn = ({
@@ -43,9 +44,10 @@ const KanbanColumn = ({
   updatingId,
   tick,
   emptyMessage,
+  columnId,
 }: KanbanColumnProps) => {
   return (
-    <div className="flex flex-col min-h-0">
+    <div id={columnId} className="flex flex-col min-h-0 scroll-mt-36">
       {/* Column header */}
       <div
         className={cn(
