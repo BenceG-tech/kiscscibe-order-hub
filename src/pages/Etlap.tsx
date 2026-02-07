@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import { useCart } from "@/contexts/CartContext";
-import { ShoppingCart, ChefHat } from "lucide-react";
+import { ChefHat } from "lucide-react";
 import { CartDialog } from "@/components/CartDialog";
 import { SidePickerModal } from "@/components/SidePickerModal";
 import WeeklyDateStrip from "@/components/WeeklyDateStrip";
@@ -17,6 +17,7 @@ import { getSmartInitialDate, getContentLabel } from "@/lib/dateUtils";
 import { capitalizeFirst } from "@/lib/utils";
 import kiscsibeLogo from "@/assets/kiscsibe_logo_round.png";
 import heroImage from "@/assets/hero-desktop.png";
+import DailyMenuPanel from "@/components/DailyMenuPanel";
 
 interface MenuItem {
   id: string;
@@ -303,110 +304,9 @@ const Etlap = () => {
               </Card>
             ) : dailyData && dailyData.items.length > 0 ? (
               <>
-                {/* Daily Menu Card */}
+                {/* Daily Menu Card - Using shared component for consistency */}
                 {menuData && menuData.soup && menuData.main && (
-                  <Card className="border-0 bg-card/95 backdrop-blur-sm shadow-xl rounded-3xl overflow-hidden">
-                    <CardContent className="p-0">
-                      <div className="bg-primary/10 px-6 py-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <ChefHat className="h-6 w-6 text-primary" />
-                            <h3 className="text-xl font-bold">Napi Menü</h3>
-                          </div>
-                          <Badge className="bg-primary text-primary-foreground text-lg px-4 py-1 shadow-lg">
-                            {menuData.menu_price_huf} Ft
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Leves + Főétel kedvezményes áron
-                        </p>
-                      </div>
-                      
-                      <div className="p-4 md:p-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {/* Soup Card */}
-                          <div className="bg-card rounded-3xl overflow-hidden shadow-lg ring-1 ring-black/5 dark:ring-white/5 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                            <div className="aspect-[16/9] w-full overflow-hidden">
-                              {menuData.soup.item_image_url ? (
-                                <img 
-                                  src={menuData.soup.item_image_url} 
-                                  alt={menuData.soup.item_name}
-                                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                                />
-                              ) : (
-                                <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center">
-                                  <img src={kiscsibeLogo} alt="Kiscsibe" className="h-[70%] w-auto object-contain opacity-80 drop-shadow-lg" />
-                                </div>
-                              )}
-                            </div>
-                            <div className="p-4">
-                              <span className="text-xs font-medium text-primary uppercase tracking-wide">Leves</span>
-                              <h4 className="font-semibold text-lg mt-1">{capitalizeFirst(menuData.soup.item_name)}</h4>
-                              {menuData.soup.item_description && (
-                                <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{menuData.soup.item_description}</p>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Main Course Card */}
-                          <div className="bg-card rounded-3xl overflow-hidden shadow-lg ring-1 ring-black/5 dark:ring-white/5 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                            <div className="aspect-[16/9] w-full overflow-hidden">
-                              {menuData.main.item_image_url ? (
-                                <img 
-                                  src={menuData.main.item_image_url} 
-                                  alt={menuData.main.item_name}
-                                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                                />
-                              ) : (
-                                <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center">
-                                  <img src={kiscsibeLogo} alt="Kiscsibe" className="h-[70%] w-auto object-contain opacity-80 drop-shadow-lg" />
-                                </div>
-                              )}
-                            </div>
-                            <div className="p-4">
-                              <span className="text-xs font-medium text-primary uppercase tracking-wide">Főétel</span>
-                              <h4 className="font-semibold text-lg mt-1">{capitalizeFirst(menuData.main.item_name)}</h4>
-                              {menuData.main.item_description && (
-                                <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{menuData.main.item_description}</p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Premium CTA Section */}
-                        <div className="mt-6 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-2xl p-4 md:p-5">
-                          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                            {/* Left side - Availability badge */}
-                            <div className="flex items-center gap-3">
-                              <div className="w-11 h-11 bg-primary/20 rounded-full flex items-center justify-center">
-                                <ChefHat className="h-5 w-5 text-primary" />
-                              </div>
-                              <div>
-                                <p className="text-xs text-muted-foreground font-medium">Elérhető adagok</p>
-                                <p className="text-2xl font-bold text-primary">{menuData.menu_remaining_portions}</p>
-                              </div>
-                            </div>
-                            
-                            {/* Right side - CTA Button */}
-                            <Button 
-                              onClick={handleAddMenuToCart}
-                              size="lg"
-                              className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80 shadow-lg hover:shadow-xl transition-all px-6"
-                              disabled={menuData.menu_remaining_portions <= 0}
-                            >
-                              <ShoppingCart className="h-5 w-5 mr-2" />
-                              {menuData.menu_remaining_portions > 0 ? "Menü kosárba" : "Elfogyott"}
-                              {menuData.menu_remaining_portions > 0 && (
-                                <span className="ml-2 bg-primary-foreground/20 px-2.5 py-0.5 rounded-full text-sm font-semibold">
-                                  {menuData.menu_price_huf} Ft
-                                </span>
-                              )}
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <DailyMenuPanel date={selectedDate} menuData={menuData} loading={false} />
                 )}
 
                 {/* Extra Items */}

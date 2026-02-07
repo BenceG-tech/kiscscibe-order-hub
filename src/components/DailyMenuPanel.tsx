@@ -35,6 +35,31 @@ interface DailyMenuPanelProps {
   loading: boolean;
 }
 
+const MenuItemCard = ({ item, label }: { item: MenuItem; label: string }) => (
+  <div className="bg-card rounded-2xl md:rounded-3xl overflow-hidden shadow-lg ring-1 ring-black/5 dark:ring-white/5 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300">
+    <div className="aspect-[4/3] md:aspect-[16/9] w-full overflow-hidden">
+      {item.item_image_url ? (
+        <img 
+          src={item.item_image_url} 
+          alt={item.item_name}
+          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+        />
+      ) : (
+        <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center">
+          <img src={kiscsibeLogo} alt="Kiscsibe" className="h-[60%] md:h-[70%] w-auto object-contain opacity-80 drop-shadow-lg" />
+        </div>
+      )}
+    </div>
+    <div className="p-3 md:p-4">
+      <span className="text-[10px] md:text-xs font-medium text-primary uppercase tracking-wide">{label}</span>
+      <h4 className="font-semibold text-sm md:text-lg mt-0.5 md:mt-1 line-clamp-2">{capitalizeFirst(item.item_name)}</h4>
+      {item.item_description && (
+        <p className="text-xs md:text-sm text-muted-foreground line-clamp-1 md:line-clamp-2 mt-0.5 md:mt-1">{item.item_description}</p>
+      )}
+    </div>
+  </div>
+);
+
 const DailyMenuPanel = ({ date, menuData, loading }: DailyMenuPanelProps) => {
   const { addCompleteMenu } = useCart();
 
@@ -119,105 +144,62 @@ const DailyMenuPanel = ({ date, menuData, loading }: DailyMenuPanelProps) => {
   return (
     <Card className="border-0 bg-card/95 backdrop-blur-sm shadow-xl rounded-3xl overflow-hidden">
       <CardContent className="p-0">
-        <div className="bg-primary/10 px-6 py-4">
+        {/* Header with prominent price */}
+        <div className="bg-primary/10 px-4 md:px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <ChefHat className="h-6 w-6 text-primary" />
-              <h3 className="text-xl font-bold">Napi Menü</h3>
+            <div className="flex items-center gap-2 md:gap-3">
+              <ChefHat className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+              <div>
+                <h3 className="text-lg md:text-xl font-bold">Napi Menü</h3>
+                <p className="text-xs md:text-sm text-muted-foreground">Leves + Főétel</p>
+              </div>
             </div>
-            <Badge className="bg-primary text-primary-foreground text-lg px-4 py-1 shadow-lg">
-              {menuData.menu_price_huf} Ft
+            <Badge className="bg-primary text-primary-foreground text-lg md:text-xl px-4 py-1.5 shadow-lg font-bold">
+              {menuData.menu_price_huf.toLocaleString('hu-HU')} Ft
             </Badge>
           </div>
-          <p className="text-sm text-muted-foreground mt-1">
-            Leves + Főétel kedvezményes áron
-          </p>
         </div>
         
-        <div className="p-4 md:p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Soup Card */}
+        {/* Food cards - 2 columns always */}
+        <div className="p-3 md:p-6">
+          <div className="grid grid-cols-2 gap-3 md:gap-4">
             {menuData.soup && (
-              <div className="bg-card rounded-3xl overflow-hidden shadow-lg ring-1 ring-black/5 dark:ring-white/5 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                <div className="aspect-[16/9] w-full overflow-hidden">
-                  {menuData.soup.item_image_url ? (
-                    <img 
-                      src={menuData.soup.item_image_url} 
-                      alt={menuData.soup.item_name}
-                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center">
-                      <img src={kiscsibeLogo} alt="Kiscsibe" className="h-[70%] w-auto object-contain opacity-80 drop-shadow-lg" />
-                    </div>
-                  )}
-                </div>
-                <div className="p-4">
-                  <span className="text-xs font-medium text-primary uppercase tracking-wide">Leves</span>
-                  <h4 className="font-semibold text-lg mt-1">{capitalizeFirst(menuData.soup.item_name)}</h4>
-                  {menuData.soup.item_description && (
-                    <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{menuData.soup.item_description}</p>
-                  )}
-                </div>
-              </div>
+              <MenuItemCard item={menuData.soup} label="Leves" />
             )}
-
-            {/* Main Course Card */}
             {menuData.main && (
-              <div className="bg-card rounded-3xl overflow-hidden shadow-lg ring-1 ring-black/5 dark:ring-white/5 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                <div className="aspect-[16/9] w-full overflow-hidden">
-                  {menuData.main.item_image_url ? (
-                    <img 
-                      src={menuData.main.item_image_url} 
-                      alt={menuData.main.item_name}
-                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center">
-                      <img src={kiscsibeLogo} alt="Kiscsibe" className="h-[70%] w-auto object-contain opacity-80 drop-shadow-lg" />
-                    </div>
-                  )}
-                </div>
-                <div className="p-4">
-                  <span className="text-xs font-medium text-primary uppercase tracking-wide">Főétel</span>
-                  <h4 className="font-semibold text-lg mt-1">{capitalizeFirst(menuData.main.item_name)}</h4>
-                  {menuData.main.item_description && (
-                    <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{menuData.main.item_description}</p>
-                  )}
-                </div>
-              </div>
+              <MenuItemCard item={menuData.main} label="Főétel" />
             )}
           </div>
 
-            {/* Premium CTA Section */}
-            <div className="mt-6 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-2xl p-4 md:p-5">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                {/* Left side - Availability badge */}
-                <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 bg-primary/20 rounded-full flex items-center justify-center">
-                    <ChefHat className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground font-medium">Elérhető adagok</p>
-                    <p className="text-2xl font-bold text-primary">{menuData.menu_remaining_portions}</p>
-                  </div>
+          {/* Premium CTA Section */}
+          <div className="mt-4 md:mt-6 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-2xl p-3 md:p-5">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 md:gap-4">
+              {/* Availability badge */}
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 md:w-11 md:h-11 bg-primary/20 rounded-full flex items-center justify-center">
+                  <ChefHat className="h-4 w-4 md:h-5 md:w-5 text-primary" />
                 </div>
-                
-                {/* Right side - CTA Button */}
-                <Button 
-                  onClick={handleAddMenuToCart}
-                  size="lg"
-                  className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80 shadow-lg hover:shadow-xl transition-all px-6"
-                  disabled={!isAvailable}
-                >
-                  <ShoppingCart className="h-5 w-5 mr-2" />
-                  {isAvailable ? "Menü kosárba" : "Elfogyott"}
-                  {isAvailable && (
-                    <span className="ml-2 bg-white/20 px-2.5 py-0.5 rounded-full text-sm font-semibold">
-                      {menuData.menu_price_huf} Ft
-                    </span>
-                  )}
-                </Button>
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium">Elérhető adagok</p>
+                  <p className="text-xl md:text-2xl font-bold text-primary">{menuData.menu_remaining_portions}</p>
+                </div>
+              </div>
+              
+              {/* CTA Button */}
+              <Button 
+                onClick={handleAddMenuToCart}
+                size="lg"
+                className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80 shadow-lg hover:shadow-xl transition-all px-6 h-12"
+                disabled={!isAvailable}
+              >
+                <ShoppingCart className="h-5 w-5 mr-2" />
+                {isAvailable ? "Menü kosárba" : "Elfogyott"}
+                {isAvailable && (
+                  <span className="ml-2 bg-white/20 px-2.5 py-0.5 rounded-full text-sm font-semibold">
+                    {menuData.menu_price_huf.toLocaleString('hu-HU')} Ft
+                  </span>
+                )}
+              </Button>
             </div>
           </div>
         </div>

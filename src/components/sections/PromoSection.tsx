@@ -1,7 +1,22 @@
- import { Button } from "@/components/ui/button";
- import { UtensilsCrossed, Package, GraduationCap, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { UtensilsCrossed, Package, GraduationCap, ArrowRight } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
 
 const PromoSection = () => {
+  const { data: menuPrice } = useQuery({
+    queryKey: ["promo-menu-price"],
+    queryFn: async () => {
+      const today = format(new Date(), 'yyyy-MM-dd');
+      const { data } = await supabase.rpc('get_daily_data', { target_date: today });
+      return data?.[0]?.menu_price_huf || 2200;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const displayPrice = menuPrice ? menuPrice.toLocaleString('hu-HU') : '2 200';
+
   return (
      <section className="py-8 md:py-10">
        <div className="max-w-5xl mx-auto px-4">
@@ -17,7 +32,7 @@ const PromoSection = () => {
               </div>
                <div>
                  <p className="text-sm text-muted-foreground">Napi menü helyben</p>
-                 <p className="text-2xl font-bold text-primary">2 200 Ft</p>
+                 <p className="text-2xl font-bold text-primary">{displayPrice} Ft</p>
                </div>
             </div>
              
@@ -52,7 +67,7 @@ const PromoSection = () => {
                </div>
                <div>
                  <p className="text-sm text-muted-foreground">Napi menü helyben</p>
-                 <p className="text-xl font-bold text-primary">2 200 Ft</p>
+                 <p className="text-xl font-bold text-primary">{displayPrice} Ft</p>
                </div>
             </div>
              
