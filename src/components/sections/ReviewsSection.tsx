@@ -115,7 +115,7 @@ const ReviewsSection = () => {
     <section className="py-8 md:py-20">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-6 md:mb-12">
+        <div className="text-center mb-4 md:mb-12">
           <span className="text-xs md:text-sm uppercase tracking-[0.2em] text-muted-foreground font-medium">
             Vélemények
           </span>
@@ -138,9 +138,9 @@ const ReviewsSection = () => {
         </div>
 
         {/* Mobile: horizontal snap-scroll carousel */}
-        <div className="md:hidden flex overflow-x-auto snap-x snap-mandatory no-scrollbar -mx-4 px-4 gap-4 pb-2">
+        <div className="md:hidden flex overflow-x-auto snap-x snap-mandatory no-scrollbar -mx-4 px-4 gap-3 pb-2">
           {reviews.slice(0, 3).map((review, index) => (
-            <div key={index} className="min-w-[85vw] snap-center flex-shrink-0">
+            <div key={index} className="min-w-[80vw] snap-start flex-shrink-0">
               <ReviewCard review={review} index={index} />
             </div>
           ))}
