@@ -15,16 +15,17 @@ interface OrderNotificationModalProps {
   order: PendingOrder | null;
   onDismiss: () => void;
   pendingCount: number;
+  navigateTo?: string;
 }
 
-const OrderNotificationModal = ({ order, onDismiss, pendingCount }: OrderNotificationModalProps) => {
+const OrderNotificationModal = ({ order, onDismiss, pendingCount, navigateTo = '/admin/orders' }: OrderNotificationModalProps) => {
   const navigate = useNavigate();
 
   if (!order) return null;
 
   const handleView = () => {
     onDismiss();
-    navigate('/admin/orders');
+    navigate(navigateTo);
   };
 
   const formatTime = (dateString: string) => {
