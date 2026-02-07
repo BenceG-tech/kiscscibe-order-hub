@@ -349,7 +349,7 @@ export default function WeeklyMenuGrid() {
     queryClient.invalidateQueries({ queryKey: ["menu-items-all"] });
   };
 
-  // Mutation to update menu part status
+  // Mutation to update menu part status + auto-sync daily_offer_menus
   const updateMenuPartMutation = useMutation({
     mutationFn: async ({ 
       offerItemId, 
@@ -360,6 +360,7 @@ export default function WeeklyMenuGrid() {
       isMenuPart: boolean; 
       menuRole: string | null;
     }) => {
+      // 1. Update the item's menu part status
       const { error } = await supabase
         .from("daily_offer_items")
         .update({ 
@@ -369,10 +370,69 @@ export default function WeeklyMenuGrid() {
         .eq("id", offerItemId);
       
       if (error) throw error;
+
+      // 2. Get the daily_offer_id from this item
+      const { data: itemData, error: itemError } = await supabase
+        .from("daily_offer_items")
+        .select("daily_offer_id")
+        .eq("id", offerItemId)
+        .single();
+      
+      if (itemError || !itemData?.daily_offer_id) return { action: "updated" };
+
+      const offerId = itemData.daily_offer_id;
+
+      // 3. Check menu composition: count soups and mains
+      const { data: menuParts } = await supabase
+        .from("daily_offer_items")
+        .select("id, menu_role")
+        .eq("daily_offer_id", offerId)
+        .eq("is_menu_part", true);
+
+      const soupCount = menuParts?.filter(p => p.menu_role === "leves").length ?? 0;
+      const mainCount = menuParts?.filter(p => p.menu_role === "főétel").length ?? 0;
+      const isValidMenu = soupCount === 1 && mainCount === 1;
+
+      // 4. Check if daily_offer_menus record exists
+      const { data: existingMenu } = await supabase
+        .from("daily_offer_menus")
+        .select("id")
+        .eq("daily_offer_id", offerId)
+        .maybeSingle();
+
+      // 5. Auto-create or auto-delete
+      if (isValidMenu && !existingMenu) {
+        const { error: insertError } = await supabase
+          .from("daily_offer_menus")
+          .insert({
+            daily_offer_id: offerId,
+            menu_price_huf: 1800,
+            max_portions: 30,
+            remaining_portions: 30,
+          });
+        if (insertError) throw insertError;
+        return { action: "created" };
+      } else if (!isValidMenu && existingMenu) {
+        const { error: deleteError } = await supabase
+          .from("daily_offer_menus")
+          .delete()
+          .eq("daily_offer_id", offerId);
+        if (deleteError) throw deleteError;
+        return { action: "deleted" };
+      }
+
+      return { action: "updated" };
     },
-    onSuccess: () => {
+    onSuccess: (_data) => {
       queryClient.invalidateQueries({ queryKey: ["daily-offers-week"] });
-      toast.success("Menü beállítás mentve");
+      const result = _data as { action: string } | undefined;
+      if (result?.action === "created") {
+        toast.success("Napi menü automatikusan létrehozva (1800 Ft)");
+      } else if (result?.action === "deleted") {
+        toast.success("Napi menü eltávolítva");
+      } else {
+        toast.success("Menü beállítás mentve");
+      }
     },
     onError: (error) => {
       console.error("Error updating menu part:", error);
