@@ -1,56 +1,90 @@
 
-# KDS Gombok Javitasa - Adatbazis Trigger Fix
+# KDS Gombok Vegleges Javitasa - Bombabiztos Megoldas
 
-## A problema gyokere
+## Problema
 
-A teszteles soran kiderult, hogy a gombok (Elfogadom, Atveve, Lemondas) technikailag kattinthatoak, de a **muvelet mindig sikertelen** egy adatbazis-szintu hiba miatt:
+A gombok a KDS feluleten nem mukodnek megbizhatoan. Az eddigi javitasok (trigger fix, RLS policy, try/finally) szuksegesek voltak, de a frontend kod nem ellenorzi megfeloen, hogy a frissites valoban megtortent-e.
 
-**Hibauzenet:** `"Cannot place orders for past dates or times"` (HTTP 400)
+## Gyokerok
 
-**Ok:** A `validate_order_date` trigger a `orders` tablan **minden UPDATE-re is lefut**, nemcsak INSERT-re. Amikor a staff frissiti a statuszt (pl. "new" -> "preparing"), a trigger ujra ellenorzi a `pickup_time`-ot. Mivel a regi rendelesek pickup ideje mar a multban van, a trigger blokkol MINDEN statuszvaltoztatast.
+A Supabase `.update()` hivas `.select()` nelkul nem ad vissza adatot. Ha a frissites csendben meghiusul (pl. session problema, token lejarat), az `error` mezo `null`, de a valtozas nem tortenik meg. A kod ilyenkor "sikeres" uzenetet mutat, de a kartya nem mozdul.
 
-Ez az egyetlen ok, amiert a gombok "nem mukodnek" - a frontend kod rendben van (try/finally blokk, helyes RLS policyk), de a szerver visszautasitja a kerest.
+## Javitasok
 
-## Javitas
+### 1. Bombabiztos handleStatusChange (StaffOrders.tsx)
 
-### Adatbazis migracio
+- `.update().select()` hasznalata: visszakapjuk a frissitett sort, es ellenorizzuk, hogy valoban frissult-e
+- Ha `data` ures (0 sor frissult): "Nincs jogosultsag" hibauzenet
+- Ha `error` nem null: a pontos Supabase hibauzenet megjelenik a toast-ban
+- `console.error` logolalas minden hiba eseten a debugolashoz
+- A `try/finally` megmarad, hogy a gomb soha ne ragadjon be
 
-A `validate_order_date()` fuggvenyt ugy modositjuk, hogy az idoellenorzest **csak INSERT eseten** vegezze el, UPDATE-nel ne:
+### 2. Gomb vizualis javitas (KanbanOrderCard.tsx)
+
+- A fo akciogomb (`Elfogadom`, `Kesz!`, `Atveve`) nagyobb es jobban megkulonboztetheto lesz
+- Tapasztalatosabb `touch-manipulation` CSS osztaly a mobilos kattinthato tappable merethez
+- A `z-10` biztositja, hogy semmi nem takarja el a gombokat (z-index)
+- A gomb `relative` pozicioval elkeruli az atfedes problemakat
+
+### 3. Konzol logolalas
+
+Minden gombnyomas reszletesen logolasra kerul a bongeszo konzolba:
+- `[KDS] Updating order X55288: new -> preparing`
+- `[KDS] Update successful for X55288`
+- `[KDS] ERROR updating X55288: {error details}`
+- `[KDS] WARNING: 0 rows affected for X55288 - possible RLS/permission issue`
+
+Ez lehetove teszi, hogy a kovetkezo alkalommal pontosan lassuk, mi tortenik.
+
+---
+
+## Technikai Reszletek
+
+### StaffOrders.tsx modositasok
+
+A `handleStatusChange` fuggvenyt az alabbi modon javitjuk:
 
 ```text
-JELENLEGI (hibas):
-  IF NEW.pickup_time IS NOT NULL AND NEW.pickup_time < NOW() THEN
-      RAISE EXCEPTION 'Cannot place orders for past dates or times';
-  END IF;
-
-JAVITOTT:
-  IF TG_OP = 'INSERT' THEN
-      IF NEW.pickup_time IS NOT NULL AND NEW.pickup_time < NOW() THEN
-          RAISE EXCEPTION 'Cannot place orders for past dates or times';
-      END IF;
-      IF NEW.pickup_time IS NOT NULL AND NOT validate_pickup_time(NEW.pickup_time) THEN
-          RAISE EXCEPTION 'Pickup time is outside business hours';
-      END IF;
-  END IF;
+handleStatusChange(orderId, newStatus):
+  setUpdatingId(orderId)
+  try:
+    find order code for logging
+    console.log("[KDS] Updating order CODE: oldStatus -> newStatus")
+    
+    result = supabase.update({status}).eq(id).select()
+    
+    if result.error:
+      console.error("[KDS] DB error:", result.error)
+      toast(error: error.message)
+      return
+    
+    if !result.data OR result.data.length === 0:
+      console.error("[KDS] 0 rows affected - permission issue")
+      toast(error: "Nincs jogosultság vagy a rendelés nem található")
+      return
+    
+    console.log("[KDS] Success:", result.data[0].status)
+    toast(success: statusLabel)
+    
+  catch(err):
+    console.error("[KDS] Exception:", err)
+    toast(error: "Váratlan hiba")
+    
+  finally:
+    setUpdatingId(null)
 ```
 
-Ez biztositja, hogy:
-- **Uj rendeleseknel** (INSERT): Tovabbra is ellenorzi, hogy a pickup ido nem mult-e el es az uzleti orakba esik-e.
-- **Statusz frissiteseknel** (UPDATE): Nem blokkol, a staff szabadon valtoztathatja a statuszt.
+### KanbanOrderCard.tsx modositasok
 
-### Erintett fajlok
+A fo akciogomb CSS osztalyainak kiegeszitese:
+- `relative z-10` a gomb poziciojahoz
+- `touch-manipulation` a mobilos tapolas jobb kezelesehez
+- `select-none` hogy ne lehessen kivalasztani a szoveget veletlenul
+- Nagyobb gomb meret: `h-12` helyett `h-11` (mar igy van)
+
+### Modositando fajlok osszefoglalasa
 
 | Fajl | Valtoztatas |
 |------|-------------|
-| Uj migracio SQL | A `validate_order_date()` fuggveny modositasa: `TG_OP = 'INSERT'` feltetel hozzaadasa az idoellenorzesekhez |
-
-### Egyeb javitasok nem szuksegesek
-
-A teszteles soran ellenoriztem:
-- **RLS policyk**: Rendben vannak - a staff UPDATE jogot kapott az `orders` tablara (`is_admin_or_staff` policy).
-- **Frontend kod**: A `handleStatusChange` fuggvenyben mar van `try/finally` blokk, ami biztositja, hogy a gomb soha nem ragad `disabled` allapotban.
-- **StatusSummaryBar**: Mar kattinthato `button` elemeket hasznal smooth scroll-al.
-- **Lemondas dialog**: Mar van `AlertDialog` megerosites.
-- **Kijelentkezes**: Mar van megerosito dialog es a gomb 44px meretu.
-
-**A trigger fix utan minden gomb azonnal mukodni fog**, mert a 400-as hiba megszunik.
+| `src/pages/staff/StaffOrders.tsx` | handleStatusChange: .select() hozzaadasa, adatellenorzes, reszletes hibauzenetek, konzol logolalas |
+| `src/components/staff/KanbanOrderCard.tsx` | Gomb CSS javitasok: z-index, touch-manipulation, select-none |
