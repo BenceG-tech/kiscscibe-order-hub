@@ -1,135 +1,55 @@
 
 
-# KDS Gombok - Vegso Javitas
+# Cookie Consent Banner Javitas
 
-## Talalt Problemak (Teljesen Vegignyomozva)
+## A problema
 
-### 1. problema: A toast ertesitesek LATHATATLANOK (A fo ok!)
+A kepernykepen jol lathato: a cookie banner es a "Rendelj most" sticky gomb **egymasra csusznak** mobilon. Mindketto `fixed bottom-0 z-50`, ezert a cookie szoveg le van vagva es az "Elfogadom" gomb el van takarva. A felhasznalo nem tudja elfogadni a sutiket.
 
-A `StaffOrders.tsx` a **shadcn toast rendszert** hasznalja (`useToast()` hook), de az `App.tsx`-ben **csak a Sonner** komponens van renderelve. A shadcn `<Toaster />` komponens **egyaltalan nincs a komponensfaban**.
+## Javitasok
 
-Ez azt jelenti, hogy MINDEN gombnyomas utan -- legyen az sikeres vagy sikertelen -- a felhasznalo **semmilyen vizualis visszajelzest nem kap**. A rendeles kartyaja elmozdul a megfelelo oszlopba, de a felhasznalo azt gondolja, hogy semmi sem tortent, mert nincs toast uzenet.
+### 1. Pozicionalas: banner a sticky CTA fole kerul mobilon
 
-**Bizonytiek a konzolbol:**
-```text
-[KDS] Updating order #F20564: new -> preparing
-[KDS] Update successful for #F20564: status is now "preparing"
-```
+A cookie consent banner mobilon kap egy `bottom-[72px]` erteket (a StickyMobileCTA magassaga ~68-72px), igy a banner a CTA folott jelenik meg, nem rajta. Desktopon marad a `bottom-0`.
 
-A frissitesek MUKODNEK a szerveren. A trigger fix (INSERT-only validacio) helyes. Az RLS policyk helyesek. A frontend kod helyes. De a felhasznalo errol semmit nem tud, mert a toast ertesitesek nem jelennek meg.
+### 2. Z-index emeles
 
-### 2. problema: Ketszeres gombnyomas (race condition)
+A cookie consent z-indexet `z-[60]`-ra emeljuk, hogy biztosan minden mas elem folott legyen (a StickyMobileCTA `z-50`).
 
-A realtime subscription (`event: "*"`) minden UPDATE utan ujratolt minden rendelest. Ez egy rovid villanast okoz es neha dupla log uzenetet:
+### 3. Kompaktabb mobil megjelenes
 
-```text
-[KDS] Updating order #X55288: new -> preparing
-[KDS] Update successful for #X55288: status is now "preparing"
-[KDS] Updating order #X55288: new -> preparing    <-- DUPLA!
-[KDS] Update successful for #X55288: status is now "preparing"
-```
+- Cookie ikon megjelenik mobilon is (kicsi, 5x5 meretu)
+- Szoveg es gomb kompaktabb elrendezesben: a gomb a szoveg ala kerul mobilon, teljes szelessegben
+- Kisebb padding mobilon (`p-3` helyett `p-4`)
+- Lekerekites finomitasa
 
-### 3. problema: AuthContext dupla fetchProfile
+### 4. Safe area tamogatas
 
-Mind a `getSession()`, mind az `onAuthStateChange` meghivja a `fetchProfile()`-t parhuzamosan, ami felesleges halozati hivasokat es potencialis allapot-konfliktusokat okoz.
+iOS eszkozokon a `pb-safe` biztositja, hogy a banner nem log be a home indicator ala (desktopra ez nem vonatkozik, mert ott `bottom-0`).
 
----
+## Technikai reszletek
 
-## Javitasi Terv
-
-### 1. Javitas: Toast rendszer kicserelese Sonner-re (A legfontosabb!)
-
-A `StaffOrders.tsx`-ben a `useToast()` (shadcn) hivasokat lecsereljuk a `toast()` fuggvenyre a `sonner` konyvtarbol, ami mar renderelve van az `App.tsx`-ben. Igy MINDEN toast azonnal lathato lesz.
-
-Valtozas:
-- Import csere: `import { toast } from "sonner"` hasznalatara
-- `toast({ title: "...", description: "..." })` -> `toast.success("...")` vagy `toast.error("...")`
-- A `useToast()` hook teljesen eltavolithato a fajlbol
-
-### 2. Javitas: Dupla-tuzeles megakadalyozasa
-
-A realtime subscription `fetchOrders` hivasa kavet egy rovid debounce logika (pl. `setTimeout` + `clearTimeout` 300ms-mal). Ez megakadalyozza, hogy a realtime es a lokalis allapotfrissites egymasra hasson.
-
-Emellett: amikor egy status update sikeresen visszajon (`.select()` adattal), **optimistikusan frissitjuk a lokalis allapotot** is, igy a kartya azonnal atmozdul anelkul, hogy az osszes rendelest ujratoltenenk.
-
-### 3. Javitas: AuthContext robusztusabb fetchProfile
-
-Egy `isFetchingRef` flag megakadalyozza, hogy a `fetchProfile` ketszer fusson parhuzamosan. Ha a `getSession` mar elinditotta, az `onAuthStateChange` nem indit ujabb hivast.
-
----
-
-## Technikai Reszletek
-
-### Modositando fajlok
+### Modositando fajl
 
 | Fajl | Valtozas |
 |------|---------|
-| `src/pages/staff/StaffOrders.tsx` | `useToast()` csere `sonner` `toast`-ra, optimistikus allapotfrissites, realtime debounce |
-| `src/contexts/AuthContext.tsx` | `isFetchingRef` dupla-hivas vedekezeshez |
+| `src/components/CookieConsent.tsx` | Pozicio, z-index, responsive layout javitas |
 
-### StaffOrders.tsx konkret valtozasok
+### CookieConsent.tsx konkret valtozasok
 
-**Import csere:**
-```text
-TOROLNI: import { useToast } from "@/components/ui/use-toast";
-HOZZAADNI: import { toast } from "sonner";
-```
+**Kulso wrapper:**
+- `bottom-0` -> `bottom-[72px] md:bottom-0` (mobilon a sticky CTA folott)
+- `z-50` -> `z-[60]` (biztosan a CTA folott)
+- `p-4` -> `p-3 md:p-4` (kompaktabb mobilon)
 
-**Hook eltavolitasa:**
-```text
-TOROLNI: const { toast } = useToast();
-```
+**Belso kartya:**
+- `p-4 md:p-6` -> `p-3 md:p-5` (kicsit kompaktabb)
+- `flex-col sm:flex-row` marad, de a gomb mobilon teljes szelessegu lesz
 
-**handleStatusChange toast hivasok atirasa:**
+**Cookie ikon:**
+- `hidden sm:block` -> mindig lathato, de mobilon kisebb (`h-5 w-5` vs `h-7 w-7`)
 
-```text
-JELENLEGI (lathatatlan):
-  toast({ title: "Hiba", description: error.message, variant: "destructive" })
-  toast({ title: statusLabels[newStatus] })
+**Elfogadom gomb:**
+- Mobilon `w-full` hogy jobban megtalalhato legyen
+- Desktopon marad `shrink-0`
 
-JAVITOTT (lathato):
-  toast.error(error.message || "Nem sikerult frissiteni a statuszt")
-  toast.success(statusLabels[newStatus] || "Statusz frissitve")
-```
-
-**fetchOrders toast atirasa:**
-```text
-JELENLEGI: toast({ title: "Hiba", description: "...", variant: "destructive" })
-JAVITOTT: toast.error("Nem sikerult betolteni a rendeleseket")
-```
-
-**Optimistikus allapotfrissites a handleStatusChange-ben:**
-```text
-// Sikeres update utan azonnal frissitjuk a lokalis allapotot
-setOrders(prev =>
-  prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o)
-);
-```
-
-**Realtime debounce:**
-```text
-// useRef a debounce timer-hez
-const refetchTimerRef = useRef<NodeJS.Timeout>();
-
-// A realtime callbackban:
-.on("postgres_changes", { event: "*", ... }, () => {
-  clearTimeout(refetchTimerRef.current);
-  refetchTimerRef.current = setTimeout(() => fetchOrders(), 300);
-})
-```
-
-### AuthContext.tsx valtozasok
-
-```text
-// useRef hozzaadasa:
-const isFetchingRef = useRef(false);
-
-// fetchProfile elejen:
-if (isFetchingRef.current) return;
-isFetchingRef.current = true;
-
-// fetchProfile finally blokkjaban:
-isFetchingRef.current = false;
-```
-
-Ez megakadalyozza, hogy a `getSession` es az `onAuthStateChange` parhuzamosan kethivast inditsanak.
