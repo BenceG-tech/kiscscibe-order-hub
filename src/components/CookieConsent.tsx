@@ -30,13 +30,13 @@ const CookieConsent = () => {
 
   return (
     <div
-      className={`fixed bottom-0 left-0 right-0 z-50 p-4 transition-all duration-300 ${
+      className={`fixed bottom-[72px] md:bottom-0 left-0 right-0 z-[60] p-3 md:p-4 transition-all duration-300 ${
         animateOut ? "translate-y-full opacity-0" : "translate-y-0 opacity-100"
       }`}
     >
-      <div className="max-w-4xl mx-auto bg-card border border-border rounded-2xl shadow-2xl p-4 md:p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-        <Cookie className="h-8 w-8 text-primary shrink-0 hidden sm:block" />
-        <div className="flex-1 text-sm text-muted-foreground">
+      <div className="max-w-4xl mx-auto bg-card border border-border rounded-2xl shadow-2xl p-3 md:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-3 md:gap-4">
+        <Cookie className="h-5 w-5 sm:h-7 sm:w-7 text-primary shrink-0" />
+        <div className="flex-1 text-xs sm:text-sm text-muted-foreground">
           <p>
             Weboldalunk sütiket és helyi tárolást (localStorage) használ a megfelelő működés biztosításához.
             Jelenleg csak a szükséges (elengedhetetlen) sütiket használjuk.{" "}
@@ -45,7 +45,7 @@ const CookieConsent = () => {
             </Link>
           </p>
         </div>
-        <Button onClick={handleAccept} size="sm" className="shrink-0 whitespace-nowrap">
+        <Button onClick={handleAccept} size="sm" className="w-full sm:w-auto shrink-0 whitespace-nowrap">
           Elfogadom
         </Button>
       </div>
