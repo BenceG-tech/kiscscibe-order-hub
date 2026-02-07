@@ -1,182 +1,231 @@
 
-# Napi Menu Ar Javitas + Mobil Design Fejlesztes
 
-## 1. Ar Problema - Gyoker Ok
+# Fooldal Mobil Design Fejlesztes - Teljes Attekintes
 
-Az adatbazis ket kulonbozo helyen tarlja az arat:
+A fooldal mobilon vegignezve az alabbi javitasokat javaslom szekcionkent. Minden valtozas **kizarolag mobil nezetre** vonatkozik, a desktop megjelenes valtozatlan marad.
 
-- `daily_offers.price_huf` = **2200 Ft** (ezt allitod be az admin "Napi menu ar" mezoben)
-- `daily_offer_menus.menu_price_huf` = **1800 Ft** (ezt hozza letre automatikusan a korabbi javitas, kemenykoddolt ertekkel)
+---
 
-A frontend a `daily_offer_menus.menu_price_huf`-ot jelenititi meg a vasarloknak, ezert latnak 1800 Ft-ot 2200 helyett.
+## 1. Navigacio (ModernNavigation) - Info Bar Optimalizalas
 
-Harom hely van, ahol az ar helytelen:
+**Jelenlegi problema**: A felso info bar ("Ma nyitva: H-P 7:00-16:00") sok helyet foglal mobilon, es tol lefele a tartalmat.
 
-1. **Auto-create logika** (`WeeklyMenuGrid.tsx`): kemenykoddolt `1800` Ft-tal hozza letre a `daily_offer_menus` rekordot, ahelyett, hogy a `daily_offers.price_huf` erteket hasznalna
-2. **PromoSection.tsx**: kemenykoddolt "2 200 Ft" szoveg, nem adatbazisbol jon
-3. **Jelenlegi adat**: A feb. 9-i rekord is 1800 Ft-tal lett letrehozva
-
-## 2. Javitasi Terv
-
-### 2a. WeeklyMenuGrid.tsx - Auto-create logika javitasa
-
-Az `updateMenuPartMutation`-ban a `daily_offer_menus` letrehozasakor:
-
-```text
-JELENLEGI (hibas):
-  menu_price_huf: 1800  <-- kemenykoddolt
-
-JAVITOTT:
-  1. Lekerdezes: SELECT price_huf FROM daily_offers WHERE id = offerId
-  2. Ha van offer_price: menu_price_huf = offer_price
-  3. Ha nincs: menu_price_huf = 1800 (fallback)
-```
-
-### 2b. WeeklyMenuGrid.tsx - Ar valtozas szinkronizalasa
-
-Amikor az admin megvaltoztatja a "Napi menu ar" mezot (`updatePriceMutation`), szinkronizalni kell a `daily_offer_menus.menu_price_huf`-ot is:
-
-```text
-JELENLEGI:
-  UPDATE daily_offers SET price_huf = X
-
-JAVITOTT:
-  1. UPDATE daily_offers SET price_huf = X
-  2. SELECT id FROM daily_offer_menus WHERE daily_offer_id = offerId
-  3. Ha letezik: UPDATE daily_offer_menus SET menu_price_huf = X
-```
-
-Ez biztositja, hogy az ar valtozas azonnal megjelenik a frontenden is.
-
-### 2c. Jelenlegi adatok javitasa
-
-A feb. 9-i rekordot es az osszes tobbi hibas rekordot javitani kell:
-
-```sql
-UPDATE daily_offer_menus dom
-SET menu_price_huf = d.price_huf
-FROM daily_offers d
-WHERE dom.daily_offer_id = d.id
-AND dom.menu_price_huf != d.price_huf;
-```
-
-Ez egy egyszeri migracios lepkent kerul be.
-
-### 2d. PromoSection.tsx - Dinamikus ar
-
-A PromoSection jelenleg kemenykoddolt "2 200 Ft"-ot mutat. Ezt lecsereljuk dinamikus lekerdezesre, ami a mai nap `daily_offer_menus.menu_price_huf` erteket hasznalja, fallback-kel az alapertelmezett 2200 Ft-ra.
-
-## 3. Mobil Design Fejlesztes - Napi Menu
-
-A jelenlegi mobil nezet funkcionalis, de nem eleg felhasznalobaarat. Javitasok:
-
-### 3a. DailyMenuPanel.tsx - Kompaktabb, vonzobb mobil kartya
-
-**Jelenlegi**: Ket darab 16:9-es kep egymas alatt (hosszu gorgetesre kenyszerit). Az ar egy kis badge.
-
-**Javitott mobil nezet**:
-- A ket etelkep **egymas mellett** jelenik meg mobilon is (2 hasabos racs), de kisebb meretu kartyakkal
-- Az ar badge nagyobb es kiemeltebb, kozepre pozicionalva a kartya tetején
-- A "Leves + Foetel kedvezmenyes aron" szoveg rogton az ar ala kerul
-- Az etelkep aranyat mobilon `aspect-[4/3]`-ra csokkentjuk a kompaktabb nezetert (desktopon marad 16:9)
-- A CTA "Menu kosarba" gomb teljes szelessegu mobilon, nagyobb padding-gel
-
-### 3b. DailyMenuPanel.tsx - Ar kiemeles
-
-A menu ar jelenleg egy kis badge a jobb felso sarokban. Javitasok:
-- Nagyobb, szembetunotobb ar megjeleniteis mobilon (text-2xl)
-- Az ar a kartya kozepen jelenik meg mint fo elem
-- Arnyekolt hatter a jobb lathatosagert
-
-### 3c. Etlap.tsx - Menu kartya javitasa (konzisztencia)
-
-Az Etlap.tsx-ben levo inline menu kartya ugyan azt a designt hasznalja mint a DailyMenuPanel, de redundans kodot tartalmaz. Lecsereljuk a DailyMenuPanel komponens hasznalatra a konzisztencia erdekeben (a memory szerint ez kotelezo).
-
-## 4. Technikai Reszletek
-
-### Modositando fajlok
+**Javitas**:
+- Mobilon a felso info bart **egyetlen sorra** tomoritsuk, kisebb fontmerettel (`text-[11px]`)
+- A bar padding-jet csokkentsuk mobilon (`py-1` helyett `py-2`)
+- Igy a navigacio osszesen ~8px-szel kompaktabb, ami gorgetesnel szamit
 
 | Fajl | Valtozas |
 |------|---------|
-| `src/components/admin/WeeklyMenuGrid.tsx` | Auto-create ar javitas (offer price hasznalata), updatePriceMutation szinkron |
-| `supabase/migrations/[timestamp]_sync_menu_prices.sql` | Egyszeri adat-javitas: meglevo rekordok arainak szinkronizalasa |
-| `src/components/DailyMenuPanel.tsx` | Mobil-optimalizalt design: 2 hasabos racs, nagyobb ar, kompakt kepek |
-| `src/components/sections/PromoSection.tsx` | Dinamikus ar lekerdezes a kemenykoddolt "2 200 Ft" helyett |
-| `src/pages/Etlap.tsx` | DailyMenuPanel hasznalata az inline menu kartya helyett (konzisztencia) |
+| `src/components/ModernNavigation.tsx` | Mobil info bar padding es fontmeret csokkentese |
 
-### WeeklyMenuGrid.tsx valtozasok
+---
 
-**updateMenuPartMutation (auto-create resz):**
-```text
-// Jelenlegi:
-menu_price_huf: 1800
+## 2. Hero Section - Kompaktabb mobilon
 
-// Javitott:
-// 1. Lekerdezes: daily_offers.price_huf
-const { data: offerData } = await supabase
-  .from("daily_offers")
-  .select("price_huf")
-  .eq("id", offerId)
-  .single();
-const menuPrice = offerData?.price_huf || 1800;
+**Jelenlegi**: `min-h-[70vh]` mobilon - ez tul magas, a fontos tartalom (napi menu) messze van.
 
-// 2. Hasznalat:
-menu_price_huf: menuPrice
-```
+**Javitas**:
+- Hero magassag mobilon: `min-h-[55vh]` (desktopon marad `md:min-h-[80vh]`)
+- CTA gombok kozotti gap: `gap-3` mobilon (jelenleg `gap-4`)
+- Subtitle (`hazias izek minden nap`) fontmeret: `text-lg` mobilon (jelenleg `text-xl`)
+- Leiras szoveg: mobilon `text-sm` (jelenleg `text-base`)
+- Ezzel a napi ajanlat kozelebb kerul a kepernyohoz es kevesebb gorgetest igenyel
 
-**updatePriceMutation (szinkron resz):**
-```text
-// A sikeres daily_offers.price_huf update utan:
-// Szinkron: daily_offer_menus.menu_price_huf frissitese
-const { data: existingMenu } = await supabase
-  .from("daily_offer_menus")
-  .select("id")
-  .eq("daily_offer_id", offerId)
-  .maybeSingle();
+| Fajl | Valtozas |
+|------|---------|
+| `src/components/sections/HeroSection.tsx` | Mobil hero magassag, fontmeretek, gap csokkentese |
 
-if (existingMenu) {
-  await supabase
-    .from("daily_offer_menus")
-    .update({ menu_price_huf: price })
-    .eq("daily_offer_id", offerId);
-}
-```
+---
 
-### DailyMenuPanel.tsx mobil design valtozasok
+## 3. USP Section (Ertekeink) - Horizontalis Scroll Szalag
 
-```text
-JELENLEGI mobil:
-- grid-cols-1 (1 hasab, ket nagy kartya egymas alatt)
-- aspect-[16/9] kepek (nagyon magasak mobilon)
-- Kis ar badge a fejlecben
+**Jelenlegi problema**: 4 kartya egymas alatt (`grid-cols-1`) = nagyon hosszu gorgetesi tavon. A kartyak tartalma rovid, megis mindegyik kulon sort foglal.
 
-JAVITOTT mobil:
-- grid-cols-2 (2 hasab mobilon is, kompaktabb)
-- aspect-[4/3] kepek mobilon, aspect-[16/9] desktopon
-- Nagyobb ar badge kozepre pozicionalva
-- Etelnev kicsit kisebb mobilon (text-base vs text-lg)
-- CTA gomb teljes szelessegu, magasabb (h-12)
-```
+**Javitas**:
+- Mobilon a 4 kartya **horizontalisan gorgetheto szalag** lesz (SnapScroll), nem fuggoleges grid
+- Minden kartya `min-w-[260px]` es `snap-center`
+- Vizualis jelzes: a szalag kicsit tullep a kepernyoszelen (peek effektus), jelezve hogy gorgetheto
+- Alatta halvany pontok jelzik az aktualis poziciot (opcionalis, de tisztabb UX)
+- Desktopon marad a 4 oszlopos grid
 
-### PromoSection.tsx valtozasok
+| Fajl | Valtozas |
+|------|---------|
+| `src/components/sections/USPSection.tsx` | Mobil: horizontalis snap-scroll szalag a fuggoleges grid helyett |
 
-```text
-JELENLEGI:
-  <p className="text-2xl font-bold text-primary">2 200 Ft</p>
+---
 
-JAVITOTT:
-  // Adatlekerdezes a mai nap menujabol
-  const { data } = useQuery({
-    queryKey: ["promo-menu-price"],
-    queryFn: async () => {
-      const today = format(new Date(), 'yyyy-MM-dd');
-      const { data } = await supabase.rpc('get_daily_data', { target_date: today });
-      return data?.[0]?.menu_price_huf || 2200;
-    }
-  });
-  
-  // Megjelenitesben:
-  <p className="text-2xl font-bold text-primary">
-    {data ? data.toLocaleString('hu-HU') : '2 200'} Ft
-  </p>
-```
+## 4. Reviews Section (Velemenyek) - Karusszel
+
+**Jelenlegi problema**: 3 velemeny kartya egymas alatt = nagyon hosszu mobilon. Minden kartya ~200px magas, osszesen ~600px gorgetest igenyel.
+
+**Javitas**:
+- Mobilon a 3 velemeny **horizontalis karusszel**ben jelenik meg (snap-scroll)
+- Minden kartya teljes szelessegu (`w-[85vw]` vagy hasonlo), de a kovetkezo kartya szele latszik (peek)
+- Az atlagos ertekeles es "127 ertekeles" resz kompaktabb mobilon (jelenleg tul nagy gap)
+- A CTA gombok (`Napi menu megtekintese` + `Utvonalterv`) mobilon egymas ala kerulnek teljes szelessegben - ez mar igy van, de a felso `mt-12` margot `mt-8`-ra csokkentjuk
+- Desktopon marad a 3 oszlopos grid
+
+| Fajl | Valtozas |
+|------|---------|
+| `src/components/sections/ReviewsSection.tsx` | Mobil: horizontalis karusszel, kompaktabb header |
+
+---
+
+## 5. Gallery Section - Mar Jo!
+
+A galeria szekcion mobilon mar hasznalodik a Tab-alapu navigacio (Etelek / Ettermunk). Ez jo megoldas, nem kell hozzanyulni.
+
+---
+
+## 6. PromoSection - Kompaktabb
+
+**Jelenlegi**: A mobil nezet jo, de van meg lehetoseg helytakarekossagra.
+
+**Javitas**:
+- A ket info badge ("+200 Ft elvitel" es "-10% 11:30-13:00") egyetlen sorban jelenik meg `flex` elrendezessel a `grid-cols-2` helyett
+- Igy a szekcion kb. 40px-szel kompaktabb
+- A "Reszletek" CTA gomb mobilon kiebb (`h-10` helyett `min-h-[44px]`)
+
+| Fajl | Valtozas |
+|------|---------|
+| `src/components/sections/PromoSection.tsx` | Mobil: kompaktabb badge elrendezes |
+
+---
+
+## 7. Allergen Section - Kompaktabb Chip Layout
+
+**Jelenlegi problema**: Az allergenek `flex-wrap`-ben vannak egy kartya belsejeben. Mobilon ez feleslegesen nagy kartya.
+
+**Javitas**:
+- Mobilon a kartya padding csokkentese (`p-4` helyett `p-6`)
+- Az allergenek `grid-cols-3` layoutban jelennek meg mobilon (5 elem, az utolso kozepen) a szorosabb elhelyezesert
+- Kisebb gap (`gap-3` helyett `gap-6`)
+- A szekcion cime (`Allergen jelmagyarazat`) mobilon `text-xl` (jelenleg `text-2xl`)
+
+| Fajl | Valtozas |
+|------|---------|
+| `src/components/sections/AllergenSection.tsx` | Mobil: kisebb padding, grid layout, kisebb cim |
+
+---
+
+## 8. Map Section - Terkep Felett Info
+
+**Jelenlegi problema**: Mobilon a terkep es az info kartya egymas alatt van (`grid-cols-1`). A terkep iframe `height="300"` elore fixalt - ez jo, de mobilon a sorrend nem optimalis. A terkep eloszor jelenik meg, es a fontos cim/cim info csak alatta.
+
+**Javitas**:
+- Mobilon a sorrend megfordul: **eloszor az info kartya** (cim, busz info, utvonalterv gomb), **utana a terkep**
+- Ez CSS `order` class-okkal (mobilon `order-2` a terkepnek, `order-1` az info kartyanak)
+- A terkep magassaga mobilon `h-[220px]` (jelenleg 300px) - kompaktabb, de meg hasznalhato
+- A szekcion cime mobilon `text-xl` (jelenleg `text-2xl`)
+
+| Fajl | Valtozas |
+|------|---------|
+| `src/components/sections/MapSection.tsx` | Mobil: sorrend csere (info elore, terkep hatra), kisebb terkep |
+
+---
+
+## 9. FAQ Section - Mar Jo, Finom Hangolas
+
+**Jelenlegi**: Az Accordion-alapu FAQ jo mobilon. 
+
+**Javitas**:
+- A kartya padding mobilon `p-4` (jelenleg `p-6`)
+- A szekcion `py-8` mobilon (jelenleg `py-12`) - kisebb fuggoleges tavkoz a tobbi szekciohoz kepest
+- A cim mobilon `text-xl` (jelenleg `text-2xl`)
+
+| Fajl | Valtozas |
+|------|---------|
+| `src/components/sections/FAQSection.tsx` | Mobil: kisebb padding es margin |
+
+---
+
+## 10. Newsletter Section - Kompaktabb
+
+**Jelenlegi problema**: Az ikon, cim, leiras es form tul nagy tavval vannak egymasol mobilon.
+
+**Javitas**:
+- Az email ikon merete mobilon: `w-12 h-12` (jelenleg `w-16 h-16`) 
+- A cim mobilon `text-xl` (jelenleg `text-2xl`)
+- A leiras mobilon `text-sm` (jelenleg `text-lg`)
+- A form padding kompaktabb
+- A szekcion `py-8` mobilon (jelenleg `py-12`)
+
+| Fajl | Valtozas |
+|------|---------|
+| `src/components/sections/NewsletterSection.tsx` | Mobil: kisebb ikon, fontmeretek es padding |
+
+---
+
+## 11. Footer - Kompaktabb Mobil
+
+**Jelenlegi**: A footer 6 oszlopos grid desktopon (ez jo), de mobilon mind az 5 szekcion (logo, elerhetoseg, nyitvatartas, gyors linkek, jogi info) egymas alatt van. Ez nagyon hosszu.
+
+**Javitas**:
+- A "Gyors linkek" es "Jogi informaciok" oszlopok mobilon egymas mellett jelennek meg (`grid-cols-2`)
+- A "Nyitvatartas" es "Elerhetoseg" oszlopok mobilon szinten egymas mellett
+- Igy a footer kb. felere csokkenti a fuggoleges helyet mobilon
+- A logo marad kozepen felul
+
+| Fajl | Valtozas |
+|------|---------|
+| `src/components/Footer.tsx` | Mobil: 2 oszlopos elrendezes a gyors linkek/jogi info es elerhetoseg/nyitvatartas szamara |
+
+---
+
+## 12. Globalis Javitas - Szekciok Kozotti Tavkozok
+
+**Jelenlegi problema**: Minden szekcion `py-12` padding van mobilon. Ez osszesen ~240px felesleges ures hely (10 szekcion x 24px felso+also).
+
+**Javitas**:
+- Mobilon a szekciok `py-8` padding-et kapnak (desktopon marad `md:py-12` vagy `md:py-20`)
+- Ez nem valtoztatja meg az egyes szekciok belso kialakitasat, csak kozelebb hozza oket
+- Az `Index.tsx`-ben az alternalo `bg-primary/5` hatteres `div`-eken nem valtoztatunk
+
+| Fajlok | Valtozas |
+|--------|---------|
+| Minden szekcion komponens | `py-12` -> `py-8 md:py-12` (ahol relevan) |
+
+---
+
+## Osszefoglalas: Hatasok
+
+| Javitas | Becsult hely-megtakaritas mobilon |
+|---------|----------------------------------|
+| Hero magassag csokkentes | ~120px |
+| USP horizontalis scroll | ~400px (4 kartya -> 1 sor) |
+| Reviews karusszel | ~350px (3 kartya -> 1 sor) |
+| Szekciok padding csokkentes | ~160px |
+| Footer kompaktalas | ~200px |
+| Egyeb finomhangolas | ~100px |
+| **Osszes** | **~1330px kevesebb gorgetesi tav** |
+
+Ez jelentosen javitja a mobil felhasznaloi elmenyt: a fontos tartalom (napi menu, rendelesi lehetoseg) hamarabb elerheto, es az oldal nem tunik vegtelenul hosszunak.
+
+## Technikai Reszletek
+
+### Modositando fajlok osszesitese
+
+| Fajl | Fo valtozas |
+|------|-------------|
+| `src/components/ModernNavigation.tsx` | Info bar padding csokkentes |
+| `src/components/sections/HeroSection.tsx` | `min-h-[55vh]` mobilon |
+| `src/components/sections/USPSection.tsx` | Horizontalis snap-scroll mobilon |
+| `src/components/sections/ReviewsSection.tsx` | Horizontalis karusszel mobilon |
+| `src/components/sections/PromoSection.tsx` | Kompaktabb badge layout |
+| `src/components/sections/AllergenSection.tsx` | Grid layout, kisebb padding |
+| `src/components/sections/MapSection.tsx` | Sorrend csere, kisebb terkep |
+| `src/components/sections/FAQSection.tsx` | Kisebb padding |
+| `src/components/sections/NewsletterSection.tsx` | Kisebb ikon, fontmeretek |
+| `src/components/Footer.tsx` | 2 oszlopos mobil grid |
+
+### Hasznalt technikak
+
+- **CSS snap-scroll**: `overflow-x-auto snap-x snap-mandatory` a horizontalis karusszelekhez
+- **Peek effektus**: `px-4` padding a scroll kontenernel, ami lehetove teszi hogy a kovetkezo kartya szele latsszon
+- **CSS order**: `order-1 md:order-none` a terkep szekcion sorrend cserejehez
+- **No-scrollbar**: A meglevo `.no-scrollbar` CSS utility hasznalata a gorgetheto szalagoknal
+- **Responsive padding**: `py-8 md:py-12` minta minden szekcion
+
+Minden valtozas **kizarolag Tailwind responsive class-okkal** tortenik, nem kell uj CSS-t irni. A meglevo funkcionalitas (gombok, linkek, kosarba teves) valtozatlan marad.
+
