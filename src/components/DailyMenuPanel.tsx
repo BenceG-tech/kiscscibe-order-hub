@@ -173,23 +173,11 @@ const DailyMenuPanel = ({ date, menuData, loading }: DailyMenuPanelProps) => {
 
           {/* Premium CTA Section */}
           <div className="mt-4 md:mt-6 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-2xl p-3 md:p-5">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 md:gap-4">
-              {/* Availability badge */}
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 md:w-11 md:h-11 bg-primary/20 rounded-full flex items-center justify-center">
-                  <ChefHat className="h-4 w-4 md:h-5 md:w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">Elérhető adagok</p>
-                  <p className="text-xl md:text-2xl font-bold text-primary">{menuData.menu_remaining_portions}</p>
-                </div>
-              </div>
-              
-              {/* CTA Button */}
+            <div className="flex items-center justify-center">
               <Button 
                 onClick={handleAddMenuToCart}
                 size="lg"
-                className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80 shadow-lg hover:shadow-xl transition-all px-6 h-12"
+                className="w-full bg-gradient-to-r from-primary to-primary/80 shadow-lg hover:shadow-xl transition-all px-6 h-12"
                 disabled={!isAvailable}
               >
                 <ShoppingCart className="h-5 w-5 mr-2" />

@@ -39,21 +39,21 @@ const USPSection = () => {
           <div className="w-12 h-1 bg-primary mx-auto mt-3 md:mt-4 rounded-full" />
         </div>
         
-        {/* Mobile: horizontal snap-scroll ribbon */}
-        <div className="md:hidden flex overflow-x-auto snap-x snap-mandatory no-scrollbar -mx-4 px-4 gap-4 pb-2">
+        {/* Mobile: compact 2x2 grid */}
+        <div className="md:hidden grid grid-cols-2 gap-3">
           {features.map((feature, index) => {
             const IconComponent = feature.icon;
             return (
               <Card 
                 key={index} 
-                className="min-w-[260px] snap-center rounded-3xl shadow-soft border-0 bg-card text-center flex-shrink-0"
+                className="rounded-2xl shadow-soft border-0 bg-card text-center"
               >
-                <CardContent className="p-5">
-                  <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-primary/20 to-warmth/20 rounded-2xl shadow-soft mb-4">
-                    <IconComponent className="h-7 w-7 text-primary" strokeWidth={1.5} />
+                <CardContent className="p-4">
+                  <div className="inline-flex items-center justify-center w-10 h-10 bg-gradient-to-br from-primary/20 to-warmth/20 rounded-xl shadow-soft mb-2">
+                    <IconComponent className="h-5 w-5 text-primary" strokeWidth={1.5} />
                   </div>
-                  <h3 className="font-bold text-foreground text-lg mb-2 font-sofia">{feature.title}</h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">{feature.description}</p>
+                  <h3 className="font-bold text-foreground text-base mb-1 font-sofia">{feature.title}</h3>
+                  <p className="text-muted-foreground text-xs leading-relaxed">{feature.description}</p>
                 </CardContent>
               </Card>
             );
