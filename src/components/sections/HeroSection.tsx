@@ -6,7 +6,7 @@ import heroMobile from "@/assets/hero-mobile.png";
 const HeroSection = () => {
 
   return (
-    <section className="relative min-h-[70vh] md:min-h-[80vh] flex items-center justify-center overflow-hidden">
+    <section className="relative min-h-[55vh] md:min-h-[80vh] flex items-center justify-center overflow-hidden">
       {/* Background Image with responsive desktop/mobile versions */}
       <div className="absolute inset-0">
         <picture>
@@ -28,20 +28,20 @@ const HeroSection = () => {
           style={{ animationDelay: '0.1s', animationFillMode: 'forwards' }}
         >
           Kiscsibe Reggeliző & Étterem
-          <span className="block text-xl sm:text-2xl md:text-4xl lg:text-5xl mt-2 text-primary font-sofia">
+          <span className="block text-lg sm:text-2xl md:text-4xl lg:text-5xl mt-2 text-primary font-sofia">
             házias ízek minden nap
           </span>
         </h1>
         
         <p 
-          className="text-base sm:text-lg md:text-xl mb-8 text-gray-200 max-w-2xl mx-auto leading-relaxed animate-fade-in-up opacity-0"
+          className="text-sm sm:text-lg md:text-xl mb-6 md:mb-8 text-gray-200 max-w-2xl mx-auto leading-relaxed animate-fade-in-up opacity-0"
           style={{ animationDelay: '0.3s', animationFillMode: 'forwards' }}
         >
           Friss levesek, kiadós főételek, gyors átvétel Zuglóban.
         </p>
 
         <div 
-          className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up opacity-0"
+          className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center animate-fade-in-up opacity-0"
           style={{ animationDelay: '0.5s', animationFillMode: 'forwards' }}
         >
           <Button 

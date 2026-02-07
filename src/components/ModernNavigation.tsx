@@ -64,12 +64,12 @@ const ModernNavigation = () => {
     }`}>
       {/* Top info bar - Thinner */}
       <div className={`bg-primary/10 border-b border-primary/20 transition-all duration-300 ${
-        scrolled ? "py-1.5" : "py-2"
+        scrolled ? "py-1 md:py-1.5" : "py-1 md:py-2"
       }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-1.5">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-1 md:gap-1.5">
             <div className={`text-foreground font-medium text-center md:text-left transition-all duration-300 ${
-              scrolled ? "text-xs" : "text-sm"
+              scrolled ? "text-[11px] md:text-xs" : "text-[11px] md:text-sm"
             }`}>
               Ma nyitva: H–P 7:00–16:00 • Szo-V Zárva
             </div>

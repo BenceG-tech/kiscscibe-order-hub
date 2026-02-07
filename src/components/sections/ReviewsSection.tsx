@@ -65,85 +65,97 @@ const ReviewsSection = () => {
     ));
   };
 
+  const ReviewCard = ({ review, index }: { review: typeof reviews[0]; index: number }) => (
+    <Card 
+      className={`rounded-3xl hover:shadow-xl hover:-translate-y-1 transition-all duration-300 shadow-soft relative overflow-hidden ${
+        index === 0 ? 'md:col-span-2 lg:col-span-1' : ''
+      }`}
+      style={{ animationDelay: `${index * 100}ms` }}
+    >
+      {/* Quotation mark decoration */}
+      <div className="absolute top-4 right-4 text-6xl text-primary/10 font-serif leading-none pointer-events-none">
+        "
+      </div>
+      
+      <CardContent className="p-5 md:p-8">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-3 md:mb-4">
+          <div className="flex items-center gap-3">
+            {/* Avatar placeholder */}
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-warmth/20 flex items-center justify-center text-primary font-bold text-sm">
+              {review.name.split(' ').map(n => n[0]).join('')}
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <h4 className="font-semibold text-foreground text-sm md:text-base">{review.name}</h4>
+                {review.verified && (
+                  <Badge variant="secondary" className="text-xs bg-green-500/10 text-green-600 dark:text-green-400">
+                    ✓
+                  </Badge>
+                )}
+              </div>
+              <p className="text-xs md:text-sm text-muted-foreground">{review.date}</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-0.5">
+            {renderStars(review.rating)}
+          </div>
+        </div>
+
+        {/* Review Text */}
+        <p className="text-muted-foreground text-sm md:text-base leading-relaxed relative z-10">
+          "{review.text}"
+        </p>
+      </CardContent>
+    </Card>
+  );
+
   return (
-    <section className="py-12 md:py-20">
+    <section className="py-8 md:py-20">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-6 md:mb-12">
           <span className="text-xs md:text-sm uppercase tracking-[0.2em] text-muted-foreground font-medium">
             Vélemények
           </span>
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mt-2 mb-4 font-sofia">
+          <h2 className="text-2xl md:text-4xl font-bold text-foreground mt-2 mb-3 md:mb-4 font-sofia">
             Mit mondanak vendégeink?
           </h2>
-          <div className="w-12 h-1 bg-primary mx-auto mb-6 rounded-full" />
+          <div className="w-12 h-1 bg-primary mx-auto mb-4 md:mb-6 rounded-full" />
           
           {/* Overall Rating */}
-          <div className="flex items-center justify-center gap-2 mb-2">
+          <div className="flex items-center justify-center gap-2 mb-1 md:mb-2">
             <div className="flex items-center gap-1">
               {renderStars(Math.round(averageRating))}
             </div>
-            <span className="text-2xl font-bold text-foreground">{averageRating}</span>
+            <span className="text-xl md:text-2xl font-bold text-foreground">{averageRating}</span>
           </div>
           
-          <p className="text-muted-foreground">
+          <p className="text-sm md:text-base text-muted-foreground">
             {totalReviews} értékelés alapján
           </p>
         </div>
 
-        {/* Reviews Grid - First review featured */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Mobile: horizontal snap-scroll carousel */}
+        <div className="md:hidden flex overflow-x-auto snap-x snap-mandatory no-scrollbar -mx-4 px-4 gap-4 pb-2">
           {reviews.slice(0, 3).map((review, index) => (
-            <Card 
-              key={index} 
-              className={`rounded-3xl hover:shadow-xl hover:-translate-y-1 transition-all duration-300 shadow-soft relative overflow-hidden ${
-                index === 0 ? 'md:col-span-2 lg:col-span-1' : ''
-              }`}
-              style={{ animationDelay: `${index * 100}ms` }}
-            >
-              {/* Quotation mark decoration */}
-              <div className="absolute top-4 right-4 text-6xl text-primary/10 font-serif leading-none pointer-events-none">
-                "
-              </div>
-              
-              <CardContent className="p-6 md:p-8">
-                {/* Header */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    {/* Avatar placeholder */}
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-warmth/20 flex items-center justify-center text-primary font-bold text-sm">
-                      {review.name.split(' ').map(n => n[0]).join('')}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-semibold text-foreground">{review.name}</h4>
-                        {review.verified && (
-                          <Badge variant="secondary" className="text-xs bg-green-500/10 text-green-600 dark:text-green-400">
-                            ✓ Ellenőrzött
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground">{review.date}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-1">
-                    {renderStars(review.rating)}
-                  </div>
-                </div>
+            <div key={index} className="min-w-[85vw] snap-center flex-shrink-0">
+              <ReviewCard review={review} index={index} />
+            </div>
+          ))}
+        </div>
 
-                {/* Review Text */}
-                <p className="text-muted-foreground text-base leading-relaxed relative z-10">
-                  "{review.text}"
-                </p>
-              </CardContent>
-            </Card>
+        {/* Desktop: 3-column grid */}
+        <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-6">
+          {reviews.slice(0, 3).map((review, index) => (
+            <ReviewCard key={index} review={review} index={index} />
           ))}
         </div>
 
         {/* CTA */}
-        <div className="text-center mt-12">
-          <p className="text-muted-foreground mb-4">
+        <div className="text-center mt-8 md:mt-12">
+          <p className="text-muted-foreground mb-4 text-sm md:text-base">
             Próbálja ki Ön is éttermünket!
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
