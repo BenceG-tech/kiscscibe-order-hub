@@ -288,6 +288,22 @@ export default function WeeklyMenuGrid() {
           .eq("id", existingOffer.id);
         
         if (error) throw error;
+
+        // Sync price to daily_offer_menus if it exists
+        if (price !== null) {
+          const { data: existingMenu } = await supabase
+            .from("daily_offer_menus")
+            .select("id")
+            .eq("daily_offer_id", existingOffer.id)
+            .maybeSingle();
+          
+          if (existingMenu) {
+            await supabase
+              .from("daily_offer_menus")
+              .update({ menu_price_huf: price })
+              .eq("daily_offer_id", existingOffer.id);
+          }
+        }
       } else {
         // Create new daily_offer with price
         const { error } = await supabase
@@ -402,16 +418,24 @@ export default function WeeklyMenuGrid() {
 
       // 5. Auto-create or auto-delete
       if (isValidMenu && !existingMenu) {
+        // Fetch the offer price to use for the menu
+        const { data: offerData } = await supabase
+          .from("daily_offers")
+          .select("price_huf")
+          .eq("id", offerId)
+          .single();
+        const menuPrice = offerData?.price_huf || 1800;
+
         const { error: insertError } = await supabase
           .from("daily_offer_menus")
           .insert({
             daily_offer_id: offerId,
-            menu_price_huf: 1800,
+            menu_price_huf: menuPrice,
             max_portions: 30,
             remaining_portions: 30,
           });
         if (insertError) throw insertError;
-        return { action: "created" };
+        return { action: "created", price: menuPrice };
       } else if (!isValidMenu && existingMenu) {
         const { error: deleteError } = await supabase
           .from("daily_offer_menus")
@@ -425,9 +449,9 @@ export default function WeeklyMenuGrid() {
     },
     onSuccess: (_data) => {
       queryClient.invalidateQueries({ queryKey: ["daily-offers-week"] });
-      const result = _data as { action: string } | undefined;
+      const result = _data as { action: string; price?: number } | undefined;
       if (result?.action === "created") {
-        toast.success("Napi menü automatikusan létrehozva (1800 Ft)");
+        toast.success(`Napi menü automatikusan létrehozva (${result.price || 1800} Ft)`);
       } else if (result?.action === "deleted") {
         toast.success("Napi menü eltávolítva");
       } else {
