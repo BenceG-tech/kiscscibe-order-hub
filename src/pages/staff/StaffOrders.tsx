@@ -1,12 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import StaffLayout from "./StaffLayout";
 import KanbanColumn from "@/components/staff/KanbanColumn";
 import StatusSummaryBar from "@/components/staff/StatusSummaryBar";
 import PastOrdersSection from "@/components/staff/PastOrdersSection";
 import { LoadingSpinner } from "@/components/ui/loading";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
 import { useTickTimer } from "@/hooks/useTickTimer";
 import { RefreshCw, Inbox } from "lucide-react";
 
@@ -65,41 +65,20 @@ const COLUMNS = [
 ] as const;
 
 const StaffOrders = () => {
-  const { toast } = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const tick = useTickTimer(30000);
+  const refetchTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
-  useEffect(() => {
-    fetchOrders();
-
-    const channel = supabase
-      .channel("staff-orders-kds")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "orders" },
-        () => fetchOrders()
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     const { data: ordersData, error: ordersError } = await supabase
       .from("orders")
       .select("*")
       .order("created_at", { ascending: false });
 
     if (ordersError) {
-      toast({
-        title: "Hiba",
-        description: "Nem sikerült betölteni a rendeléseket",
-        variant: "destructive",
-      });
+      toast.error("Nem sikerült betölteni a rendeléseket");
       setLoading(false);
       return;
     }
@@ -112,7 +91,6 @@ const StaffOrders = () => {
           .select("id, name_snapshot, qty, unit_price_huf, line_total_huf")
           .eq("order_id", order.id);
 
-        // Fetch options for all items of this order
         const itemIds = (itemsData || []).map((i) => i.id);
         let optionsMap: Record<string, OrderItemOption[]> = {};
 
@@ -147,7 +125,31 @@ const StaffOrders = () => {
 
     setOrders(ordersWithItems);
     setLoading(false);
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchOrders();
+
+    const channel = supabase
+      .channel("staff-orders-kds")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "orders" },
+        () => {
+          // Debounce realtime refetches to prevent double-firing
+          clearTimeout(refetchTimerRef.current);
+          refetchTimerRef.current = setTimeout(() => fetchOrders(), 300);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      clearTimeout(refetchTimerRef.current);
+      supabase.removeChannel(channel);
+    };
+  }, [fetchOrders]);
+
+  // Old fetchOrders removed — now defined above via useCallback
 
   const handleStatusChange = async (orderId: string, newStatus: string) => {
     setUpdatingId(orderId);
@@ -168,21 +170,13 @@ const StaffOrders = () => {
 
       if (error) {
         console.error(`[KDS] DB error for #${orderCode}:`, error);
-        toast({
-          title: "Hiba",
-          description: error.message || "Nem sikerült frissíteni a státuszt",
-          variant: "destructive",
-        });
+        toast.error(error.message || "Nem sikerült frissíteni a státuszt");
         return;
       }
 
       if (!data || data.length === 0) {
         console.error(`[KDS] WARNING: 0 rows affected for #${orderCode} — possible RLS/permission issue`);
-        toast({
-          title: "Hiba",
-          description: "Nincs jogosultság vagy a rendelés nem található. Próbálj kijelentkezni és újra bejelentkezni.",
-          variant: "destructive",
-        });
+        toast.error("Nincs jogosultság vagy a rendelés nem található. Próbálj kijelentkezni és újra bejelentkezni.");
         return;
       }
 
@@ -194,16 +188,14 @@ const StaffOrders = () => {
         completed: "Átvéve – lezárva",
         cancelled: "Rendelés lemondva",
       };
-      toast({
-        title: statusLabels[newStatus] || "Státusz frissítve",
-      });
+      // Optimistic local state update so card moves immediately
+      setOrders(prev =>
+        prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o)
+      );
+      toast.success(statusLabels[newStatus] || "Státusz frissítve");
     } catch (err) {
       console.error(`[KDS] Exception:`, err);
-      toast({
-        title: "Váratlan hiba",
-        description: "Kérlek próbáld újra, vagy frissítsd az oldalt.",
-        variant: "destructive",
-      });
+      toast.error("Váratlan hiba – kérlek próbáld újra, vagy frissítsd az oldalt.");
     } finally {
       setUpdatingId(null);
     }
