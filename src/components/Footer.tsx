@@ -78,8 +78,105 @@ const Footer = ({ className }: FooterProps) => {
 
   return (
     <footer className={`bg-gray-900 text-gray-300 ${className || ""}`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        
+        {/* Mobile: Logo centered on top */}
+        <div className="flex justify-center mb-6 md:hidden">
+          <button
+            onClick={handleAdminLogoClick}
+            className="group flex flex-col items-center focus:outline-none"
+            aria-label="Kiscsibe logó"
+          >
+            <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-primary/30 transition-transform duration-200 group-active:scale-95">
+              <img
+                src={kiscsibeLogo}
+                alt="Kiscsibe Reggeliző & Étterem logó"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <h3 className="mt-2 text-white font-sofia font-bold text-base">
+              Kiscsibe
+            </h3>
+            <p className="text-gray-400 text-xs">Reggeliző & Étterem</p>
+          </button>
+        </div>
+
+        {/* Mobile: 2-column grid for compact layout */}
+        <div className="grid grid-cols-2 gap-x-4 gap-y-6 md:hidden">
+          {/* Contact Info */}
+          <div>
+            <h4 className="text-white font-semibold text-sm mb-3">Elérhetőség</h4>
+            <ul className="space-y-2">
+              <li className="flex items-start gap-1.5">
+                <MapPin className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                <span className="text-xs">1145 Budapest, Vezér utca 12.</span>
+              </li>
+              <li className="flex items-center gap-1.5">
+                <Phone className="h-4 w-4 text-primary shrink-0" />
+                <a href="tel:+3612345678" className="text-xs hover:text-primary transition-colors">
+                  +36 1 234 5678
+                </a>
+              </li>
+              <li className="flex items-center gap-1.5">
+                <Mail className="h-4 w-4 text-primary shrink-0" />
+                <a href="mailto:kiscsibeetterem@gmail.com" className="text-xs hover:text-primary transition-colors break-all">
+                  kiscsibeetterem@gmail.com
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          {/* Opening Hours */}
+          <div>
+            <h4 className="text-white font-semibold text-sm mb-3">Nyitvatartás</h4>
+            <ul className="space-y-1.5">
+              <li className="flex items-center gap-1.5">
+                <Clock className="h-4 w-4 text-primary shrink-0" />
+                <span className="text-xs">Hétfő - Péntek</span>
+              </li>
+              <li className="text-xs ml-5 text-green-400 font-medium">7:00 - 16:00</li>
+              <li className="text-xs ml-5 text-gray-500 mt-1">Szombat - Vasárnap</li>
+              <li className="text-xs ml-5 text-red-400">Zárva</li>
+            </ul>
+          </div>
+
+          {/* Quick Links */}
+          <div>
+            <h4 className="text-white font-semibold text-sm mb-3">Gyors linkek</h4>
+            <ul className="space-y-1.5">
+              {navLinks.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    to={link.href}
+                    className="text-xs hover:text-primary transition-colors"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Legal Links */}
+          <div>
+            <h4 className="text-white font-semibold text-sm mb-3">Jogi információk</h4>
+            <ul className="space-y-1.5">
+              {legalLinks.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    to={link.href}
+                    className="text-xs hover:text-primary transition-colors"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        {/* Desktop: original 6-column grid */}
+        <div className="hidden md:grid grid-cols-2 lg:grid-cols-6 gap-8">
           {/* Admin Logo Section - Left */}
           <div className="flex flex-col items-center lg:items-start">
             <button
@@ -191,8 +288,8 @@ const Footer = ({ className }: FooterProps) => {
         </div>
 
         {/* Divider */}
-        <div className="border-t border-gray-800 mt-10 pt-6">
-          <p className="text-center text-gray-500 text-sm">
+        <div className="border-t border-gray-800 mt-8 md:mt-10 pt-4 md:pt-6">
+          <p className="text-center text-gray-500 text-xs md:text-sm">
             © {new Date().getFullYear()} Kiscsibe Reggeliző & Étterem. Minden jog fenntartva.
           </p>
         </div>

@@ -30,13 +30,13 @@ const FAQSection = () => {
   ];
 
   return (
-    <section className="py-12 md:py-16">
+    <section className="py-8 md:py-16">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-2xl md:text-3xl font-bold text-center text-foreground mb-8">
+        <h2 className="text-xl md:text-3xl font-bold text-center text-foreground mb-6 md:mb-8">
           Gyakori kérdések
         </h2>
         
-        <div className="bg-card rounded-2xl shadow-md border-0 p-6">
+        <div className="bg-card rounded-2xl shadow-md border-0 p-4 md:p-6">
           <Accordion type="single" collapsible className="w-full">
             {faqs.map((faq, index) => (
               <AccordionItem key={index} value={`item-${index}`} className="border-border/50">
