@@ -17,9 +17,10 @@ const Auth: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   
-  const { user, signIn, isAdmin, isStaff, loading: authLoading, rolesLoading } = useAuth();
+  const { user, signIn, signOut, isAdmin, isStaff, loading: authLoading, rolesLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [loadingTooLong, setLoadingTooLong] = useState(false);
   
   const from = location.state?.from?.pathname || '/';
 
@@ -52,8 +53,41 @@ const Auth: React.FC = () => {
     setIsLoading(false);
   };
 
+  // Timeout: if loading takes too long, offer escape options
+  useEffect(() => {
+    if (user || authLoading || rolesLoading) {
+      const timer = setTimeout(() => setLoadingTooLong(true), 5000);
+      return () => clearTimeout(timer);
+    } else {
+      setLoadingTooLong(false);
+    }
+  }, [user, authLoading, rolesLoading]);
+
   // Show loading while checking auth or roles
   if (user || authLoading || rolesLoading) {
+    if (loadingTooLong) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-4">
+          <LoadingSpinner className="w-8 h-8" />
+          <p className="text-sm text-muted-foreground">Betöltés folyamatban...</p>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+              Újra próbálom
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={async () => {
+                await signOut();
+                setLoadingTooLong(false);
+              }}
+            >
+              Kijelentkezés
+            </Button>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner className="w-8 h-8" />

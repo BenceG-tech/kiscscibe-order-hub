@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -44,8 +44,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [rolesLoading, setRolesLoading] = useState(false);
   const [isAdminState, setIsAdminState] = useState(false);
   const [isStaffState, setIsStaffState] = useState(false);
+  const isFetchingRef = useRef(false);
 
   const fetchProfile = async (userId: string) => {
+    // Prevent parallel fetches from getSession + onAuthStateChange
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     setRolesLoading(true);
     try {
       const { data, error } = await supabase
@@ -55,28 +59,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching profile:', error);
-        return;
+        console.error('[Auth] Error fetching profile:', error);
+        // Don't return early — still check roles below
       }
 
       setProfile(data || null);
       
-      // Bootstrap first admin if needed (uses new user_roles table)
+      // Bootstrap first admin if needed
       if (data) {
-        await supabase.rpc('bootstrap_first_admin');
+        try {
+          await supabase.rpc('bootstrap_first_admin');
+        } catch (e) {
+          console.error('[Auth] bootstrap_first_admin error:', e);
+        }
       }
       
       // Check admin status from secure user_roles table via RPC
-      const { data: isAdminResult } = await supabase.rpc('is_admin');
+      const { data: isAdminResult, error: adminError } = await supabase.rpc('is_admin');
+      if (adminError) console.error('[Auth] is_admin RPC error:', adminError);
       setIsAdminState(isAdminResult === true);
 
       // Check staff status from secure user_roles table via RPC
-      const { data: isStaffResult } = await supabase.rpc('is_staff');
+      const { data: isStaffResult, error: staffError } = await supabase.rpc('is_staff');
+      if (staffError) console.error('[Auth] is_staff RPC error:', staffError);
       setIsStaffState(isStaffResult === true);
+
+      console.log(`[Auth] Roles determined: admin=${isAdminResult === true}, staff=${isStaffResult === true}`);
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      console.error('[Auth] Error in fetchProfile:', error);
     } finally {
       setRolesLoading(false);
+      isFetchingRef.current = false;
     }
   };
 
