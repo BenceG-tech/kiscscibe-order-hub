@@ -1,62 +1,60 @@
 
 
-# Auth Bejelentkezesi Problema - Javitas
+# KDS Gombok - Vegso Javitas
 
-## Azonositott Problemak
+## Talalt Problemak (Teljesen Vegignyomozva)
 
-A teszteles soran a kovetkezo problemakat talaltan:
+### 1. problema: A toast ertesitesek LATHATATLANOK (A fo ok!)
 
-### 1. Auth oldal vegtelen loading spinner
-Az Auth.tsx 56. soran:
+A `StaffOrders.tsx` a **shadcn toast rendszert** hasznalja (`useToast()` hook), de az `App.tsx`-ben **csak a Sonner** komponens van renderelve. A shadcn `<Toaster />` komponens **egyaltalan nincs a komponensfaban**.
+
+Ez azt jelenti, hogy MINDEN gombnyomas utan -- legyen az sikeres vagy sikertelen -- a felhasznalo **semmilyen vizualis visszajelzest nem kap**. A rendeles kartyaja elmozdul a megfelelo oszlopba, de a felhasznalo azt gondolja, hogy semmi sem tortent, mert nincs toast uzenet.
+
+**Bizonytiek a konzolbol:**
 ```text
-if (user || authLoading || rolesLoading) {
-    return <LoadingSpinner />
-}
+[KDS] Updating order #F20564: new -> preparing
+[KDS] Update successful for #F20564: status is now "preparing"
 ```
-Ha a felhasznalo mar be van jelentkezve (pl. elozo session nem toroldott rendesen), a felhasznalo egy **vegtelen loading spinnert** lat es soha nem jut tovabb. Nincs timeout, nincs "Kijelentkezes" gomb, nincs semmilyen visszajelzes.
 
-### 2. Csendes hiba a szerepkor betoltesnel
-Az AuthContext `fetchProfile` fuggvenye a kovetkezo kodot tartalmazza:
+A frissitesek MUKODNEK a szerveren. A trigger fix (INSERT-only validacio) helyes. Az RLS policyk helyesek. A frontend kod helyes. De a felhasznalo errol semmit nem tud, mert a toast ertesitesek nem jelennek meg.
+
+### 2. problema: Ketszeres gombnyomas (race condition)
+
+A realtime subscription (`event: "*"`) minden UPDATE utan ujratolt minden rendelest. Ez egy rovid villanast okoz es neha dupla log uzenetet:
+
 ```text
-if (error && error.code !== 'PGRST116') {
-    console.error('Error fetching profile:', error);
-    return;  // Visszater - isAdmin es isStaff HAMIS marad!
-}
+[KDS] Updating order #X55288: new -> preparing
+[KDS] Update successful for #X55288: status is now "preparing"
+[KDS] Updating order #X55288: new -> preparing    <-- DUPLA!
+[KDS] Update successful for #X55288: status is now "preparing"
 ```
-Ha a profil lekerdezes hibat ad (halozati hiba, RLS problema), a `return` vegrehajtodik, az `isAdmin` es `isStaff` hamisak maradnak, es a felhasznalo **csendben a fooldara kerul atiranyitasra** a személyzeti oldal helyett. A felhasznalo ilyenkor nem erti miert nem jut be a staff admin feluletre.
 
-### 3. Ketszeres fetchProfile hivas (race condition)
-A `getSession()` es az `onAuthStateChange` is meghivja a `fetchProfile`-t. Ez ket parhuzamos halozati hivast eredmenyez ami felesleges terheles es ido.
+### 3. problema: AuthContext dupla fetchProfile
 
-### 4. RPC hiba kezeletlen
-Az `is_admin()` es `is_staff()` RPC hivasok hibait nem ellenorizzuk:
-```text
-const { data: isAdminResult } = await supabase.rpc('is_admin');
-// Ha error van, data null, isAdminResult === true hamis
-```
-Tehat ha barmelyik RPC hivas sikertelen, a felhasznalo csendben elveszti a jogosultsagait.
+Mind a `getSession()`, mind az `onAuthStateChange` meghivja a `fetchProfile()`-t parhuzamosan, ami felesleges halozati hivasokat es potencialis allapot-konfliktusokat okoz.
 
 ---
 
-## Javitasi terv
+## Javitasi Terv
 
-### 1. Auth oldal: Loading timeout es force logout
+### 1. Javitas: Toast rendszer kicserelese Sonner-re (A legfontosabb!)
 
-Ha 5 masodpercnel tovabb tart a betoltes, megjelenik egy "Ujraprobalkozas" es "Kijelentkezes" gomb. Ez megakadalyozza, hogy a felhasznalo orokre a spinnernel ragadjon.
+A `StaffOrders.tsx`-ben a `useToast()` (shadcn) hivasokat lecsereljuk a `toast()` fuggvenyre a `sonner` konyvtarbol, ami mar renderelve van az `App.tsx`-ben. Igy MINDEN toast azonnal lathato lesz.
 
-### 2. fetchProfile: Robusztusabb hibakezeles
+Valtozas:
+- Import csere: `import { toast } from "sonner"` hasznalatara
+- `toast({ title: "...", description: "..." })` -> `toast.success("...")` vagy `toast.error("...")`
+- A `useToast()` hook teljesen eltavolithato a fajlbol
 
-- Ha a profil lekerdezes sikertelen, NE terjen vissza csondben - folytassa a szerepkor ellenorzest (is_admin/is_staff RPC-k)
-- Az RPC hivasoknal is ellenorizzuk az error-t es logoljuk
-- Konzol logolalas minden lepesnel: `[Auth] Fetching profile...`, `[Auth] Role check: admin=true, staff=false`
+### 2. Javitas: Dupla-tuzeles megakadalyozasa
 
-### 3. Dupla fetchProfile megelozese
+A realtime subscription `fetchOrders` hivasa kavet egy rovid debounce logika (pl. `setTimeout` + `clearTimeout` 300ms-mal). Ez megakadalyozza, hogy a realtime es a lokalis allapotfrissites egymasra hasson.
 
-Egy egyszeru flag-el (`isFetchingRef`) megakadalyozzuk, hogy a fetchProfile ketszer fusson parhuzamosan.
+Emellett: amikor egy status update sikeresen visszajon (`.select()` adattal), **optimistikusan frissitjuk a lokalis allapotot** is, igy a kartya azonnal atmozdul anelkul, hogy az osszes rendelest ujratoltenenk.
 
-### 4. Auth redirect javitas
+### 3. Javitas: AuthContext robusztusabb fetchProfile
 
-Ha a felhasznalo be van jelentkezve de a szerepkorok nem toltodtek be rendesen, egyertelmu hibauzenet jelenik meg toast formajaban (nem csendes redirect a fooldara).
+Egy `isFetchingRef` flag megakadalyozza, hogy a `fetchProfile` ketszer fusson parhuzamosan. Ha a `getSession` mar elinditotta, az `onAuthStateChange` nem indit ujabb hivast.
 
 ---
 
@@ -64,70 +62,74 @@ Ha a felhasznalo be van jelentkezve de a szerepkorok nem toltodtek be rendesen, 
 
 ### Modositando fajlok
 
-| Fajl | Valtoztatas |
-|------|-------------|
-| `src/pages/Auth.tsx` | Loading timeout hozzaadasa (5mp), force logout gomb, jobb feedback |
-| `src/contexts/AuthContext.tsx` | fetchProfile hibakezeles javitas, dupla hivas megelozes, RPC hiba logolalas, konzol debug |
+| Fajl | Valtozas |
+|------|---------|
+| `src/pages/staff/StaffOrders.tsx` | `useToast()` csere `sonner` `toast`-ra, optimistikus allapotfrissites, realtime debounce |
+| `src/contexts/AuthContext.tsx` | `isFetchingRef` dupla-hivas vedekezeshez |
 
-### Auth.tsx valtozasok
+### StaffOrders.tsx konkret valtozasok
 
-Az uj loading allapot kezeles:
+**Import csere:**
 ```text
-JELENLEGI:
-  if (user || authLoading || rolesLoading) {
-    return <LoadingSpinner />
-  }
+TOROLNI: import { useToast } from "@/components/ui/use-toast";
+HOZZAADNI: import { toast } from "sonner";
+```
 
-JAVITOTT:
-  Uj state: loadingTooLong (starts false)
-  useEffect: 5mp utan loadingTooLong = true
-  
-  if (user || authLoading || rolesLoading) {
-    if (loadingTooLong) {
-      return:
-        - Uzenet: "Betoltes folyamatban..."
-        - "Ujra probalkozas" gomb (fetchProfile ujrahivas)
-        - "Kijelentkezes" gomb (signOut + navigate('/auth'))
-    }
-    return <LoadingSpinner />
-  }
+**Hook eltavolitasa:**
+```text
+TOROLNI: const { toast } = useToast();
+```
+
+**handleStatusChange toast hivasok atirasa:**
+
+```text
+JELENLEGI (lathatatlan):
+  toast({ title: "Hiba", description: error.message, variant: "destructive" })
+  toast({ title: statusLabels[newStatus] })
+
+JAVITOTT (lathato):
+  toast.error(error.message || "Nem sikerult frissiteni a statuszt")
+  toast.success(statusLabels[newStatus] || "Statusz frissitve")
+```
+
+**fetchOrders toast atirasa:**
+```text
+JELENLEGI: toast({ title: "Hiba", description: "...", variant: "destructive" })
+JAVITOTT: toast.error("Nem sikerult betolteni a rendeleseket")
+```
+
+**Optimistikus allapotfrissites a handleStatusChange-ben:**
+```text
+// Sikeres update utan azonnal frissitjuk a lokalis allapotot
+setOrders(prev =>
+  prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o)
+);
+```
+
+**Realtime debounce:**
+```text
+// useRef a debounce timer-hez
+const refetchTimerRef = useRef<NodeJS.Timeout>();
+
+// A realtime callbackban:
+.on("postgres_changes", { event: "*", ... }, () => {
+  clearTimeout(refetchTimerRef.current);
+  refetchTimerRef.current = setTimeout(() => fetchOrders(), 300);
+})
 ```
 
 ### AuthContext.tsx valtozasok
 
-A fetchProfile fuggveny javitasa:
 ```text
-JELENLEGI fetchProfile:
-  1. setRolesLoading(true)
-  2. Fetch profile -> ha error, RETURN (szerepkorok nem toltodnek be)
-  3. bootstrap_first_admin
-  4. is_admin RPC (error nincs kezelve)
-  5. is_staff RPC (error nincs kezelve)
-  6. finally: setRolesLoading(false)
+// useRef hozzaadasa:
+const isFetchingRef = useRef(false);
 
-JAVITOTT fetchProfile:
-  1. isFetchingRef check - ha mar fut, return
-  2. setRolesLoading(true)
-  3. isFetchingRef = true
-  4. Fetch profile -> ha error, LOGOLAS de NEM return, folytatjuk
-  5. bootstrap_first_admin (try/catch korul)
-  6. is_admin RPC -> error ellenorzes es logolalas
-  7. is_staff RPC -> error ellenorzes es logolalas
-  8. console.log('[Auth] Roles determined: admin=X, staff=Y')
-  9. finally: setRolesLoading(false), isFetchingRef = false
+// fetchProfile elejen:
+if (isFetchingRef.current) return;
+isFetchingRef.current = true;
+
+// fetchProfile finally blokkjaban:
+isFetchingRef.current = false;
 ```
 
-A dupla hivas megelozese:
-```text
-JELENLEGI:
-  getSession -> fetchProfile(userId)
-  onAuthStateChange -> setTimeout(() => fetchProfile(userId), 0)
-  -> Ket parhuzamos fetchProfile hivas
-
-JAVITOTT:
-  useRef isFetchingRef = false
-  fetchProfile elejen: if (isFetchingRef.current) return
-  fetchProfile inditasakor: isFetchingRef.current = true
-  fetchProfile vegeztevel: isFetchingRef.current = false
-```
-
+Ez megakadalyozza, hogy a `getSession` es az `onAuthStateChange` parhuzamosan kethivast inditsanak.
