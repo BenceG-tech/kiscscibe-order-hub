@@ -1,31 +1,42 @@
 
 
-# Cookie Consent Banner Javitas
+# Napi menu nem jelenik meg - Hiányzó daily_offer_menus rekord
 
-## A problema
+## A problema gyokere
 
-A kepernykepen jol lathato: a cookie banner es a "Rendelj most" sticky gomb **egymasra csusznak** mobilon. Mindketto `fixed bottom-0 z-50`, ezert a cookie szoveg le van vagva es az "Elfogadom" gomb el van takarva. A felhasznalo nem tudja elfogadni a sutiket.
+Az admin feluleten a heti racs nezetben (`WeeklyMenuGrid`) az "M/L/F" gombokkal jelolod ki a menu reszeket (leves es foetel). Ez **csak** a `daily_offer_items` tablaban frissiti az `is_menu_part` es `menu_role` mezokat.
 
-## Javitasok
+**DE** a frontend (`get_daily_data` RPC fuggveny) a `daily_offer_menus` tablabol olvassa ki, hogy letezik-e napi menu. Ha nincs ilyen rekord, a `menu_id` null lesz, es a frontend azt irja: "Az adott napra meg nincs teljes menu kijelolve."
 
-### 1. Pozicionalas: banner a sticky CTA fole kerul mobilon
+Jelenlegi allapot (februar 9., hetfo):
 
-A cookie consent banner mobilon kap egy `bottom-[72px]` erteket (a StickyMobileCTA magassaga ~68-72px), igy a banner a CTA folott jelenik meg, nem rajta. Desktopon marad a `bottom-0`.
+```text
+daily_offers:       letezik (id: 1564a56d, ar: 2200 Ft)
+daily_offer_items:  Bableves (leves) + Csirkecomb paprikas (foetel) - JELOLVE
+daily_offer_menus:  NEM LETEZIK <-- ez a problema!
+```
 
-### 2. Z-index emeles
+Az adatbazis `validate_menu_composition` fuggvenye igazat ad vissza (van 1 leves + 1 foetel), de senki nem hozza letre a `daily_offer_menus` rekordot.
 
-A cookie consent z-indexet `z-[60]`-ra emeljuk, hogy biztosan minden mas elem folott legyen (a StickyMobileCTA `z-50`).
+## Javitasi terv
 
-### 3. Kompaktabb mobil megjelenes
+### 1. WeeklyMenuGrid: Auto-create/delete daily_offer_menus
 
-- Cookie ikon megjelenik mobilon is (kicsi, 5x5 meretu)
-- Szoveg es gomb kompaktabb elrendezesben: a gomb a szoveg ala kerul mobilon, teljes szelessegben
-- Kisebb padding mobilon (`p-3` helyett `p-4`)
-- Lekerekites finomitasa
+A `updateMenuPartMutation` mutaciot bovitjuk. Miutan frissiti az etel menu-jeloleset, automatikusan:
 
-### 4. Safe area tamogatas
+- Lekerdezi a `daily_offer_id`-t az adott itembol
+- Ellenorzi a menu osszetitelt (van-e 1 leves + 1 foetel)
+- Ha ERVENYES menu es NINCS meg `daily_offer_menus` rekord: **letrehozza** (alapertelmezett arral: 1800 Ft, 30 adag)
+- Ha ERVENYTELEN menu (pl. eltavolitottak egy reszt) es VAN `daily_offer_menus` rekord: **torli**
 
-iOS eszkozokon a `pb-safe` biztositja, hogy a banner nem log be a home indicator ala (desktopra ez nem vonatkozik, mert ott `bottom-0`).
+Ez biztositja, hogy a menu-jeloles es a menu rekord mindig szinkronban legyen.
+
+### 2. Ertesites az adminnak
+
+Amikor automatikusan letrejon a menu rekord, egy toast uzeneten keresztul tajekoztatjuk az admint:
+- "Napi menu automatikusan letrehozva (1800 Ft)" - ha uj rekord keletkezett
+- "Napi menu beallitas mentve" - ha csak a jeloles valtozott
+- "Napi menu eltavolitva" - ha a menu ervenytelen lett
 
 ## Technikai reszletek
 
@@ -33,23 +44,34 @@ iOS eszkozokon a `pb-safe` biztositja, hogy a banner nem log be a home indicator
 
 | Fajl | Valtozas |
 |------|---------|
-| `src/components/CookieConsent.tsx` | Pozicio, z-index, responsive layout javitas |
+| `src/components/admin/WeeklyMenuGrid.tsx` | `updateMenuPartMutation` bovitese auto-create/delete logikával |
 
-### CookieConsent.tsx konkret valtozasok
+### Uj mutacios logika (updateMenuPartMutation)
 
-**Kulso wrapper:**
-- `bottom-0` -> `bottom-[72px] md:bottom-0` (mobilon a sticky CTA folott)
-- `z-50` -> `z-[60]` (biztosan a CTA folott)
-- `p-4` -> `p-3 md:p-4` (kompaktabb mobilon)
+```text
+JELENLEGI:
+  1. UPDATE daily_offer_items SET is_menu_part, menu_role
+  2. invalidateQueries
+  3. toast.success("Menu beallitas mentve")
 
-**Belso kartya:**
-- `p-4 md:p-6` -> `p-3 md:p-5` (kicsit kompaktabb)
-- `flex-col sm:flex-row` marad, de a gomb mobilon teljes szelessegu lesz
+JAVITOTT:
+  1. UPDATE daily_offer_items SET is_menu_part, menu_role
+  2. Lekerdezes: SELECT daily_offer_id FROM daily_offer_items WHERE id = offerItemId
+  3. Lekerdezes: SELECT * FROM daily_offer_items WHERE daily_offer_id = X AND is_menu_part = true
+  4. Van-e 1 "leves" + 1 "foetel"?
+     HA IGEN:
+       - Lekerdezes: SELECT * FROM daily_offer_menus WHERE daily_offer_id = X
+       - Ha nincs rekord: INSERT INTO daily_offer_menus (daily_offer_id, menu_price_huf, max_portions, remaining_portions)
+         VALUES (X, 1800, 30, 30)
+       - Toast: "Napi menu automatikusan letrehozva (1800 Ft)"
+     HA NEM:
+       - Lekerdezes: SELECT * FROM daily_offer_menus WHERE daily_offer_id = X
+       - Ha van rekord: DELETE FROM daily_offer_menus WHERE daily_offer_id = X
+       - Toast: "Napi menu eltavolitva"
+  5. invalidateQueries
+```
 
-**Cookie ikon:**
-- `hidden sm:block` -> mindig lathato, de mobilon kisebb (`h-5 w-5` vs `h-7 w-7`)
+### Miert 1800 Ft az alapertelmezett ar?
 
-**Elfogadom gomb:**
-- Mobilon `w-full` hogy jobban megtalalhato legyen
-- Desktopon marad `shrink-0`
+A korabbi `daily_offer_menus` rekordok mindegyike 1800 Ft-tal lett letrehozva (a legutobbi 4 rekord is). Az admin barmikor modosithatja ezt az arat a menu kezelesi feluletrol.
 
