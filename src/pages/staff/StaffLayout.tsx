@@ -37,6 +37,7 @@ const StaffLayout = ({ children }: { children: React.ReactNode }) => {
         order={currentNotification}
         onDismiss={dismissNotification}
         pendingCount={pendingCount}
+        navigateTo="/staff/orders"
       />
 
       {/* Sticky Staff Header */}
