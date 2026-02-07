@@ -1,110 +1,171 @@
 
 
-# Jogi Oldalak Szerkeszto - Felhasznalobaratabb Admin Felulet
+# Szemelyzeti Rendeleskezelő Ujratervezese - KDS (Kitchen Display System) Stilus
 
-## Problema
+## Attekintes
 
-Jelenleg az admin szerkesztoben nyers HTML kod latszik a textarea-ban (pl. `<p><strong>Cegnev:</strong>...</p>`). Ez osszezavarja a tulajdonost, aki nem ert a HTML-hez. O csak a szoveget szeretne kenyelmesen kitolteni/szerkeszteni.
+A jelenlegi szemelyzeti rendelesi felulet alapveto, csak megtekintest engedve, szines megkulonboztetes nelkul. A cel egy professzionalis, konyhakepernyő-rendszer (KDS) stilusu felulet letrehozasa, amely vizualisan segiti a szemelyzetet a rendelesek gyors es hatekony kezeleseben.
 
-## Megoldas
+## Fo Valtozasok
 
-A nyers HTML textarea-t lecsereljuk egy egyszeru, **Markdown-szeru plain text** szerkesztore. Az admin sima szoveget ir, es a rendszer automatikusan generalja belole a HTML-t a publikus oldalon.
+### 1. Szemelyzet is modosithatja a rendelesi statuszokat (Adatbazis)
 
-### Amit az admin lat (ELOTTE vs UTANA)
+Jelenleg csak admin tud statuszt frissiteni (RLS policy). A szemelyzet szamara is engedelyezni kell ezt.
 
-**Elotte (jelenlegi allapot):**
+Uj RLS policy az `orders` tablahoz:
+- Staff felhasznalok UPDATE jogot kapnak a `status` mezohoz
+- Ezt egy uj migracios SQL-lel oldjuk meg
+
+### 2. Kanban-szeru oszlopos nezet (fo ujitas)
+
+A jelenlegi tab-alapu megjelenitest atalakitjuk egy 3 oszlopos Kanban-stilusu nezetre, ami egyben lathatova teszi az osszes aktiv rendelest:
+
 ```text
-Tartalom (HTML):
-<p><strong>Cegnev:</strong> Kiscsibe Reggelizo & Etterem Kft.</p>
-<p><strong>Szekhely:</strong> 1145 Budapest, Vezer utca 12.</p>
-<p><strong>Cegjegyzekszam:</strong> [PLACEHOLDER]</p>
+DESKTOP NEZET:
++------------------+------------------+------------------+
+|   UJ (piros)     | KESZITES ALATT   |   KESZ (zold)    |
+|                  |   (narancssarga) |                  |
+|  [Rendelés #A1]  |  [Rendelés #B2]  |  [Rendelés #C3]  |
+|  [Rendelés #A4]  |  [Rendelés #B5]  |                  |
+|                  |                  |                  |
+|  "Elfogadom" ->  |  "Kész!" ->      |  "Átvéve" ->     |
++------------------+------------------+------------------+
+
+MOBIL NEZET:
++------------------------+
+| [3 UJ] [2 KESZUL] [1 KESZ] |  <- szines szamlalok
++------------------------+
+| UJ RENDELESEK          |
+| [Rendelés #A1]         |
+|   -> "Elfogadom" gomb  |
+| [Rendelés #A4]         |
+|   -> "Elfogadom" gomb  |
++------------------------+
+| KESZITES ALATT         |
+| [Rendelés #B2]         |
+|   -> "Kész!" gomb      |
++------------------------+
+| KESZ - ATVETELRE VAR   |
+| [Rendelés #C3]         |
+|   -> "Átvéve" gomb     |
++------------------------+
 ```
 
-**Utana (uj megoldas):**
+### 3. Szines vizualis rendszer
+
+Minden statusz sajat szinnel rendelkezik, nemcsak a badge-en, hanem a teljes kartya szegeleyen es az oszlop fejlecen is:
+
+| Statusz | Szin | Kartya szegely | Fejlec hatter |
+|---------|------|----------------|---------------|
+| Uj | Piros | bal oldali 4px piros csik | Piros hatter |
+| Keszites alatt | Narancssarga/sarga | bal oldali 4px narancs csik | Narancs hatter |
+| Kesz (atvetelre var) | Zold | bal oldali 4px zold csik | Zold hatter |
+| Atveve | Szurke | - | - |
+| Lemondva | Sotet piros | - | - |
+
+### 4. Atveteli ido visszaszamlalas es surgosseg
+
+Minden rendeles kartyan megjelenik:
+- Relativ ido ("5 perce erkezett", "23 perce keszul")
+- Ha van atveteli ido: visszaszamlalas ("12 perc mulva atvetel")
+- Surgossegi jelzes: ha a rendeles > 10 perce valtozott, a kartya pulzal/kiemelt lesz
+- Pirossal villogo kartya ha az atveteli ido < 5 perc vagy mar lejart
+
+### 5. Osszefoglalo sav a tetejere
+
+A fejlec ala egy szines osszefoglalo sav kerul:
+
 ```text
-Tartalom:
-**Cegnev:** Kiscsibe Reggelizo & Etterem Kft.
-**Szekhely:** 1145 Budapest, Vezer utca 12.
-**Cegjegyzekszam:** [Toltse ki]
++-----------------------------------------------+
+| [3 UJ]      [2 KESZUL]     [1 KESZ]          |
+|  piros bg    narancs bg      zold bg           |
++-----------------------------------------------+
 ```
 
-### Tamogatott formatazas
+Ez mindig lathato, es gyors attekintest ad a jelenlegi allapotrol.
 
-Az admin egyszeru jelzeseket hasznalhat a formatazashoz (amelyek a textarea felett tippkent megjelennek):
+### 6. Egy gombos gyors akcio
 
-| Amit az admin ir | Ami megjelenik az oldalon |
-|---|---|
-| `**felkover szoveg**` | **felkover szoveg** |
-| `- listaelem` | felsorolas pont |
-| Ures sor | uj bekezdes |
-| `[szoveg](https://link.hu)` | kattinthato link |
+Minden kartyan egyetlen fo akciogomb van, ami a kovetkezo logikus lepest jelzi:
+- Uj rendeles -> **"Elfogadom"** (sarga gomb)
+- Keszites alatt -> **"Kesz!"** (zold gomb) 
+- Kesz -> **"Atveve"** (szurke gomb)
+- Lemondas lehetoseg: kis ikon gomb a sarokban
 
-### Formatazasi segitseg
+### 7. Rendelesi kartyak egyszerusitese
 
-A textarea felett egy kis segitseg/tipp sav jelenik meg, ami peldakat mutat:
-- "**felkover**" = felkover
-- "- elem" = felsorolas
-- Ures sor = uj bekezdes
-- "[szoveg](link)" = hivatkozas
+A kartya kompaktabb, a legfontosabb informaciokra fokuszalva:
+- Nagy meretu rendelesi kod (#A1234)
+- Atveteli ido kiemelt helyen
+- Tetelek listaja
+- Fizetesi mod ikon
+- Egy fo akciogomb
+- Telefon hivas ikon gomb
 
-Ez segit az adminnak anelkul, hogy HTML-t kellene ismernie.
+### 8. Ertesitesi modal javitasa
+
+Az `OrderNotificationModal` navigacios celpontjat dinamikussa tesszuk: staff felhasznaloknal `/staff/orders`-ra iranyit, admin felhasznaloknal marad `/admin/orders`.
+
+### 9. Multbeli rendelesek kulon tab
+
+Az aktiv Kanban nezet alatt egy osszecsukhato "Multbeli rendelesek" szekci, ami az atvett es lemondott rendeleseket mutatja (ma, tegnap, regyebbiek szurokkel).
 
 ---
 
-## Technikai reszletek
+## Technikai Reszletek
 
-### Uj fajl
+### Adatbazis migracio
 
-| Fajl | Leiras |
-|---|---|
-| `src/lib/simpleMarkdown.ts` | Egyszeru markdown-to-HTML konverter fuggveny |
+Uj RLS policy az `orders` tablara, ami engedelyezi a staff felhasznaloknak a statusz frissiteset:
 
-### Modositando fajlok
-
-| Fajl | Valtoztatas |
-|---|---|
-| `src/components/admin/LegalPageEditor.tsx` | Textarea label "Tartalom (HTML)" -> "Tartalom", formatazasi tippek hozzaadasa, alapertelmezett tartalmak atirasa plain text-re |
-| `src/pages/legal/Impresszum.tsx` | `dangerouslySetInnerHTML` elott markdown->HTML konverzio |
-| `src/pages/legal/PrivacyPolicy.tsx` | Ugyanaz |
-| `src/pages/legal/TermsAndConditions.tsx` | Ugyanaz |
-| `src/pages/legal/CookiePolicy.tsx` | Ugyanaz |
-| `src/hooks/useLegalContent.ts` | A hook automatikusan konvertalja a tarolt markdown-ot HTML-re, igy a jogi oldalak nem valtoznak |
-
-### Markdown konverter (`simpleMarkdown.ts`)
-
-Egy egyszeru, sajat konverter fuggveny (nem kell kulso konyvtar):
-
-Szabalyok:
-1. `**szoveg**` -> `<strong>szoveg</strong>`
-2. `- elem` (sor elejen) -> `<li>elem</li>`, csoportositva `<ul>`-be
-3. Ures sor -> uj `<p>` bekezdes
-4. `[szoveg](url)` -> `<a href="url">szoveg</a>`
-5. Sima sor -> `<p>` tagbe kerul
-6. Ha a tartalom mar HTML tag-eket tartalmaz (`<p>`, `<strong>`, stb.) -> ugy adja vissza ahogy van (visszafele kompatibilitas a regi tartalommal)
-
-### Visszafele kompatibilitas
-
-A konverter felismeri, ha a tartalom mar HTML formatumu (tartalmaz `<p>`, `<ul>`, `<table>` tageket). Ebben az esetben valtozatlanul hagyja - igy a mar elmentett HTML tartalom tovabbra is jol jelenik meg, es az admin fokozatosan cserelheti le markdown-ra ahogy szerkeszti az oldalakat.
-
-### Alapertelmezett tartalom atiras
-
-A `DEFAULT_CONTENT` objektum a `LegalPageEditor.tsx`-ben atirodik HTML-rol plain text/markdown formatumra. Pelda:
-
-Impresszum "Uzemelteto adatai" szekci:
-```text
-**Cegnev:** Kiscsibe Reggelizo & Etterem Kft.
-**Szekhely:** 1145 Budapest, Vezer utca 12.
-**Cegjegyzekszam:** [Toltse ki a cegjegyzekszamot]
-**Adoszam:** [Toltse ki az adoszamot]
-**Nyilvantarto birosag:** [Toltse ki - pl. Fovarosi Torvenyszek Cegbirosaga]
+```sql
+CREATE POLICY "Staff can update order status"
+ON public.orders
+FOR UPDATE
+USING (is_admin_or_staff(auth.uid()))
+WITH CHECK (is_admin_or_staff(auth.uid()));
 ```
 
-### Felhasznaloi elmeny
+### Erintett fajlok
 
-1. Admin megnyitja a Jogi szerkesztot
-2. Betolti az alapertelmezett tartalmat (ami most mar tiszta szoveg, nem HTML)
-3. Kitolti a `[Toltse ki]` mezoket a valos adatokkal
-4. Formaz szoveget egyszeru jelzesekkel: `**felkover**`, `- lista`, ures sor
-5. A textarea felett lathato tippek segitik
-6. Mentes utan a publikus oldalon szepen formatazva jelenik meg
+| Fajl | Valtoztatas |
+|------|-------------|
+| `src/pages/staff/StaffOrders.tsx` | Teljes ujratervezes: Kanban nezet, szines oszlopok, gyors akciogombok, osszefoglalo sav, idoszamlalo, surgossegi jelzesek |
+| `src/components/admin/OrderNotificationModal.tsx` | Dinamikus navigacio (staff vs admin) - prop-alapu |
+| `src/pages/staff/StaffLayout.tsx` | Osszefoglalo szamlalo sav hozzaadasa a fejlechez |
+
+### Kanban kartya komponens
+
+Minden kartya tartalmazza:
+- Bal oldali szines csik (statusz szin)
+- Rendelesi kod (nagy, felkover)
+- Atveteli ido visszaszamlalas
+- "X perce erkezett" relativ ido
+- Tetelek listaja (nev x mennyiseg)
+- Fizetesi mod ikon (penz/kartya)
+- Fo akciogomb (a kovetkezo statusz fele)
+- Telefon hivas gomb
+- Lemondas gomb (kis, szurke)
+
+### Ido frissites
+
+`useEffect` + `setInterval` 30 masodpercenkent frissiti a relativ idoket ("5 perce", "12 perc mulva") anelkul, hogy ujra lekerne az adatbazist.
+
+### Surgossegi logika
+
+- Uj rendeles > 5 perc: narancssarga keret pulzal
+- Uj rendeles > 10 perc: piros keret pulzal
+- Atveteli ido < 10 perc: sarga hatter
+- Atveteli ido < 5 perc: piros hatter villog
+- Atveteli ido lejart: sotet piros keret, "KESES!" felirat
+
+### Responsive design
+
+**Desktop (lg+):** 3 oszlopos Kanban grid egymas mellett
+**Tablet (md):** 3 oszlopos, kompaktabb kartyak
+**Mobil (sm):** Egyoszlopos, szekciokra bontva szines fejlecekkel, osszefoglalo szamlalo sav ragad a tetejere
+
+### Hangertesites
+
+A meglevo Web Audio API megoldas marad, az `useGlobalOrderNotifications` hook mar mukodik a `StaffLayout`-ban.
 
