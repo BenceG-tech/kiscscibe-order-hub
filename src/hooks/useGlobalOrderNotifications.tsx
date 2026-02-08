@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 
 interface PendingOrder {
   id: string;
@@ -9,6 +10,9 @@ interface PendingOrder {
   created_at: string;
 }
 
+const MAX_RETRIES = 5;
+const BASE_DELAY_MS = 2000;
+
 export const useGlobalOrderNotifications = () => {
   const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([]);
   const [newOrdersCount, setNewOrdersCount] = useState(0);
@@ -16,8 +20,10 @@ export const useGlobalOrderNotifications = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const knownOrderIdsRef = useRef<Set<string>>(new Set());
   const initializedRef = useRef(false);
+  const channelRef = useRef<RealtimeChannel | null>(null);
+  const retryCountRef = useRef(0);
+  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Current order to show in modal (first in queue)
   const currentNotification = pendingOrders[0] || null;
 
   // Unlock audio on first user interaction
@@ -29,7 +35,7 @@ export const useGlobalOrderNotifications = () => {
           audioContextRef.current.resume();
         }
         setAudioUnlocked(true);
-        console.log('Audio unlocked');
+        console.log('[Notifications] Audio unlocked');
       }
     };
 
@@ -75,30 +81,26 @@ export const useGlobalOrderNotifications = () => {
         oscillator.stop(ctx.currentTime + startTime + duration);
       };
 
-      // Play a pleasant ding-dong pattern (3 tones)
-      playTone(880, 0, 0.2);      // A5
-      playTone(1100, 0.15, 0.2);  // C#6
-      playTone(1320, 0.3, 0.3);   // E6
+      playTone(880, 0, 0.2);
+      playTone(1100, 0.15, 0.2);
+      playTone(1320, 0.3, 0.3);
       
-      // Second set for emphasis
       setTimeout(() => {
         playTone(880, 0, 0.2);
         playTone(1100, 0.15, 0.2);
         playTone(1320, 0.3, 0.3);
       }, 600);
 
-      console.log('Notification sound played');
+      console.log('[Notifications] Sound played');
     } catch (err) {
-      console.log('Could not play notification sound:', err);
+      console.log('[Notifications] Could not play sound:', err);
     }
   }, []);
 
-  // Dismiss current notification
   const dismissNotification = useCallback(() => {
     setPendingOrders(prev => prev.slice(1));
   }, []);
 
-  // Clear badge count
   const clearNewOrdersCount = useCallback(() => {
     setNewOrdersCount(0);
   }, []);
@@ -117,16 +119,49 @@ export const useGlobalOrderNotifications = () => {
       
       if (data) {
         knownOrderIdsRef.current = new Set(data.map(o => o.id));
+        console.log(`[Notifications] Loaded ${data.length} existing order IDs`);
       }
     };
 
     fetchInitialOrders();
   }, []);
 
-  // Set up real-time subscription (stable - no knownOrderIds dependency)
-  useEffect(() => {
+  // Handle incoming new order
+  const handleNewOrder = useCallback((payload: any) => {
+    const newOrder = payload.new as PendingOrder;
+    
+    if (!knownOrderIdsRef.current.has(newOrder.id)) {
+      console.log('[Notifications] 🔔 New order received:', newOrder.code);
+      
+      knownOrderIdsRef.current.add(newOrder.id);
+      playNotificationSound();
+      setPendingOrders(prev => [...prev, newOrder]);
+      setNewOrdersCount(prev => prev + 1);
+    }
+  }, [playNotificationSound]);
+
+  // Create and subscribe to the realtime channel
+  const createSubscription = useCallback(async () => {
+    // Clean up existing channel
+    if (channelRef.current) {
+      console.log('[Notifications] Removing old channel before re-subscribing');
+      await supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+
+    // Check for active session
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      console.warn('[Notifications] No active session, deferring subscription');
+      return;
+    }
+    console.log('[Notifications] Session found for user:', session.user.email);
+
+    const channelName = `order-notifications-${Date.now()}`;
+    console.log(`[Notifications] Creating channel: ${channelName}`);
+
     const channel = supabase
-      .channel('global-admin-orders-v3')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -134,33 +169,71 @@ export const useGlobalOrderNotifications = () => {
           schema: 'public',
           table: 'orders'
         },
-        (payload) => {
-          const newOrder = payload.new as PendingOrder;
+        handleNewOrder
+      )
+      .subscribe((status, err) => {
+        console.log(`[Notifications] Subscription status: ${status}`, err || '');
+
+        if (status === 'SUBSCRIBED') {
+          console.log('[Notifications] ✅ Successfully subscribed to order notifications');
+          retryCountRef.current = 0; // Reset retry count on success
+        }
+
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.error(`[Notifications] ❌ Subscription failed: ${status}`, err);
           
-          // Check if this is truly a new order we haven't seen
-          if (!knownOrderIdsRef.current.has(newOrder.id)) {
-            console.log('New order received:', newOrder.code);
+          if (retryCountRef.current < MAX_RETRIES) {
+            const delay = BASE_DELAY_MS * Math.pow(2, retryCountRef.current);
+            retryCountRef.current += 1;
+            console.log(`[Notifications] Retrying in ${delay}ms (attempt ${retryCountRef.current}/${MAX_RETRIES})`);
             
-            // Track this order
-            knownOrderIdsRef.current.add(newOrder.id);
-            
-            // Play sound
-            playNotificationSound();
-            
-            // Add to pending orders queue
-            setPendingOrders(prev => [...prev, newOrder]);
-            
-            // Update count
-            setNewOrdersCount(prev => prev + 1);
+            retryTimeoutRef.current = setTimeout(() => {
+              createSubscription();
+            }, delay);
+          } else {
+            console.error(`[Notifications] ❌ Max retries (${MAX_RETRIES}) exceeded. Giving up.`);
           }
         }
-      )
-      .subscribe();
+
+        if (status === 'CLOSED') {
+          console.log('[Notifications] Channel closed');
+        }
+      });
+
+    channelRef.current = channel;
+  }, [handleNewOrder]);
+
+  // Set up subscription + re-subscribe on auth changes
+  useEffect(() => {
+    createSubscription();
+
+    // Listen for auth state changes and re-subscribe
+    const { data: { subscription: authSub } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') {
+        console.log(`[Notifications] Auth event: ${event} — re-subscribing`);
+        retryCountRef.current = 0;
+        createSubscription();
+      }
+      if (event === 'SIGNED_OUT') {
+        console.log('[Notifications] Signed out — removing channel');
+        if (channelRef.current) {
+          supabase.removeChannel(channelRef.current);
+          channelRef.current = null;
+        }
+      }
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      authSub.unsubscribe();
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
-  }, [playNotificationSound]);
+  }, [createSubscription]);
 
   return {
     currentNotification,
