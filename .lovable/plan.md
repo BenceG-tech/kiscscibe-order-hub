@@ -1,75 +1,127 @@
 
 
-# Velemenyek Szekcio - Mobil Javitas
+# Rendelesi Ertesitesek es Valos Ideju Frissitesek Javitasa
 
-## Problema
+A jelenlegi rendszer harom fo problemat tartalmaz:
 
-A jelenlegi horizontalis karusszel mobilon nem mukodik jol:
-- A velemeny szoveg kilog a kartya jobbszelel ("A rantotta tejs...")
-- A kartyak tul szelesek es nem fernek el rendesen
-- Feleslegesen bonyolult interakcio (gorgetes oldalra)
+1. **A valos ideju (realtime) ertesitesek nem mukodnek** - Az `orders` tabla nincs hozzaadva a Supabase `supabase_realtime` publikaciohoz, ezert egyetlen realtime subscription sem kap esemenyt. Ez az oka annak, hogy az adminisztratornakstaff-nak frissitenie kell az oldalt az uj rendeleset latasahoz, es nincs hang vagy felugro ablak sem.
 
-## Megoldas
+2. **Az ugyfel email cime nincs mentve a rendelesen** - A `orders` tabla nem tartalmaz `email` oszlopot. Az email csak a submit-order edge function-ben hasznalodik a visszaigazolo email kulderekor, de utana nem erheto el. Ahhoz, hogy statuszvaltozaskor emailt kuldhessunk, tarolnunk kell az email cimet.
 
-A horizontalis karusszelt **teljes szelessegu, fuggolges velemeny kartyakra** csereljuk mobilon. Harom kompakt, egymasan allo kartya, aminek a szovege **nem log ki** es teljesen olvashato.
+3. **Nincs statuszvaltozas-email rendszer** - Jelenleg nincs edge function, ami statuszvaltozaskor emailt kuldene az ugyfelenek.
 
-### Design elvek:
-- Nincs horizontalis scroll - egyszeruen egymas ala kerulnek a kartyak
-- Kisebb padding es fontmeretek mobilon a kompaktsagert
-- A velemeny szoveg **max 2-3 soros** modon megjelenik - nem vagja le
-- Az avatar, nev es csillagok **egy sorban** a helytakarekossagert
-- A kartyak kozott kicsi gap (`gap-3`)
+---
 
-### Kartya mobilon:
-```text
-+------------------------------------------+
-| [KJ] Kovacs Janos ✓  ★★★★★   2 hete     |
-| "Fantasztikus reggelik es kedves          |
-|  kiszolgalas! A rantotta tejszines..."    |
-+------------------------------------------+
+## 1. Adatbazis modositasok
+
+### 1a. Orders tabla: email oszlop hozzaadasa
+
+Uj `email` oszlop a `orders` tablahoz, ami az ugyfel email cimet tarolja:
+
+```sql
+ALTER TABLE public.orders ADD COLUMN email text;
 ```
 
-A kartya elemei:
-- Felso sor: Avatar (kisebb, `w-8 h-8`), nev, verified badge, csillagok es datum - mind egy sorban
-- Also resz: Velemeny szoveg teljes szelessegben, `text-sm`, `line-clamp-3` (max 3 sor)
-- Padding: `p-4` (kompakt de olvasható)
+Az oszlop nullable, mert a meglevo rendelesek nem tartalmaznak email cimet.
 
-## Technikai reszletek
+### 1b. Realtime publikacio beallitasa
 
-### Modositando fajl
+Az `orders` tablat hozza kell adni a Supabase realtime publikaciohoz:
 
-| Fajl | Valtozas |
-|------|---------|
-| `src/components/sections/ReviewsSection.tsx` | Mobil: fuggoleges kartya lista a karusszel helyett, kompaktabb kartya design |
-
-### Reszletes valtozasok
-
-**1. Mobil review kartya (ReviewCard) - kisebb, kompaktabb mobilon:**
-- Avatar: `w-8 h-8` mobilon (jelenleg `w-10 h-10`)
-- A header reszt atalakitjuk: nev + csillagok + datum egy sorba fer
-- Velemeny szoveg: `text-sm` + `line-clamp-3` mobilon (soha nem log ki)
-- CardContent padding: `p-4` mobilon (jelenleg `p-5`)
-- Az idezojel dekoracio kisebb mobilon (`text-4xl` az `text-6xl` helyett)
-
-**2. Mobil kontener (140-147. sorok) - karusszel lecserelese:**
-```text
-JELENLEGI:
-  <div className="md:hidden flex overflow-x-auto snap-x snap-mandatory ...">
-    <div className="min-w-[80vw] snap-start ...">
-      <ReviewCard />
-    </div>
-  </div>
-
-JAVITOTT:
-  <div className="md:hidden flex flex-col gap-3">
-    {reviews.slice(0, 3).map(...)}
-      <ReviewCard />
-    )}
-  </div>
+```sql
+ALTER PUBLICATION supabase_realtime ADD TABLE orders;
 ```
 
-Egyszeruen `flex flex-col gap-3` - harom kartya egymas ala, teljes szelessegben, semmi kilogas.
+Ez a **legkritikusabb javitas** - enelkul a rendszer soha nem kuld realtime esemenyeket, igy az admin/staff oldalon sem latszanak az uj rendelesek automatikusan, es a hang/popup ertesitesek sem mukodnek.
 
-**3. Desktop nezet** - valtozatlan marad (3 oszlopos grid).
+---
 
-Ez a legegyszerubb es legmegbizhatobb megoldas mobilon - nincs scroll, nincs kilogas, minden kartya pontosan elfér a kepernyon.
+## 2. Submit-order edge function modositasa
+
+A meglevo `supabase/functions/submit-order/index.ts` fajlban a rendeles letrehozasakor az email cimet is menteni kell az `orders` tablaba:
+
+```typescript
+// Az INSERT-be bekerül az email mező:
+.insert({
+  code: orderCode,
+  name: customer.name,
+  phone: customer.phone,
+  email: customer.email,  // ÚJ
+  total_huf: calculatedTotal,
+  ...
+})
+```
+
+---
+
+## 3. Uj edge function: send-order-status-email
+
+Uj edge function letrehozasa, ami statuszvaltozaskor emailt kuld az ugyfelenek. Harom statuszra kuld emailt:
+
+| Statusz | Email tartalma |
+|---------|---------------|
+| `preparing` | "A rendelesed elfogadtuk es mar keszitjuk!" |
+| `ready` | "A rendelesedet elkeszitettuk, atveheted!" |
+| `completed` | "Koszonjuk, hogy nalunk rendelt! Remeljuk izlett!" |
+
+Az edge function a kovetkezo adatokat kapja:
+- `order_id`: a rendeles azonositoja
+- `new_status`: az uj statusz
+
+A function a Supabase service role key-t hasznalja a rendeles adatainak lekeresehez (beleertve az email cimet es a rendeles reszleteit), majd a Resend API-val kuldi az emailt.
+
+---
+
+## 4. Frontend modositasok - Statuszvaltozas email triggerelesee
+
+A ket helyen, ahol a rendelesi statuszt frissitik (staff es admin), meg kell hivni az uj edge function-t a statuszvaltozas utan:
+
+### 4a. StaffOrders.tsx (`handleStatusChange`)
+
+A statuszfrissites utan meghivjuk az uj edge function-t:
+
+```typescript
+// Sikeres status update után:
+supabase.functions.invoke('send-order-status-email', {
+  body: { order_id: orderId, new_status: newStatus }
+});
+```
+
+### 4b. OrdersManagement.tsx (`updateOrderStatus`)
+
+Ugyanez az admin feluleten is:
+
+```typescript
+// Sikeres status update után:
+supabase.functions.invoke('send-order-status-email', {
+  body: { order_id: orderId, new_status: newStatus }
+});
+```
+
+Az email kuldest fire-and-forget modon hivjuk meg (nem varjuk meg a valaszt), hogy ne lassitsa a felhasznaloi elmenyt.
+
+---
+
+## Osszefoglalas
+
+| Feladat | Fajl | Tipus |
+|---------|------|-------|
+| Email oszlop hozzaadasa | SQL migracio | Adatbazis |
+| Realtime publikacio | SQL migracio | Adatbazis |
+| Email mentes rendeleskor | `supabase/functions/submit-order/index.ts` | Edge function |
+| Statusz-email edge function | `supabase/functions/send-order-status-email/index.ts` | Uj edge function |
+| Edge function config | `supabase/config.toml` | Konfiguracio |
+| Staff statuszvaltozas email | `src/pages/staff/StaffOrders.tsx` | Frontend |
+| Admin statuszvaltozas email | `src/pages/admin/OrdersManagement.tsx` | Frontend |
+
+### Varos eredmenyek
+
+Implementacio utan:
+
+1. **Valos ideju ertesitesek mukodni fognak** - Az admin es staff oldalon azonnal megjelennek az uj rendelesek, hallhato hangjelzes es felugro ablak
+2. **Az ugyfel 4 emailt kap** a rendelesi folyamat soran:
+   - Rendeles letrehozasakor (mar mukodik)
+   - Rendeles elfogadasakor ("Keszitjuk!")
+   - Rendeles elkeszultekor ("Atveheto!")
+   - Rendeles atvetelekor ("Koszonjuk!")
+
