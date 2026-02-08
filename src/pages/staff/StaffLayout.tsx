@@ -2,8 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
-import { useGlobalOrderNotifications } from "@/hooks/useGlobalOrderNotifications";
-import OrderNotificationModal from "@/components/admin/OrderNotificationModal";
+import { useOrderNotifications } from "@/contexts/OrderNotificationsContext";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,13 +24,7 @@ import {
 const StaffLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const { profile, signOut } = useAuth();
-  const { 
-    newOrdersCount, 
-    clearNewOrdersCount, 
-    currentNotification, 
-    pendingCount,
-    dismissNotification 
-  } = useGlobalOrderNotifications();
+  const { newOrdersCount, clearNewOrdersCount } = useOrderNotifications();
 
   const handleSignOut = async () => {
     await signOut();
@@ -43,14 +36,6 @@ const StaffLayout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Order Notification Modal */}
-      <OrderNotificationModal 
-        order={currentNotification}
-        onDismiss={dismissNotification}
-        pendingCount={pendingCount}
-        navigateTo="/staff/orders"
-      />
-
       {/* Sticky Staff Header */}
       <header className="sticky top-[constant(safe-area-inset-top)] top-[env(safe-area-inset-top)] z-50 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 border-b">
         <div className="mx-auto max-w-screen-xl px-3 sm:px-4 flex items-center gap-2 sm:gap-4 py-2">

@@ -4,7 +4,7 @@ import { Resend } from "npm:resend@2.0.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 interface StatusEmailRequest {
@@ -40,6 +40,7 @@ serve(async (req) => {
 
   try {
     const { order_id, new_status }: StatusEmailRequest = await req.json();
+    console.log(`Processing status email: order=${order_id}, status=${new_status}`);
 
     if (!order_id || !new_status) {
       throw new Error('Missing order_id or new_status');
@@ -69,6 +70,8 @@ serve(async (req) => {
       console.error('Order not found:', orderError);
       throw new Error('Order not found');
     }
+
+    console.log(`Order found: ${order.code}, email: ${order.email || 'none'}`);
 
     if (!order.email) {
       console.log(`No email address for order ${order.code} — skipping email`);
@@ -135,16 +138,22 @@ serve(async (req) => {
       </div>
     `;
 
-    const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
+    const resendApiKey = Deno.env.get('RESEND_API_KEY');
+    if (!resendApiKey) {
+      console.error('RESEND_API_KEY not configured');
+      throw new Error('RESEND_API_KEY not configured');
+    }
 
-    await resend.emails.send({
+    const resend = new Resend(resendApiKey);
+
+    const emailResult = await resend.emails.send({
       from: 'Kiscsibe Étterem <rendeles@kiscsibe-etterem.hu>',
       to: [order.email],
       subject: `Kiscsibe – ${config.subject} #${order.code}`,
       html: emailHtml,
     });
 
-    console.log(`Status email sent: ${new_status} → ${order.email} (order ${order.code})`);
+    console.log(`Status email sent successfully: ${new_status} → ${order.email} (order ${order.code})`, emailResult);
 
     return new Response(
       JSON.stringify({ success: true }),
