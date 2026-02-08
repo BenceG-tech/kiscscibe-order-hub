@@ -50,6 +50,13 @@ const NewsletterSection = () => {
           description: "Köszönjük! Hamarosan elküldjük a heti menüt.",
         });
         setEmail("");
+
+        // Send welcome email (fire-and-forget)
+        supabase.functions
+          .invoke("send-welcome-newsletter", {
+            body: { email: result.data },
+          })
+          .catch((err) => console.error("Welcome email error:", err));
       }
     } catch (error) {
       console.error("Newsletter signup error:", error);
