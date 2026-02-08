@@ -579,6 +579,7 @@ export type Database = {
       }
       orders: {
         Row: {
+          archived: boolean
           code: string
           created_at: string
           email: string | null
@@ -592,6 +593,7 @@ export type Database = {
           total_huf: number
         }
         Insert: {
+          archived?: boolean
           code: string
           created_at?: string
           email?: string | null
@@ -605,6 +607,7 @@ export type Database = {
           total_huf?: number
         }
         Update: {
+          archived?: boolean
           code?: string
           created_at?: string
           email?: string | null

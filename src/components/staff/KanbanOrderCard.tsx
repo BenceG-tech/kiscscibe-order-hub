@@ -80,7 +80,7 @@ const KanbanOrderCard = ({ order, onStatusChange, updating, tick }: KanbanOrderC
   const config = STATUS_CONFIG[order.status as keyof typeof STATUS_CONFIG];
   if (!config) return null;
 
-  const urgency = getOrderUrgency(order.created_at, order.status);
+  const urgency = getOrderUrgency(order.pickup_time, order.status);
   const pickupInfo = formatPickupCountdown(order.pickup_time);
   const relativeTime = formatRelativeTime(order.created_at);
 
@@ -142,26 +142,36 @@ const KanbanOrderCard = ({ order, onStatusChange, updating, tick }: KanbanOrderC
           </div>
         )}
 
-        {/* Customer name */}
-        <p className="text-sm font-medium text-foreground truncate">{order.name}</p>
+        {/* Customer info */}
+        <div className="space-y-0.5">
+          <p className="text-sm font-medium text-foreground">{order.name}</p>
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <a href={`tel:${order.phone}`} className="flex items-center gap-1 hover:text-foreground">
+              <Phone className="h-3 w-3" />
+              <span>{order.phone}</span>
+            </a>
+          </div>
+        </div>
 
         {/* Items list with options */}
         {order.items && order.items.length > 0 && (
           <div className="space-y-1.5">
             {order.items.map((item) => (
               <div key={item.id}>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground truncate mr-2">
+                <div className="flex justify-between text-sm gap-2">
+                  <span className="text-muted-foreground">
                     {item.qty}× {item.name_snapshot}
                   </span>
                   <span className="text-muted-foreground shrink-0">
                     {item.line_total_huf} Ft
                   </span>
                 </div>
-                {/* Item options (sides, modifiers) */}
-                {item.options && item.options.length > 0 && (
+                {/* Item options (sides, modifiers) - filter out daily_meta */}
+                {item.options && item.options.filter(o => o.option_type !== 'daily_meta').length > 0 && (
                   <div className="ml-5 mt-0.5 space-y-0.5">
-                    {item.options.map((opt) => (
+                    {item.options
+                      .filter(o => o.option_type !== 'daily_meta')
+                      .map((opt) => (
                       <div key={opt.id} className="flex items-center gap-1 text-xs text-muted-foreground/80">
                         <span className="text-primary/60">↳</span>
                         <span>{opt.label_snapshot}</span>
