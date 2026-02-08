@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import WeeklyMenuGrid from "@/components/admin/WeeklyMenuGrid";
 import CapacityManagement from "@/components/admin/CapacityManagement";
 import MasterMenuImport from "@/components/admin/MasterMenuImport";
+import WeeklyNewsletterPanel from "@/components/admin/WeeklyNewsletterPanel";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const DailyMenuManagement = () => {
@@ -43,6 +44,12 @@ const DailyMenuManagement = () => {
               >
                 {isMobile ? "Import" : "Excel Import"}
               </TabsTrigger>
+              <TabsTrigger 
+                value="newsletter" 
+                className="!h-8 !px-3 !text-xs sm:!text-sm !whitespace-nowrap !rounded-md data-[state=active]:!bg-background data-[state=active]:!text-foreground data-[state=active]:!shadow-sm data-[state=active]:!scale-100"
+              >
+                Hírlevél
+              </TabsTrigger>
             </TabsList>
           </div>
           
@@ -56,6 +63,10 @@ const DailyMenuManagement = () => {
           
           <TabsContent value="import" className="mt-0">
             <MasterMenuImport />
+          </TabsContent>
+
+          <TabsContent value="newsletter" className="mt-0">
+            <WeeklyNewsletterPanel />
           </TabsContent>
         </Tabs>
       </div>
