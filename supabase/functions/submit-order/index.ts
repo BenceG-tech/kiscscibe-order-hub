@@ -409,6 +409,7 @@ serve(async (req) => {
         code: orderCode,
         name: customer.name,
         phone: customer.phone,
+        email: customer.email || null,
         total_huf: calculatedTotal,
         status: 'new',
         payment_method,

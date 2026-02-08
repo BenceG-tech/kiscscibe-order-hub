@@ -124,6 +124,11 @@ const OrdersManagement = () => {
       description: "Rendelés állapota frissítve",
     });
 
+    // Fire-and-forget: send status email to customer
+    supabase.functions.invoke('send-order-status-email', {
+      body: { order_id: orderId, new_status: newStatus }
+    }).catch(err => console.error('Status email error:', err));
+
     // Refresh orders to update UI
     fetchOrders();
   };
