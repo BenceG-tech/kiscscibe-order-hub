@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
+import { OrderNotificationsProvider } from "@/contexts/OrderNotificationsContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Menu from "./pages/Menu";
@@ -40,6 +41,7 @@ const App = () => (
           <TooltipProvider>
             <Sonner />
             <BrowserRouter>
+            <OrderNotificationsProvider>
             <CookieConsent />
             <Routes>
               <Route path="/" element={<Index />} />
@@ -104,6 +106,7 @@ const App = () => (
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+          </OrderNotificationsProvider>
           </BrowserRouter>
         </TooltipProvider>
       </CartProvider>

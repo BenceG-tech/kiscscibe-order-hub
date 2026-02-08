@@ -12,9 +12,10 @@ interface PendingOrder {
 export const useGlobalOrderNotifications = () => {
   const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([]);
   const [newOrdersCount, setNewOrdersCount] = useState(0);
-  const [knownOrderIds, setKnownOrderIds] = useState<Set<string>>(new Set());
   const [audioUnlocked, setAudioUnlocked] = useState(false);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const knownOrderIdsRef = useRef<Set<string>>(new Set());
+  const initializedRef = useRef(false);
 
   // Current order to show in modal (first in queue)
   const currentNotification = pendingOrders[0] || null;
@@ -23,9 +24,7 @@ export const useGlobalOrderNotifications = () => {
   useEffect(() => {
     const unlockAudio = () => {
       if (!audioUnlocked) {
-        // Create AudioContext to unlock audio
         audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-        // Resume if suspended
         if (audioContextRef.current.state === 'suspended') {
           audioContextRef.current.resume();
         }
@@ -34,7 +33,6 @@ export const useGlobalOrderNotifications = () => {
       }
     };
 
-    // Listen for any user interaction
     document.addEventListener('click', unlockAudio, { once: true });
     document.addEventListener('keydown', unlockAudio, { once: true });
     document.addEventListener('touchstart', unlockAudio, { once: true });
@@ -55,12 +53,10 @@ export const useGlobalOrderNotifications = () => {
     const ctx = audioContextRef.current;
     
     try {
-      // Resume context if suspended
       if (ctx.state === 'suspended') {
         ctx.resume();
       }
 
-      // Create a more noticeable multi-tone notification
       const playTone = (frequency: number, startTime: number, duration: number) => {
         const oscillator = ctx.createOscillator();
         const gainNode = ctx.createGain();
@@ -107,8 +103,11 @@ export const useGlobalOrderNotifications = () => {
     setNewOrdersCount(0);
   }, []);
 
-  // Initialize: fetch existing order IDs
+  // Initialize: fetch existing order IDs (run once)
   useEffect(() => {
+    if (initializedRef.current) return;
+    initializedRef.current = true;
+
     const fetchInitialOrders = async () => {
       const { data } = await supabase
         .from('orders')
@@ -117,17 +116,17 @@ export const useGlobalOrderNotifications = () => {
         .limit(100);
       
       if (data) {
-        setKnownOrderIds(new Set(data.map(o => o.id)));
+        knownOrderIdsRef.current = new Set(data.map(o => o.id));
       }
     };
 
     fetchInitialOrders();
   }, []);
 
-  // Set up real-time subscription
+  // Set up real-time subscription (stable - no knownOrderIds dependency)
   useEffect(() => {
     const channel = supabase
-      .channel('global-admin-orders-v2')
+      .channel('global-admin-orders-v3')
       .on(
         'postgres_changes',
         {
@@ -139,8 +138,11 @@ export const useGlobalOrderNotifications = () => {
           const newOrder = payload.new as PendingOrder;
           
           // Check if this is truly a new order we haven't seen
-          if (!knownOrderIds.has(newOrder.id)) {
+          if (!knownOrderIdsRef.current.has(newOrder.id)) {
             console.log('New order received:', newOrder.code);
+            
+            // Track this order
+            knownOrderIdsRef.current.add(newOrder.id);
             
             // Play sound
             playNotificationSound();
@@ -148,9 +150,8 @@ export const useGlobalOrderNotifications = () => {
             // Add to pending orders queue
             setPendingOrders(prev => [...prev, newOrder]);
             
-            // Update count and tracked IDs
+            // Update count
             setNewOrdersCount(prev => prev + 1);
-            setKnownOrderIds(prev => new Set([...prev, newOrder.id]));
           }
         }
       )
@@ -159,7 +160,7 @@ export const useGlobalOrderNotifications = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [playNotificationSound, knownOrderIds]);
+  }, [playNotificationSound]);
 
   return {
     currentNotification,
