@@ -295,7 +295,7 @@ const WeeklyNewsletterPanel = () => {
                         )}
                         {alacarteItems.map((item, idx) => (
                           <div key={idx} className="text-sm pl-2 py-0.5">
-                            • {item.name} — <span className="font-medium">{item.price} Ft</span>
+                            • {item.name}{item.price > 0 ? <> — <span className="font-medium">{item.price} Ft</span></> : null}
                           </div>
                         ))}
                       </div>

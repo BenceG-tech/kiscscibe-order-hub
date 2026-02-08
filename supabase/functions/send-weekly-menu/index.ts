@@ -91,7 +91,11 @@ function generateEmailHtml(days: DayData[], dateRange: string): string {
         itemsHtml += `<div style="margin: 8px 0 4px 0; font-size: 12px; color: #92400e; font-weight: bold;">À la carte</div>`;
       }
       for (const item of alacarteItems) {
-        itemsHtml += `<div style="padding: 3px 0 3px 12px; color: #333; font-size: 14px;">• ${item.name} — <strong>${item.price} Ft</strong></div>`;
+        if (item.price > 0) {
+          itemsHtml += `<div style="padding: 3px 0 3px 12px; color: #333; font-size: 14px;">• ${item.name} — <strong>${item.price} Ft</strong></div>`;
+        } else {
+          itemsHtml += `<div style="padding: 3px 0 3px 12px; color: #333; font-size: 14px;">• ${item.name}</div>`;
+        }
       }
     }
 
@@ -172,16 +176,15 @@ const handler = async (req: Request): Promise<Response> => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    if (userError || !user) {
       return new Response(JSON.stringify({ error: "Érvénytelen token." }), {
         status: 401,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
-    const userId = claimsData.claims.sub;
+    const userId = user.id;
 
     // Use service role to check admin status and fetch data
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
