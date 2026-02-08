@@ -34,6 +34,7 @@ import {
   CreditCard,
   Package,
   Archive,
+  Trash2,
   ChevronDown,
   ChevronRight,
 } from "lucide-react";
@@ -228,6 +229,35 @@ const OrdersManagement = () => {
     fetchOrders();
   };
 
+  const deleteOrder = async (orderId: string) => {
+    // Delete options -> items -> order (cascade manually)
+    const { data: items } = await supabase
+      .from("order_items")
+      .select("id")
+      .eq("order_id", orderId);
+
+    if (items && items.length > 0) {
+      const itemIds = items.map((i) => i.id);
+      await supabase
+        .from("order_item_options")
+        .delete()
+        .in("order_item_id", itemIds);
+      await supabase.from("order_items").delete().eq("order_id", orderId);
+    }
+
+    const { error } = await supabase.from("orders").delete().eq("id", orderId);
+    if (error) {
+      toast({
+        title: "Hiba",
+        description: "Nem sikerült törölni a rendelést",
+        variant: "destructive",
+      });
+      return;
+    }
+    toast({ title: "Törölve" });
+    fetchOrders();
+  };
+
   const archiveAllPast = async () => {
     const pastIds = orders
       .filter(
@@ -410,6 +440,7 @@ const OrdersManagement = () => {
               showArchived={showArchived}
               onToggleArchived={setShowArchived}
               onArchive={archiveOrder}
+              onDelete={deleteOrder}
               onArchiveAll={archiveAllPast}
             />
           </TabsContent>
@@ -592,12 +623,14 @@ const PastOrdersTab = ({
   showArchived,
   onToggleArchived,
   onArchive,
+  onDelete,
   onArchiveAll,
 }: {
   orders: Order[];
   showArchived: boolean;
   onToggleArchived: (v: boolean) => void;
   onArchive: (id: string) => void;
+  onDelete: (id: string) => void;
   onArchiveAll: () => void;
 }) => {
   const grouped = groupByDate(orders);
@@ -664,6 +697,7 @@ const PastOrdersTab = ({
                   key={order.id}
                   order={order}
                   onArchive={onArchive}
+                  onDelete={onDelete}
                 />
               ))}
             </div>
@@ -678,9 +712,11 @@ const PastOrdersTab = ({
 const PastOrderAdminCard = ({
   order,
   onArchive,
+  onDelete,
 }: {
   order: Order;
   onArchive: (id: string) => void;
+  onDelete: (id: string) => void;
 }) => {
   const [expanded, setExpanded] = useState(false);
   const isArchived = (order as any).archived;
@@ -836,6 +872,32 @@ const PastOrderAdminCard = ({
                   Archiválás
                 </Button>
               )}
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button size="sm" variant="destructive">
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Törlés
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Rendelés törlése</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Biztosan véglegesen törlöd a #{order.code} rendelést?
+                      Ez a művelet nem vonható vissza.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Mégsem</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => onDelete(order.id)}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Igen, törlés
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
               <Button size="sm" variant="outline" asChild>
                 <a href={`tel:${order.phone}`}>
                   <Phone className="h-4 w-4 mr-1" />

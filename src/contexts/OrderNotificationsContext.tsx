@@ -16,59 +16,35 @@ const OrderNotificationsContext = createContext<OrderNotificationsContextType>({
 export const useOrderNotifications = () => useContext(OrderNotificationsContext);
 
 /**
- * Inner component that activates the notification hook and renders the modal.
- * Only mounted when the user is admin or staff.
+ * Single-component provider — hooks are always called in the same order
+ * regardless of auth state, preventing the "Rendered more hooks" error.
  */
-const ActiveNotifications = ({ children }: { children: React.ReactNode }) => {
-  const { isAdmin } = useAuth();
+export const OrderNotificationsProvider = ({ children }: { children: React.ReactNode }) => {
+  const { canViewOrders, loading, rolesLoading, isAdmin } = useAuth();
+
+  // Derive enabled flag — hook is ALWAYS called (consistent hook count)
+  const enabled = !loading && !rolesLoading && canViewOrders;
+
   const {
     newOrdersCount,
     clearNewOrdersCount,
     currentNotification,
     pendingCount,
     dismissNotification,
-  } = useGlobalOrderNotifications();
+  } = useGlobalOrderNotifications(enabled);
 
-  // Determine where the "View" button navigates based on role
   const navigateTo = isAdmin ? '/admin/orders' : '/staff/orders';
 
   return (
     <OrderNotificationsContext.Provider value={{ newOrdersCount, clearNewOrdersCount }}>
-      <OrderNotificationModal
-        order={currentNotification}
-        onDismiss={dismissNotification}
-        pendingCount={pendingCount}
-        navigateTo={navigateTo}
-      />
-      {children}
-    </OrderNotificationsContext.Provider>
-  );
-};
-
-/**
- * Provider that conditionally activates order notifications for admin/staff users.
- * Must be placed inside AuthProvider and BrowserRouter.
- */
-export const OrderNotificationsProvider = ({ children }: { children: React.ReactNode }) => {
-  const { canViewOrders, loading, rolesLoading } = useAuth();
-
-  // While auth is loading, render children without notifications
-  if (loading || rolesLoading) {
-    return (
-      <OrderNotificationsContext.Provider value={{ newOrdersCount: 0, clearNewOrdersCount: () => {} }}>
-        {children}
-      </OrderNotificationsContext.Provider>
-    );
-  }
-
-  // Only activate notifications for admin/staff
-  if (canViewOrders) {
-    return <ActiveNotifications>{children}</ActiveNotifications>;
-  }
-
-  // Regular users get no notifications
-  return (
-    <OrderNotificationsContext.Provider value={{ newOrdersCount: 0, clearNewOrdersCount: () => {} }}>
+      {enabled && currentNotification && (
+        <OrderNotificationModal
+          order={currentNotification}
+          onDismiss={dismissNotification}
+          pendingCount={pendingCount}
+          navigateTo={navigateTo}
+        />
+      )}
       {children}
     </OrderNotificationsContext.Provider>
   );
