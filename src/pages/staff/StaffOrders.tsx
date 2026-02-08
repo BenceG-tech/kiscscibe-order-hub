@@ -193,6 +193,11 @@ const StaffOrders = () => {
         prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o)
       );
       toast.success(statusLabels[newStatus] || "Státusz frissítve");
+
+      // Fire-and-forget: send status email to customer
+      supabase.functions.invoke('send-order-status-email', {
+        body: { order_id: orderId, new_status: newStatus }
+      }).catch(err => console.error('Status email error:', err));
     } catch (err) {
       console.error(`[KDS] Exception:`, err);
       toast.error("Váratlan hiba – kérlek próbáld újra, vagy frissítsd az oldalt.");
