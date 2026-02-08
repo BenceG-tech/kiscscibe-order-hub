@@ -1,112 +1,126 @@
 
+# Admin heti menu hirlevel kikuldese
 
-# Mobil optimalizalas + Newsletter rendszer
-
-Ket fo feladat van: (1) a foadmin multbeli rendelesek mobilra optimalizalasa, es (2) a newsletter feliratkozasi visszaigazolo e-mail rendszer kiepitese.
-
----
-
-## 1. Admin multbeli rendelesek mobil optimalizalas
-
-A kepernyokepe alapjan a fo problemak:
-- Az osszeg (`448 Ft`, `599 Ft`) jobb oldalon levagodik mobil kepernyomeret eseten
-- A rendelesi kod es a vevo neve, datum, telefon, email tul zsufolt egy sorban mobilon
-- A badge ("Atveve" / "Lemondva") es a chevron ikon szinten zsufolt
-- A controls bar (archivalt mutatasa switch + Osszes archivalasa gomb) szinten tul szeles
-
-### Valtozasok a `PastOrderAdminCard` komponensen:
-
-- **Header at layout**: mobilon a fenti sort ketsorosra valtoztatjuk:
-  - Elso sor: rendelesi kod + nev + badge (balra), osszeg (jobbra)
-  - Masodik sor: datum + telefon + email (kisebb betumerettel)
-  - A chevron ikon es az osszeg a jobb szelre kerul, de nem vagodik le
-- **Flex wrap**: `flex-wrap` hozzaadasa a fobb tarolo divekhez, hogy mobilon torjenek
-- **Szoveges mezo meretek**: a telefon es email kisebb betumerettel, opcionalis truncate-tel
-
-### Valtozasok a `PastOrdersTab` komponensen:
-
-- **Controls bar**: mobilon vertikalis elrendezesre valtas (`flex-col` mobilon)
-- A datumcsoport fejlecek kompaktabbak legyenek mobilon
-
-### Modositando fajl:
-- `src/pages/admin/OrdersManagement.tsx` - PastOrderAdminCard es PastOrdersTab mobilra optimalizalasa
+A newsletter feliratkozas es az udvozlo email mar mukodik (tesztelve, 200 OK valasz). Most az admin feluleten keszitunk egy "Hirlevel" tabot, ahol a foadmin atlathaja a feliratkozokat, megtekintheti a heti menu elozeteset, es egy gombbal kikuldeti az osszes feliratkozonak.
 
 ---
 
-## 2. Newsletter feliratkozasi visszaigazolo email
+## 1. Uj Edge Function: `send-weekly-menu`
 
-### Jelenlegi allapot
-A feliratkozas mukodik: az email bekerul a `subscribers` tablaba. De nincs visszaigazolo email.
+Egy uj Supabase Edge Function, amely:
+- Lekerdezi az aktualis het napi ajanlat adatait a databasbol (hetfo-pentek)
+- Lekerdezi az osszes feliratkozo email cimet a `subscribers` tablabol
+- Generalja a szep HTML emailt a heti menuvel (nap, etelek, arak, menu jeloles)
+- Elkaldi az emailt a Resend API-val az osszes feliratkozonak
+- A felado: `Kiscsibe Etterem <rendeles@kiscsibe-etterem.hu>` (a verifikalt domain)
 
-### Megoldas
-Egy uj edge function: `send-welcome-newsletter` amely:
-1. Feliratkozaskor a frontend meghivja a visszaigazolo email kuldesere
-2. Az email Resend-del kerul kikuldere
-3. Tartalom: "Koszonjuk a feliratkozast! Minden hetfon elkuldjuk a heti menut."
+Az edge function service_role kulccsal fer hozza az adatbazishoz, hogy lathassa a feliratkozokat es a napi ajanlat adatokat.
 
-### Uj edge function: `supabase/functions/send-welcome-newsletter/index.ts`
+### Email tartalom terve:
 
-Ez a function:
-- Kap egy `email` es `name` (opcio) parametert
-- Resend API-val kuld egy szep HTML emailt
-- A felado: `Kiscsibe Etterem <rendeles@kiscsibe-etterem.hu>` (ugyanaz mint a rendelesi emaileknel)
-- Tartalom: koszono uzenet + rovid leiras, hogy mire szamithat (heti menu hetfon)
-
-### Frontend valtozas: `NewsletterSection.tsx`
-
-A sikeres feliratkozas utan meghivja az uj edge function-t:
 ```text
-await supabase.functions.invoke("send-welcome-newsletter", {
-  body: { email: result.data }
-});
+Targy: "Heti menu - Kiscsibe Etterem (februar 10-14.)"
+
+Tartalom:
+- Udvozlo fejlec a Kiscsibe branddel
+- Minden napra (hetfo-pentek):
+  - Nap neve es datum
+  - Napi menu ar (ha van)
+  - Felsorolt etelek kategoriank szerint
+  - Menu etelek megjelolve (leves + foetel)
+- Etterem elerhertosegei
+- Leiratkozasi lehetoseg (GDPR)
 ```
 
-### Config frissites: `supabase/config.toml`
+---
 
+## 2. Admin felulet bovitese - Hirlevel tab
+
+A `DailyMenuManagement.tsx` oldalra (Napi ajanlatok admin oldal) egy uj "Hirlevel" tabot adunk hozza.
+
+### Tab tartalma:
+- **Feliratkozok szama**: aktualis feliratkozok szamanak megjelenitese
+- **Heti menu elonezet**: az aktualis het napi ajanlat adatainak megjelenitese tablazatos formaban, ugy ahogy az emailben is megjelenne
+- **Kikuldesi statusz**: mikor volt legutobb kikuldve (a `settings` tablaban tarolva `newsletter_last_sent` kulcson)
+- **"Heti menu kikuldese" gomb**: megnyomasa utan megerosites, majd az edge function meghivasa
+- Betoltes es sikeres/sikertelen allapotok kezelese
+
+### Uj komponens: `src/components/admin/WeeklyNewsletterPanel.tsx`
+
+Ez a komponens:
+- Lekerdezi a feliratkozok szamat
+- Lekerdezi az aktualis het napi ajanlat adatait
+- Megjelenitl az elonezetet
+- Kezeli a kikuldest es az allapotokat
+
+---
+
+## 3. Konfiguracio
+
+### `supabase/config.toml`
+Uj function regisztracio:
 ```text
-[functions.send-welcome-newsletter]
+[functions.send-weekly-menu]
 verify_jwt = false
 ```
+
+### `settings` tabla hasznalata
+A legutobbi kikuldesi idopontot a meglevo `settings` tablaban taroljuk `newsletter_last_sent` kulcson, JSON formaban: `{"sent_at": "2026-02-10T10:30:00Z", "week": "2026-02-10", "count": 42}`. Ez nem igenyel uj tablat vagy migraciot.
 
 ---
 
 ## Technikai reszletek
 
+### Edge Function logika (send-weekly-menu)
+
+```text
+1. CORS fejlecek kezelese
+2. Admin jogosultsag ellenorzes (Authorization header -> JWT dekodolas -> is_admin RPC)
+3. Aktualis het hetfo-pentek datumainak generalasa
+4. daily_offers + daily_offer_items + menu_items lekerdezese service_role-lal
+5. subscribers tablabol osszes email lekerdezese
+6. HTML email generalasa a heti menu adatokbol
+7. Resend batch kuldese (max 100/batch)
+8. Eredmeny visszaadasa (hany email sikeres, hibak)
+9. settings tablaba mentes: newsletter_last_sent
+```
+
+### WeeklyNewsletterPanel komponens
+
+```text
+- useQuery: subscribers count, heti menu adat, settings (newsletter_last_sent)
+- Megjelenitett elemek:
+  - Feliratkozok szama card
+  - Legutobbi kikuldesi idopont
+  - Heti menu elonezet (napokra bontva, kategoriak es etelek felsorolva)
+  - "Heti menu kikuldese" gomb AlertDialog megerositessel
+- supabase.functions.invoke("send-weekly-menu") a gomb megnyomasakor
+```
+
+### Email HTML sablon
+
+A heti menu email tartalma napokra bontva jelenik meg, hasonlo stilussal mint az udvozlo email (arany-barna szinsema, Kiscsibe branding). Minden napnal:
+- Napi menu ar felkoverrel
+- Menu etelek (leves + foetel) kulonleges jellel
+- A la carte etelek normalisan felsorolva
+- Kategoriak szerint csoportositva
+
 ### Fajlok osszefoglalasa
 
 | Fajl | Valtozas |
 |------|---------|
-| `src/pages/admin/OrdersManagement.tsx` | PastOrderAdminCard mobil layout optimalizalas |
-| `src/components/sections/NewsletterSection.tsx` | Visszaigazolo email kuldes feliratkozas utan |
-| `supabase/functions/send-welcome-newsletter/index.ts` | Uj edge function a koszono emailhez |
+| `supabase/functions/send-weekly-menu/index.ts` | Uj edge function - heti menu kuldese feliratkozoknak |
+| `src/components/admin/WeeklyNewsletterPanel.tsx` | Uj komponens - hirlevel admin panel |
+| `src/pages/admin/DailyMenuManagement.tsx` | Uj "Hirlevel" tab hozzaadasa |
 | `supabase/config.toml` | Uj function konfiguracio |
 
-### PastOrderAdminCard mobil layout terv
+### Biztonsag
 
-Jelenlegi (egy sor, tulcsordul):
-```text
-[icon] [#kod nev] [archivalt badge] ..... [448 Ft] [Atveve] [chevron]
-       [datum telefon email]
-```
+- Az edge function ellenorzi, hogy a hivast admin felhasznalo teszi (JWT ellenorzes)
+- A subscribers tabla csak service_role-lal olvasható (meglevo RLS)
+- Az email HTML-ben nincs felhasznaloi input (XSS vedelem)
+- Batch kuldesi limit a Resend API-hoz igazitva
 
-Uj mobil layout (jobb torderssel):
-```text
-[icon] [#kod nev]                    [448 Ft]
-       [datum]  [telefon]            [Atveve badge]
-       [email]                       [chevron]
-```
+### Kesleltetes kezelese
 
-A fo valtozas a `button` className-jeben lesz: `flex-col sm:flex-row` a fobbcontainereken belul, es a jobb oldali osszeg fix szelesseggel nem csordulhat tul.
-
-### Welcome Newsletter email tartalma
-
-- Targy: "Koszonjuk a feliratkozast! - Kiscsibe Etterem"
-- Tartalom:
-  - Udvozlo fejlec
-  - "Koszonjuk, hogy feliratkoztal a heti menunkre!"
-  - "Minden hetfon megkapod emailben az aktualis heti menunket."
-  - Ettermunk adatai (cim, telefon)
-  - Leiratkozasi megjegyzes (GDPR)
-
-A heti menu kezi kikuldeset az admin feluleten egy kesobbi feladatkent valositjuk meg, ha szukseg lesz ra.
-
+Ha sok feliratkozo van (100+), a Resend API batch kuldesevel dolgozunk, 100 email/batch limittel. A felhasznalo latja a kuldesi folyamatot (betoltes allapot) es a vegeredmenyt (hany email kuldve).
