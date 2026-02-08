@@ -31,6 +31,7 @@ interface Order {
   code: string;
   name: string;
   phone: string;
+  email?: string | null;
   total_huf: number;
   status: string;
   payment_method: string;

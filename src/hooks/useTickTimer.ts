@@ -55,20 +55,19 @@ export const formatPickupCountdown = (pickupTime: string | null): { text: string
   return { text: `${hours}ó ${mins}p múlva`, urgency: "normal" };
 };
 
-/** Calculate urgency level for an order based on how long it's been in current status */
-export const getOrderUrgency = (createdAt: string, status: string): "normal" | "aging" | "urgent" => {
+/** Calculate urgency level for an order based on pickup time proximity */
+export const getOrderUrgency = (pickupTime: string | null, status: string): "normal" | "aging" | "urgent" => {
   if (status !== "new" && status !== "preparing") return "normal";
-  
-  const diffMs = Date.now() - new Date(createdAt).getTime();
+  if (!pickupTime) return "normal";
+
+  const diffMs = new Date(pickupTime).getTime() - Date.now();
   const diffMin = Math.floor(diffMs / 60000);
 
-  if (status === "new") {
-    if (diffMin > 10) return "urgent";
-    if (diffMin > 5) return "aging";
-  }
-  if (status === "preparing") {
-    if (diffMin > 20) return "urgent";
-    if (diffMin > 15) return "aging";
-  }
+  // Already past pickup time
+  if (diffMin < 0) return "urgent";
+  // Under 30 minutes to pickup
+  if (diffMin <= 30) return "urgent";
+  // 30-60 minutes to pickup
+  if (diffMin <= 60) return "aging";
   return "normal";
 };

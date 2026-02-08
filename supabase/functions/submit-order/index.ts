@@ -455,7 +455,8 @@ serve(async (req) => {
           .insert({
             order_item_id: orderItemData.id,
             label_snapshot: `daily_${item.daily_type}_${item.daily_id}`,
-            price_delta_huf: 0
+            price_delta_huf: 0,
+            option_type: 'daily_meta'
           });
         
         if (dailyError) {
