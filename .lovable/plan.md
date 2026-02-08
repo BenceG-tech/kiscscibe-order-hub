@@ -1,119 +1,124 @@
 
-# Harom fo problema javitasa
 
-## Azonositott problemak es okok
+# Staff KDS es Admin Rendelesek - Atfogo Javitas
 
-### 1. Statusz emailek nem erkeznek meg
-A `send-order-status-email` edge function-nek **egyetlen log bejegyzese sincs** - soha nem lett meghivva sikeresen. A frontend kod (StaffOrders.tsx es OrdersManagement.tsx) tartalmazza a hivast, de a function valoszinuleg **nem lett uzembe helyezve**. Ujra kell deployolni.
+Ez a terv 5 fo problemat old meg:
 
-### 2. Ertesitesek csak az admin/staff oldalakon mukodnek
-Az `useGlobalOrderNotifications` hook jelenleg **csak** az `AdminLayout`-ban es a `StaffLayout`-ban fut. Ha a staff a fo oldalon (Index, Menu, About stb.) bongesz, **nincs aktiv realtime subscription**, igy nem kap ertesitest. A megoldas: az ertesitesi rendszert **az egesz alkalmazas szintjere** kell emelni.
-
-### 3. Uj rendelesek nem jelennek meg frissites nelkul
-A `useGlobalOrderNotifications` hook-ban **hiba van**: a `knownOrderIds` (Set) a subscription effect fuggosegeiben van (162. sor). Minden uj rendeles erkeztekor a Set valtozik, ami **ujracsatlakozast okoz** - rovid kimaradasokat es elveszett esemenyeket eredmenyezhet. A javitas: `useRef` hasznalata `useState` helyett.
+1. A villogas rendszer ujragondolasa (pickup ido alapjan, nem rendelesi kor alapjan)
+2. A "daily_complete_menu_UUID" szoveg eltavolitasa a rendelesi kartyakrol
+3. Multbeli rendelesek reszletesebb, datumokra rendezett megjelenitese mindket feluleten
+4. Archivalasi lehetoseg az admin oldalon
+5. Staff KDS mobilra es desktopra optimalizalas
 
 ---
 
-## Megoldasi terv
+## 1. Villogas rendszer ujratervezese
 
-### 1. lepes: Ertesitesi hook javitasa (`useGlobalOrderNotifications.tsx`)
-- A `knownOrderIds`-t `useRef<Set<string>>` tipusra valtoztatjuk `useState` helyett
-- Ezzel a subscription **nem irodik ujra** minden uj rendeles utan
-- A subscription stabil marad az egesz munkamenet alatt
+**Jelenlegi problema**: A `getOrderUrgency` fuggveny (`useTickTimer.ts`) a rendeles *letrehozasanak ideje* alapjan hataroz meg surgetesseget (5 perc = "aging", 10 perc = "urgent"). Ez ertelmetlenul vilogtata a kartyakat.
 
-### 2. lepes: Globalis ertesitesi kontextus letrehozasa
-Uj fajl: `src/contexts/OrderNotificationsContext.tsx`
+**Uj logika**: A villogas a **kert atveteli idopont** alapjan mukodik:
+- **60-30 perccel atvtel elott**: Lagyabb vilogatas (lass, pulsing border)
+- **30 percen belul**: Erosebb vilogatas (gyorsabb pulse, pirosabb keret)
+- **Ha nincs pickup ido megadva**: Nem vilog (csak a pickup countdown jelzi a sulyosságot)
 
-Ez a kontextus:
-- Ellenorzi az `useAuth`-bol, hogy a felhasznalo admin vagy staff-e
-- Ha igen: aktivalja az ertesitesi hook-ot es rendereli a felugro ablakot
-- Ha nem (sima vasarlo): nem csinal semmit
-- Az ertesitesi allapotot (szamlalo, torles) kontextusban elerheto teszi
-
-Igy **minden oldalon** (fooldal, menu, kapcsolat, admin stb.) mukodnek az ertesitesek ha a felhasznalo admin/staff.
-
-### 3. lepes: App.tsx frissitese
-- Az `OrderNotificationsProvider`-t beillesztjuk a `BrowserRouter`-on belul (mert a `useNavigate`-hez kell) es az `AuthProvider`-on belul (mert a `useAuth`-hoz kell)
-
-### 4. lepes: AdminLayout es StaffLayout egyszerusitese
-- Mindket layoutbol **eltavolitjuk** a kozvetlen `useGlobalOrderNotifications` hivast es az `OrderNotificationModal`-t
-- Helyette a kontextusbol olvassak az adatokat (badge szamlalo, torles)
-- Ezzel megszunik a dupla subscription problema
-
-### 5. lepes: Edge function ujratelepitese
-- A `send-order-status-email` function-t ujra deployoljuk
-- Ellenorizzuk, hogy mukodik-e
+### Modositando fajlok:
+- `src/hooks/useTickTimer.ts` - `getOrderUrgency` fuggveny atirasa: a `pickupTime` parametert is megkapja, es az alapjan szamol
+- `src/components/staff/KanbanOrderCard.tsx` - `getOrderUrgency`-nek atadja a `pickup_time`-ot is
+- `src/components/staff/StatusSummaryBar.tsx` - Az "Uj" gomb allandoan pulsal ha van uj rendeles (de ez nem vilogas, csak vizualis jelzes)
 
 ---
 
-## Technikai reszletek
+## 2. UUID szoveg eltavolitasa a rendelesi kartyakrol
 
-### useGlobalOrderNotifications.tsx - Fo valtozasok
-```text
-JELENLEGI (hibas):
-  const [knownOrderIds, setKnownOrderIds] = useState<Set<string>>(new Set());
-  // ...
-  useEffect(() => { ... }, [playNotificationSound, knownOrderIds]);
-  // ^ Ez MINDEN uj rendeles utan ujracsatlakozik!
+**Jelenlegi problema**: A `submit-order` edge function a napi menuk metaadatait `order_item_options` tablaba menti `label_snapshot: "daily_complete_menu_UUID"` formatumban. Ezt a KanbanOrderCard kiolvas mint opciont es megjeleníti.
 
-JAVITOTT:
-  const knownOrderIdsRef = useRef<Set<string>>(new Set());
-  // ...
-  useEffect(() => { ... }, [playNotificationSound]);
-  // ^ Stabil subscription, nem irodik ujra
+**Megoldas ket lepcsoben**:
+- **Backend (submit-order)**: A metadata sor `option_type` mezojet allitsuk `'daily_meta'`-ra a jelenlegi `NULL` / `'modifier'` helyett
+- **Frontend (KanbanOrderCard)**: Szurjuk ki az `option_type === 'daily_meta'` tipusu opciokat a megjelenites elol (ezek technikai metaadatok, nem a vasarlo altal valasztott opciok)
+
+### Modositando fajlok:
+- `supabase/functions/submit-order/index.ts` - 456. sor kornyeke: `option_type: 'daily_meta'` hozzaadasa
+- `src/components/staff/KanbanOrderCard.tsx` - Opciok szuresenel kihagyja a `daily_meta` tipusuakat
+
+---
+
+## 3. Multbeli rendelesek reszletesebb megjelenitese
+
+### 3a. Staff oldal - PastOrdersSection javitasa
+
+**Jelenlegi problema**: A multbeli rendelesek csak rendelesi kodot, nevet, osszegett es allapotot mutatjak. Nincs email, telefon, es a datum csoportositas csak "Ma / Tegnap / Regebbi".
+
+**Javitasok**:
+- Reszletes informaciok: email cim es telefonszam megjelenitese
+- Kibonthatosag: minden rendeles egy `Collapsible` elembe kerul, ami kinyitasakor mutatja a rendelt teteleket
+- Jobb datum csoportositas: konkret datumokat ir ki (pl. "Februar 7, szerda"), nem csak "Regebbi"
+- Idopont: az atveteli idopontot is mutatja
+
+### 3b. Admin oldal - OrdersManagement "Multbeli rendelesek" tab javitasa
+
+**Jelenlegi problema**: A multbeli rendelesek ugyanugy neznek ki mint az aktivak, nincs datum szerinti csoportositas.
+
+**Javitasok**:
+- Email cim megjelenitese (az `orders` tablabol, ami most mar tartalmazza az `email` mezot)
+- Datum csoportositas (mai, tegnapi, regebbi napokra bontva, konkret datumokkal)
+- Rendelt tetelek reszletei (opciokkal es koretekkel egyutt)
+- Archivalas gomb (lasd 4. pont)
+
+### Modositando fajlok:
+- `src/components/staff/PastOrdersSection.tsx` - Teljes ujratervezes
+- `src/pages/admin/OrdersManagement.tsx` - Multbeli rendelesek tab javitasa
+
+---
+
+## 4. Archivalas az admin oldalon
+
+**Megoldas**: Adatbazis szintu `archived` boolean mezo az `orders` tablara. Az archivalt rendelesek alapertelmezetten nem jelennek meg a multbeli rendelesek kozott, de egy "Archivalt rendelesek mutatasa" kapcsoloval elohovhatoak.
+
+### Adatbazis:
+```sql
+ALTER TABLE public.orders ADD COLUMN archived boolean NOT NULL DEFAULT false;
 ```
 
-### OrderNotificationsContext.tsx - Uj fajl
-```text
-Struktura:
-  OrderNotificationsContext -> createContext
-  OrderNotificationsProvider:
-    - useAuth() -> isAdmin, isStaff ellenorzes
-    - Ha admin/staff: renderel egy belso komponenst ami:
-      - useGlobalOrderNotifications() hook-ot hasznalja
-      - OrderNotificationModal-t rendereli
-      - Kontextusba irja az ertesitesi adatokat
-    - Ha nem admin/staff: ures kontextust ad
-  useOrderNotifications() -> context hook
-```
+### Frontend:
+- Az admin "Multbeli rendelesek" tab-on egy "Archivalas" gomb minden lezart rendeles mellett
+- "Osszes archivalasa" gomb a regi rendelesek tomeges archivalasahoz
+- Kapcsolo: "Archivalt rendelesek mutatasa" - ki/be kapcsolhato
 
-### App.tsx - Modositasok
-```text
-JELENLEGI:
-  AuthProvider > CartProvider > TooltipProvider > BrowserRouter > Routes
+### Modositando fajlok:
+- SQL migracio (uj `archived` oszlop)
+- `src/integrations/supabase/types.ts` - Tipus frissites
+- `src/pages/admin/OrdersManagement.tsx` - Archivalas gombok es szuro
 
-JAVITOTT:
-  AuthProvider > CartProvider > TooltipProvider > BrowserRouter >
-    OrderNotificationsProvider > Routes
-```
+---
 
-### AdminLayout.tsx / StaffLayout.tsx - Modositasok
-```text
-JELENLEGI:
-  import { useGlobalOrderNotifications } from '...';
-  import OrderNotificationModal from '...';
-  const { newOrdersCount, ... } = useGlobalOrderNotifications();
-  <OrderNotificationModal ... />
+## 5. Staff KDS mobilra es desktopra optimalizalas
 
-JAVITOTT:
-  import { useOrderNotifications } from '@/contexts/OrderNotificationsContext';
-  const { newOrdersCount, clearNewOrdersCount } = useOrderNotifications();
-  // Nincs OrderNotificationModal - az App szinten van
-```
+**Jelenlegi problemak a kepernykep alapjan**:
+- A rendelesi kod nagyon nagy helyet foglal
+- Az "Elfogadom" gomb nem eleg kiemelkedo
+- A tetelek hosszu nevei csonkitva jelennek meg ("Bableves + Csirkecomb p...")
+- A napi menu tetelei teljesen unreadable-k az UUID-val
 
-### Modositando fajlok osszefoglalasa
+**Javitasok**:
+- A tetelek neveit **ne csonkitsuk** - tobbi sorba torjenek ha kell
+- Kompaktabb header: a rendelesi kod es osszeg egy sorban, kisebb meretben mobilon
+- A vevo neve melle a telefon es email cim is legyen lathato (kis ikonokkal)
+- Jobb kontrasztot a gombok kozott
+
+### Modositando fajlok:
+- `src/components/staff/KanbanOrderCard.tsx` - Kompaktabb, informativabb kartya design
+
+---
+
+## Technikai reszletek - Fajlok osszefoglalasa
 
 | Fajl | Valtozas |
 |------|---------|
-| `src/hooks/useGlobalOrderNotifications.tsx` | `knownOrderIds` ref-re csere, stabil subscription |
-| `src/contexts/OrderNotificationsContext.tsx` | **UJ** - globalis ertesitesi kontextus |
-| `src/App.tsx` | `OrderNotificationsProvider` beillesztese |
-| `src/pages/admin/AdminLayout.tsx` | Kontextusbol olvas, nincs kozvetlen hook/modal |
-| `src/pages/staff/StaffLayout.tsx` | Kontextusbol olvas, nincs kozvetlen hook/modal |
-| `supabase/functions/send-order-status-email/index.ts` | Ujratelepites (deploy) |
+| `src/hooks/useTickTimer.ts` | `getOrderUrgency` fuggveny: pickup ido alapu villogas |
+| `src/components/staff/KanbanOrderCard.tsx` | UUID szures, teljes nevmegjelenites, email/telefon, pickup ido alapu urgency |
+| `src/components/staff/PastOrdersSection.tsx` | Reszletesebb multbeli rendelesek, datum csoportositas, kibonthato tetelek |
+| `src/pages/admin/OrdersManagement.tsx` | Multbeli tab javitas, email, datum csoportositas, archivalas |
+| `supabase/functions/submit-order/index.ts` | `option_type: 'daily_meta'` metadata jeloles |
+| SQL migracio | `archived` boolean oszlop az `orders` tablara |
+| `src/integrations/supabase/types.ts` | `archived` mezo tipus |
 
-### Vart eredmenyek
-
-1. **Statusz emailek mukodni fognak** - az ugyfel emailt kap ha "keszitjuk", "kesz" es "atveve" statuszra kerul a rendelese
-2. **Ertesitesek mindenhol mukodnek** - ha a staff a fooldalon bongesz, attol meg kap popup-ot es hangjelzest uj rendeles eseten
-3. **Nincs oldalfrissites szukseg** - az uj rendelesek azonnal megjelennek a Kanban tablan es az admin oldal listajaban
