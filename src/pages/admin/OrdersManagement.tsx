@@ -639,7 +639,7 @@ const PastOrdersTab = ({
   return (
     <div className="space-y-4">
       {/* Controls bar */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
         <div className="flex items-center gap-2">
           <Switch
             checked={showArchived}
@@ -647,14 +647,14 @@ const PastOrdersTab = ({
             id="show-archived"
           />
           <label htmlFor="show-archived" className="text-sm text-muted-foreground cursor-pointer">
-            Archivált rendelések mutatása
+            Archivált mutatása
           </label>
         </div>
 
         {unarchivedCount > 0 && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="w-full sm:w-auto">
                 <Archive className="h-4 w-4 mr-1" />
                 Összes archiválása ({unarchivedCount})
               </Button>
@@ -734,49 +734,59 @@ const PastOrderAdminCard = ({
         <CollapsibleTrigger asChild>
           <button
             type="button"
-            className="w-full flex items-center justify-between gap-3 p-4 text-left hover:bg-muted/30 transition-colors rounded-t-lg"
+            className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 p-3 sm:p-4 text-left hover:bg-muted/30 transition-colors rounded-t-lg"
           >
-            <div className="flex items-center gap-3 min-w-0">
+            {/* Top row: icon + code + name + price */}
+            <div className="flex items-start sm:items-center gap-2 sm:gap-3 min-w-0 flex-1">
               {order.status === "completed" ? (
-                <CheckCircle className="h-5 w-5 text-green-600 shrink-0" />
+                <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5 sm:mt-0" />
               ) : (
-                <XCircle className="h-5 w-5 text-red-500 shrink-0" />
+                <XCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5 sm:mt-0" />
               )}
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-bold text-base">#{order.code}</span>
-                  <span className="text-muted-foreground">{order.name}</span>
-                  {isArchived && (
-                    <Badge variant="outline" className="text-xs">
-                      Archivált
-                    </Badge>
-                  )}
+              <div className="min-w-0 flex-1">
+                {/* First line: code, name, archived badge */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                    <span className="font-bold text-sm sm:text-base">#{order.code}</span>
+                    <span className="text-muted-foreground text-sm truncate">{order.name}</span>
+                    {isArchived && (
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                        Archivált
+                      </Badge>
+                    )}
+                  </div>
+                  {/* Price - visible on mobile in first row */}
+                  <span className="font-bold text-sm sm:text-lg whitespace-nowrap sm:hidden">
+                    {order.total_huf.toLocaleString("hu-HU")} Ft
+                  </span>
                 </div>
-                <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
-                  <span>
+                {/* Second line: date, phone, email */}
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] sm:text-xs text-muted-foreground mt-0.5">
+                  <span className="whitespace-nowrap">
                     {new Date(order.created_at).toLocaleString("hu-HU")}
                   </span>
-                  <span className="flex items-center gap-1">
+                  <span className="flex items-center gap-1 whitespace-nowrap">
                     <Phone className="h-3 w-3" />
                     {order.phone}
                   </span>
                   {order.email && (
-                    <span className="flex items-center gap-1">
-                      <Mail className="h-3 w-3" />
-                      {order.email}
+                    <span className="flex items-center gap-1 truncate max-w-[180px] sm:max-w-none">
+                      <Mail className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{order.email}</span>
                     </span>
                   )}
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-3 shrink-0">
-              <span className="font-bold text-lg">
+            {/* Right side: price (desktop) + badge + chevron */}
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-7 sm:ml-0">
+              <span className="font-bold text-lg whitespace-nowrap hidden sm:inline">
                 {order.total_huf.toLocaleString("hu-HU")} Ft
               </span>
               <Badge
                 variant="outline"
                 className={cn(
-                  "text-xs",
+                  "text-[10px] sm:text-xs whitespace-nowrap",
                   order.status === "completed"
                     ? "border-green-500 text-green-700"
                     : "border-red-400 text-red-600"
@@ -861,7 +871,7 @@ const PastOrderAdminCard = ({
             )}
 
             {/* Actions */}
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {!isArchived && (
                 <Button
                   variant="outline"
