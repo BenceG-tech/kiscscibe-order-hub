@@ -8,6 +8,7 @@ import PastOrdersSection from "@/components/staff/PastOrdersSection";
 import { LoadingSpinner } from "@/components/ui/loading";
 import { Button } from "@/components/ui/button";
 import { useTickTimer } from "@/hooks/useTickTimer";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { RefreshCw, Inbox } from "lucide-react";
 
 interface OrderItemOption {
@@ -41,23 +42,25 @@ interface Order {
   items?: OrderItem[];
 }
 
+type TabStatus = "new" | "preparing" | "ready";
+
 const COLUMNS = [
   {
-    status: "new",
+    status: "new" as TabStatus,
     title: "Új rendelések",
     headerClass: "bg-red-500 text-white",
     emptyMessage: "Nincs új rendelés",
     columnId: "column-new",
   },
   {
-    status: "preparing",
+    status: "preparing" as TabStatus,
     title: "Készítés alatt",
     headerClass: "bg-orange-500 text-white",
     emptyMessage: "Nincs készülő rendelés",
     columnId: "column-preparing",
   },
   {
-    status: "ready",
+    status: "ready" as TabStatus,
     title: "Kész – átvételre vár",
     headerClass: "bg-green-600 text-white",
     emptyMessage: "Nincs kész rendelés",
@@ -65,13 +68,49 @@ const COLUMNS = [
   },
 ] as const;
 
+const TAB_ORDER: TabStatus[] = ["new", "preparing", "ready"];
+
 const StaffOrders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabStatus>("new");
   const tick = useTickTimer(30000);
   const refetchTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const isMobile = useIsMobile();
 
+  // ── Swipe support ──
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const swipeContainerRef = useRef<HTMLDivElement>(null);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartRef.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+    };
+  }, []);
+
+  const handleTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      if (!touchStartRef.current) return;
+      const dx = e.changedTouches[0].clientX - touchStartRef.current.x;
+      const dy = e.changedTouches[0].clientY - touchStartRef.current.y;
+      touchStartRef.current = null;
+
+      // Only count horizontal swipes (dx > dy)
+      if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx)) return;
+
+      const currentIdx = TAB_ORDER.indexOf(activeTab);
+      if (dx < 0 && currentIdx < TAB_ORDER.length - 1) {
+        setActiveTab(TAB_ORDER[currentIdx + 1]);
+      } else if (dx > 0 && currentIdx > 0) {
+        setActiveTab(TAB_ORDER[currentIdx - 1]);
+      }
+    },
+    [activeTab]
+  );
+
+  // ── Data fetching ──
   const fetchOrders = useCallback(async () => {
     const { data: ordersData, error: ordersError } = await supabase
       .from("orders")
@@ -84,7 +123,6 @@ const StaffOrders = () => {
       return;
     }
 
-    // Fetch items + options for all orders in parallel
     const ordersWithItems = await Promise.all(
       (ordersData || []).map(async (order) => {
         const { data: itemsData } = await supabase
@@ -137,7 +175,6 @@ const StaffOrders = () => {
         "postgres_changes",
         { event: "*", schema: "public", table: "orders" },
         () => {
-          // Debounce realtime refetches to prevent double-firing
           clearTimeout(refetchTimerRef.current);
           refetchTimerRef.current = setTimeout(() => fetchOrders(), 300);
         }
@@ -150,13 +187,9 @@ const StaffOrders = () => {
     };
   }, [fetchOrders]);
 
-  // Old fetchOrders removed — now defined above via useCallback
-
   const handleStatusChange = async (orderId: string, newStatus: string) => {
     setUpdatingId(orderId);
-
     try {
-      // Find order for logging
       const order = orders.find((o) => o.id === orderId);
       const orderCode = order?.code || orderId.slice(0, 8);
       const oldStatus = order?.status || "unknown";
@@ -176,12 +209,12 @@ const StaffOrders = () => {
       }
 
       if (!data || data.length === 0) {
-        console.error(`[KDS] WARNING: 0 rows affected for #${orderCode} — possible RLS/permission issue`);
-        toast.error("Nincs jogosultság vagy a rendelés nem található. Próbálj kijelentkezni és újra bejelentkezni.");
+        console.error(`[KDS] WARNING: 0 rows affected for #${orderCode}`);
+        toast.error("Nincs jogosultság vagy a rendelés nem található.");
         return;
       }
 
-      console.log(`[KDS] Update successful for #${orderCode}: status is now "${data[0].status}"`);
+      console.log(`[KDS] Update successful for #${orderCode}`);
 
       const statusLabels: Record<string, string> = {
         preparing: "Elfogadva – készítés megkezdve",
@@ -189,39 +222,43 @@ const StaffOrders = () => {
         completed: "Átvéve – lezárva",
         cancelled: "Rendelés lemondva",
       };
-      // Optimistic local state update so card moves immediately
-      setOrders(prev =>
-        prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o)
+      setOrders((prev) =>
+        prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
       );
       toast.success(statusLabels[newStatus] || "Státusz frissítve");
 
-      // Fire-and-forget: send status email to customer
-      supabase.functions.invoke('send-order-status-email', {
-        body: { order_id: orderId, new_status: newStatus }
-      }).catch(err => console.error('Status email error:', err));
+      supabase.functions
+        .invoke("send-order-status-email", {
+          body: { order_id: orderId, new_status: newStatus },
+        })
+        .catch((err) => console.error("Status email error:", err));
     } catch (err) {
       console.error(`[KDS] Exception:`, err);
-      toast.error("Váratlan hiba – kérlek próbáld újra, vagy frissítsd az oldalt.");
+      toast.error("Váratlan hiba – kérlek próbáld újra.");
     } finally {
       setUpdatingId(null);
     }
   };
 
-  // Split orders
+  // ── Derived data ──
   const activeByStatus = (status: string) =>
     orders
       .filter((o) => o.status === status)
       .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
-  const pastOrders = orders.filter((o) =>
-    ["completed", "cancelled"].includes(o.status)
-  );
-
+  const pastOrders = orders.filter((o) => ["completed", "cancelled"].includes(o.status));
   const newOrders = activeByStatus("new");
   const preparingOrders = activeByStatus("preparing");
   const readyOrders = activeByStatus("ready");
-
   const hasActiveOrders = newOrders.length + preparingOrders.length + readyOrders.length > 0;
+
+  const getColumnOrders = (status: TabStatus) => {
+    switch (status) {
+      case "new": return newOrders;
+      case "preparing": return preparingOrders;
+      case "ready": return readyOrders;
+    }
+  };
 
   if (loading) {
     return (
@@ -236,14 +273,18 @@ const StaffOrders = () => {
   return (
     <StaffLayout>
       <div className="space-y-4 pb-8">
-        {/* Summary bar */}
-        <StatusSummaryBar
-          newCount={newOrders.length}
-          preparingCount={preparingOrders.length}
-          readyCount={readyOrders.length}
-        />
+        {/* Sticky Summary Bar */}
+        <div className="sticky top-[calc(env(safe-area-inset-top,0px)+56px+48px)] z-30 bg-background border-b">
+          <StatusSummaryBar
+            newCount={newOrders.length}
+            preparingCount={preparingOrders.length}
+            readyCount={readyOrders.length}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+          />
+        </div>
 
-        {/* Empty state when no active orders */}
+        {/* Empty state */}
         {!hasActiveOrders && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="rounded-full bg-muted p-4 mb-4">
@@ -269,23 +310,22 @@ const StaffOrders = () => {
           </div>
         )}
 
-        {/* Kanban Grid: 3 columns on desktop, stacked on mobile */}
+        {/* Kanban content */}
         {hasActiveOrders && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {COLUMNS.map((col) => {
-              const colOrders =
-                col.status === "new"
-                  ? newOrders
-                  : col.status === "preparing"
-                  ? preparingOrders
-                  : readyOrders;
-
-              return (
+          <>
+            {/* Mobile / Tablet: single column with swipe */}
+            <div
+              className="lg:hidden"
+              ref={swipeContainerRef}
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+            >
+              {COLUMNS.filter((col) => col.status === activeTab).map((col) => (
                 <KanbanColumn
                   key={col.status}
                   title={col.title}
-                  count={colOrders.length}
-                  orders={colOrders}
+                  count={getColumnOrders(col.status).length}
+                  orders={getColumnOrders(col.status)}
                   headerClass={col.headerClass}
                   onStatusChange={handleStatusChange}
                   updatingId={updatingId}
@@ -293,12 +333,30 @@ const StaffOrders = () => {
                   emptyMessage={col.emptyMessage}
                   columnId={col.columnId}
                 />
-              );
-            })}
-          </div>
+              ))}
+            </div>
+
+            {/* Desktop: 3-column grid */}
+            <div className="hidden lg:grid lg:grid-cols-3 gap-4">
+              {COLUMNS.map((col) => (
+                <KanbanColumn
+                  key={col.status}
+                  title={col.title}
+                  count={getColumnOrders(col.status).length}
+                  orders={getColumnOrders(col.status)}
+                  headerClass={col.headerClass}
+                  onStatusChange={handleStatusChange}
+                  updatingId={updatingId}
+                  tick={tick}
+                  emptyMessage={col.emptyMessage}
+                  columnId={col.columnId}
+                />
+              ))}
+            </div>
+          </>
         )}
 
-        {/* Past orders (collapsible) */}
+        {/* Past orders */}
         <PastOrdersSection orders={pastOrders} />
       </div>
     </StaffLayout>
