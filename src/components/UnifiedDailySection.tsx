@@ -53,6 +53,8 @@ const UnifiedDailySection = () => {
   const [menuData, setMenuData] = useState<DailyMenuData | null>(null);
   const [loading, setLoading] = useState(false);
   const [availableDates, setAvailableDates] = useState<Date[]>([]);
+  const [facebookImageUrl, setFacebookImageUrl] = useState<string | null>(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   // Get extra items (not part of menu)
   const extraItems = dailyData?.items.filter(item => !item.is_menu_part) || [];
@@ -139,6 +141,14 @@ const UnifiedDailySection = () => {
           items: items
         });
 
+        // Fetch facebook image URL
+        const { data: offerRow } = await supabase
+          .from('daily_offers')
+          .select('facebook_image_url')
+          .eq('date', dateStr)
+          .maybeSingle();
+        setFacebookImageUrl((offerRow as any)?.facebook_image_url || null);
+
         // Set menu data if exists
         if (result.menu_id) {
           const soup = items.find(item => item.is_menu_part && item.menu_role === 'leves') || null;
@@ -158,11 +168,13 @@ const UnifiedDailySection = () => {
       } else {
         setDailyData(null);
         setMenuData(null);
+        setFacebookImageUrl(null);
       }
     } catch (error) {
       console.error('Error fetching daily data:', error);
       setDailyData(null);
       setMenuData(null);
+      setFacebookImageUrl(null);
     } finally {
       setLoading(false);
     }
@@ -209,6 +221,26 @@ const UnifiedDailySection = () => {
           isDateDisabled={isDateDisabled}
         />
       </div>
+
+      {/* Facebook Image - uploaded by admin */}
+      {!loading && facebookImageUrl && (
+        <div className="mb-6">
+          <Card className="border-0 bg-card/95 backdrop-blur-sm shadow-lg rounded-3xl overflow-hidden">
+            <CardContent className="p-0">
+              <button
+                onClick={() => setLightboxOpen(true)}
+                className="w-full cursor-pointer focus:outline-none"
+              >
+                <img
+                  src={facebookImageUrl}
+                  alt={`Napi ajánlat - ${format(selectedDate, "MMMM d.", { locale: hu })}`}
+                  className="w-full h-auto rounded-3xl hover:opacity-95 transition-opacity"
+                />
+              </button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Daily Menu Panel */}
       <div className="mb-6">
@@ -304,6 +336,21 @@ const UnifiedDailySection = () => {
 
       {/* Mobile bottom spacing for sticky CTA */}
       <div className="h-20 md:h-0"></div>
+
+      {/* Lightbox for Facebook image */}
+      {lightboxOpen && facebookImageUrl && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 cursor-pointer"
+          onClick={() => setLightboxOpen(false)}
+        >
+          <img
+            src={facebookImageUrl}
+            alt="Napi ajánlat"
+            className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </>
   );
 };
