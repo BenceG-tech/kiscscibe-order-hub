@@ -1,0 +1,1 @@
+ALTER TABLE public.daily_offers ADD COLUMN facebook_image_url TEXT;

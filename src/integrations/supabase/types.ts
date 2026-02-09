@@ -236,6 +236,7 @@ export type Database = {
         Row: {
           created_at: string | null
           date: string
+          facebook_image_url: string | null
           id: string
           max_portions: number | null
           note: string | null
@@ -245,6 +246,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           date: string
+          facebook_image_url?: string | null
           id?: string
           max_portions?: number | null
           note?: string | null
@@ -254,6 +256,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           date?: string
+          facebook_image_url?: string | null
           id?: string
           max_portions?: number | null
           note?: string | null

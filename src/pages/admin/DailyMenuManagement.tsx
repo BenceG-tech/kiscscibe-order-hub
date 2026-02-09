@@ -4,6 +4,7 @@ import WeeklyMenuGrid from "@/components/admin/WeeklyMenuGrid";
 import CapacityManagement from "@/components/admin/CapacityManagement";
 import MasterMenuImport from "@/components/admin/MasterMenuImport";
 import WeeklyNewsletterPanel from "@/components/admin/WeeklyNewsletterPanel";
+import DailyOfferImageGenerator from "@/components/admin/DailyOfferImageGenerator";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const DailyMenuManagement = () => {
@@ -50,6 +51,12 @@ const DailyMenuManagement = () => {
               >
                 Hírlevél
               </TabsTrigger>
+              <TabsTrigger 
+                value="facebook" 
+                className="!h-8 !px-3 !text-xs sm:!text-sm !whitespace-nowrap !rounded-md data-[state=active]:!bg-background data-[state=active]:!text-foreground data-[state=active]:!shadow-sm data-[state=active]:!scale-100"
+              >
+                {isMobile ? "FB kép" : "Facebook kép"}
+              </TabsTrigger>
             </TabsList>
           </div>
           
@@ -67,6 +74,10 @@ const DailyMenuManagement = () => {
 
           <TabsContent value="newsletter" className="mt-0">
             <WeeklyNewsletterPanel />
+          </TabsContent>
+
+          <TabsContent value="facebook" className="mt-0">
+            <DailyOfferImageGenerator />
           </TabsContent>
         </Tabs>
       </div>
