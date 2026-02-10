@@ -245,14 +245,14 @@ const MenuManagement = () => {
                 Új étel
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent className="sm:max-w-lg max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden">
               <DialogHeader>
                 <DialogTitle>
                   {editingItem ? "Étel szerkesztése" : "Új étel hozzáadása"}
                 </DialogTitle>
               </DialogHeader>
               
-              <div className="space-y-4">
+              <div className="flex-1 overflow-y-auto space-y-4 pr-1">
                 <div>
                   <label className="text-sm font-medium">Név</label>
                   <Input
@@ -337,8 +337,10 @@ const MenuManagement = () => {
                     Kiemelt
                   </label>
                 </div>
-                
-                <div className="flex gap-2 pt-4">
+              </div>
+              
+              <div className="flex-shrink-0 border-t pt-4">
+                <div className="flex gap-2">
                   <Button onClick={saveItem} className="flex-1">
                     <Save className="h-4 w-4 mr-2" />
                     Mentés
