@@ -29,7 +29,7 @@ const HeroSection = () => {
         >
           Kiscsibe Reggeliző & Étterem
           <span className="block text-lg sm:text-2xl md:text-4xl lg:text-5xl mt-2 text-primary font-sofia">
-            házias ízek minden nap
+            házias ízek minden hétköznap
           </span>
         </h1>
         
