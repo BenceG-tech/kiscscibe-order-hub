@@ -14,22 +14,23 @@ import { DailyPriceInput } from "./DailyPriceInput";
 import * as XLSX from "xlsx";
 
 // Category color mapping based on Excel design
-const CATEGORY_COLORS: Record<string, string> = {
-  "Levesek": "bg-yellow-50 dark:bg-yellow-950/30",
-  "Tészta ételek": "bg-orange-50 dark:bg-orange-950/30",
-  "Főzelékek": "bg-green-50 dark:bg-green-950/30",
-  "Prémium ételek": "bg-amber-100 dark:bg-amber-950/40",
-  "Halételek": "bg-blue-50 dark:bg-blue-950/30",
-  "Marhahúsos ételek": "bg-red-50 dark:bg-red-950/30",
-  "Rantott ételek": "bg-orange-100 dark:bg-orange-950/40",
-  "Desszertek": "bg-pink-50 dark:bg-pink-950/30",
-  "Csirke-zöldséges ételek": "bg-lime-50 dark:bg-lime-950/30",
-  "Csirkemájas ételek": "bg-amber-50 dark:bg-amber-950/30",
-  "Extra köretek": "bg-teal-50 dark:bg-teal-950/30",
-  "Hagyományos köretek": "bg-cyan-50 dark:bg-cyan-950/30",
-  "Egytálételek": "bg-indigo-50 dark:bg-indigo-950/30",
-  "Saláták": "bg-emerald-50 dark:bg-emerald-950/30",
-  "Főételek": "bg-violet-50 dark:bg-violet-950/30",
+// Row colors use transparency for the table rows
+const CATEGORY_COLORS: Record<string, { row: string; sticky: string }> = {
+  "Levesek": { row: "bg-yellow-50 dark:bg-yellow-950/30", sticky: "bg-yellow-50 dark:bg-yellow-950" },
+  "Tészta ételek": { row: "bg-orange-50 dark:bg-orange-950/30", sticky: "bg-orange-50 dark:bg-orange-950" },
+  "Főzelékek": { row: "bg-green-50 dark:bg-green-950/30", sticky: "bg-green-50 dark:bg-green-950" },
+  "Prémium ételek": { row: "bg-amber-100 dark:bg-amber-950/40", sticky: "bg-amber-100 dark:bg-amber-950" },
+  "Halételek": { row: "bg-blue-50 dark:bg-blue-950/30", sticky: "bg-blue-50 dark:bg-blue-950" },
+  "Marhahúsos ételek": { row: "bg-red-50 dark:bg-red-950/30", sticky: "bg-red-50 dark:bg-red-950" },
+  "Rantott ételek": { row: "bg-orange-100 dark:bg-orange-950/40", sticky: "bg-orange-100 dark:bg-orange-950" },
+  "Desszertek": { row: "bg-pink-50 dark:bg-pink-950/30", sticky: "bg-pink-50 dark:bg-pink-950" },
+  "Csirke-zöldséges ételek": { row: "bg-lime-50 dark:bg-lime-950/30", sticky: "bg-lime-50 dark:bg-lime-950" },
+  "Csirkemájas ételek": { row: "bg-amber-50 dark:bg-amber-950/30", sticky: "bg-amber-50 dark:bg-amber-950" },
+  "Extra köretek": { row: "bg-teal-50 dark:bg-teal-950/30", sticky: "bg-teal-50 dark:bg-teal-950" },
+  "Hagyományos köretek": { row: "bg-cyan-50 dark:bg-cyan-950/30", sticky: "bg-cyan-50 dark:bg-cyan-950" },
+  "Egytálételek": { row: "bg-indigo-50 dark:bg-indigo-950/30", sticky: "bg-indigo-50 dark:bg-indigo-950" },
+  "Saláták": { row: "bg-emerald-50 dark:bg-emerald-950/30", sticky: "bg-emerald-50 dark:bg-emerald-950" },
+  "Főételek": { row: "bg-violet-50 dark:bg-violet-950/30", sticky: "bg-violet-50 dark:bg-violet-950" },
 };
 
 const WEEKDAYS = ["Hétfő", "Kedd", "Szerda", "Csütörtök", "Péntek"];
@@ -548,7 +549,7 @@ export default function WeeklyMenuGrid() {
         itemsByCategory={itemsByCategory}
         gridData={gridData}
         priceData={priceData}
-        categoryColors={CATEGORY_COLORS}
+        categoryColors={Object.fromEntries(Object.entries(CATEGORY_COLORS).map(([k, v]) => [k, v.row]))}
         onAddItem={handleAddItem}
         onRemoveItem={handleRemoveItem}
         onDailyPriceChange={handleDailyPriceChange}
@@ -653,11 +654,9 @@ export default function WeeklyMenuGrid() {
               
               {/* Category Rows */}
               {foodCategories.map(category => {
-                const rowColor = CATEGORY_COLORS[category.name] || "";
-                // Use full color string but remove opacity for sticky cell (e.g., /30 -> "")
-                const stickyBgColor = CATEGORY_COLORS[category.name] 
-                  ? CATEGORY_COLORS[category.name].replace(/\/\d{1,3}/g, "")
-                  : 'bg-background dark:bg-background';
+                const colorConfig = CATEGORY_COLORS[category.name];
+                const rowColor = colorConfig?.row || "";
+                const stickyBgColor = colorConfig?.sticky || "bg-background dark:bg-background";
                 
                 return (
                   <tr key={category.id} className={rowColor}>
