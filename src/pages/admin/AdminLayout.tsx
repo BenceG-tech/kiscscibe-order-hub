@@ -11,7 +11,8 @@ import {
   LogOut,
   User,
   Image,
-  FileText
+  FileText,
+  Info
 } from "lucide-react";
 
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
@@ -34,6 +35,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     { href: "/admin/daily-menu", label: "Napi ajánlat", mobileLabel: "Napi", icon: Calendar, showBadge: false },
     { href: "/admin/gallery", label: "Galéria", mobileLabel: "Galéria", icon: Image, showBadge: false },
     { href: "/admin/legal", label: "Jogi oldalak", mobileLabel: "Jogi", icon: FileText, showBadge: false },
+    { href: "/admin/about", label: "Rólunk", mobileLabel: "Rólunk", icon: Info, showBadge: false },
   ];
 
   return (
