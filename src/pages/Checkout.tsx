@@ -20,6 +20,8 @@ interface TimeSlot {
   date: string;
   timeslot: string;
   available_capacity: number;
+  max_capacity: number;
+  utilization_percent: number;
 }
 
 const Checkout = () => {
@@ -80,7 +82,9 @@ const Checkout = () => {
         slots.push({
           date,
           timeslot: timeString,
-          available_capacity: 8 // Default capacity
+          available_capacity: 8, // Default capacity
+          max_capacity: 8,
+          utilization_percent: 0
         });
       }
     }
@@ -97,15 +101,12 @@ const Checkout = () => {
       let targetDates: string[] = [];
       
       if (dailyDates.length > 0) {
-        // For daily items, use their specific dates
         targetDates = dailyDates;
-        console.log('Using daily item dates:', targetDates);
       } else {
-        // For regular items, generate next 5 business days starting from tomorrow
         const currentDate = new Date(today);
-        currentDate.setDate(currentDate.getDate() + 1); // Start from tomorrow
+        currentDate.setDate(currentDate.getDate() + 1);
         let daysAdded = 0;
-        let maxDays = 10; // Prevent infinite loop
+        let maxDays = 10;
         
         while (daysAdded < 5 && maxDays > 0) {
           const year = currentDate.getFullYear();
@@ -114,7 +115,6 @@ const Checkout = () => {
           const dateStr = `${year}-${month}-${day}`;
           const dayOfWeek = currentDate.getDay();
           
-          // Skip Sundays
           if (dayOfWeek !== 0) {
             targetDates.push(dateStr);
             daysAdded++;
@@ -123,8 +123,16 @@ const Checkout = () => {
           currentDate.setDate(currentDate.getDate() + 1);
           maxDays--;
         }
-        console.log('Generated target dates for regular items:', targetDates);
       }
+      
+      // Step 1.5: Fetch blackout dates and filter them out
+      const { data: blackoutData } = await supabase
+        .from("blackout_dates")
+        .select("date")
+        .in("date", targetDates);
+      
+      const blackoutSet = new Set((blackoutData || []).map(b => b.date));
+      targetDates = targetDates.filter(d => !blackoutSet.has(d));
       
       // Step 2: Generate all possible business hour slots for target dates
       let allSlots: TimeSlot[] = [];
@@ -133,96 +141,93 @@ const Checkout = () => {
         allSlots = [...allSlots, ...dateSlots];
       }
       
-      console.log(`Generated ${allSlots.length} business hour slots`);
-      
       // Step 3: Fetch capacity data from database
       const { data: capacityData, error } = await supabase
         .from("capacity_slots")
-        .select("date, timeslot, max_orders, booked_orders")
+        .select("date, timeslot, max_orders, booked_orders, buffer_minutes")
         .in("date", targetDates)
         .order("date")
         .order("timeslot");
       
       if (error) {
         console.error("Error fetching capacity data:", error);
-        // Continue with default capacity
       }
       
-      // Step 4: Overlay capacity information
-      const capacityMap = new Map<string, { max_orders: number; booked_orders: number }>();
+      // Step 4: Build capacity map and buffer set
+      const capacityMap = new Map<string, { max_orders: number; booked_orders: number; buffer_minutes: number }>();
+      const bufferBlockedSlots = new Set<string>();
+      
       if (capacityData) {
         for (const slot of capacityData) {
           const key = `${slot.date}_${slot.timeslot}`;
           capacityMap.set(key, {
             max_orders: slot.max_orders,
-            booked_orders: slot.booked_orders
+            booked_orders: slot.booked_orders,
+            buffer_minutes: slot.buffer_minutes || 0
           });
+          
+          // Mark buffer-blocked slots
+          if (slot.buffer_minutes > 0) {
+            const [h, m] = slot.timeslot.split(':').map(Number);
+            const slotMinutes = h * 60 + m;
+            for (let b = 1; b <= Math.ceil(slot.buffer_minutes / 30); b++) {
+              const bufferMin = slotMinutes + b * 30;
+              const bufH = Math.floor(bufferMin / 60);
+              const bufM = bufferMin % 60;
+              const bufKey = `${slot.date}_${String(bufH).padStart(2, '0')}:${String(bufM).padStart(2, '0')}:00`;
+              bufferBlockedSlots.add(bufKey);
+            }
+          }
         }
       }
       
-      // Step 5: Apply capacity data and filter slots
+      // Step 5: Apply capacity data, filter, and add utilization info
       const finalSlots = allSlots
         .map(slot => {
           const key = `${slot.date}_${slot.timeslot}`;
           const capacity = capacityMap.get(key);
           
           if (capacity) {
+            const maxCap = capacity.max_orders;
+            const booked = capacity.booked_orders;
             return {
               ...slot,
-              available_capacity: capacity.max_orders - capacity.booked_orders
+              available_capacity: maxCap - booked,
+              max_capacity: maxCap,
+              utilization_percent: maxCap > 0 ? Math.round((booked / maxCap) * 100) : 0
             };
           }
           
-          return slot; // Use default capacity of 8
+          return slot;
         })
         .filter(slot => {
-          // Filter out slots with no available capacity
-          if (slot.available_capacity <= 0) {
-            console.log(`Filtered out slot ${slot.date} ${slot.timeslot} - no capacity`);
-            return false;
-          }
+          const key = `${slot.date}_${slot.timeslot}`;
           
-          // Filter out past slots using safe date construction
+          // Filter out buffer-blocked slots
+          if (bufferBlockedSlots.has(key)) return false;
+          
+          // Keep full slots (we'll show them as disabled) but filter truly unavailable
+          // Filter out past slots
           const slotDate = makeDate(slot.date);
           const [hours, minutes] = slot.timeslot.split(':').map(Number);
           slotDate.setHours(hours, minutes, 0, 0);
           
           const now = new Date();
-          if (slotDate <= now) {
-            console.log(`Filtered out slot ${slot.date} ${slot.timeslot} - in the past (${slotDate.toISOString()} <= ${now.toISOString()})`);
-            return false;
-          }
+          if (slotDate <= now) return false;
           
           return true;
         })
         .sort((a, b) => {
-          // Sort by date, then by time
-          if (a.date !== b.date) {
-            return a.date.localeCompare(b.date);
-          }
+          if (a.date !== b.date) return a.date.localeCompare(b.date);
           return a.timeslot.localeCompare(b.timeslot);
         });
       
-      console.log(`Final filtered slots: ${finalSlots.length}`);
-      finalSlots.forEach(slot => {
-        console.log(`  ${slot.date} ${slot.timeslot} (capacity: ${slot.available_capacity})`);
-      });
-      
       setTimeSlots(finalSlots);
       
-      // DEBUG: Log additional debug info
-      console.log('=== CHECKOUT DEBUG INFO ===');
-      console.log('Target dates:', targetDates);
-      console.log('Generated business slots:', allSlots.length);
-      console.log('DB capacity data:', capacityData?.length || 0);
-      console.log('Final available slots:', finalSlots.length);
-      console.log('Current time:', new Date().toISOString());
-      console.log('===========================');
-      
       // Auto-select first available slot if no slot is selected
-      if (finalSlots.length > 0 && !formData.pickup_time) {
-        const firstSlot = finalSlots[0];
-        console.log(`Auto-selecting first slot: ${firstSlot.date} ${firstSlot.timeslot}`);
+      const availableSlots = finalSlots.filter(s => s.available_capacity > 0);
+      if (availableSlots.length > 0 && !formData.pickup_time) {
+        const firstSlot = availableSlots[0];
         setFormData(prev => ({
           ...prev,
           pickup_date: firstSlot.date,
@@ -231,7 +236,6 @@ const Checkout = () => {
       }
       
       if (finalSlots.length === 0) {
-        console.warn('No valid time slots generated!');
         toast({
           title: "Figyelmeztetés",
           description: "Nincsenek elérhető időpontok",
@@ -658,17 +662,30 @@ const Checkout = () => {
                                   )}
                                 </div>
                               ) : (
-                                timeSlots.map((slot) => (
-                                  <SelectItem 
-                                    key={`${slot.date}|${slot.timeslot}`}
-                                    value={`${slot.date}|${slot.timeslot}`}
-                                  >
-                                    {formatTimeSlot(slot.date, slot.timeslot)} 
-                                    <Badge variant="outline" className="ml-2">
-                                      {slot.available_capacity} hely
-                                    </Badge>
-                                  </SelectItem>
-                                ))
+                                timeSlots.map((slot) => {
+                                  const isFull = slot.available_capacity <= 0;
+                                  const isAlmostFull = slot.utilization_percent >= 80 && !isFull;
+                                  
+                                  return (
+                                    <SelectItem 
+                                      key={`${slot.date}|${slot.timeslot}`}
+                                      value={`${slot.date}|${slot.timeslot}`}
+                                      disabled={isFull}
+                                      className={isFull ? "opacity-50" : ""}
+                                    >
+                                      <span className="flex items-center gap-2">
+                                        {formatTimeSlot(slot.date, slot.timeslot)}
+                                        {isFull ? (
+                                          <Badge variant="destructive" className="text-xs">Tele</Badge>
+                                        ) : isAlmostFull ? (
+                                          <Badge className="text-xs bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 border-yellow-500/30">Majdnem tele!</Badge>
+                                        ) : (
+                                          <Badge variant="outline" className="text-xs">{slot.available_capacity} hely</Badge>
+                                        )}
+                                      </span>
+                                    </SelectItem>
+                                  );
+                                })
                               )}
                             </SelectContent>
                           </Select>
