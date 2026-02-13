@@ -1,7 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { MapPin, Phone, Mail, Clock } from "lucide-react";
+import { MapPin, Mail, Clock, Facebook, Instagram } from "lucide-react";
 import kiscsibeLogo from "@/assets/kiscsibe_logo_round.png";
+
+const TikTokIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 0 0-.79-.05A6.34 6.34 0 0 0 3.15 15a6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V8.69a8.16 8.16 0 0 0 4.76 1.52v-3.4a4.85 4.85 0 0 1-1-.12z"/>
+  </svg>
+);
 
 interface FooterProps {
   className?: string;
@@ -76,6 +82,34 @@ const Footer = ({ className }: FooterProps) => {
     { href: "/cookie-szabalyzat", label: "Süti Szabályzat" },
   ];
 
+  const SocialIcons = ({ size = "w-8 h-8", iconSize = "h-4 w-4" }: { size?: string; iconSize?: string }) => (
+    <div className="flex items-center gap-2">
+      <a 
+        href="https://www.facebook.com/kiscsibeetteremXIV/?locale=hu_HU" 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className={`${size} rounded-lg bg-primary/20 flex items-center justify-center hover:bg-primary hover:text-white transition-colors text-primary`}
+        aria-label="Facebook"
+      >
+        <Facebook className={iconSize} />
+      </a>
+      <a 
+        href="#" 
+        className={`${size} rounded-lg bg-gray-700 flex items-center justify-center hover:bg-gray-600 transition-colors text-gray-400 opacity-60`}
+        aria-label="Instagram (hamarosan)"
+      >
+        <Instagram className={iconSize} />
+      </a>
+      <a 
+        href="#" 
+        className={`${size} rounded-lg bg-gray-700 flex items-center justify-center hover:bg-gray-600 transition-colors text-gray-400 opacity-60`}
+        aria-label="TikTok (hamarosan)"
+      >
+        <TikTokIcon className={iconSize} />
+      </a>
+    </div>
+  );
+
   return (
     <footer className={`bg-gray-900 text-gray-300 ${className || ""}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
@@ -110,12 +144,6 @@ const Footer = ({ className }: FooterProps) => {
               <li className="flex items-start gap-1.5">
                 <MapPin className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                 <span className="text-xs">1145 Budapest, Vezér utca 12.</span>
-              </li>
-              <li className="flex items-center gap-1.5">
-                <Phone className="h-4 w-4 text-primary shrink-0" />
-                <a href="tel:+3612345678" className="text-xs hover:text-primary transition-colors">
-                  +36 1 234 5678
-                </a>
               </li>
               <li className="flex items-center gap-1.5">
                 <Mail className="h-4 w-4 text-primary shrink-0" />
@@ -173,6 +201,12 @@ const Footer = ({ className }: FooterProps) => {
               ))}
             </ul>
           </div>
+
+          {/* Social - Mobile full width */}
+          <div className="col-span-2">
+            <h4 className="text-white font-semibold text-sm mb-3">Kövess minket</h4>
+            <SocialIcons />
+          </div>
         </div>
 
         {/* Desktop: original 6-column grid */}
@@ -196,6 +230,10 @@ const Footer = ({ className }: FooterProps) => {
               </h3>
               <p className="text-gray-400 text-sm">Reggeliző & Étterem</p>
             </button>
+            {/* Social icons under logo on desktop */}
+            <div className="mt-4">
+              <SocialIcons />
+            </div>
           </div>
 
           {/* Contact Info */}
@@ -205,12 +243,6 @@ const Footer = ({ className }: FooterProps) => {
               <li className="flex items-start justify-center md:justify-start gap-2">
                 <MapPin className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                 <span className="text-sm">1145 Budapest, Vezér utca 12.</span>
-              </li>
-              <li className="flex items-center justify-center md:justify-start gap-2">
-                <Phone className="h-5 w-5 text-primary shrink-0" />
-                <a href="tel:+3612345678" className="text-sm hover:text-primary transition-colors">
-                  +36 1 234 5678
-                </a>
               </li>
               <li className="flex items-center justify-center md:justify-start gap-2">
                 <Mail className="h-5 w-5 text-primary shrink-0" />

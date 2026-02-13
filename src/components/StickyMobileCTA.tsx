@@ -1,11 +1,10 @@
 import { Button } from "@/components/ui/button";
-import { Phone } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const StickyMobileCTA = () => {
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border shadow-lg md:hidden pb-safe">
-      <div className="flex p-3 gap-3">
+      <div className="flex p-3">
         <Button 
           asChild
           className="flex-1 bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm text-primary-foreground font-semibold min-h-[44px]"
@@ -13,16 +12,6 @@ const StickyMobileCTA = () => {
             <Link to="/etlap">
               Rendelj most
             </Link>
-        </Button>
-        <Button 
-          variant="outline" 
-          size="icon"
-          className="border-primary text-primary hover:bg-primary hover:text-primary-foreground min-h-[44px] min-w-[44px]"
-          asChild
-        >
-          <a href="tel:+3612345678" aria-label="Hívás">
-            <Phone className="h-5 w-5" />
-          </a>
         </Button>
       </div>
     </div>
