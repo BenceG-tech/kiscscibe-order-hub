@@ -1,186 +1,101 @@
 
 
-# Operacional + Uzleti Fejlesztesek: Bevételi Riport, Waste Tracking, Review Email, Kupon Rendszer
+# Koret valaszto, telefonszam, visszaigazolas es Ertekeink javitasok
 
-Ez a terv 4 fo fejlesztest tartalmaz, prioritas sorrendben. A NAV online szamla integraciot kulon fazisra halasztjuk, mert komplex kulso API integraciot igenyel (NAV Online Szamla 3.0 API), sajat tanusitvanyokkal es tesztkornyezettel.
+## 1. Koret valaszto: Csak a napi kinlalatot mutassa + "Nem kerek koretet" opcio
 
----
+### Problema
+A `SidePickerModal` jelenleg az osszes aktiv koretet lekerdezi 3 kategoriabol (Koretek, Extra koretek, Hagyomanyos koretek) -- ez 20+ tetel. A felhasznalo egy vegtelen listat lat, ahelyett hogy csak az aznapi kinalatbol valaszthatna.
 
-## 1. Napi beveteli riport email (automatikus)
+### Megoldas
+- A `SidePickerModal` kap egy uj opcionalis propot: `dailyDate` es `dailyOfferId`
+- Ha megadva, eloszor a `daily_offer_items` tablabol kerdezi le az adott napra feltoletott koreteket (ahol `is_menu_part = false` es a kategoria koret kategoria)
+- Ha nincsenek napi koretek, fallback a jelenlegi altalanos lekerdezesre
+- Mindig megjelenik egy "Nem kerek koretet" gomb a lista aljaan (vagy tetejen), ami ures tomb-el hivja az `onSideSelected`-et
 
-### Mukodes
-- Uj edge function: `send-daily-report`
-- Nap vegen (pl. 15:30-kor, zaras utan) elkuldodik az email a tulajdonosnak
-- Tartalom: mai bevetel, rendelésszam, keszpenz/kartya bontas, top 5 rendelt etel, atlag rendelesi ertek
-- Cron job-bol hivhato (pg_cron + pg_net)
-
-### Technikai reszletek
-- Uj fajl: `supabase/functions/send-daily-report/index.ts`
-- A function lekerdezi az aznapi `orders`-t (status != 'cancelled'), aggregalja a bevetelt
-- Resend API-val kuldi az emailt a `kiscsibeetterem@gmail.com`-ra
-- Config.toml: `verify_jwt = false` (cron hivja)
-- Az admin feluleten egy "Teszt riport kuldese" gomb lesz a Dashboard-on
-
-### Email tartalom
-- Napi osszbevetel
-- Rendelesek szama (teljesitett / lemondott)
-- Keszpenz vs kartya megoszlas
-- Top 5 legtobbet rendelt tetel
-- Atlagos rendelesi ertek
-
----
-
-## 2. Pazarlas (waste) tracking
-
-### Adatbazis
-Uj tabla: `daily_waste_log`
-
-| Oszlop | Tipus | Leiras |
-|--------|-------|--------|
-| id | uuid PK | |
-| date | date NOT NULL | A nap |
-| item_name | text NOT NULL | Etel neve |
-| planned_portions | integer | Tervezett adagszam |
-| sold_portions | integer | Eladott adagszam |
-| wasted_portions | integer NOT NULL | El nem kelt adagok |
-| notes | text | Megjegyzes |
-| logged_by | uuid | Ki rogzitette |
-| created_at | timestamptz DEFAULT now() | |
-
-RLS: Admin CRUD, staff INSERT + SELECT.
-
-### Admin felulet
-- Uj tab az Analytics oldalon: "Pazarlas"
-- Vagy kulon szekcio a Dashboard-on
-- Napi rogzites: a `daily_offers` es `daily_offer_menus` tablabol automatikusan kiszamolja a remaining_portions erteket záráskor
-- "Nap lezarasa" gomb: automatikusan loggolja a maradekot a `daily_waste_log`-ba
-- Trend diagram: het/honap szinten a pazarlas mennyisege, aranya
-- Top pazarolt etelek listaja
+### Admin oldali beallitas
+- Az admin mar most is a `daily_offer_items` tablan keresztul tolthet fel napi tételeket -- a koreteket is ide kell felvenni a napi ajanlat mellé. Nincs kulon admin UI valtozas szukseges, a meglevo rendszer tamogatja.
 
 ### Erintett fajlok
 | Fajl | Valtozas |
 |------|----------|
-| Uj: `src/components/admin/WasteTracking.tsx` | Pazarlas rogzito + trend megjelenitő |
-| `src/pages/admin/Analytics.tsx` | Uj tab: "Pazarlas" |
-| `src/pages/admin/Dashboard.tsx` | "Nap lezarasa" gomb hozzaadasa |
+| `src/components/SidePickerModal.tsx` | Uj `dailyDate`/`dailyOfferId` prop, napi koretek lekerdezese, "Nem kerek koretet" gomb |
+| `src/pages/Etlap.tsx` | `dailyOfferId` atadasa a `SidePickerModal`-nak |
 
 ---
 
-## 3. Google Review keres email
+## 2. Telefonszam: +36 fix prefix
 
-### Mukodes
-- A `send-order-status-email` edge function bovitese: a `completed` statusznal a meglevo "Koszonjuk" email kiegeszul egy Google Review linkkel
-- Nem kell kulon edge function -- egyszeruen a `completed` email sablonba bekerul egy CTA gomb: "Ertekeld a tapasztalatod!" linkkel a Google Maps review URL-re
-- Az URL-t a `settings` tablabol vesszuk (key: `google_review_url`), amit az admin beallithat
+### Problema
+A telefonszam mezo ures, a felhasznalonak kell begernie a +36-ot is.
+
+### Megoldas
+- A `formData.phone` alapertelmezett erteke "+36 " legyen
+- A mezo ele vizualisan egy "+36" prefix jelenik meg (InputGroup-szeru megoldas), es a tényleges input mezo csak a szamot varja (20 123 4567)
+- Alternativ egyszerubb megoldas: a phone mezo default erteke "+36 " es a felhasznalo csak a szamot irja utana
+- A legegyszerubb: az Input ele egy fix "+36" felirat kerul, es a phone erteke automatikusan "+36"-tal kezdodik
 
 ### Erintett fajlok
 | Fajl | Valtozas |
 |------|----------|
-| `supabase/functions/send-order-status-email/index.ts` | Google Review CTA gomb hozzaadasa a `completed` emailhez |
-| `src/pages/admin/Dashboard.tsx` vagy Settings | Google Review URL beallitas mezo |
+| `src/pages/Checkout.tsx` | Phone input atiras: fix "+36" prefix + input mezo a maradek szamhoz |
 
 ---
 
-## 4. Kupon/kedvezmeny rendszer
+## 3. Rendeles visszaigazolas: etterem adatok az email aljara
 
-### Adatbazis
-Uj tabla: `coupons`
+### Problema
+A rendelés-visszaigazolo email aljaan csak "Kiscsibe Etterem" all, nincs cim, nyitvatartás, vagy egyeb hasznos info.
 
-| Oszlop | Tipus | Leiras |
-|--------|-------|--------|
-| id | uuid PK | |
-| code | text NOT NULL UNIQUE | Kupon kod (pl. "ELSO10") |
-| discount_type | text NOT NULL | 'percentage' vagy 'fixed' |
-| discount_value | integer NOT NULL | Ertek (10 = 10% vagy 500 = 500 Ft) |
-| min_order_huf | integer DEFAULT 0 | Minimum rendelesi ertek |
-| max_uses | integer | Max felhasznalasok szama (NULL = korlatlan) |
-| used_count | integer DEFAULT 0 | Eddigi felhasznalasok |
-| valid_from | timestamptz DEFAULT now() | Ervenyesseg kezdete |
-| valid_until | timestamptz | Ervenyesseg vege (NULL = nincs lejarat) |
-| is_active | boolean DEFAULT true | Aktiv-e |
-| created_at | timestamptz DEFAULT now() | |
-
-RLS: Admin CRUD, publikus SELECT (is_active = true, validitas ellenorzeshez).
-
-Uj tabla: `coupon_usages`
-
-| Oszlop | Tipus | Leiras |
-|--------|-------|--------|
-| id | uuid PK | |
-| coupon_id | uuid FK -> coupons | |
-| order_id | uuid FK -> orders | |
-| discount_huf | integer NOT NULL | Alkalmazott kedvezmeny Ft-ban |
-| created_at | timestamptz DEFAULT now() | |
-
-RLS: Admin SELECT, service role ALL.
-
-### Orders tabla bovites
-- Uj oszlop: `coupon_code` (text, nullable) -- a felhasznalt kupon kodja
-- Uj oszlop: `discount_huf` (integer, DEFAULT 0) -- az alkalmazott kedvezmeny
-
-### Checkout integracjo
-- A Checkout oldalon uj mezo: "Van kuponod?" -- szovegmezo + "Alkalmaz" gomb
-- Validacio: letezik-e a kod, aktiv-e, nem jart-e le, nem hasznaltak-e el maxig, eleri-e a minimum rendelesi erteket
-- Ha ervenyes: a vegosszegbol levonodik a kedvezmeny, zold kijelzes
-- A `submit-order` edge function bovitese: kupon validalasa server-oldalon is, `used_count` novelese
-
-### Admin felulet
-- Uj admin oldal: `/admin/coupons` (vagy a Dashboard-on uj szekcio)
-- Kuponok listaja: kod, tipus, ertek, felhasznalasok, allapot
-- "Uj kupon" dialog: kod, tipus, ertek, min. rendelesi ertek, max hasznalat, lejarat
-- Kupon aktiválás/deaktivalas toggle
-- Felhasznalasi statisztika: mennyi bevetelt generalt, hany rendelesben hasznaltak
+### Megoldas
+- Az `submit-order` edge function email sablonjaba (emailHtml) kerul egy footer szekció:
+  - Kiscsibe Etterem
+  - Cim (az etterem tenyleges cime)
+  - Nyitvatartás roviden
+  - Facebook link
+- Ugyanez az `OrderConfirmation.tsx` oldalon is megjelenik egy info kartya formajaban
 
 ### Erintett fajlok
 | Fajl | Valtozas |
 |------|----------|
-| Uj: `src/pages/admin/Coupons.tsx` | Kupon kezelo admin oldal |
-| `src/pages/Checkout.tsx` | Kupon kod mezo + validacio |
-| `src/contexts/CartContext.tsx` | Kupon allapot tarolasa |
-| `supabase/functions/submit-order/index.ts` | Kupon validalasa + used_count noveles |
-| `src/App.tsx` | `/admin/coupons` route hozzaadasa |
-| `src/pages/admin/AdminLayout.tsx` | "Kuponok" nav item hozzaadasa |
+| `supabase/functions/submit-order/index.ts` | Email sablon footer bovitese etterem adatokkal |
+| `src/pages/OrderConfirmation.tsx` | Etterem info kartya hozzaadasa (cim, nyitvatartas) |
 
 ---
 
-## 5. Fake kontakt adatok javitasa
+## 4. "Ertekeink" szekció: dinamikus, adminbol szerkesztheto
 
-### send-order-status-email
-- A jelenlegi email sablon meg tartalmazza a "1234 Budapest, Pelda utca 12." cimet es a "+36 1 234 5678" telefonszamot
-- Ezeket eltavolitjuk vagy generalikusra csereljuk ("Kiscsibe Etterem" felirat marad, cim/telefon nelkul)
+### Problema
+A fooldal `USPSection` komponense hardkodolt 4 erteket mutat (Hazias izek, Gyors kiszolgalas, Nagy adagok, Kedvezo arak). Az admin a Rolunk oldalon mar szerkesztheti az "Ertekeinket" a `settings` tablan keresztul (`about_page` kulcs, `values` mezo), de ez NEM jelenik meg a fooldalan -- csak a `/about` oldalon.
+
+### Megoldas
+- A `USPSection` komponens lekerdezi a `settings` tablabol az `about_page` kulcs `values` mezojet
+- Ha talal adatot, azt jeleníti meg; ha nem, a jelenlegi hardkodolt ertekek maradnak fallback-kent
+- Az ikon mapping a meglevo `ICON_MAP`-bol jon (ugyanaz mint az About oldalon)
 
 ### Erintett fajlok
 | Fajl | Valtozas |
 |------|----------|
-| `supabase/functions/send-order-status-email/index.ts` | Fake cim/telefon torlese |
+| `src/components/sections/USPSection.tsx` | `useQuery` hozzaadasa a `settings` tablabol, dinamikus ertekek megjelenitese |
 
 ---
 
-## 6. NAV Online Szamla (CSAK TERVEZES)
+## Technikai osszefoglalas
 
-Ez a fejlesztes NEM kerul implementalasra ebben a fazisban. Indoklas:
-- A NAV Online Szamla 3.0 API komplex XML-alapu interfeszt hasznal
-- Tesztkornyezet regisztracio es tanusitvany szukseges
-- Jogszabalyi kovetelmeny, de csak bizonyos osszeg felett (NAV altal meghatarozott hatarertekek)
-- Kulon fazisban, a tényleges NAV regisztracio utan erdemes implementalni
-- Szukseg lesz: technikai felhasznalo letrehozasa a NAV portálon, teszt + eles kornyezet, XML alairas
+### Modositando fajlok
+| Fajl | Valtozas |
+|------|----------|
+| `src/components/SidePickerModal.tsx` | Napi koretek, "Nem kerek" opcio |
+| `src/pages/Etlap.tsx` | dailyOfferId atadasa |
+| `src/pages/Checkout.tsx` | +36 prefix |
+| `supabase/functions/submit-order/index.ts` | Email footer |
+| `src/pages/OrderConfirmation.tsx` | Etterem info kartya |
+| `src/components/sections/USPSection.tsx` | Dinamikus ertekek |
 
----
-
-## Implementacios sorrend
-
-1. **Fake kontakt adatok javitasa** (gyors, 5 perc)
-2. **Google Review email** (egyszeru, a meglevo email bovitese)
-3. **Napi beveteli riport** (uj edge function + cron)
-4. **Pazarlas tracking** (uj tabla + admin UI)
-5. **Kupon rendszer** (legnagyobb, uj tablak + checkout + admin)
-
----
-
-## Nem modosul
-- Staff KDS oldal (kiveve ha a waste tracking "Nap lezarasa" gombot a staff is lathassa)
-- Menu szerkesztes
-- Galeria
-- Meglevo rendelesi logika (a kupon egy plusz lepes, nem valtoztatja meg az alap mukodest)
-- Meglevo RLS szabalyok (csak ujak jonnek hozza)
+### Nem modosul
+- Adatbazis sema (nincs migracio)
+- Admin feluletek
+- Staff/KDS oldalak
+- Cart/kosár logika
+- Meglevo RLS szabalyok
 
