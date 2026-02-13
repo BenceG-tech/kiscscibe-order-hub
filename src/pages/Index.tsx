@@ -1,4 +1,5 @@
 import ModernNavigation from "@/components/ModernNavigation";
+import AnnouncementPopup from "@/components/AnnouncementPopup";
 import HeroSection from "@/components/sections/HeroSection";
 import DailyMenuSection from "@/components/sections/DailyMenuSection";
 import USPSection from "@/components/sections/USPSection";
@@ -40,6 +41,7 @@ const Index = () => {
       </main>
       <Footer />
       <MobileBottomNav />
+      <AnnouncementPopup />
       
       {/* Mobil sticky CTA-hoz helykitöltés */}
       <div className="h-20 md:h-0"></div>
