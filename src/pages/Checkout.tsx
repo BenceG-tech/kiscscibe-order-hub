@@ -486,7 +486,7 @@ const Checkout = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {cart.items.map((item, index) => (
+              {cart.items.map((item, index) => (
                   <div key={index} className="flex justify-between items-start">
                     <div className="flex-1">
                       <h4 className="font-medium">{item.name}</h4>
@@ -495,11 +495,21 @@ const Checkout = () => {
                           {item.modifiers.map(mod => mod.label).join(", ")}
                         </p>
                       )}
+                      {item.sides && item.sides.length > 0 && (
+                        <p className="text-sm text-muted-foreground">
+                          Köret: {item.sides.map(side => side.name).join(', ')}
+                        </p>
+                      )}
+                      {item.daily_date && (
+                        <p className="text-xs text-muted-foreground">
+                          📅 {new Date(item.daily_date).toLocaleDateString("hu-HU", { month: "short", day: "numeric" })}
+                        </p>
+                      )}
                       <p className="text-sm">Mennyiség: {item.quantity}</p>
                     </div>
                     <div className="text-right">
                       <p className="font-medium">
-                        {((item.price_huf + item.modifiers.reduce((sum, mod) => sum + mod.price_delta_huf, 0)) * item.quantity).toLocaleString()} Ft
+                        {((item.price_huf + item.modifiers.reduce((sum, mod) => sum + mod.price_delta_huf, 0) + (item.sides?.reduce((sum, s) => sum + s.price_huf, 0) || 0)) * item.quantity).toLocaleString()} Ft
                       </p>
                     </div>
                   </div>

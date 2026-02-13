@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ArrowRight } from "lucide-react";
 
 interface GalleryImage {
   id: string;
@@ -13,9 +15,10 @@ interface GalleryGridProps {
   images: GalleryImage[];
   onImageClick: (index: number) => void;
   compact?: boolean;
+  maxImages?: number;
 }
 
-const GalleryGrid = ({ images, onImageClick, compact = false }: GalleryGridProps) => {
+const GalleryGrid = ({ images, onImageClick, compact = false, maxImages }: GalleryGridProps) => {
   const isMobile = useIsMobile();
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
@@ -76,56 +79,73 @@ const GalleryGrid = ({ images, onImageClick, compact = false }: GalleryGridProps
     return () => document.removeEventListener("touchstart", handleOutsideClick);
   }, []);
 
+  const displayImages = maxImages ? images.slice(0, maxImages) : images;
+  const hasMore = maxImages && images.length > maxImages;
+
   return (
-    <div
-      ref={gridRef}
-      className={`grid ${compact ? "gap-3" : "gap-4 md:gap-6"} ${
-        compact 
-          ? "grid-cols-2 md:grid-cols-4" 
-          : "grid-cols-2 md:grid-cols-3"
-      }`}
-    >
-      {images.map((image, index) => (
-        <div
-          key={image.id}
-          data-index={index}
-          className={`relative group cursor-pointer overflow-hidden rounded-2xl md:rounded-3xl shadow-lg hover:shadow-xl transition-all duration-700 ${
-            visibleItems.has(index)
-              ? "opacity-100 translate-y-0"
-              : "opacity-0 translate-y-4"
-          }`}
-          onClick={() => handleClick(index)}
-        >
-          <AspectRatio ratio={compact || isMobile ? 1 : 4 / 3}>
-            <img
-              src={image.image_url}
-              alt={image.alt_text}
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-              loading="lazy"
-            />
-            
-            {/* Overlay - ACAIA style with warm gradient */}
-            <div
-              className={`absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex flex-col justify-end p-4 md:p-5 transition-opacity duration-300 ${
-                isMobile
-                  ? activeIndex === index
-                    ? "opacity-100"
-                    : "opacity-0"
-                  : "opacity-0 group-hover:opacity-100"
-              }`}
-            >
-              {image.title && (
-                <h4 className="text-white font-semibold text-base md:text-lg line-clamp-2 mb-1">
-                  {image.title}
-                </h4>
-              )}
-              <span className="text-white/80 text-sm underline underline-offset-2 hover:text-white transition-colors">
-                {isMobile ? "Érintsd meg újra →" : "Kattints a nagyításhoz →"}
-              </span>
-            </div>
-          </AspectRatio>
+    <div className="space-y-6">
+      <div
+        ref={gridRef}
+        className={`grid ${compact ? "gap-3" : "gap-4 md:gap-6"} ${
+          compact 
+            ? "grid-cols-2 md:grid-cols-4" 
+            : "grid-cols-2 md:grid-cols-3"
+        }`}
+      >
+        {displayImages.map((image, index) => (
+          <div
+            key={image.id}
+            data-index={index}
+            className={`relative group cursor-pointer overflow-hidden rounded-2xl md:rounded-3xl shadow-lg hover:shadow-xl transition-all duration-700 ${
+              visibleItems.has(index)
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 translate-y-4"
+            }`}
+            onClick={() => handleClick(index)}
+          >
+            <AspectRatio ratio={compact || isMobile ? 1 : 4 / 3}>
+              <img
+                src={image.image_url}
+                alt={image.alt_text}
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                loading="lazy"
+              />
+              
+              {/* Overlay - ACAIA style with warm gradient */}
+              <div
+                className={`absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex flex-col justify-end p-4 md:p-5 transition-opacity duration-300 ${
+                  isMobile
+                    ? activeIndex === index
+                      ? "opacity-100"
+                      : "opacity-0"
+                    : "opacity-0 group-hover:opacity-100"
+                }`}
+              >
+                {image.title && (
+                  <h4 className="text-white font-semibold text-base md:text-lg line-clamp-2 mb-1">
+                    {image.title}
+                  </h4>
+                )}
+                <span className="text-white/80 text-sm underline underline-offset-2 hover:text-white transition-colors">
+                  {isMobile ? "Érintsd meg újra →" : "Kattints a nagyításhoz →"}
+                </span>
+              </div>
+            </AspectRatio>
+          </div>
+        ))}
+      </div>
+
+      {hasMore && (
+        <div className="flex justify-center">
+          <Link
+            to="/gallery"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full border-2 border-primary/30 text-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-300 font-medium"
+          >
+            Teljes galéria megtekintése
+            <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
-      ))}
+      )}
     </div>
   );
 };

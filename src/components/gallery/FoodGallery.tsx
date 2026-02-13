@@ -16,9 +16,10 @@ interface GalleryImage {
 interface FoodGalleryProps {
   compact?: boolean;
   noHeader?: boolean;
+  maxImages?: number;
 }
 
-const FoodGallery = ({ compact = false, noHeader = false }: FoodGalleryProps) => {
+const FoodGallery = ({ compact = false, noHeader = false, maxImages }: FoodGalleryProps) => {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const { data: images = [], isLoading } = useQuery({
@@ -85,6 +86,7 @@ const FoodGallery = ({ compact = false, noHeader = false }: FoodGalleryProps) =>
           images={images}
           onImageClick={setLightboxIndex}
           compact={compact}
+          maxImages={maxImages}
         />
       </div>
 

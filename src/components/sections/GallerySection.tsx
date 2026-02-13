@@ -17,7 +17,7 @@ const GallerySection = () => {
       
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {isMobile ? (
-          /* Mobile: Tab-based navigation */
+          /* Mobile: Tab-based navigation - limited preview */
           <Tabs defaultValue="food" className="w-full">
             <TabsList className="w-full grid grid-cols-2 mb-6">
               <TabsTrigger value="food" className="flex items-center gap-2">
@@ -30,17 +30,17 @@ const GallerySection = () => {
               </TabsTrigger>
             </TabsList>
             <TabsContent value="food">
-              <FoodGallery compact noHeader />
+              <FoodGallery compact noHeader maxImages={4} />
             </TabsContent>
             <TabsContent value="interior">
-              <InteriorGallery compact noHeader />
+              <InteriorGallery compact noHeader maxImages={4} />
             </TabsContent>
           </Tabs>
         ) : (
-          /* Desktop: Stacked layout with headers */
+          /* Desktop: Stacked layout with headers - limited preview */
           <div className="space-y-16 md:space-y-20">
-            <FoodGallery compact={false} />
-            <InteriorGallery compact={false} />
+            <FoodGallery compact={false} maxImages={6} />
+            <InteriorGallery compact={false} maxImages={6} />
           </div>
         )}
       </div>

@@ -71,6 +71,7 @@ const Footer = ({ className }: FooterProps) => {
   const navLinks = [
     { href: "/", label: "Főoldal" },
     { href: "/etlap", label: "Napi Ajánlat" },
+    { href: "/gallery", label: "Galéria" },
     { href: "/about", label: "Rólunk" },
     { href: "/contact", label: "Kapcsolat" },
   ];
