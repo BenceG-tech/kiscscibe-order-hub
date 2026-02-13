@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ImageIcon, Upload, Loader2, X } from "lucide-react";
+import { ImageIcon, Upload, Loader2, X, Sparkles, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -20,6 +20,7 @@ export function QuickImageUpload({
 }: QuickImageUploadProps) {
   const [open, setOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentImageUrl);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -27,13 +28,11 @@ export function QuickImageUpload({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith("image/")) {
       toast.error("Csak képfájl tölthető fel");
       return;
     }
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast.error("A fájl túl nagy (max 5MB)");
       return;
@@ -42,24 +41,20 @@ export function QuickImageUpload({
     setIsUploading(true);
     
     try {
-      // Create unique filename
       const fileExt = file.name.split(".").pop();
       const fileName = `${itemId}-${Date.now()}.${fileExt}`;
       const filePath = `menu-items/${fileName}`;
 
-      // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from("menu-images")
         .upload(filePath, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from("menu-images")
         .getPublicUrl(filePath);
 
-      // Update menu item with new image URL
       const { error: updateError } = await supabase
         .from("menu_items")
         .update({ image_url: publicUrl })
@@ -76,6 +71,33 @@ export function QuickImageUpload({
       toast.error("Hiba a kép feltöltésekor");
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleGenerateAI = async () => {
+    setIsGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-food-image", {
+        body: { item_id: itemId, item_name: itemName },
+      });
+
+      if (error) throw error;
+
+      if (data?.error) {
+        toast.error(data.error);
+        return;
+      }
+
+      if (data?.image_url) {
+        setPreviewUrl(data.image_url);
+        onImageUploaded(data.image_url);
+        toast.success("AI kép generálva!");
+      }
+    } catch (error) {
+      console.error("Error generating AI image:", error);
+      toast.error("Hiba az AI kép generálásakor");
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -132,7 +154,7 @@ export function QuickImageUpload({
                   size="icon"
                   className="absolute right-2 top-2 h-6 w-6"
                   onClick={handleRemoveImage}
-                  disabled={isUploading}
+                  disabled={isUploading || isGenerating}
                 >
                   <X className="h-3 w-3" />
                 </Button>
@@ -152,24 +174,50 @@ export function QuickImageUpload({
             className="hidden"
             onChange={handleFileSelect}
           />
-          
-          <Button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-            className="w-full"
-          >
-            {isUploading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Feltöltés...
-              </>
-            ) : (
-              <>
-                <Upload className="mr-2 h-4 w-4" />
-                {previewUrl ? "Új kép feltöltése" : "Kép feltöltése"}
-              </>
-            )}
-          </Button>
+
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading || isGenerating}
+              variant="outline"
+              className="w-full"
+            >
+              {isUploading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Feltöltés...
+                </>
+              ) : (
+                <>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Saját kép
+                </>
+              )}
+            </Button>
+
+            <Button
+              onClick={handleGenerateAI}
+              disabled={isUploading || isGenerating}
+              className="w-full bg-gradient-to-r from-primary to-primary-glow text-primary-foreground"
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generálás...
+                </>
+              ) : previewUrl ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Újragenerálás
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  AI generálás
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

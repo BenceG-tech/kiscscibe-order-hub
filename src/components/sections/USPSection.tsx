@@ -1,7 +1,11 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Heart, Clock, Users, Banknote } from "lucide-react";
+import { useScrollFadeIn } from "@/hooks/useScrollFadeIn";
+import { cn } from "@/lib/utils";
 
 const USPSection = () => {
+  const { ref, isVisible } = useScrollFadeIn();
+
   const features = [
     {
       icon: Heart,
@@ -26,7 +30,7 @@ const USPSection = () => {
   ];
 
   return (
-    <section className="py-8 md:py-20">
+    <section className="py-8 md:py-20" ref={ref}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section header */}
         <div className="text-center mb-6 md:mb-12">
@@ -46,11 +50,17 @@ const USPSection = () => {
             return (
               <Card 
                 key={index} 
-                className="rounded-2xl shadow-soft border-0 bg-card text-center"
+                className={cn(
+                  "rounded-2xl shadow-soft border-0 bg-card text-center glow-border",
+                  "transition-all duration-500",
+                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+                )}
+                style={{ transitionDelay: `${index * 100}ms` }}
               >
                 <CardContent className="p-4">
-                  <div className="inline-flex items-center justify-center w-10 h-10 bg-gradient-to-br from-primary/20 to-warmth/20 rounded-xl shadow-soft mb-2">
-                    <IconComponent className="h-5 w-5 text-primary" strokeWidth={1.5} />
+                  <div className="relative inline-flex items-center justify-center w-10 h-10 bg-gradient-to-br from-primary/20 to-warmth/20 rounded-xl shadow-soft mb-2 group">
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-primary/30 to-warmth/30 animate-spin-slow opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <IconComponent className="h-5 w-5 text-primary relative z-10 transition-transform duration-300 group-hover:scale-110" strokeWidth={1.5} />
                   </div>
                   <h3 className="font-bold text-foreground text-base mb-1 font-sofia">{feature.title}</h3>
                   <p className="text-muted-foreground text-xs leading-relaxed">{feature.description}</p>
@@ -67,12 +77,17 @@ const USPSection = () => {
             return (
               <Card 
                 key={index} 
-                className="rounded-3xl shadow-soft border-0 bg-card text-center hover:shadow-xl hover:-translate-y-2 transition-all duration-300"
-                style={{ animationDelay: `${index * 100}ms` }}
+                className={cn(
+                  "rounded-3xl shadow-soft border-0 bg-card text-center glow-border group cursor-default",
+                  "transition-all duration-500",
+                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+                )}
+                style={{ transitionDelay: `${index * 150}ms` }}
               >
                 <CardContent className="p-6 md:p-8">
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary/20 to-warmth/20 rounded-2xl shadow-soft mb-5">
-                    <IconComponent className="h-8 w-8 text-primary" strokeWidth={1.5} />
+                  <div className="relative inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary/20 to-warmth/20 rounded-2xl shadow-soft mb-5 overflow-hidden">
+                    <div className="absolute inset-0 rounded-2xl bg-gradient-conic from-primary/40 via-transparent to-primary/40 animate-spin-slow opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    <IconComponent className="h-8 w-8 text-primary relative z-10 transition-transform duration-300 group-hover:scale-125" strokeWidth={1.5} />
                   </div>
                   <h3 className="font-bold text-foreground text-xl mb-3 font-sofia">{feature.title}</h3>
                   <p className="text-muted-foreground text-base leading-relaxed">{feature.description}</p>

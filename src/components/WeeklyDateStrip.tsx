@@ -20,19 +20,14 @@ const WeeklyDateStrip = ({
 }: WeeklyDateStripProps) => {
   const [weekOffset, setWeekOffset] = useState(0);
 
-  // Get the Monday of the current week view
   const getWeekDays = (offset: number): Date[] => {
     const today = new Date();
-    const weekStart = startOfWeek(today, { weekStartsOn: 1 }); // Start on Monday
+    const weekStart = startOfWeek(today, { weekStartsOn: 1 });
     const offsetWeekStart = addDays(weekStart, offset * 7);
-    
-    // Get Mon-Fri only (5 days)
     return Array.from({ length: 5 }, (_, i) => addDays(offsetWeekStart, i));
   };
 
   const weekDays = getWeekDays(weekOffset);
-  
-  // Get month/year from middle of the week for display
   const weekMiddle = weekDays[2];
   const monthLabel = format(weekMiddle, 'MMMM yyyy', { locale: hu });
 
@@ -43,31 +38,31 @@ const WeeklyDateStrip = ({
   };
 
   const getDayLabel = (date: Date) => {
-    const dayNames = ['H', 'K', 'Sze', 'Cs', 'P'];
-    const dayIndex = getDay(date) - 1; // Monday = 0
+    const dayNames = ['Hétfő', 'Kedd', 'Szerda', 'Csüt.', 'Péntek'];
+    const dayIndex = getDay(date) - 1;
     return dayNames[dayIndex] || '';
   };
 
   return (
-    <div className="bg-card/80 backdrop-blur-sm shadow-lg rounded-2xl p-3 md:p-4 border border-border/30">
+    <div className="bg-card/90 backdrop-blur-sm shadow-xl rounded-2xl p-4 md:p-5 border border-border/40">
       {/* Month label */}
-      <div className="text-center text-xs md:text-sm font-medium text-muted-foreground mb-3 capitalize">
+      <div className="text-center text-sm md:text-base font-semibold text-muted-foreground mb-4 capitalize">
         {monthLabel}
       </div>
       
-      <div className="flex items-center justify-center gap-1.5 md:gap-2">
-        {/* Previous week button */}
+      <div className="flex items-center justify-center gap-2 md:gap-3">
+        {/* Previous week */}
         <Button 
           variant="ghost" 
           size="icon"
           onClick={() => setWeekOffset(w => w - 1)}
-          className="h-8 w-8 md:h-9 md:w-9 rounded-full hover:bg-muted shrink-0"
+          className="h-10 w-10 rounded-full hover:bg-muted shrink-0"
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft className="h-5 w-5" />
         </Button>
         
         {/* Days */}
-        <div className="flex gap-1 md:gap-1.5">
+        <div className="flex gap-1.5 md:gap-2">
           {weekDays.map((day) => {
             const isSelected = isSameDay(day, selectedDate);
             const hasContent = hasContentOnDate(day);
@@ -80,50 +75,60 @@ const WeeklyDateStrip = ({
                 onClick={() => !disabled && onSelect(day)}
                 disabled={disabled}
                 className={cn(
-                  "relative flex flex-col items-center justify-center p-1.5 md:p-2.5 rounded-xl transition-all duration-300 min-w-[46px] md:min-w-[56px]",
+                  "relative flex flex-col items-center justify-center p-2 md:p-3 rounded-xl transition-all duration-300 min-w-[56px] md:min-w-[72px]",
                   isSelected 
-                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30 scale-105 ring-2 ring-primary/50"
+                    ? "bg-gradient-to-b from-primary to-primary/90 text-primary-foreground shadow-xl shadow-primary/40 scale-110 ring-2 ring-primary/60 animate-glow-pulse"
                     : hasContent
-                      ? "bg-primary/10 hover:bg-primary/20 hover:scale-102"
+                      ? "bg-primary/15 hover:bg-primary/25 hover:scale-105"
                       : "hover:bg-muted/80",
                   disabled && "opacity-40 cursor-not-allowed",
-                  isTodayDate && !isSelected && "ring-1 ring-primary/40"
+                  isTodayDate && !isSelected && "ring-2 ring-primary/50"
                 )}
               >
+                {/* "MA" badge for today */}
+                {isTodayDate && (
+                  <span className={cn(
+                    "absolute -top-2 left-1/2 -translate-x-1/2 text-[9px] md:text-[10px] font-black px-1.5 py-0.5 rounded-full",
+                    isSelected 
+                      ? "bg-primary-foreground text-primary" 
+                      : "bg-primary text-primary-foreground"
+                  )}>
+                    MA
+                  </span>
+                )}
                 <span className={cn(
-                  "text-[10px] md:text-xs font-semibold uppercase tracking-wide",
+                  "text-[10px] md:text-xs font-bold uppercase tracking-wide",
                   isSelected ? "text-primary-foreground" : "text-muted-foreground"
                 )}>
                   {getDayLabel(day)}
                 </span>
                 <span className={cn(
-                  "text-lg md:text-xl font-bold leading-tight",
+                  "text-xl md:text-2xl font-bold leading-tight",
                   isSelected ? "text-primary-foreground" : "text-foreground",
                   disabled && "line-through"
                 )}>
                   {format(day, 'd')}
                 </span>
-                {/* Dot indicator for available content */}
+                {/* Content indicator */}
                 {hasContent && !isSelected && (
-                  <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-primary rounded-full" />
-                )}
-                {/* Today indicator */}
-                {isTodayDate && !isSelected && (
-                  <span className="absolute -top-1 -right-1 text-[8px] font-bold text-primary">●</span>
+                  <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 flex gap-0.5">
+                    <div className="w-1.5 h-1.5 bg-primary rounded-full" />
+                    <div className="w-1.5 h-1.5 bg-primary/50 rounded-full" />
+                  </div>
                 )}
               </button>
             );
           })}
         </div>
         
-        {/* Next week button */}
+        {/* Next week */}
         <Button 
           variant="ghost" 
           size="icon"
           onClick={() => setWeekOffset(w => w + 1)}
-          className="h-8 w-8 md:h-9 md:w-9 rounded-full hover:bg-muted shrink-0"
+          className="h-10 w-10 rounded-full hover:bg-muted shrink-0"
         >
-          <ChevronRight className="h-4 w-4" />
+          <ChevronRight className="h-5 w-5" />
         </Button>
       </div>
     </div>
