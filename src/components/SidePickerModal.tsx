@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, XCircle } from 'lucide-react';
 import { capitalizeFirst } from '@/lib/utils';
 
 // Köretek kategória ID-k
@@ -37,6 +37,7 @@ interface SidePickerModalProps {
   mainItemName: string;
   mainItemRequiresSideSelection?: boolean;
   onSideSelected: (selectedSides: SideItem[]) => void;
+  dailyOfferId?: string;
 }
 
 export const SidePickerModal: React.FC<SidePickerModalProps> = ({
@@ -45,7 +46,8 @@ export const SidePickerModal: React.FC<SidePickerModalProps> = ({
   mainItemId,
   mainItemName,
   mainItemRequiresSideSelection = false,
-  onSideSelected
+  onSideSelected,
+  dailyOfferId
 }) => {
   const [sideConfigs, setSideConfigs] = useState<SideConfig[]>([]);
   const [sideItems, setSideItems] = useState<SideItem[]>([]);
@@ -62,10 +64,47 @@ export const SidePickerModal: React.FC<SidePickerModalProps> = ({
     }
   }, [open, mainItemId]);
 
+  const fetchDailySides = async (): Promise<SideItem[] | null> => {
+    if (!dailyOfferId) return null;
+
+    try {
+      // Fetch side items from daily_offer_items that are NOT menu parts
+      // and belong to side categories
+      const { data: dailyItems, error } = await supabase
+        .from('daily_offer_items')
+        .select(`
+          item_id,
+          menu_items!daily_offer_items_item_id_fkey (
+            id, name, description, image_url, price_huf, category_id
+          )
+        `)
+        .eq('daily_offer_id', dailyOfferId)
+        .eq('is_menu_part', false);
+
+      if (error || !dailyItems) return null;
+
+      // Filter to only side categories
+      const sides = dailyItems
+        .filter((di: any) => di.menu_items && SIDE_CATEGORY_IDS.includes(di.menu_items.category_id))
+        .map((di: any) => ({
+          id: di.menu_items.id,
+          name: di.menu_items.name,
+          description: di.menu_items.description,
+          image_url: di.menu_items.image_url,
+          price_huf: di.menu_items.price_huf,
+        }));
+
+      return sides.length > 0 ? sides : null;
+    } catch {
+      return null;
+    }
+  };
+
   const fetchSideConfiguration = async () => {
     setLoading(true);
+    setSelectedSides([]);
     try {
-      // Fetch side configurations for this main item
+      // First check menu_item_sides for specific config
       const { data: configs, error: configError } = await supabase
         .from('menu_item_sides')
         .select(`
@@ -75,80 +114,68 @@ export const SidePickerModal: React.FC<SidePickerModalProps> = ({
           max_select,
           is_default,
           menu_items!menu_item_sides_side_item_id_fkey (
-            id,
-            name,
-            description,
-            image_url,
-            price_huf
+            id, name, description, image_url, price_huf
           )
         `)
         .eq('main_item_id', mainItemId);
 
       if (configError) {
         console.error('Error fetching side configurations:', configError);
-        toast({
-          variant: "destructive",
-          title: "Hiba",
-          description: "Nem sikerült betölteni a köret konfigurációt."
-        });
+      }
+
+      if (configs && configs.length > 0) {
+        const items = configs.map(config => config.menu_items as unknown as SideItem);
+        const firstConfig = configs[0];
+        setSideConfigs(configs);
+        setSideItems(items);
+        setMinSelect(firstConfig.min_select);
+        setMaxSelect(firstConfig.max_select);
+        setIsRequired(firstConfig.is_required || mainItemRequiresSideSelection);
+        const defaultSelections = configs
+          .filter(config => config.is_default)
+          .map(config => config.side_item_id);
+        setSelectedSides(defaultSelections);
+        setLoading(false);
         return;
       }
 
-      if (!configs || configs.length === 0) {
-        // No specific side configurations - fetch general sides from Köretek categories
-        const { data: generalSides, error: sidesError } = await supabase
-          .from('menu_items')
-          .select('id, name, description, image_url, price_huf')
-          .in('category_id', SIDE_CATEGORY_IDS)
-          .eq('is_active', true)
-          .order('name');
-        
-        if (sidesError) {
-          console.error('Error fetching general sides:', sidesError);
-          onOpenChange(false);
-          return;
-        }
-        
-        if (!generalSides || generalSides.length === 0) {
-          // No sides available at all
-          onOpenChange(false);
-          return;
-        }
-        
-        setSideItems(generalSides);
-        setMinSelect(0); // Optional
-        setMaxSelect(1); // Max 1 side
+      // No specific config — try daily sides first
+      const dailySides = await fetchDailySides();
+      if (dailySides && dailySides.length > 0) {
+        setSideItems(dailySides);
+        setMinSelect(0);
+        setMaxSelect(1);
         setIsRequired(false);
         setLoading(false);
         return;
       }
 
-      // Extract side items and configuration
-      const items = configs.map(config => config.menu_items as unknown as SideItem);
-      const firstConfig = configs[0];
-      
-      setSideConfigs(configs);
-      setSideItems(items);
-      setMinSelect(firstConfig.min_select);
-      setMaxSelect(firstConfig.max_select);
-      
-      // Check if required either from config or from main item setting
-      const isRequiredSelection = firstConfig.is_required || mainItemRequiresSideSelection;
-      setIsRequired(isRequiredSelection);
+      // Fallback: all active sides from categories
+      const { data: generalSides, error: sidesError } = await supabase
+        .from('menu_items')
+        .select('id, name, description, image_url, price_huf')
+        .in('category_id', SIDE_CATEGORY_IDS)
+        .eq('is_active', true)
+        .order('name');
 
-      // Set default selections
-      const defaultSelections = configs
-        .filter(config => config.is_default)
-        .map(config => config.side_item_id);
-      
-      setSelectedSides(defaultSelections);
+      if (sidesError) {
+        console.error('Error fetching general sides:', sidesError);
+        onOpenChange(false);
+        return;
+      }
+
+      if (!generalSides || generalSides.length === 0) {
+        onOpenChange(false);
+        return;
+      }
+
+      setSideItems(generalSides);
+      setMinSelect(0);
+      setMaxSelect(1);
+      setIsRequired(false);
     } catch (error) {
       console.error('Error in fetchSideConfiguration:', error);
-      toast({
-        variant: "destructive",
-        title: "Hiba",
-        description: "Váratlan hiba történt."
-      });
+      toast({ variant: "destructive", title: "Hiba", description: "Váratlan hiba történt." });
     } finally {
       setLoading(false);
     }
@@ -156,17 +183,14 @@ export const SidePickerModal: React.FC<SidePickerModalProps> = ({
 
   const handleSideSelection = (sideId: string) => {
     if (maxSelect === 1) {
-      // Single selection (radio behavior)
       setSelectedSides([sideId]);
     } else {
-      // Multiple selection (checkbox behavior)
       setSelectedSides(prev => {
         if (prev.includes(sideId)) {
           return prev.filter(id => id !== sideId);
         } else if (prev.length < maxSelect) {
           return [...prev, sideId];
         } else {
-          // Replace first selected if at max
           return [...prev.slice(1), sideId];
         }
       });
@@ -188,8 +212,12 @@ export const SidePickerModal: React.FC<SidePickerModalProps> = ({
     onOpenChange(false);
   };
 
+  const handleNoSide = () => {
+    onSideSelected([]);
+    onOpenChange(false);
+  };
+
   const handleCancel = () => {
-    // Only allow cancel if not required
     if (!isRequired && !mainItemRequiresSideSelection) {
       setSelectedSides([]);
       onOpenChange(false);
@@ -274,19 +302,28 @@ export const SidePickerModal: React.FC<SidePickerModalProps> = ({
           )}
         </div>
 
-        <div className="flex-shrink-0 flex gap-3 pt-4 border-t">
+        <div className="flex-shrink-0 flex flex-col gap-2 pt-4 border-t">
+          {/* "Nem kérek köretet" button - always visible */}
           {!isRequired && !mainItemRequiresSideSelection && (
-            <Button variant="outline" onClick={handleCancel} className="flex-1">
-              Mégse
+            <Button variant="ghost" onClick={handleNoSide} className="w-full text-muted-foreground">
+              <XCircle className="h-4 w-4 mr-2" />
+              Nem kérek köretet
             </Button>
           )}
-          <Button 
-            onClick={handleConfirm} 
-            disabled={!isValidSelection}
-            className={!isRequired && !mainItemRequiresSideSelection ? "flex-1" : "w-full"}
-          >
-            Hozzáadás
-          </Button>
+          <div className="flex gap-3">
+            {!isRequired && !mainItemRequiresSideSelection && (
+              <Button variant="outline" onClick={handleCancel} className="flex-1">
+                Mégse
+              </Button>
+            )}
+            <Button 
+              onClick={handleConfirm} 
+              disabled={!isValidSelection}
+              className={!isRequired && !mainItemRequiresSideSelection ? "flex-1" : "w-full"}
+            >
+              Hozzáadás
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

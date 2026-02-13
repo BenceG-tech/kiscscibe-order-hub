@@ -277,6 +277,23 @@ const OrderConfirmation = () => {
             </CardContent>
           </Card>
 
+          {/* Restaurant Info Card */}
+          <Card className="mb-6 border-primary/20 bg-muted/30">
+            <CardContent className="p-6">
+              <h3 className="text-lg font-semibold mb-3">Kiscsibe Reggeliző & Étterem</h3>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
+                  <span>1141 Budapest, Vezér u. 110.</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-primary flex-shrink-0" />
+                  <span>H–P: 7:00–15:00 | Szo: 8:00–14:00 | V: Zárva</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-4">
             <Button asChild className="flex-1">
@@ -287,7 +304,7 @@ const OrderConfirmation = () => {
             </Button>
             <Button variant="outline" asChild className="flex-1">
               <a 
-                href="https://maps.google.com/?q=Kiscsibe+Reggeliző+Étterem" 
+                href="https://maps.google.com/?q=1141+Budapest,+Vezér+u.+110" 
                 target="_blank" 
                 rel="noopener noreferrer"
               >

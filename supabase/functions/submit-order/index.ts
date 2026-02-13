@@ -620,7 +620,12 @@ serve(async (req) => {
           </table>
 
           <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <p style="margin: 0;"><strong>Kiscsibe Étterem</strong></p>
+            <p style="margin: 0 0 4px 0;"><strong>Kiscsibe Reggeliző & Étterem</strong></p>
+            <p style="margin: 0 0 4px 0; font-size: 14px; color: #555;">📍 1141 Budapest, Vezér u. 110.</p>
+            <p style="margin: 0 0 4px 0; font-size: 14px; color: #555;">🕐 H–P: 7:00–15:00 | Szo: 8:00–14:00 | V: Zárva</p>
+            <p style="margin: 0; font-size: 14px;">
+              <a href="https://www.facebook.com/kiscsibeetteremXIV" style="color: #1877F2; text-decoration: none;">📘 Facebook</a>
+            </p>
           </div>
 
           <p style="color: #666; font-size: 14px;">
@@ -647,7 +652,10 @@ serve(async (req) => {
 
         Összesen: ${calculatedTotal.toLocaleString()} Ft
 
-        Kiscsibe Étterem
+        Kiscsibe Reggeliző & Étterem
+        1141 Budapest, Vezér u. 110.
+        H–P: 7:00–15:00 | Szo: 8:00–14:00 | V: Zárva
+        Facebook: https://www.facebook.com/kiscsibeetteremXIV
         Köszönjük, hogy minket választott! 💛
       `;
 
