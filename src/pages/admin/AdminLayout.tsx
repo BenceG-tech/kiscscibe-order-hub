@@ -13,7 +13,8 @@ import {
   Image,
   FileText,
   Info,
-  LayoutDashboard
+  LayoutDashboard,
+  BarChart3
 } from "lucide-react";
 
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
@@ -38,6 +39,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     { href: "/admin/gallery", label: "Galéria", mobileLabel: "Galéria", icon: Image, showBadge: false },
     { href: "/admin/legal", label: "Jogi oldalak", mobileLabel: "Jogi", icon: FileText, showBadge: false },
     { href: "/admin/about", label: "Rólunk", mobileLabel: "Rólunk", icon: Info, showBadge: false },
+    { href: "/admin/analytics", label: "Statisztika", mobileLabel: "Stat.", icon: BarChart3, showBadge: false },
   ];
 
   return (
