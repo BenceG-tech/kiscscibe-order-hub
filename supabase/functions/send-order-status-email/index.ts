@@ -59,6 +59,21 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Fetch Google Review URL from settings
+    let googleReviewUrl = 'https://g.page/review/kiscsibe'; // fallback
+    try {
+      const { data: settingsData } = await supabase
+        .from('settings')
+        .select('value_json')
+        .eq('key', 'google_review_url')
+        .maybeSingle();
+      if (settingsData?.value_json) {
+        googleReviewUrl = String(settingsData.value_json);
+      }
+    } catch (e) {
+      console.log('Could not fetch google_review_url setting, using fallback');
+    }
+
     // Fetch order with email
     const { data: order, error: orderError } = await supabase
       .from('orders')
@@ -126,10 +141,17 @@ serve(async (req) => {
           </table>
         ` : ''}
 
+        ${new_status === 'completed' ? `
+        <div style="background: #fff3e0; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
+          <p style="margin: 0 0 10px 0; font-size: 16px;">⭐ Tetszett az élmény?</p>
+          <a href="${googleReviewUrl}" style="display: inline-block; background: #4285f4; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">
+            Értékeld a tapasztalatod Google-ön!
+          </a>
+        </div>
+        ` : ''}
+
         <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 20px 0;">
           <p style="margin: 0;"><strong>Kiscsibe Étterem</strong></p>
-          <p style="margin: 5px 0;">📍 1234 Budapest, Példa utca 12.</p>
-          <p style="margin: 5px 0;">📞 +36 1 234 5678</p>
         </div>
 
         <p style="color: #666; font-size: 14px;">

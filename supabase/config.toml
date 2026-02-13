@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.generate-food-image]
 verify_jwt = false
+
+[functions.send-daily-report]
+verify_jwt = false
