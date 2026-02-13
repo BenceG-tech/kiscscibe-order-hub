@@ -8,7 +8,8 @@ import DashboardStatCard from "@/components/admin/DashboardStatCard";
 import RecentOrdersFeed from "@/components/admin/RecentOrdersFeed";
 import DashboardAlerts from "@/components/admin/DashboardAlerts";
 import { Button } from "@/components/ui/button";
-import { ShoppingBag, Activity, Gauge, TrendingUp, Calendar, Package, ArrowRight } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
+import { ShoppingBag, Activity, Gauge, TrendingUp, Calendar, Package, ArrowRight, Mail, Loader2 } from "lucide-react";
 
 interface Stats {
   todayOrders: number;
@@ -29,7 +30,9 @@ const Dashboard = () => {
     capacityTotal: null,
   });
   const [loading, setLoading] = useState(true);
+  const [sendingReport, setSendingReport] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -136,7 +139,7 @@ const Dashboard = () => {
         <RecentOrdersFeed />
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
           <Button
             variant="outline"
             className="h-auto py-4 flex flex-col items-center gap-2"
@@ -160,6 +163,26 @@ const Dashboard = () => {
           >
             <Package className="h-5 w-5" />
             <span>Étlap szerkesztés</span>
+          </Button>
+          <Button
+            variant="outline"
+            className="h-auto py-4 flex flex-col items-center gap-2"
+            disabled={sendingReport}
+            onClick={async () => {
+              setSendingReport(true);
+              try {
+                const { data, error } = await supabase.functions.invoke("send-daily-report");
+                if (error) throw error;
+                toast({ title: "Riport elküldve!", description: `Bevétel: ${data?.revenue?.toLocaleString() || 0} Ft, ${data?.orders || 0} rendelés` });
+              } catch (err: any) {
+                toast({ title: "Hiba", description: err.message, variant: "destructive" });
+              } finally {
+                setSendingReport(false);
+              }
+            }}
+          >
+            {sendingReport ? <Loader2 className="h-5 w-5 animate-spin" /> : <Mail className="h-5 w-5" />}
+            <span>Teszt napi riport</span>
           </Button>
         </div>
       </div>

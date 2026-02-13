@@ -92,6 +92,87 @@ export type Database = {
         }
         Relationships: []
       }
+      coupon_usages: {
+        Row: {
+          coupon_id: string
+          created_at: string | null
+          discount_huf: number
+          id: string
+          order_id: string
+        }
+        Insert: {
+          coupon_id: string
+          created_at?: string | null
+          discount_huf: number
+          id?: string
+          order_id: string
+        }
+        Update: {
+          coupon_id?: string
+          created_at?: string | null
+          discount_huf?: number
+          id?: string
+          order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_usages_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_usages_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupons: {
+        Row: {
+          code: string
+          created_at: string | null
+          discount_type: string
+          discount_value: number
+          id: string
+          is_active: boolean
+          max_uses: number | null
+          min_order_huf: number
+          used_count: number
+          valid_from: string
+          valid_until: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          discount_type: string
+          discount_value: number
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          min_order_huf?: number
+          used_count?: number
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          min_order_huf?: number
+          used_count?: number
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Relationships: []
+      }
       daily_menu_items: {
         Row: {
           daily_menu_id: string | null
@@ -316,6 +397,42 @@ export type Database = {
           note?: string | null
           price_huf?: number | null
           remaining_portions?: number | null
+        }
+        Relationships: []
+      }
+      daily_waste_log: {
+        Row: {
+          created_at: string | null
+          date: string
+          id: string
+          item_name: string
+          logged_by: string | null
+          notes: string | null
+          planned_portions: number | null
+          sold_portions: number | null
+          wasted_portions: number
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          id?: string
+          item_name: string
+          logged_by?: string | null
+          notes?: string | null
+          planned_portions?: number | null
+          sold_portions?: number | null
+          wasted_portions?: number
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          id?: string
+          item_name?: string
+          logged_by?: string | null
+          notes?: string | null
+          planned_portions?: number | null
+          sold_portions?: number | null
+          wasted_portions?: number
         }
         Relationships: []
       }
@@ -638,7 +755,9 @@ export type Database = {
         Row: {
           archived: boolean
           code: string
+          coupon_code: string | null
           created_at: string
+          discount_huf: number
           email: string | null
           id: string
           name: string
@@ -652,7 +771,9 @@ export type Database = {
         Insert: {
           archived?: boolean
           code: string
+          coupon_code?: string | null
           created_at?: string
+          discount_huf?: number
           email?: string | null
           id?: string
           name: string
@@ -666,7 +787,9 @@ export type Database = {
         Update: {
           archived?: boolean
           code?: string
+          coupon_code?: string | null
           created_at?: string
+          discount_huf?: number
           email?: string | null
           id?: string
           name?: string

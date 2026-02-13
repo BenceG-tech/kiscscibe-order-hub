@@ -41,10 +41,11 @@ interface CustomerInfo {
 interface OrderRequest {
   customer: CustomerInfo;
   payment_method: string;
-  pickup_time?: string | null; // Legacy support
-  pickup_date?: string | null; // New format: YYYY-MM-DD
-  pickup_time_slot?: string | null; // New format: HH:MM
+  pickup_time?: string | null;
+  pickup_date?: string | null;
+  pickup_time_slot?: string | null;
   items: OrderItem[];
+  coupon_code?: string | null;
 }
 
 serve(async (req) => {
@@ -68,7 +69,8 @@ serve(async (req) => {
       pickup_time,
       pickup_date,
       pickup_time_slot,
-      items
+      items,
+      coupon_code
     }: OrderRequest = await req.json();
 
     console.log(`[${requestId}] Processing order for:`, customer.name, 'with', items.length, 'items');
@@ -255,6 +257,52 @@ serve(async (req) => {
       }
     }
 
+    // Apply coupon discount if provided
+    let discountHuf = 0;
+    let appliedCouponCode: string | null = null;
+
+    if (coupon_code) {
+      const { data: coupon, error: couponError } = await supabase
+        .from('coupons')
+        .select('*')
+        .eq('code', coupon_code.toUpperCase().trim())
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (couponError || !coupon) {
+        throw new Error('Érvénytelen kupon kód');
+      }
+
+      if (coupon.valid_until && new Date(coupon.valid_until) < new Date()) {
+        throw new Error('Ez a kupon lejárt');
+      }
+
+      if (coupon.max_uses !== null && coupon.used_count >= coupon.max_uses) {
+        throw new Error('Ez a kupon elfogyott');
+      }
+
+      if (calculatedTotal < coupon.min_order_huf) {
+        throw new Error(`Minimum rendelési érték: ${coupon.min_order_huf} Ft`);
+      }
+
+      if (coupon.discount_type === 'percentage') {
+        discountHuf = Math.round(calculatedTotal * coupon.discount_value / 100);
+      } else {
+        discountHuf = Math.min(coupon.discount_value, calculatedTotal);
+      }
+
+      appliedCouponCode = coupon.code;
+      calculatedTotal -= discountHuf;
+
+      // Increment usage count
+      await supabase
+        .from('coupons')
+        .update({ used_count: coupon.used_count + 1 })
+        .eq('id', coupon.id);
+
+      console.log(`Coupon ${coupon.code} applied: -${discountHuf} Ft`);
+    }
+
     console.log('Server-calculated total:', calculatedTotal);
 
     // Generate order code
@@ -414,7 +462,9 @@ serve(async (req) => {
         status: 'new',
         payment_method,
         pickup_time: pickup_time || (date && time ? new Date(`${date}T${time.slice(0, 5)}`).toISOString() : null),
-        notes: customer.notes || null
+        notes: customer.notes || null,
+        coupon_code: appliedCouponCode,
+        discount_huf: discountHuf,
       })
       .select('id')
       .single();
@@ -426,6 +476,23 @@ serve(async (req) => {
 
     const orderId = orderData.id;
     console.log('Created order:', orderId);
+
+    // Record coupon usage
+    if (appliedCouponCode && discountHuf > 0) {
+      const { data: couponData } = await supabase
+        .from('coupons')
+        .select('id')
+        .eq('code', appliedCouponCode)
+        .single();
+
+      if (couponData) {
+        await supabase.from('coupon_usages').insert({
+          coupon_id: couponData.id,
+          order_id: orderId,
+          discount_huf: discountHuf,
+        });
+      }
+    }
 
     // Insert order items
     for (const item of validatedItems) {
@@ -554,14 +621,10 @@ serve(async (req) => {
 
           <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 20px 0;">
             <p style="margin: 0;"><strong>Kiscsibe Étterem</strong></p>
-            <p style="margin: 5px 0;">📍 1234 Budapest, Példa utca 12.</p>
-            <p style="margin: 5px 0;">📞 +36 1 234 5678</p>
-            <p style="margin: 5px 0;">🕒 Hétfő-Vasárnap: 11:00-22:00</p>
           </div>
 
           <p style="color: #666; font-size: 14px;">
-            Kérdés esetén hívjon minket a fenti telefonszámon!<br>
-            Köszönjük, hogy minket választott!
+            Köszönjük, hogy minket választott! 💛
           </p>
         </div>
       `;
@@ -585,12 +648,7 @@ serve(async (req) => {
         Összesen: ${calculatedTotal.toLocaleString()} Ft
 
         Kiscsibe Étterem
-        1234 Budapest, Példa utca 12.
-        +36 1 234 5678
-        Hétfő-Vasárnap: 11:00-22:00
-
-        Kérdés esetén hívjon minket!
-        Köszönjük, hogy minket választott!
+        Köszönjük, hogy minket választott! 💛
       `;
 
       await resend.emails.send({

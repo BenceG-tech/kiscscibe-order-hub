@@ -32,10 +32,19 @@ interface CartItem {
   };
 }
 
+interface CouponInfo {
+  code: string;
+  discount_type: 'percentage' | 'fixed';
+  discount_value: number;
+  discount_huf: number; // calculated discount amount
+}
+
 interface CartState {
   items: CartItem[];
   total: number;
   itemCount: number;
+  coupon: CouponInfo | null;
+  totalAfterDiscount: number;
 }
 
 type CartAction =
@@ -43,12 +52,15 @@ type CartAction =
   | { type: "UPDATE_QUANTITY"; payload: { id: string; quantity: number } }
   | { type: "REMOVE_ITEM"; payload: { id: string } }
   | { type: "CLEAR_CART" }
-  | { type: "LOAD_CART"; payload: CartItem[] };
+  | { type: "LOAD_CART"; payload: CartItem[] }
+  | { type: "SET_COUPON"; payload: CouponInfo | null };
 
 const initialState: CartState = {
   items: [],
   total: 0,
   itemCount: 0,
+  coupon: null,
+  totalAfterDiscount: 0,
 };
 
 const calculateTotals = (items: CartItem[]): { total: number; itemCount: number } => {
@@ -64,8 +76,20 @@ const calculateTotals = (items: CartItem[]): { total: number; itemCount: number 
   return { total, itemCount };
 };
 
+const applyDiscount = (total: number, coupon: CouponInfo | null): { discount_huf: number; totalAfterDiscount: number } => {
+  if (!coupon) return { discount_huf: 0, totalAfterDiscount: total };
+  let discount_huf = 0;
+  if (coupon.discount_type === 'percentage') {
+    discount_huf = Math.round(total * coupon.discount_value / 100);
+  } else {
+    discount_huf = Math.min(coupon.discount_value, total);
+  }
+  return { discount_huf, totalAfterDiscount: total - discount_huf };
+};
+
 const cartReducer = (state: CartState, action: CartAction): CartState => {
   let newItems: CartItem[];
+  let newCoupon = state.coupon;
   
   switch (action.type) {
     case "ADD_ITEM":
@@ -108,10 +132,16 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       
     case "CLEAR_CART":
       newItems = [];
+      newCoupon = null;
       break;
       
     case "LOAD_CART":
       newItems = action.payload;
+      break;
+
+    case "SET_COUPON":
+      newItems = state.items;
+      newCoupon = action.payload;
       break;
       
     default:
@@ -119,11 +149,15 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
   }
   
   const { total, itemCount } = calculateTotals(newItems);
+  const { discount_huf, totalAfterDiscount } = applyDiscount(total, newCoupon);
+  if (newCoupon) newCoupon = { ...newCoupon, discount_huf };
   
   return {
     items: newItems,
     total,
     itemCount,
+    coupon: newCoupon,
+    totalAfterDiscount,
   };
 };
 
@@ -138,6 +172,8 @@ interface CartContextType {
   addDailyMenu: (menu: DailyMenu) => void;
   addCompleteMenu: (menu: CompleteMenu) => void;
   validateCartSides: () => Promise<{ valid: boolean; errors: string[] }>;
+  applyCoupon: (code: string) => Promise<{ success: boolean; message: string }>;
+  removeCoupon: () => void;
 }
 
 // Daily item interfaces for adding to cart
@@ -306,6 +342,53 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     
     return { valid: errors.length === 0, errors };
   };
+
+  const applyCoupon = async (code: string): Promise<{ success: boolean; message: string }> => {
+    try {
+      const trimmedCode = code.trim().toUpperCase();
+      const { data, error } = await supabase
+        .from('coupons')
+        .select('*')
+        .eq('code', trimmedCode)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (error || !data) return { success: false, message: 'Érvénytelen kupon kód' };
+
+      // Check expiry
+      if (data.valid_until && new Date(data.valid_until) < new Date()) {
+        return { success: false, message: 'Ez a kupon lejárt' };
+      }
+
+      // Check usage limit
+      if (data.max_uses !== null && data.used_count >= data.max_uses) {
+        return { success: false, message: 'Ez a kupon elfogyott' };
+      }
+
+      // Check minimum order
+      if (state.total < data.min_order_huf) {
+        return { success: false, message: `Minimum rendelési érték: ${data.min_order_huf.toLocaleString()} Ft` };
+      }
+
+      dispatch({
+        type: "SET_COUPON",
+        payload: {
+          code: data.code,
+          discount_type: data.discount_type as 'percentage' | 'fixed',
+          discount_value: data.discount_value,
+          discount_huf: 0, // will be calculated by reducer
+        }
+      });
+
+      return { success: true, message: `Kupon alkalmazva: ${data.discount_type === 'percentage' ? `${data.discount_value}%` : `${data.discount_value} Ft`} kedvezmény` };
+    } catch (err) {
+      return { success: false, message: 'Hiba a kupon ellenőrzésekor' };
+    }
+  };
+
+  const removeCoupon = () => {
+    dispatch({ type: "SET_COUPON", payload: null });
+  };
   
   return (
     <CartContext.Provider value={{
@@ -319,6 +402,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       addDailyMenu,
       addCompleteMenu,
       validateCartSides,
+      applyCoupon,
+      removeCoupon,
     }}>
       {children}
     </CartContext.Provider>

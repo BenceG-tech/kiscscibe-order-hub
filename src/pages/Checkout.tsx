@@ -25,7 +25,7 @@ interface TimeSlot {
 }
 
 const Checkout = () => {
-  const { state: cart, clearCart } = useCart();
+  const { state: cart, clearCart, applyCoupon, removeCoupon } = useCart();
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -43,6 +43,9 @@ const Checkout = () => {
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponMessage, setCouponMessage] = useState<{ success: boolean; text: string } | null>(null);
   
   // Extract daily item dates from cart with useMemo for efficiency
   const dailyDates = useMemo(() => {
@@ -410,6 +413,7 @@ const Checkout = () => {
           payment_method: formData.payment_method,
           pickup_date: formData.pickup_type === "asap" ? null : formData.pickup_date,
           pickup_time_slot: formData.pickup_type === "asap" ? null : formData.pickup_time,
+          coupon_code: cart.coupon?.code || null,
           items: cart.items.map(item => ({
             item_id: item.id,
             name_snapshot: item.name,
@@ -517,9 +521,63 @@ const Checkout = () => {
                 
                 <Separator />
                 
+                {/* Coupon Section */}
+                <div className="space-y-2">
+                  {cart.coupon ? (
+                    <div className="flex items-center justify-between bg-green-50 dark:bg-green-950/20 p-3 rounded-lg border border-green-200 dark:border-green-800">
+                      <div>
+                        <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                          🎟️ Kupon: <span className="font-mono">{cart.coupon.code}</span>
+                        </p>
+                        <p className="text-xs text-green-600 dark:text-green-400">
+                          -{cart.coupon.discount_huf.toLocaleString()} Ft kedvezmény
+                        </p>
+                      </div>
+                      <Button variant="ghost" size="sm" onClick={removeCoupon} className="text-destructive">
+                        ✕
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Kupon kód"
+                        value={couponCode}
+                        onChange={(e) => setCouponCode(e.target.value)}
+                        className="uppercase font-mono"
+                      />
+                      <Button
+                        variant="outline"
+                        disabled={!couponCode.trim() || couponLoading}
+                        onClick={async () => {
+                          setCouponLoading(true);
+                          setCouponMessage(null);
+                          const result = await applyCoupon(couponCode);
+                          setCouponMessage({ success: result.success, text: result.message });
+                          if (result.success) setCouponCode("");
+                          setCouponLoading(false);
+                        }}
+                      >
+                        {couponLoading ? "..." : "Alkalmaz"}
+                      </Button>
+                    </div>
+                  )}
+                  {couponMessage && (
+                    <p className={`text-xs ${couponMessage.success ? 'text-green-600' : 'text-destructive'}`}>
+                      {couponMessage.text}
+                    </p>
+                  )}
+                </div>
+                
+                <Separator />
+                
                 <div className="flex justify-between items-center text-lg font-bold">
                   <span>Végösszeg:</span>
-                  <span className="text-primary">{cart.total.toLocaleString()} Ft</span>
+                  <div className="text-right">
+                    {cart.coupon && (
+                      <span className="text-sm line-through text-muted-foreground mr-2">{cart.total.toLocaleString()} Ft</span>
+                    )}
+                    <span className="text-primary">{cart.totalAfterDiscount.toLocaleString()} Ft</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -755,7 +813,7 @@ const Checkout = () => {
                           Rendelés leadása...
                         </>
                       ) : (
-                        `Rendelés leadása - ${cart.total.toLocaleString()} Ft`
+                        `Rendelés leadása - ${cart.totalAfterDiscount.toLocaleString()} Ft`
                       )}
                     </Button>
                   </div>

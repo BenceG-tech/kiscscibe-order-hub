@@ -14,7 +14,8 @@ import {
   FileText,
   Info,
   LayoutDashboard,
-  BarChart3
+  BarChart3,
+  Tag
 } from "lucide-react";
 
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
@@ -40,6 +41,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     { href: "/admin/legal", label: "Jogi oldalak", mobileLabel: "Jogi", icon: FileText, showBadge: false },
     { href: "/admin/about", label: "Rólunk", mobileLabel: "Rólunk", icon: Info, showBadge: false },
     { href: "/admin/analytics", label: "Statisztika", mobileLabel: "Stat.", icon: BarChart3, showBadge: false },
+    { href: "/admin/coupons", label: "Kuponok", mobileLabel: "Kupon", icon: Tag, showBadge: false },
   ];
 
   return (
