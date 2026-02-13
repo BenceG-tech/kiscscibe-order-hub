@@ -10,6 +10,7 @@ import DashboardAlerts from "@/components/admin/DashboardAlerts";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { ShoppingBag, Activity, Gauge, TrendingUp, Calendar, Package, ArrowRight, Mail, Loader2 } from "lucide-react";
+import AnnouncementEditor from "@/components/admin/AnnouncementEditor";
 
 interface Stats {
   todayOrders: number;
@@ -134,6 +135,9 @@ const Dashboard = () => {
             icon={TrendingUp}
           />
         </div>
+
+        {/* Announcement Editor */}
+        <AnnouncementEditor />
 
         {/* Recent Orders */}
         <RecentOrdersFeed />
