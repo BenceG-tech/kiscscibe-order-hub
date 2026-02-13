@@ -2,8 +2,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Star } from "lucide-react";
+import { useScrollFadeIn } from "@/hooks/useScrollFadeIn";
+import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
+import useEmblaCarousel from "embla-carousel-react";
+import { useCallback, useEffect, useState } from "react";
 
 const ReviewsSection = () => {
+  const { ref, isVisible } = useScrollFadeIn();
+  const isMobile = useIsMobile();
+
   const reviews = [
     {
       name: "Kovács János",
@@ -52,25 +60,46 @@ const ReviewsSection = () => {
   const averageRating = 4.7;
   const totalReviews = 127;
 
+  const [emblaRef, emblaApi] = useEmblaCarousel({ 
+    loop: true, 
+    align: 'start',
+    slidesToScroll: 1 
+  });
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  const onSelect = useCallback(() => {
+    if (!emblaApi) return;
+    setSelectedIndex(emblaApi.selectedScrollSnap());
+  }, [emblaApi]);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    emblaApi.on('select', onSelect);
+    return () => { emblaApi.off('select', onSelect); };
+  }, [emblaApi, onSelect]);
+
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
       <Star
         key={i}
-        className={`h-4 w-4 ${
+        className={cn(
+          "h-4 w-4 transition-all duration-300",
           i < rating
             ? "fill-yellow-400 text-yellow-400"
             : "fill-gray-200 text-gray-200"
-        }`}
+        )}
       />
     ));
   };
 
   const ReviewCard = ({ review, index }: { review: typeof reviews[0]; index: number }) => (
     <Card 
-      className={`rounded-3xl hover:shadow-xl hover:-translate-y-1 transition-all duration-300 shadow-soft relative overflow-hidden ${
-        index === 0 ? 'md:col-span-2 lg:col-span-1' : ''
-      }`}
-      style={{ animationDelay: `${index * 100}ms` }}
+      className={cn(
+        "rounded-3xl shadow-soft relative overflow-hidden tilt-card glow-border",
+        "transition-all duration-500",
+        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+      )}
+      style={{ transitionDelay: `${index * 120}ms` }}
     >
       {/* Quotation mark decoration */}
       <div className="absolute top-3 right-3 md:top-4 md:right-4 text-4xl md:text-6xl text-primary/10 font-serif leading-none pointer-events-none">
@@ -78,10 +107,9 @@ const ReviewsSection = () => {
       </div>
       
       <CardContent className="p-4 md:p-8">
-        {/* Header - compact single row on mobile */}
+        {/* Header */}
         <div className="flex items-center justify-between mb-2 md:mb-4 gap-2">
           <div className="flex items-center gap-2 md:gap-3 min-w-0">
-            {/* Avatar placeholder */}
             <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-primary/20 to-warmth/20 flex items-center justify-center text-primary font-bold text-xs md:text-sm flex-shrink-0">
               {review.name.split(' ').map(n => n[0]).join('')}
             </div>
@@ -112,7 +140,7 @@ const ReviewsSection = () => {
   );
 
   return (
-    <section className="py-8 md:py-20">
+    <section className="py-8 md:py-20" ref={ref}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-4 md:mb-12">
@@ -137,19 +165,40 @@ const ReviewsSection = () => {
           </p>
         </div>
 
-        {/* Mobile: vertical stack */}
-        <div className="md:hidden flex flex-col gap-3">
-          {reviews.slice(0, 3).map((review, index) => (
-            <ReviewCard key={index} review={review} index={index} />
-          ))}
-        </div>
-
-        {/* Desktop: 3-column grid */}
-        <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-6">
-          {reviews.slice(0, 3).map((review, index) => (
-            <ReviewCard key={index} review={review} index={index} />
-          ))}
-        </div>
+        {/* Mobile: Embla Carousel */}
+        {isMobile ? (
+          <div className="overflow-hidden" ref={emblaRef}>
+            <div className="flex gap-3">
+              {reviews.slice(0, 4).map((review, index) => (
+                <div key={index} className="flex-[0_0_85%] min-w-0">
+                  <ReviewCard review={review} index={index} />
+                </div>
+              ))}
+            </div>
+            {/* Dot indicators */}
+            <div className="flex justify-center gap-2 mt-4">
+              {reviews.slice(0, 4).map((_, index) => (
+                <button
+                  key={index}
+                  className={cn(
+                    "w-2 h-2 rounded-full transition-all duration-300",
+                    selectedIndex === index 
+                      ? "bg-primary w-6" 
+                      : "bg-muted-foreground/30"
+                  )}
+                  onClick={() => emblaApi?.scrollTo(index)}
+                />
+              ))}
+            </div>
+          </div>
+        ) : (
+          /* Desktop: 3-column grid */
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
+            {reviews.slice(0, 3).map((review, index) => (
+              <ReviewCard key={index} review={review} index={index} />
+            ))}
+          </div>
+        )}
 
         {/* CTA */}
         <div className="text-center mt-8 md:mt-12">
@@ -159,9 +208,10 @@ const ReviewsSection = () => {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button 
               onClick={() => document.getElementById('napi-ajanlat')?.scrollIntoView({ behavior: 'smooth' })}
-              className="bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm text-primary-foreground font-semibold px-6 py-3"
+              className="bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm text-primary-foreground font-semibold px-6 py-3 relative overflow-hidden group"
             >
-              Napi menü megtekintése
+              <span className="relative z-10">Napi menü megtekintése</span>
+              <div className="absolute inset-0 shimmer-btn opacity-0 group-hover:opacity-100 transition-opacity" />
             </Button>
             <Button
               variant="outline"

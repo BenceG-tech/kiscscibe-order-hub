@@ -8,6 +8,9 @@ const DailyMenuSection = () => {
           <h2 className="text-2xl md:text-3xl font-sofia font-bold text-foreground">
             Mai ajánlatunk
           </h2>
+          <p className="text-sm md:text-base text-muted-foreground mt-1">
+            Válassz napot a heti menü megtekintéséhez
+          </p>
         </div>
         <UnifiedDailySection />
       </div>

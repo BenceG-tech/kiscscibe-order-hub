@@ -30,6 +30,7 @@ import {
   ChevronDown
 } from "lucide-react";
 import ImageUpload from "@/components/admin/ImageUpload";
+import AIBatchImageGenerator from "@/components/admin/AIBatchImageGenerator";
 
 interface MenuCategory {
   id: string;
@@ -449,6 +450,12 @@ const MenuItemManagement = () => {
             Új étel
           </Button>
         </div>
+
+        {/* AI Batch Image Generator */}
+        <AIBatchImageGenerator
+          items={menuItems.map(item => ({ id: item.id, name: item.name, image_url: item.image_url || null }))}
+          onComplete={fetchData}
+        />
 
         {/* Search and Filter Section */}
         <Card className="p-6">
