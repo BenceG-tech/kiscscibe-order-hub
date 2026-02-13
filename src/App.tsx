@@ -16,6 +16,7 @@ import Auth from "./pages/Auth";
 import Checkout from "./pages/Checkout";
 import OrderConfirmation from "./pages/OrderConfirmation";
 import Gallery from "./pages/Gallery";
+import AdminDashboard from "./pages/admin/Dashboard";
 import AdminOrders from "./pages/admin/Orders";
 import AdminMenu from "./pages/admin/Menu";
 import AdminMenuSchedule from "./pages/admin/MenuSchedule";
@@ -69,6 +70,11 @@ const App = () => (
               } />
               
               {/* Admin routes - full access */}
+              <Route path="/admin" element={
+                <ProtectedRoute requireAdmin>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } />
               <Route path="/admin/orders" element={
                 <ProtectedRoute requireAdmin>
                   <AdminOrders />
