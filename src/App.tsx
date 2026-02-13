@@ -25,6 +25,7 @@ import AdminCapacity from "./pages/admin/Capacity";
 import AdminGallery from "./pages/admin/Gallery";
 import AdminLegalPages from "./pages/admin/LegalPages";
 import AdminAboutPage from "./pages/admin/AboutPage";
+import AdminAnalytics from "./pages/admin/Analytics";
 import StaffOrders from "./pages/staff/StaffOrders";
 import Impresszum from "./pages/legal/Impresszum";
 import PrivacyPolicy from "./pages/legal/PrivacyPolicy";
@@ -113,6 +114,11 @@ const App = () => (
               <Route path="/admin/about" element={
                 <ProtectedRoute requireAdmin>
                   <AdminAboutPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/analytics" element={
+                <ProtectedRoute requireAdmin>
+                  <AdminAnalytics />
                 </ProtectedRoute>
               } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
