@@ -16,9 +16,10 @@ interface GalleryImage {
 interface InteriorGalleryProps {
   compact?: boolean;
   noHeader?: boolean;
+  maxImages?: number;
 }
 
-const InteriorGallery = ({ compact = false, noHeader = false }: InteriorGalleryProps) => {
+const InteriorGallery = ({ compact = false, noHeader = false, maxImages }: InteriorGalleryProps) => {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const { data: images = [], isLoading } = useQuery({
@@ -84,6 +85,7 @@ const InteriorGallery = ({ compact = false, noHeader = false }: InteriorGalleryP
           images={images}
           onImageClick={setLightboxIndex}
           compact={compact}
+          maxImages={maxImages}
         />
       </div>
 

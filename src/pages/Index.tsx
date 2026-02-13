@@ -9,7 +9,7 @@ import AllergenSection from "@/components/sections/AllergenSection";
 import MapSection from "@/components/sections/MapSection";
 import FAQSection from "@/components/sections/FAQSection";
 import NewsletterSection from "@/components/sections/NewsletterSection";
-import StickyMobileCTA from "@/components/StickyMobileCTA";
+import MobileBottomNav from "@/components/MobileBottomNav";
 import Footer from "@/components/Footer";
 
 const Index = () => {
@@ -39,7 +39,7 @@ const Index = () => {
         </div>
       </main>
       <Footer />
-      <StickyMobileCTA />
+      <MobileBottomNav />
       
       {/* Mobil sticky CTA-hoz helykitöltés */}
       <div className="h-20 md:h-0"></div>
