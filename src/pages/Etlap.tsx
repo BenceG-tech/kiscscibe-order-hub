@@ -452,6 +452,7 @@ const Etlap = () => {
         mainItemName={pendingCartItem?.item_name || ""}
         mainItemRequiresSideSelection={false}
         onSideSelected={handleSideSelected}
+        dailyOfferId={dailyData?.offer_id}
       />
 
       {/* Lightbox for Facebook image */}

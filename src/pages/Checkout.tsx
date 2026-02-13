@@ -406,7 +406,7 @@ const Checkout = () => {
         body: {
           customer: {
             name: formData.name,
-            phone: formData.phone,
+            phone: `+36${formData.phone.replace(/\s/g, '')}`,
             email: formData.email,
             notes: formData.notes || null
           },
@@ -607,14 +607,24 @@ const Checkout = () => {
                     
                     <div>
                       <Label htmlFor="phone">Telefonszám *</Label>
-                      <Input
-                        id="phone"
-                        type="tel"
-                        value={formData.phone}
-                        onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                        required
-                        placeholder="+36 XX XXX XXXX"
-                      />
+                      <div className="flex">
+                        <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm font-medium">
+                          +36
+                        </span>
+                        <Input
+                          id="phone"
+                          type="tel"
+                          value={formData.phone}
+                          onChange={(e) => {
+                            // Only allow digits and spaces
+                            const val = e.target.value.replace(/[^\d\s]/g, '');
+                            setFormData(prev => ({ ...prev, phone: val }));
+                          }}
+                          required
+                          placeholder="20 123 4567"
+                          className="rounded-l-none"
+                        />
+                      </div>
                     </div>
                     
                     <div>
