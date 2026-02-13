@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, Phone, ShoppingCart } from "lucide-react";
+import { Menu, ShoppingCart, Facebook } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { CartDialog } from "@/components/CartDialog";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -90,9 +90,9 @@ const ModernNavigation = () => {
                 className="border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300"
                 asChild
               >
-                <a href="tel:+3612345678" className="inline-flex items-center gap-2">
-                  <Phone className="h-4 w-4" />
-                  <span className="hidden sm:inline">Hívás</span>
+                <a href="https://www.facebook.com/kiscsibeetteremXIV/?locale=hu_HU" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2">
+                  <Facebook className="h-4 w-4" />
+                  <span className="hidden sm:inline">Facebook</span>
                 </a>
               </Button>
             </div>
@@ -226,9 +226,9 @@ const ModernNavigation = () => {
                         className="w-full border-primary text-primary hover:bg-primary hover:text-primary-foreground"
                         asChild
                       >
-                        <a href="tel:+3612345678" className="inline-flex items-center gap-2">
-                          <Phone className="h-4 w-4" />
-                          Hívás: +36 1 234 5678
+                        <a href="https://www.facebook.com/kiscsibeetteremXIV/?locale=hu_HU" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2">
+                          <Facebook className="h-4 w-4" />
+                          Facebook
                         </a>
                       </Button>
                     </div>
