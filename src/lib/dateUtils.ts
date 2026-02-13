@@ -1,4 +1,6 @@
-import { addDays, getDay, setHours, setMinutes, setSeconds, setMilliseconds } from "date-fns";
+import { addDays, getDay, setHours, setMinutes, setSeconds, setMilliseconds, startOfWeek, differenceInCalendarWeeks } from "date-fns";
+
+// ... keep existing code (getSmartInitialDate, isAfterClosingHours, getNextBusinessDay, shouldShowTomorrowContent, getContentLabel)
 
 /**
  * Get the appropriate initial date for calendar display based on current time and business hours
@@ -103,4 +105,14 @@ export const getContentLabel = (selectedDate: Date): { title: string; isAdvanced
   }
   
   return { title: "Napi ajánlatok", isAdvanced: false };
+};
+
+/**
+ * Calculate the week offset between selectedDate and today (Monday-based weeks)
+ */
+export const getWeekOffset = (selectedDate: Date): number => {
+  const today = new Date();
+  const todayWeekStart = startOfWeek(today, { weekStartsOn: 1 });
+  const selectedWeekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
+  return differenceInCalendarWeeks(selectedWeekStart, todayWeekStart, { weekStartsOn: 1 });
 };
