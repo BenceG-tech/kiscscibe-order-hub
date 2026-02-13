@@ -1,67 +1,64 @@
 
-# Rolunk admin szerkeszto javitas, telefonszam eltavolitas es kozossegi media linkek
+# PromoSection Premium Atalakitas + Facebook URL javitas
 
-## 1. Kritikus hiba: A Rolunk oldal nem toltodik be a frontendon
+## 1. Facebook URL javitas
 
-A `settings` tabla RLS szabalya csak `legal_%` kulcsu bejegyzesek olvasasat engedelyezi a publikus felhasznaloknak. Az `about_page` kulcs NEM olvashatoo bejelentkezes nelkul, ezert a Rolunk oldal mindig a fallback tartalmat mutatja.
+Az osszes fajlban `https://www.facebook.com/kiscsibeetteremXIV/?locale=hu_HU` lecserelese `https://www.facebook.com/kiscsibeetteremXIV`-re:
+- `src/components/ModernNavigation.tsx` (2 helyen)
+- `src/components/Footer.tsx` (1 helyen)
+- `src/components/contact/ContactInfo.tsx` (1 helyen)
 
-**Javitas:** Uj RLS policy hozzaadasa, amely lehetove teszi az `about_page` kulcs publikus olvasasat.
+## 2. PromoSection premium atalakitas
 
-```sql
-CREATE POLICY "Public can read about page settings"
-ON public.settings
-FOR SELECT
-USING (key = 'about_page');
+A jelenlegi egyszeru flex-row banner atalakitasa egy vizualis, figyelemfelkelto promocioos szekcioova:
+
+### Uj design elemek
+
+- **Hatter kep**: A `hungarian-soup.jpg` kep (mar letezik az assets-ben) blur-rel es 50% opacity-vel hatterkent
+- **Gradient overlay**: Hero-stilus gradient szovegdoboz a kep folott
+- **Visszaszamlalo**: "Mai ajanlat meg X ora Y percig!" -- 16:00-ig (zarasig) szamol vissza, csak hetfotol pentekig jelenik meg
+- **Athuzott ar**: A menuar mellett egy magasabb "eredeti ar" athuzva (menu_price + 500 Ft mint "eredeti ar" az erzekelt ertek novelesere)
+- **Pulsalo szegely**: CSS `animate-pulse` glow effektus a keret korul
+- **Responsive**: Mobilon vertikalis elrendezes, desktopon horizontalis
+
+### Technikai megvalositás
+
+**Uj keyframe a tailwind.config.ts-ben:**
+```
+"glow-pulse": {
+  "0%, 100%": { boxShadow: "0 0 15px hsl(var(--primary) / 0.3)" },
+  "50%": { boxShadow: "0 0 30px hsl(var(--primary) / 0.6)" }
+}
 ```
 
-## 2. Telefonszam es "Hivas" gomb eltavolitasa mindenhonnan
+**Visszaszamlalo logika:**
+- `useState` + `useEffect` + `setInterval` (1 percenkent frissul)
+- 16:00-hoz (zarashoz) kepest szamol vissza
+- Hetvegen es zarasi ido utan nem jelenik meg
+- Tiszta CSS animacio, nincs kulon konyvtar
 
-Az alabbi fajlokbol kell eltavolitani a telefonszamot es a hivas gombot:
+**Ar megjelenites:**
+- Valos ar: a `get_daily_data` RPC-bol (jelenlegi logika megmarad)
+- "Eredeti ar": valos ar + 500 Ft, athuzott stilussal
 
-| Fajl | Mit kell eltavolitani |
-|------|----------------------|
-| `src/components/ModernNavigation.tsx` | Desktop: "Hivas" gomb (87-97. sor), Mobil menu: "Hivas" gomb (224-233. sor) |
-| `src/components/StickyMobileCTA.tsx` | Telefon ikon gomb (17-26. sor) -- a "Rendelj most" gomb marad egyedul |
-| `src/components/TopOrderBar.tsx` | "Hivas" gomb (27-37. sor) |
-| `src/components/Footer.tsx` | Mobil: telefon sor (114-119. sor), Desktop: telefon sor (209-214. sor) |
-| `src/components/contact/ContactInfo.tsx` | Telefon sor (36-40. sor) |
+**Hatter kep:**
+- `hungarian-soup.jpg` betoltese a meglevo assets-bol
+- CSS `blur(8px)` + `opacity-50` a hatteren
+- GPU-gyorsitott: `transform: translateZ(0)` a blur retegre
 
-A `Phone` import is eltavolitando ahol mar nem kell. A rendelesi form telefonszam mezo (`Checkout.tsx`) es a staff/admin rendelesi oldalakon levo telefon (`KanbanOrderCard`, `OrdersManagement`, `StaffOrders`) MARAD, mert az a vendeg telefonszama a rendeleshez.
+### Modositando fajlok
 
-## 3. Kozossegi media linkek hozzaadasa
+| Fajl | Valtozas |
+|------|----------|
+| `src/components/sections/PromoSection.tsx` | Teljes ujrairas: hatterkep, gradient overlay, countdown, athuzott ar, pulsalo szegely |
+| `tailwind.config.ts` | `glow-pulse` keyframe + animation hozzaadasa |
+| `src/components/ModernNavigation.tsx` | Facebook URL javitas (2 helyen) |
+| `src/components/Footer.tsx` | Facebook URL javitas |
+| `src/components/contact/ContactInfo.tsx` | Facebook URL javitas |
 
-Harom helyre kerulnek social ikonok (Facebook, Instagram, TikTok):
-
-### a) Footer -- uj "Kovess minket" szekció
-- A mobil es desktop footer-be egyarant
-- Facebook: aktiv link (`https://www.facebook.com/kiscsibeetteremXIV/?locale=hu_HU`)
-- Instagram es TikTok: ikonok megjelennek de `#` link-kel (kesobb frissitheto)
-
-### b) Kapcsolat oldal (`ContactInfo.tsx`)
-- A telefonszam helyere kozossegi media ikonok kerulnek
-
-### c) Navigacio mobil menu
-- A hivas gomb helyere Facebook ikon kerul
-
-## 4. Technikai reszletek
-
-### Uj fuggoseg: NEM szukseges
-A Lucide React csomag tartalmazza a `Facebook`, `Instagram` ikonokat. A TikTok-hoz egyedi SVG ikon kell, mert a lucide-react nem tartalmazza.
-
-### Modositando fajlok osszefoglalasa
-
-1. **Migracios SQL** -- uj RLS policy az `about_page` publikus olvasasahoz
-2. **`src/components/ModernNavigation.tsx`** -- hivas gombok eltavolitasa (desktop + mobil), Facebook ikon hozzaadasa a mobil menuhoz
-3. **`src/components/StickyMobileCTA.tsx`** -- telefon gomb eltavolitasa, csak "Rendelj most" marad
-4. **`src/components/TopOrderBar.tsx`** -- hivas gomb eltavolitasa
-5. **`src/components/Footer.tsx`** -- telefon sorok eltavolitasa, "Kovess minket" szekció hozzaadasa social ikonokkal
-6. **`src/components/contact/ContactInfo.tsx`** -- telefon sor eltavolitasa, social ikonok hozzaadasa
-7. **`src/components/sections/HeroSection.tsx`** -- NEM modosul (nincs benne telefon)
-
-### Nem modosul (megorzes)
-- `src/pages/Checkout.tsx` -- vendeg telefonszam mezo marad
-- `src/components/staff/KanbanOrderCard.tsx` -- rendelesi telefon marad
-- `src/pages/admin/OrdersManagement.tsx` -- rendelesi telefon marad
-- `src/pages/staff/StaffOrders.tsx` -- rendelesi telefon marad
-- `src/components/admin/AboutPageEditor.tsx` -- mar kesz, nem modosul
-- `src/pages/About.tsx` -- nem modosul (a RLS fix utan automatikusan mukodni fog)
+### Megorzendo funkcionalitas
+- A `get_daily_data` RPC hivas es dinamikus ar megmarad
+- Az `/etlap` CTA link megmarad
+- Az elviteli es diak kedvezmeny badge-ek megmaradnak (atformazza gradient stilusba)
+- Dark mode teljes tamogatas a CSS valtozok hasznalataval
+- Semmi rendelesi/kosar/checkout funkcio nem valtozik
