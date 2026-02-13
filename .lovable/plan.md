@@ -1,153 +1,86 @@
 
 
-# Phase 3: Kapacitas- es Idosavkezeles Fejlesztes
+# Kettős fejlesztés: Naptár mobilos javítás + Staff KDS bővítés
 
-## Osszefoglalas
+## Probléma 1: Naptár mobilon elcsúszik + nem egyértelmű a hétváltás
 
-A jelenlegi rendszer alapvetoen mukodik, de tul egyszeru: minden slot max_orders=8 alapertelmezettel jon letre, a beallitasok csak localStorageben elnek, es nincs sablon-rendszer, zarolt datumok, vagy ugyfeloldali kapacitas-jelzes. A fejlesztes ezt egy teljes erteku kapacitaskezelo rendszerre boviti.
+A screenshotokon látható, hogy a "HÉTFŐ" felirat bal oldalon levágódik, és péntek délután 6-kor a felhasználó egy üres hetet néz anélkül, hogy egyértelmű lenne, hogy a következő hétre kell navigálni.
 
----
+### Javítások
 
-## 1. Adatbazis modositasok (migracio)
+**a) WeeklyDateStrip mobilos méretezés**
+- A `min-w-[56px]` túl széles 5 cellánál kis kijelzőn (5x56 = 280px + gap + nyilak = túlcsordulás)
+- Csökkentés: `min-w-[48px]` mobilon, `md:min-w-[72px]` desktopon
+- A napnevek rövidítése mobilon: "H", "K", "SZE", "CS", "P" (jelenleg "Hétfő", "Kedd", stb.)
+- A gap csökkentése: `gap-1` mobilon
 
-### a) Uj tabla: `capacity_templates`
-Tarolt sablonok az idoslotokhoz (pl. "Standard het", "Nyari idoszak", "Unnep").
+**b) Automatikus hétváltás zárás után**
+- A `getSmartInitialDate()` (dateUtils.ts) már jól működik: péntek 15:00 után hétfőre ugrik
+- DE a `WeeklyDateStrip` mindig `weekOffset=0`-ról indul, ami az aktuális hetet mutatja
+- Javítás: ha a `selectedDate` (ami a smart date) a következő hétre esik, a `weekOffset` automatikusan 1-gyel induljon
+- A `useEffect`-ben kiszámoljuk: ha a selectedDate nem az aktuális héten van, weekOffset = megfelelő offset
 
-| Oszlop | Tipus | Leiras |
-|--------|-------|--------|
-| id | uuid PK | |
-| name | text NOT NULL | Sablon neve (pl. "Alap het") |
-| description | text | Rovid leiras |
-| slots | jsonb NOT NULL | `[{"time":"07:00","capacity":20},...]` |
-| is_default | boolean DEFAULT false | Alapertelmezett sablon |
-| created_at | timestamptz DEFAULT now() | |
-| updated_at | timestamptz DEFAULT now() | |
+**c) "Következő hét" vizuális jelzés**
+- Ha az aktuális hét minden napja "múltbeli" (isPast), egy banner jelenik meg a naptár alatt: "Ez a hét lezárult. Nézd meg a következő hét menüjét!" egy feltűnő nyíl gombbal
+- A jobb oldali ChevronRight gomb kap egy pulzáló animációt ha az aktuális hét "üres" (nincs jövőbeli nap)
 
-RLS: Admin CRUD, nincs publikus hozzaferes.
+## Probléma 2: Staff KDS fejlesztések
 
-### b) Uj tabla: `blackout_dates`
-Elore jelzett zarasi napok (unnep, felujitas stb.).
+A jelenlegi KDS működik (Kanban oszlopok, swipe, hangjelzések), de hiányzik néhány fontos segédeszköz a személyzet számára.
 
-| Oszlop | Tipus | Leiras |
-|--------|-------|--------|
-| id | uuid PK | |
-| date | date NOT NULL UNIQUE | A zarolt datum |
-| reason | text | Ok (pl. "Karacsonyi szunet") |
-| created_at | timestamptz DEFAULT now() | |
+### Új elemek a Staff oldalon
 
-RLS: Admin INSERT/UPDATE/DELETE, publikus SELECT (ugyfeloldal is latja).
+**a) Napi összesítő sáv (a StatusSummaryBar fölé)**
+Egy kompakt info-sor 3-4 adattal:
+- **Mai rendelések:** darabszám (csak completed + active, nem cancelled)
+- **Aktív most:** new + preparing + ready összesítve
+- **Következő átvétel:** a legközelebbi pickup_time countdown ("12:15 — 8 perc múlva"), vagy "Nincs" ha üres
+- Minden 30 másodpercben frissül (a meglévő tick timer-rel)
 
-### c) `capacity_slots` tabla bovitese
-- Uj oszlop: `buffer_minutes` (integer DEFAULT 0) -- konyhai szunet az idoslot utan
+**b) Tételösszesítő (Items to Prepare)**
+- Új összecsukható szekció a Kanban oszlopok felett
+- Aggregálja a `new` + `preparing` státuszú rendelések tételeit: "14x Gulyásleves, 8x Rántott csirke, 6x Túrós rétes"
+- Segít a konyhai batch-főzés tervezésében
+- Alapból összecsukott állapotban (nem foglal helyet)
 
-### d) Kapacitas beallitasok mentes: `settings` tabla
-A jelenlegi localStorage-alapu beallitasokat (warning_threshold, default_daily_capacity) a meglevo `settings` tablaba mentjuk `key = 'capacity_settings'` bejegyzessel. Ehhez kell egy uj RLS policy a `settings` tablara, hogy az admin irni is tudja a `capacity_settings` kulcsot.
+**c) Pickup idő szerinti rendezés**
+- Az aktív rendelések a `pickup_time` szerint rendezettek (legkorábbi elöl), nem a `created_at` szerint
+- Ha nincs pickup_time, a created_at a fallback
 
-### e) INSERT policy a `capacity_slots` tablara
-Jelenleg a tablara NEM lehet INSERT-et futtatni RLS-en keresztul. Hozzaadjuk:
-- Admin can insert capacity slots (is_admin(auth.uid()))
-- Admin can delete capacity slots (is_admin(auth.uid()))
-
----
-
-## 2. Sablon-rendszer (Template System)
-
-### Admin felulet
-- A Kapacitas tabon uj szekci: "Sablonok"
-- Sablonok listaja kartyakban: nev, idoslotok szama, utolso hasznalat
-- "Uj sablon" gomb: nev + idoslotok megadasa (ugyanaz az UI, mint a jelenlegi beallitasok dialog)
-- "Sablon alkalmazasa erre a napra" gomb: a kivalasztott napra bemasolja a sablon slotjait
-- "Sablon alkalmazasa az egesz hetre" gomb: hetfo-pentekre (vagy hetfo-szombat) egyszerre alkalmazza
-- "Jelenlegi nap mentese sablonkent" gomb: a kivalasztott nap meglevo slotjait uj sablonkent menti
-- Egy sablon megjelolheto "alapertelmezettkent" -- ez lesz a gyors "Alapertelmezett" gomb mogotti sablon
-
-### Mukodes
-- A sablonok a `capacity_templates` tablabol jonnek
-- Alkalmazaskor: torolji a nap meglevo slotjait, beszurja a sablon slotjait
+### Ami NEM változik a Staff oldalon
+- Nem lát bevételi adatokat (total_huf marad a kártyákon, de nincs összesítő)
+- Nem lát email címet (csak telefon)
+- Nem lát analytics/menu szerkesztést
+- A KDS kártya mérete, színkódolás, gombok nem változnak
 
 ---
 
-## 3. Zarolt datumok (Blackout Dates)
+## Technikai részletek
 
-### Admin felulet
-- A Kapacitas tabon uj szekci: "Zarolt napok"
-- Naptar nezet, ahol a zarolt napok pirossal jeloltek
-- "Nap zarolasa" gomb: datum + ok megadasa
-- "Zarolas torlese" gomb a mar zarolt napokon
-- Lista nezet: kozelgo zarolt napok tablazata (datum, ok, torles gomb)
+### Módosítandó fájlok
 
-### Ugyfeloldal
-- A Checkout idopont-valasztoban a zarolt napok nem jelennek meg (szurodnek)
-- A napi ajanlat naptar nezeten a zarolt napok szurkek es "Zarva" felirattal jelennek meg
-
----
-
-## 4. Slot nepszerusegi indikator (Heat Coloring)
-
-### Mukodes
-- A meglevo `capacity_slots` tabla `booked_orders` adatabol szamolhato a torteneti nepszeruseg
-- Minden slothoz lekerjuk az elmult 4 het ugyanazon napjanak es idopontjanak atlagos kihasznalattsagat
-- 3 szint: hideg (kek/zold, <40%), kozepes (sarga, 40-70%), forro (piros, >70%)
-
-### Admin felulet
-- Az idoslot kartyakon egy kis "szikra" ikon es szin jelzi a torteneti nepszeruseget
-- Tooltip: "Az elmult 4 hetben atlagosan 65%-ban foglalt volt"
-
----
-
-## 5. Buffer ido (Kitchen Breathing Room)
-
-### Admin felulet
-- Az idoslot szerkeszto dialogban uj mezo: "Szunet utana (perc)" -- 0, 5, 10, 15 perc valasztas
-- A sablonokban is tarolhato a buffer
-
-### Ugyfeloldal
-- A Checkout-ban a buffer-rel rendelkezo slotok koze nem kerul uj slot
-- Peldaul ha 11:30 slotnak 10 perc buffer van, a 11:40 slot nem jelenik meg
-
----
-
-## 6. Ugyfeloldali kapacitas-jelzes
-
-### Checkout oldalon
-- Minden idopont melle szines jelzes:
-  - Zold: <50% foglalt (sok hely)
-  - Sarga + "Majdnem tele!": 80%+ foglalt
-  - Piros + "Tele": 100% foglalt (nem valaszthato, kisurkul)
-- A jelzesek a `capacity_slots.booked_orders / max_orders` aranybol szamolodnak
-- Ha nincs capacity_slots bejegyzes, az alapertelmezett 8-as kapacitas ervenyesul
-
----
-
-## 7. Modositando fajlok
-
-| Fajl | Valtozas |
+| Fájl | Változás |
 |------|----------|
-| `src/components/admin/CapacityManagement.tsx` | ATIRAS: sablon-rendszer, zarolt datumok, heat coloring, buffer, beallitasok DB-be mentes |
-| `src/pages/Checkout.tsx` | Kapacitas-jelzes a slot-valasztoban, zarolt datumok szurese |
-| `src/App.tsx` | NEM modosul |
-| `src/pages/admin/AdminLayout.tsx` | NEM modosul |
+| `src/components/WeeklyDateStrip.tsx` | Mobilos méretezés javítás, rövidebb napnevek, auto weekOffset számítás, "következő hét" jelzés |
+| `src/lib/dateUtils.ts` | Új segédfüggvény: `getWeekOffset(selectedDate)` — kiszámolja hogy a selectedDate melyik hétre esik az aktuálishoz képest |
+| `src/pages/staff/StaffOrders.tsx` | Napi összesítő sáv, tételösszesítő szekció, pickup_time szerinti rendezés |
+| `src/components/staff/StatusSummaryBar.tsx` | NEM változik (megmarad ahogy van) |
 
-### Uj fajlok: NINCS
-A teljes funkcionalitas a meglevo `CapacityManagement.tsx` komponensbe es a `Checkout.tsx`-be epul be.
+### Új fájlok
 
----
+| Fájl | Leírás |
+|------|--------|
+| `src/components/staff/DailyStaffSummary.tsx` | Napi összesítő sáv: rendelésszám, aktív, következő átvétel |
+| `src/components/staff/ItemsToPrepareSummary.tsx` | Összecsukható tételösszesítő lista |
 
-## 8. Kihagyott funkciok (indoklassal)
+### Adatforrások
+- Minden adat a már meglévő `orders` + `order_items` lekérdezésekből jön (StaffOrders.tsx már lekéri ezeket)
+- Nincs új Supabase query szükséges — az aggregáció frontenden történik a meglévő adatokból
 
-- **Drag-and-drop vizualis naptar (Google Calendar stilus)**: Tul komplex fejlesztes, uj konyvtarat igenyel (pl. react-big-calendar). A jelenlegi slot-lista + sablon-rendszer a gyakorlatban ugyanazt eri el kevesebb komplexitassal.
-- **Varolista (Waitlist)**: Kulon tabrat, email/SMS ertesitest es ugyfeloldali feluletet igenyel. Kesobbi fazisra javasolt.
-- **Dinamikus kapacitas (automatikus novelés/csokkentes)**: Gepi tanulast vagy komplex heurisztikat igenyel. Helyette a heat coloring adja az informaciot, az admin dontes alapjan modosithat.
-- **Overbooking/rejection rate**: Nincs log arrol, mikor probalt valaki tele slotot valasztani. Kesobbi fazisban loggolhato.
-
----
-
-## 9. Nem modosul (megorzes)
-
-- Rendelesi/kosar logika (a submit-order edge function nem valtozik)
-- Staff KDS oldal
-- Menu szerkesztes
-- Dashboard es Analytics
-- Meglevo RLS szabalyok (csak ujak jonnek hozza)
-- Az `update_daily_portions` RPC (ez a napi ajanlat adagszamot kezeli, nem a capacity_slots-ot)
+### Nem módosul
+- Rendelési/kosár/checkout logika
+- Admin dashboard/analytics
+- KDS kártya design és gombok
+- Backend/edge function-ok
+- Adatbázis séma
 
