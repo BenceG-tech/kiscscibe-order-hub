@@ -90,7 +90,7 @@ const ModernNavigation = () => {
                 className="border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300"
                 asChild
               >
-                <a href="https://www.facebook.com/kiscsibeetteremXIV/?locale=hu_HU" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2">
+                <a href="https://www.facebook.com/kiscsibeetteremXIV" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2">
                   <Facebook className="h-4 w-4" />
                   <span className="hidden sm:inline">Facebook</span>
                 </a>
@@ -226,7 +226,7 @@ const ModernNavigation = () => {
                         className="w-full border-primary text-primary hover:bg-primary hover:text-primary-foreground"
                         asChild
                       >
-                        <a href="https://www.facebook.com/kiscsibeetteremXIV/?locale=hu_HU" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2">
+                        <a href="https://www.facebook.com/kiscsibeetteremXIV" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2">
                           <Facebook className="h-4 w-4" />
                           Facebook
                         </a>

@@ -157,6 +157,11 @@ export default {
         "subtle-zoom": {
           "0%": { transform: "scale(1.05)" },
           "100%": { transform: "scale(1)" }
+        },
+        // Promo glow pulse
+        "glow-pulse": {
+          "0%, 100%": { boxShadow: "0 0 15px hsl(var(--primary) / 0.3)" },
+          "50%": { boxShadow: "0 0 30px hsl(var(--primary) / 0.6)" }
         }
       },
       animation: {
@@ -170,6 +175,7 @@ export default {
         "slide-in-right": "slide-in-right 0.3s ease-out",
         "slide-out-right": "slide-out-right 0.3s ease-out",
         "subtle-zoom": "subtle-zoom 8s ease-out forwards",
+        "glow-pulse": "glow-pulse 2s ease-in-out infinite",
         
         // Combined Animations
         "enter": "fade-in 0.6s ease-out, scale-in 0.4s ease-out",
