@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import StaffLayout from "./StaffLayout";
 import KanbanColumn from "@/components/staff/KanbanColumn";
 import StatusSummaryBar from "@/components/staff/StatusSummaryBar";
+import DailyStaffSummary from "@/components/staff/DailyStaffSummary";
+import ItemsToPrepareSummary from "@/components/staff/ItemsToPrepareSummary";
 import PastOrdersSection from "@/components/staff/PastOrdersSection";
 import { LoadingSpinner } from "@/components/ui/loading";
 import { Button } from "@/components/ui/button";
@@ -241,10 +243,17 @@ const StaffOrders = () => {
   };
 
   // ── Derived data ──
+  // Sort by pickup_time (earliest first), fallback to created_at
+  const sortByPickup = (a: Order, b: Order) => {
+    const aTime = a.pickup_time ? new Date(a.pickup_time).getTime() : new Date(a.created_at).getTime();
+    const bTime = b.pickup_time ? new Date(b.pickup_time).getTime() : new Date(b.created_at).getTime();
+    return aTime - bTime;
+  };
+
   const activeByStatus = (status: string) =>
     orders
       .filter((o) => o.status === status)
-      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      .sort(sortByPickup);
 
   const pastOrders = orders.filter((o) => ["completed", "cancelled"].includes(o.status));
   const newOrders = activeByStatus("new");
@@ -272,7 +281,13 @@ const StaffOrders = () => {
 
   return (
     <StaffLayout>
-      <div className="space-y-4 pb-8">
+      <div className="space-y-3 pb-8">
+        {/* Daily summary */}
+        <DailyStaffSummary orders={orders} tick={tick} />
+
+        {/* Items to prepare */}
+        <ItemsToPrepareSummary orders={orders} />
+
         {/* Sticky Summary Bar */}
         <div className="sticky top-[calc(env(safe-area-inset-top,0px)+56px+48px)] z-30 bg-background border-b">
           <StatusSummaryBar
