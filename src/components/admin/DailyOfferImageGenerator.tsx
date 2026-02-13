@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { format, addDays, startOfWeek, getDay } from "date-fns";
 import { hu } from "date-fns/locale";
-import { Download, Image as ImageIcon, Upload, Trash2, Loader2, Calendar } from "lucide-react";
+import { Download, Image as ImageIcon, Upload, Trash2, Loader2, Calendar, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -42,9 +42,9 @@ function formatPrice(price: number): string {
   return `${price},-`;
 }
 
-function getWeekDates(): string[] {
+function getWeekDates(offset: number = 0): string[] {
   const now = new Date();
-  const monday = startOfWeek(now, { weekStartsOn: 1 });
+  const monday = addDays(startOfWeek(now, { weekStartsOn: 1 }), offset * 7);
   const dates: string[] = [];
   for (let i = 0; i < 5; i++) {
     dates.push(format(addDays(monday, i), "yyyy-MM-dd"));
@@ -56,12 +56,34 @@ const DailyOfferImageGenerator = () => {
   const isMobile = useIsMobile();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [weekOffset, setWeekOffset] = useState(0);
   const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
   const [dayData, setDayData] = useState<DayData | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
-  const weekDates = getWeekDates();
+  const weekDates = getWeekDates(weekOffset);
+
+  const weekStart = new Date(weekDates[0] + "T00:00:00");
+  const weekEnd = new Date(weekDates[4] + "T00:00:00");
+  const weekLabel = `${format(weekStart, "MMM d.", { locale: hu })} – ${format(weekEnd, "MMM d.", { locale: hu })}`;
+
+  const handlePrevWeek = () => {
+    setWeekOffset(w => w - 1);
+    const prev = getWeekDates(weekOffset - 1);
+    setSelectedDate(prev[0]);
+  };
+
+  const handleNextWeek = () => {
+    setWeekOffset(w => w + 1);
+    const next = getWeekDates(weekOffset + 1);
+    setSelectedDate(next[0]);
+  };
+
+  const handleCurrentWeek = () => {
+    setWeekOffset(0);
+    setSelectedDate(format(new Date(), "yyyy-MM-dd"));
+  };
 
   const fetchDayData = useCallback(async (dateStr: string) => {
     setLoading(true);
@@ -376,7 +398,24 @@ const DailyOfferImageGenerator = () => {
             Nap kiválasztása
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
+          {/* Week navigation */}
+          <div className="flex items-center justify-between gap-2">
+            <Button variant="ghost" size="icon" onClick={handlePrevWeek} className="h-8 w-8">
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm font-semibold capitalize">{weekLabel}</span>
+            <Button variant="ghost" size="icon" onClick={handleNextWeek} className="h-8 w-8">
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            {weekOffset !== 0 && (
+              <Button variant="outline" size="sm" onClick={handleCurrentWeek} className="text-xs gap-1">
+                <RotateCcw className="h-3 w-3" />
+                Mai hét
+              </Button>
+            )}
+          </div>
+          {/* Day buttons */}
           <div className="flex flex-wrap gap-2">
             {weekDates.map((d) => {
               const dObj = new Date(d + "T00:00:00");
