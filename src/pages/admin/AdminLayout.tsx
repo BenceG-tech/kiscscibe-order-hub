@@ -12,7 +12,8 @@ import {
   User,
   Image,
   FileText,
-  Info
+  Info,
+  LayoutDashboard
 } from "lucide-react";
 
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
@@ -30,6 +31,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   };
 
   const adminNavItems = [
+    { href: "/admin", label: "Irányítópult", mobileLabel: "Kezdő", icon: LayoutDashboard, showBadge: false },
     { href: "/admin/orders", label: "Rendelések", mobileLabel: "Rendelés", icon: ShoppingBag, showBadge: true },
     { href: "/admin/menu", label: "Étlap kezelés", mobileLabel: "Étlap", icon: Package, showBadge: false },
     { href: "/admin/daily-menu", label: "Napi ajánlat", mobileLabel: "Napi", icon: Calendar, showBadge: false },
