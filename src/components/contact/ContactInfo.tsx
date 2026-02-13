@@ -51,7 +51,7 @@ const ContactInfo = () => {
             <p className="text-sm font-semibold mb-3">Kövess minket</p>
             <div className="flex items-center gap-3">
               <a 
-                href="https://www.facebook.com/kiscsibeetteremXIV/?locale=hu_HU" 
+                href="https://www.facebook.com/kiscsibeetteremXIV" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors"

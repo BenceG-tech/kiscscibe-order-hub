@@ -85,7 +85,7 @@ const Footer = ({ className }: FooterProps) => {
   const SocialIcons = ({ size = "w-8 h-8", iconSize = "h-4 w-4" }: { size?: string; iconSize?: string }) => (
     <div className="flex items-center gap-2">
       <a 
-        href="https://www.facebook.com/kiscsibeetteremXIV/?locale=hu_HU" 
+        href="https://www.facebook.com/kiscsibeetteremXIV" 
         target="_blank" 
         rel="noopener noreferrer"
         className={`${size} rounded-lg bg-primary/20 flex items-center justify-center hover:bg-primary hover:text-white transition-colors text-primary`}
