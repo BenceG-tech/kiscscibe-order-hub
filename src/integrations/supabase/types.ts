@@ -14,9 +14,31 @@ export type Database = {
   }
   public: {
     Tables: {
+      blackout_dates: {
+        Row: {
+          created_at: string | null
+          date: string
+          id: string
+          reason: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          id?: string
+          reason?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          id?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
       capacity_slots: {
         Row: {
           booked_orders: number
+          buffer_minutes: number
           date: string
           id: string
           max_orders: number
@@ -24,6 +46,7 @@ export type Database = {
         }
         Insert: {
           booked_orders?: number
+          buffer_minutes?: number
           date: string
           id?: string
           max_orders?: number
@@ -31,10 +54,41 @@ export type Database = {
         }
         Update: {
           booked_orders?: number
+          buffer_minutes?: number
           date?: string
           id?: string
           max_orders?: number
           timeslot?: string
+        }
+        Relationships: []
+      }
+      capacity_templates: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_default: boolean | null
+          name: string
+          slots: Json
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_default?: boolean | null
+          name: string
+          slots?: Json
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          slots?: Json
+          updated_at?: string | null
         }
         Relationships: []
       }
