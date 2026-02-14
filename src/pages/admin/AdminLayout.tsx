@@ -126,33 +126,34 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
             ))}
           </ul>
         </div>
-        {/* Mobile: 3-column grid */}
-        <div className="md:hidden px-2 py-2">
-          <div className="grid grid-cols-3 gap-1">
+        {/* Mobile: compact horizontal scroll */}
+        <div className="md:hidden overflow-x-auto no-scrollbar">
+          <ul className="flex items-center gap-1 px-2 py-1.5 min-w-max">
             {adminNavItems.map((item) => (
-              <Link
-                key={item.href}
-                to={item.href}
-                onClick={item.showBadge ? handleOrdersClick : undefined}
-                className={`relative flex flex-col items-center gap-0.5 px-1 py-2 rounded-md font-medium transition-all duration-200 text-center border-b-2 ${
-                  location.pathname === item.href 
-                    ? "bg-primary text-primary-foreground border-primary" 
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted border-transparent"
-                }`}
-              >
-                <item.icon className="h-4 w-4" />
-                <span className="text-[11px] leading-tight">{item.mobileLabel}</span>
-                {item.showBadge && newOrdersCount > 0 && (
-                  <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive opacity-75"></span>
-                    <span className="relative inline-flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
-                      {newOrdersCount > 9 ? '9+' : newOrdersCount}
+              <li key={item.href}>
+                <Link
+                  to={item.href}
+                  onClick={item.showBadge ? handleOrdersClick : undefined}
+                  className={`relative flex items-center gap-1 px-2.5 py-1.5 rounded-md font-medium transition-all duration-200 whitespace-nowrap text-xs ${
+                    location.pathname === item.href 
+                      ? "bg-primary text-primary-foreground" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  }`}
+                >
+                  <item.icon className="h-3.5 w-3.5" />
+                  <span>{item.mobileLabel}</span>
+                  {item.showBadge && newOrdersCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive opacity-75"></span>
+                      <span className="relative inline-flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground">
+                        {newOrdersCount > 9 ? '9+' : newOrdersCount}
+                      </span>
                     </span>
-                  </span>
-                )}
-              </Link>
+                  )}
+                </Link>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       </nav>
 
