@@ -1,40 +1,96 @@
 
 
-# FB Kep Generalas: Het-navigacio hozzaadasa
+# Admin UI javitasok: About Editor, Grafikonok, Tab bar
 
-## Problema
+## 1. AboutPageEditor mobilbarattabb elrendezes
 
-A jelenlegi FB kep generalas oldal (`DailyOfferImageGenerator`) mindig csak az aktualis het hetfojetol pentekig mutat napokat. Pentek delutan mar nincs ertelme -- a kovetkezo hetet kell elore elkesziteni, de arra nincs lehetoseg navigalni.
+### Problema
+Az "Ertekeink" es "Statisztikak" szekciokban az Ikon/Cim/Leiras mezok egy sorban vannak (`flex`), mobilon osszenyomodnak es a tartalom nem lathato. A bekezdesek Textarea-i tul kicsik (`rows={2}`).
 
-## Megoldas
+### Megoldas
+- **Ertekeink**: Mobilon (`md` breakpoint alatt) vertikalis kartya-elrendezes -- minden ertek kulon blokkban, a mezok egymas ala kerulnek
+- **Statisztikak**: Hasonloan vertikalis mobilon
+- **Bekezdesek**: `rows={2}` helyett `rows={4}` mobilon es `rows={3}` desktopon, hogy tobb szoveg lathato legyen
+- **Kuldetés textarea**: `rows={4}` helyett `rows={6}`
 
-Het-valaszto navigacio hozzaadasa elozo/kovetkezo het gombokkal, hogy az admin barmely het napjaira tudjon FB kepet generalni.
-
-### Valtozasok a `DailyOfferImageGenerator.tsx`-ben
-
-1. **Uj state: `weekOffset`** (szam, 0 = aktualis het, 1 = jovo het, -1 = elozo het)
-2. **`getWeekDates(offset)` bovitese**: az offset alapjan szamolja a hetet
-3. **Elozo/Kovetkezo het gombok**: ket nyil gomb a nap-valaszto felett, kozepen az aktualis het datuma (pl. "Feb. 16 - Feb. 20.")
-4. **"Mai het" gomb**: gyors visszaugras az aktualis hetre
-5. **Alapertelmezett kivalasztott nap**: ha jovo hetre navigalunk, automatikusan a hetfo legyen kivalasztva
-
-### UI terv
-
-```text
-     [<]   Febr. 16. - Febr. 20.   [>]   [Mai het]
-     
-     H, febr. 16.  K, febr. 17.  Sze, febr. 18.  ...
-```
-
-### Erintett fajlok
-
+### Erintett fajl
 | Fajl | Valtozas |
 |------|----------|
-| `src/components/admin/DailyOfferImageGenerator.tsx` | weekOffset state, het-navigacio gombok, getWeekDates bovitese |
+| `src/components/admin/AboutPageEditor.tsx` | Responsive layout: vertikalis elrendezes mobilon az Ertekeink es Statisztikak szekciokhoz, nagyobb textarea-k |
+
+---
+
+## 2. Grafikon tooltip szinek javitasa
+
+### Problema
+A Recharts tooltip feher hatterrel es vilagos szoveggel jelenik meg sotet temaban -- olvashatatlan. A screenshot-okon lathato: a "Bevetel: 3180 Ft" szoveg szurke/feher hattere es halvany szovege.
+
+### Megoldas
+- Egyedi `contentStyle` prop a Tooltip komponensekre minden analytics tabban:
+  - `backgroundColor: "hsl(var(--card))"` 
+  - `border: "1px solid hsl(var(--border))"`
+  - `color: "hsl(var(--foreground))"`
+  - `borderRadius: 8`
+- A `labelStyle`-t is beallitjuk: `color: "hsl(var(--muted-foreground))"`
+
+### Erintett fajlok
+| Fajl | Valtozas |
+|------|----------|
+| `src/components/admin/analytics/RevenueTab.tsx` | Tooltip contentStyle + labelStyle minden chartra |
+| `src/components/admin/analytics/OrdersTab.tsx` | Ugyanaz |
+| `src/components/admin/analytics/MenuPerformanceTab.tsx` | Ugyanaz |
+| `src/components/admin/analytics/CustomersTab.tsx` | Ugyanaz |
+
+---
+
+## 3. Tab bar: header ala csuszik desktopon
+
+### Problema
+A sticky nav (`top-[calc(env(safe-area-inset-top,0)+56px)]`) nem pontosan illeszkedik a header aljara -- a header magassaga valtozo es nem mindig 56px.
+
+### Megoldas
+- A header kap egy fix magassagot: `h-14` (56px)
+- A nav `top` erteke pontosabb szamitas: `top-14` (Tailwind class, 56px), plusz safe-area-inset
+
+### Erintett fajl
+| Fajl | Valtozas |
+|------|----------|
+| `src/pages/admin/AdminLayout.tsx` | Header fix magassag + nav top ertek javitasa |
+
+---
+
+## 4. Mobilbarát tab bar
+
+### Problema
+Mobilon a tab sor horizontalisan scrollozhato, de 9 menu elem van es a felhasznalo nem latja az osszeset, a "Statisztika" pl. mar el van vagva.
+
+### Megoldas
+- Mobilon (`md` breakpoint alatt) a tab sor ket soros grid elrendezesbe kerul: `grid grid-cols-3` (3 oszlop, 3 sor = 9 elem)
+- Desktopon marad az egyetlen soros horizontalis scroll
+- Alternativ: az ikonok kisebbek lesznek mobilon es a cimke ala kerul
+
+### Erintett fajl
+| Fajl | Valtozas |
+|------|----------|
+| `src/pages/admin/AdminLayout.tsx` | Mobilon grid elrendezes a navigacios tabokra |
+
+---
+
+## Technikai osszefoglalas
+
+### Modositando fajlok
+| Fajl | Valtozas |
+|------|----------|
+| `src/components/admin/AboutPageEditor.tsx` | Responsive layout, nagyobb textarea-k |
+| `src/components/admin/analytics/RevenueTab.tsx` | Tooltip szinek |
+| `src/components/admin/analytics/OrdersTab.tsx` | Tooltip szinek |
+| `src/components/admin/analytics/MenuPerformanceTab.tsx` | Tooltip szinek |
+| `src/components/admin/analytics/CustomersTab.tsx` | Tooltip szinek |
+| `src/pages/admin/AdminLayout.tsx` | Header magassag fix, nav pozicio, mobil grid nav |
 
 ### Nem modosul
-- Adatbazis
-- Canvas rajzolas logika
-- Feltoltes/torles logika
-- Egyeb oldalak
+- Adatbazis, RLS
+- Frontend publikus oldalak
+- Edge function-ok
+- Admin logika / adatmentes
 
