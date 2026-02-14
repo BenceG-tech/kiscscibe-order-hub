@@ -101,7 +101,7 @@ const OrdersTab = ({ orders, orderItems }: OrdersTabProps) => {
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
                 <XAxis dataKey="date" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-                <Tooltip formatter={(v: number) => [`${v} db`, "Rendelések"]} />
+                <Tooltip formatter={(v: number) => [`${v} db`, "Rendelések"]} contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", color: "hsl(var(--foreground))", borderRadius: 8 }} labelStyle={{ color: "hsl(var(--muted-foreground))" }} />
                 <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -122,7 +122,7 @@ const OrdersTab = ({ orders, orderItems }: OrdersTabProps) => {
                   <Pie data={statusBreakdown} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
                     {statusBreakdown.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", color: "hsl(var(--foreground))", borderRadius: 8 }} labelStyle={{ color: "hsl(var(--muted-foreground))" }} />
                 </PieChart>
               </ResponsiveContainer>
             )}

@@ -88,7 +88,7 @@ const CustomersTab = ({ orders }: CustomersTabProps) => {
                   <Pie data={newVsReturning} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
                     {newVsReturning.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", color: "hsl(var(--foreground))", borderRadius: 8 }} labelStyle={{ color: "hsl(var(--muted-foreground))" }} />
                 </PieChart>
               </ResponsiveContainer>
             )}

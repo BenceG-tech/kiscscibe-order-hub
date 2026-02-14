@@ -118,7 +118,7 @@ const RevenueTab = ({ orders }: RevenueTabProps) => {
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
                 <XAxis dataKey="date" tick={{ fontSize: 11 }} className="fill-muted-foreground" />
                 <YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
-                <Tooltip formatter={(v: number) => [fmtHuf(v), "Bevétel"]} />
+                <Tooltip formatter={(v: number) => [fmtHuf(v), "Bevétel"]} contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", color: "hsl(var(--foreground))", borderRadius: 8 }} labelStyle={{ color: "hsl(var(--muted-foreground))" }} />
                 <Line type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
@@ -138,7 +138,7 @@ const RevenueTab = ({ orders }: RevenueTabProps) => {
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
                 <XAxis dataKey="date" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `${(v/1000).toFixed(1)}k`} />
-                <Tooltip formatter={(v: number) => [fmtHuf(v), "Átlag"]} />
+                <Tooltip formatter={(v: number) => [fmtHuf(v), "Átlag"]} contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", color: "hsl(var(--foreground))", borderRadius: 8 }} labelStyle={{ color: "hsl(var(--muted-foreground))" }} />
                 <Line type="monotone" dataKey="avg" stroke="hsl(var(--accent))" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
@@ -159,7 +159,7 @@ const RevenueTab = ({ orders }: RevenueTabProps) => {
                   <Pie data={paymentSplit} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
                     {paymentSplit.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                   </Pie>
-                  <Tooltip formatter={(v: number) => fmtHuf(v)} />
+                  <Tooltip formatter={(v: number) => fmtHuf(v)} contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", color: "hsl(var(--foreground))", borderRadius: 8 }} labelStyle={{ color: "hsl(var(--muted-foreground))" }} />
                 </PieChart>
               </ResponsiveContainer>
             )}
@@ -175,7 +175,7 @@ const RevenueTab = ({ orders }: RevenueTabProps) => {
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
                 <XAxis dataKey="day" tick={{ fontSize: 12 }} />
                 <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
-                <Tooltip formatter={(v: number) => [fmtHuf(v), "Bevétel"]} />
+                <Tooltip formatter={(v: number) => [fmtHuf(v), "Bevétel"]} contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", color: "hsl(var(--foreground))", borderRadius: 8 }} labelStyle={{ color: "hsl(var(--muted-foreground))" }} />
                 <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -192,7 +192,7 @@ const RevenueTab = ({ orders }: RevenueTabProps) => {
               <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
               <XAxis dataKey="time" tick={{ fontSize: 10 }} interval={1} />
               <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
-              <Tooltip formatter={(v: number) => [fmtHuf(v), "Bevétel"]} />
+              <Tooltip formatter={(v: number) => [fmtHuf(v), "Bevétel"]} contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", color: "hsl(var(--foreground))", borderRadius: 8 }} labelStyle={{ color: "hsl(var(--muted-foreground))" }} />
               <Bar dataKey="revenue" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
