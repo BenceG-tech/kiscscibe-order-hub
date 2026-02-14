@@ -95,7 +95,7 @@ const MenuPerformanceTab = ({ orderItems, orderItemOptions, menuItems, menuCateg
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
                 <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={140} />
-                <Tooltip formatter={fmtBar} />
+                <Tooltip formatter={fmtBar} contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", color: "hsl(var(--foreground))", borderRadius: 8 }} labelStyle={{ color: "hsl(var(--muted-foreground))" }} />
                 <Bar dataKey="count" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -134,7 +134,7 @@ const MenuPerformanceTab = ({ orderItems, orderItemOptions, menuItems, menuCateg
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-                <Tooltip formatter={fmtBar} />
+                <Tooltip formatter={fmtBar} contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", color: "hsl(var(--foreground))", borderRadius: 8 }} labelStyle={{ color: "hsl(var(--muted-foreground))" }} />
                 <Bar dataKey="count" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -155,7 +155,7 @@ const MenuPerformanceTab = ({ orderItems, orderItemOptions, menuItems, menuCateg
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
                   <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
                   <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={120} />
-                  <Tooltip formatter={fmtBar} />
+                  <Tooltip formatter={fmtBar} contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", color: "hsl(var(--foreground))", borderRadius: 8 }} labelStyle={{ color: "hsl(var(--muted-foreground))" }} />
                   <Bar dataKey="count" fill="hsl(142 76% 36%)" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -175,7 +175,7 @@ const MenuPerformanceTab = ({ orderItems, orderItemOptions, menuItems, menuCateg
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
                   <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
                   <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={120} />
-                  <Tooltip formatter={fmtBar} />
+                  <Tooltip formatter={fmtBar} contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", color: "hsl(var(--foreground))", borderRadius: 8 }} labelStyle={{ color: "hsl(var(--muted-foreground))" }} />
                   <Bar dataKey="count" fill="hsl(38 92% 50%)" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>

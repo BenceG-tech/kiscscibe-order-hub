@@ -47,8 +47,8 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="min-h-screen bg-background">
       {/* Sticky Admin Header */}
-      <header className="sticky top-[constant(safe-area-inset-top)] top-[env(safe-area-inset-top)] z-50 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 border-b">
-        <div className="mx-auto max-w-screen-xl px-3 sm:px-4 flex items-center gap-2 sm:gap-4 py-2">
+      <header className="sticky top-0 z-50 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 border-b h-14">
+        <div className="mx-auto max-w-screen-xl px-3 sm:px-4 flex items-center gap-2 sm:gap-4 h-full">
           {/* Left: Logo + Brand */}
           <div className="flex items-center gap-2 min-w-0">
             <Button variant="ghost" size="sm" asChild className="hidden sm:flex">
@@ -96,8 +96,9 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
       </header>
 
       {/* Sticky Navigation Tabs */}
-      <nav className="sticky top-[calc(env(safe-area-inset-top,0)+56px)] z-40 bg-card/95 backdrop-blur border-b">
-        <div className="overflow-x-auto no-scrollbar">
+      <nav className="sticky top-14 z-40 bg-card/95 backdrop-blur border-b">
+        {/* Desktop: horizontal scroll */}
+        <div className="hidden md:block overflow-x-auto no-scrollbar">
           <ul className="flex min-w-full items-center px-3 py-2">
             {adminNavItems.map((item, index) => (
               <li key={item.href} className={index < adminNavItems.length - 1 ? "mr-6" : ""}>
@@ -111,8 +112,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
                   }`}
                 >
                   <item.icon className="h-4 w-4" />
-                  <span className="hidden sm:inline">{item.label}</span>
-                  <span className="sm:hidden text-sm">{item.mobileLabel}</span>
+                  <span>{item.label}</span>
                   {item.showBadge && newOrdersCount > 0 && (
                     <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center">
                       <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive opacity-75"></span>
@@ -125,6 +125,34 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
               </li>
             ))}
           </ul>
+        </div>
+        {/* Mobile: 3-column grid */}
+        <div className="md:hidden px-2 py-2">
+          <div className="grid grid-cols-3 gap-1">
+            {adminNavItems.map((item) => (
+              <Link
+                key={item.href}
+                to={item.href}
+                onClick={item.showBadge ? handleOrdersClick : undefined}
+                className={`relative flex flex-col items-center gap-0.5 px-1 py-2 rounded-md font-medium transition-all duration-200 text-center border-b-2 ${
+                  location.pathname === item.href 
+                    ? "bg-primary text-primary-foreground border-primary" 
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted border-transparent"
+                }`}
+              >
+                <item.icon className="h-4 w-4" />
+                <span className="text-[11px] leading-tight">{item.mobileLabel}</span>
+                {item.showBadge && newOrdersCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive opacity-75"></span>
+                    <span className="relative inline-flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                      {newOrdersCount > 9 ? '9+' : newOrdersCount}
+                    </span>
+                  </span>
+                )}
+              </Link>
+            ))}
+          </div>
         </div>
       </nav>
 

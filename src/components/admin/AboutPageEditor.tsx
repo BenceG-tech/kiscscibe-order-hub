@@ -240,7 +240,7 @@ const AboutPageEditor = () => {
             </Button>
           </div>
           {editData.stats.map((stat, i) => (
-            <div key={stat.id} className="flex gap-2 items-end">
+            <div key={stat.id} className="flex flex-col md:flex-row gap-2 md:items-end p-3 md:p-0 rounded-lg md:rounded-none bg-muted/30 md:bg-transparent">
               <div className="flex-1 space-y-1">
                 <Label className="text-xs">Szám</Label>
                 <Input value={stat.number} onChange={e => {
@@ -257,7 +257,7 @@ const AboutPageEditor = () => {
                   update("stats", stats);
                 }} />
               </div>
-              <div className="w-32 space-y-1">
+              <div className="w-full md:w-32 space-y-1">
                 <Label className="text-xs">Ikon</Label>
                 <select className="w-full h-10 rounded-md border border-input bg-background px-2 text-sm" value={stat.icon} onChange={e => {
                   const stats = [...editData.stats];
@@ -267,7 +267,7 @@ const AboutPageEditor = () => {
                   {ICON_OPTIONS.map(ic => <option key={ic} value={ic}>{ic}</option>)}
                 </select>
               </div>
-              <Button variant="ghost" size="icon" className="text-destructive" onClick={() => {
+              <Button variant="ghost" size="icon" className="text-destructive self-end" onClick={() => {
                 update("stats", editData.stats.filter((_, j) => j !== i));
               }}>
                 <Trash2 className="h-4 w-4" />
@@ -295,7 +295,7 @@ const AboutPageEditor = () => {
             </div>
             {editData.storyParagraphs.map((p, i) => (
               <div key={i} className="flex gap-2">
-                <Textarea value={p} rows={2} className="flex-1" onChange={e => {
+                <Textarea value={p} rows={4} className="flex-1" onChange={e => {
                   const paragraphs = [...editData.storyParagraphs];
                   paragraphs[i] = e.target.value;
                   update("storyParagraphs", paragraphs);
@@ -339,8 +339,8 @@ const AboutPageEditor = () => {
             </Button>
           </div>
           {editData.values.map((val, i) => (
-            <div key={val.id} className="flex gap-2 items-end">
-              <div className="w-28 space-y-1">
+            <div key={val.id} className="flex flex-col md:flex-row gap-2 md:items-end p-3 md:p-0 rounded-lg md:rounded-none bg-muted/30 md:bg-transparent">
+              <div className="w-full md:w-28 space-y-1">
                 <Label className="text-xs">Ikon</Label>
                 <select className="w-full h-10 rounded-md border border-input bg-background px-2 text-sm" value={val.icon} onChange={e => {
                   const values = [...editData.values];
@@ -360,13 +360,13 @@ const AboutPageEditor = () => {
               </div>
               <div className="flex-1 space-y-1">
                 <Label className="text-xs">Leírás</Label>
-                <Input value={val.description} onChange={e => {
+                <Textarea value={val.description} rows={2} className="min-h-0" onChange={e => {
                   const values = [...editData.values];
                   values[i] = { ...values[i], description: e.target.value };
                   update("values", values);
                 }} />
               </div>
-              <Button variant="ghost" size="icon" className="text-destructive" onClick={() => {
+              <Button variant="ghost" size="icon" className="text-destructive self-end" onClick={() => {
                 update("values", editData.values.filter((_, j) => j !== i));
               }}>
                 <Trash2 className="h-4 w-4" />
@@ -386,7 +386,7 @@ const AboutPageEditor = () => {
           </div>
           <div className="space-y-2">
             <Label>Szöveg</Label>
-            <Textarea value={editData.missionText} rows={4} onChange={e => update("missionText", e.target.value)} />
+            <Textarea value={editData.missionText} rows={6} onChange={e => update("missionText", e.target.value)} />
           </div>
         </CardContent>
       </Card>
