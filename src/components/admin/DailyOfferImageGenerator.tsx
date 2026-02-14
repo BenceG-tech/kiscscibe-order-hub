@@ -52,12 +52,26 @@ function getWeekDates(offset: number = 0): string[] {
   return dates;
 }
 
+function getInitialWeekOffset(): number {
+  const now = new Date();
+  return getDay(now) === 5 && now.getHours() >= 16 ? 1 : 0;
+}
+
+function getInitialSelectedDate(): string {
+  const now = new Date();
+  if (getDay(now) === 5 && now.getHours() >= 16) {
+    const monday = addDays(startOfWeek(now, { weekStartsOn: 1 }), 7);
+    return format(monday, "yyyy-MM-dd");
+  }
+  return format(now, "yyyy-MM-dd");
+}
+
 const DailyOfferImageGenerator = () => {
   const isMobile = useIsMobile();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [weekOffset, setWeekOffset] = useState(0);
-  const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
+  const [weekOffset, setWeekOffset] = useState(getInitialWeekOffset);
+  const [selectedDate, setSelectedDate] = useState<string>(getInitialSelectedDate);
   const [dayData, setDayData] = useState<DayData | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
