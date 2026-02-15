@@ -1,12 +1,13 @@
 import { useState } from "react";
 import AdminLayout from "./AdminLayout";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Download } from "lucide-react";
 import InvoiceSummaryCards from "@/components/admin/InvoiceSummaryCards";
 import InvoiceFilters from "@/components/admin/InvoiceFilters";
 import InvoiceListItem from "@/components/admin/InvoiceListItem";
 import InvoiceFormDialog from "@/components/admin/InvoiceFormDialog";
 import { useInvoices, type InvoiceFilters as Filters, type Invoice } from "@/hooks/useInvoices";
+import { exportInvoicesToExcel } from "@/lib/invoiceExport";
 
 const Invoices = () => {
   const [filters, setFilters] = useState<Filters>({});
@@ -31,10 +32,16 @@ const Invoices = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <h1 className="text-xl sm:text-2xl font-bold">Számlák kezelése</h1>
-          <Button onClick={openNew} size="sm">
-            <Plus className="h-4 w-4 mr-1" />
-            Új bizonylat
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => exportInvoicesToExcel(invoices)} disabled={invoices.length === 0}>
+              <Download className="h-4 w-4 mr-1" />
+              Export
+            </Button>
+            <Button onClick={openNew} size="sm">
+              <Plus className="h-4 w-4 mr-1" />
+              Új bizonylat
+            </Button>
+          </div>
         </div>
 
         {/* Filters */}
