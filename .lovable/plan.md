@@ -1,63 +1,53 @@
 
 
-# 3 formatum kep generalas + logo fix
+# Kep generator elrendezes finomhangolas -- mind a 3 formatum
 
-## Jelenlegi helyzet
-- A logo kod mar benne van (sor 354-369), de a `public/assets/kiscsibe_logo_round.png` fajl letezeset ellenorizni kell
-- A menu ar mar 2200-ra van allitva (sor 317)
-- Jelenleg csak 1 kepet general (1200x675 landscape)
+## Problema
+A `drawToCanvas` fuggveny fix `scale = W / 1200` erteket hasznal, ami nem veszi figyelembe a canvas magassagat. Emiatt:
+- **Facebook (1200x675)**: a tartalom ~800px magas 8 etelnel, de a canvas csak 675px -- az also resz (menu ar, footer) lecsusznak
+- **Insta Post (1080x1080)**: a tartalom a tetejere tomorodik, alul sok ures hely marad
+- **Insta Story (1080x1920)**: a tartalom nagyon kicsi a hatalmas canvas-hez kepest
 
-## Valtozasok
+## Megoldas: ket lepcsos skalazas
 
-### 1. Rajzolas refaktoralas -- kozos `drawToCanvas` fuggveny
-A jelenlegi `drawCanvas` fuggvenyt atalakitjuk, hogy parameterkent kapja a meretet es a canvas elemet. Igy haromszor hivhato kulonbozo meretekkel:
+A jelenlegi egydimenios `scale = W / 1200` helyett a rajzolo fuggveny:
 
-| Formatum | Meret | Hasznalat |
-|----------|-------|-----------|
-| Facebook post | 1200 x 675 | Fektetett, jelenlegi |
-| Instagram post | 1080 x 1080 | Negyzetes |
-| Instagram story | 1080 x 1920 | Allo |
+1. Eloszor kiszamolja a tartalom teljes magassagat az alap (1200px-es) meretekkel
+2. Utana kiszamol egy `vScale` (vertikalis skala) erteket: `availableHeight / contentHeight`
+3. A vegso skala: `min(hScale, vScale)` -- igy a tartalom mindig beleferr a canvas-be
+4. Az Instagram story eseten a tartalom kozepre igazodik a magas canvas-ben (ez mar megvan, de a jobb skalazassal szebben fog kinezni)
 
-A rajzolas logikaja azonos marad (gradiens hatter, sarga cim, feher etelek, logo vizjel), de:
-- A font meretek es padding aranyosan skalazodjak a canvas merethez
-- Instagram story-nal a tartalom kozepre igazodik vertikalisan (tobb hely fent/lent)
-- Instagram post-nal kompaktabb elrendezes a negyzetes formatumhoz
+### Reszletek
 
-### 2. 3 rejtett canvas + 3 data URL
-- 3 `useRef<HTMLCanvasElement>` (facebook, instaPost, instaStory)
-- 3 `canvasDataUrl` state (facebookDataUrl, instaPostDataUrl, instaStoryDataUrl)
-- Mindharom automatikusan ujrarajzolodik amikor a `dayData` valtozik
+**Facebook post (1200x675)**:
+- Sok etelnel a fontmeretek es a sorozes automatikusan kisebb lesz, hogy minden beferjen
+- A footer mindig lathato marad
 
-### 3. UI: Tab-ok vagy egymás alatti kartyak
-3 kulon kartya a 3 keppel, mindegyiknel:
-- Kep elonezet (kattintasra lightbox)
-- Letoltes gomb
-- Formatum badge (Facebook / Insta Post / Insta Story)
+**Instagram post (1080x1080)**:
+- A negyzetes formatum elegendo helyet ad, a tartalom szepen kozepen jelenik meg
+- A fontmeretek aranyosan nagyobbak lesznek mint most
 
-### 4. Logo megjelenes biztositasa
-A logo betoltese `new Image()` + `onload` callback-kel tortenik (mar igy van). Ellenorizzuk hogy a `public/assets/kiscsibe_logo_round.png` fajl letezik -- ha nem, a felhasznalo altal feltoltott logot (`user-uploads://Gemini_Generated_Image_wi4t2nwi4t.png`) masoljuk oda.
+**Instagram story (1080x1920)**:
+- A tartalom kozepen marad vertikalisan
+- Nagyobb fontmeretek, mert sok a hely
 
-### 5. Menu ar
-A menu ar mar 2200 Ft-ra van allitva a kodban (sor 317: `const menuPrice = 2200`). Ez nem valtozik.
+### Egyeb finomitasok
+- A `contentHeight` szamitas pontositasa (az aktualis elem szamtol fugg)
+- Az `yOffset` szamitas javitasa a kulonbozo formatumokhoz
+- A logo pozicio a valodi tartalomhoz igazodik, nem fix `H - 90px`
 
 ## Technikai reszletek
 
 | Fajl | Valtozas |
 |------|---------|
-| `src/components/admin/DailyOfferImageGenerator.tsx` | `drawCanvas` refaktor 3 merethez; 3 canvas ref + data URL; 3 letoltes gomb; lightbox bovites; UI kartyak a 3 formatumhoz |
+| `src/components/admin/DailyOfferImageGenerator.tsx` | A `drawToCanvas` fuggvenyben: 1) Elso menet: tartalom magassag szamitas fix 1.0 skalaval 2) `finalScale = min(W/1200, (H - margin) / contentHeight)` 3) Masodik menet: rajzolas `finalScale`-lel 4) Logo pozicio: tartalom alajahoz igazitva, nem canvas aljahoz |
 
-### Meretaranyos skalazas logika
-A kozos rajzolo fuggveny parameterek:
-```text
-drawToCanvas(canvas, data, dateStr, width, height, logoImg)
-```
-- PAD: aranyosan skalazva (50 az 1200px-esnel, ~45 az 1080px-esnel)
-- Font meretek: aranyosan skalazva a szelesseghez
-- Instagram story: a tartalom a kep kozepen, nagy felso/also margoval
-- Instagram post: kompaktabb, de ugyanaz az elrendezes
+### Pelda skalak
 
-### Letoltes fajlnevek
-- `napi_ajanlat_facebook_YYYY-MM-DD.png`
-- `napi_ajanlat_insta_post_YYYY-MM-DD.png`
-- `napi_ajanlat_insta_story_YYYY-MM-DD.png`
+| Formatum | W | H | hScale | Becsult contentH | vScale | finalScale |
+|----------|---|---|--------|-----------------|--------|------------|
+| Facebook | 1200 | 675 | 1.0 | ~750 | ~0.85 | ~0.85 |
+| Insta Post | 1080 | 1080 | 0.9 | ~750 | ~1.3 | 0.9 |
+| Insta Story | 1080 | 1920 | 0.9 | ~750 | ~2.3 | 0.9 |
 
+Igy a Facebook post automatikusan kisebb betukkel irja ki az eteleket ha sok van, mig az Insta formatumok kihasznaljak a teret.
