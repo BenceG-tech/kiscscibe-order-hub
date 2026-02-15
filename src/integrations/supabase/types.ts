@@ -472,6 +472,121 @@ export type Database = {
         }
         Relationships: []
       }
+      invoice_items: {
+        Row: {
+          description: string
+          id: string
+          invoice_id: string
+          line_total: number
+          quantity: number
+          unit: string
+          unit_price: number
+        }
+        Insert: {
+          description: string
+          id?: string
+          invoice_id: string
+          line_total?: number
+          quantity?: number
+          unit?: string
+          unit_price?: number
+        }
+        Update: {
+          description?: string
+          id?: string
+          invoice_id?: string
+          line_total?: number
+          quantity?: number
+          unit?: string
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          due_date: string | null
+          file_urls: string[]
+          gross_amount: number
+          id: string
+          invoice_number: string | null
+          issue_date: string
+          net_amount: number
+          notes: string | null
+          order_id: string | null
+          partner_name: string
+          partner_tax_id: string | null
+          payment_date: string | null
+          status: string
+          type: string
+          updated_at: string
+          vat_amount: number
+          vat_rate: number
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          file_urls?: string[]
+          gross_amount?: number
+          id?: string
+          invoice_number?: string | null
+          issue_date?: string
+          net_amount?: number
+          notes?: string | null
+          order_id?: string | null
+          partner_name: string
+          partner_tax_id?: string | null
+          payment_date?: string | null
+          status?: string
+          type?: string
+          updated_at?: string
+          vat_amount?: number
+          vat_rate?: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          file_urls?: string[]
+          gross_amount?: number
+          id?: string
+          invoice_number?: string | null
+          issue_date?: string
+          net_amount?: number
+          notes?: string | null
+          order_id?: string | null
+          partner_name?: string
+          partner_tax_id?: string | null
+          payment_date?: string | null
+          status?: string
+          type?: string
+          updated_at?: string
+          vat_amount?: number
+          vat_rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       item_modifier_options: {
         Row: {
           id: string
