@@ -89,6 +89,32 @@ const FORMATS: FormatConfig[] = [
   { key: "instaStory", label: "Instagram story", badge: "Insta Story", width: 1080, height: 1920, filename: "insta_story" },
 ];
 
+function measureContentHeight(data: DayData, noteText?: string): number {
+  // Measure content height at base scale (1200px reference width)
+  const menuItems = data.items.filter((i) => i.is_menu_part);
+  const alacarteItems = data.items.filter((i) => !i.is_menu_part);
+
+  let h = 0;
+  h += 60; // header
+  h += 30; // separator gap
+  h += alacarteItems.length * 42; // a la carte items
+  if (noteText) {
+    h += 8;
+    const estimatedLines = Math.ceil((noteText.length * 12) / (1200 - 100));
+    h += Math.max(1, estimatedLines) * 28;
+  }
+  if (menuItems.length > 0) {
+    h += 15 + 25 + 52; // separator + gap + "Menü" title
+    const soup = menuItems.find((i) => i.menu_role === "leves");
+    const main = menuItems.find((i) => i.menu_role === "főétel");
+    if (soup) h += 40;
+    if (main) h += 40;
+    h += 10 + 50; // gap + price line
+  }
+  h += 30 + 20 + 20 + 24; // footer lines
+  return h;
+}
+
 function drawToCanvas(
   canvas: HTMLCanvasElement,
   data: DayData,
@@ -103,7 +129,13 @@ function drawToCanvas(
   canvas.width = W;
   canvas.height = H;
 
-  const scale = W / 1200;
+  // Two-pass scaling: fit content into canvas
+  const MARGIN = 40; // px margin top+bottom at final scale
+  const baseContentH = measureContentHeight(data, data.offer_note);
+  const hScale = W / 1200;
+  const vScale = (H - MARGIN * 2) / baseContentH;
+  const scale = Math.min(hScale, vScale);
+
   const YELLOW = "#efbe13";
   const WHITE = "#ffffff";
   const PAD = Math.round(50 * scale);
@@ -119,28 +151,9 @@ function drawToCanvas(
   const menuItems = data.items.filter((i) => i.is_menu_part);
   const alacarteItems = data.items.filter((i) => !i.is_menu_part);
 
-  // Calculate content height for vertical centering (story format)
-  let contentHeight = 0;
-  contentHeight += Math.round(60 * scale); // header
-  contentHeight += Math.round(30 * scale); // separator gap
-  contentHeight += alacarteItems.length * Math.round(42 * scale);
-  if (data.offer_note) {
-    contentHeight += Math.round(8 * scale);
-    const estimatedLines = Math.ceil((data.offer_note.length * 12) / (W - PAD * 2));
-    contentHeight += Math.max(1, estimatedLines) * Math.round(28 * scale);
-  }
-  if (menuItems.length > 0) {
-    contentHeight += Math.round(15 * scale) + Math.round(25 * scale) + Math.round(52 * scale);
-    const soup = menuItems.find((i) => i.menu_role === "leves");
-    const main = menuItems.find((i) => i.menu_role === "főétel");
-    if (soup) contentHeight += Math.round(40 * scale);
-    if (main) contentHeight += Math.round(40 * scale);
-    contentHeight += Math.round(10 * scale) + Math.round(50 * scale);
-  }
-  contentHeight += Math.round(100 * scale); // footer
-
-  // Vertical offset for centering (mainly for story)
-  const yOffset = Math.max(Math.round(50 * scale), Math.round((H - contentHeight) / 2));
+  // Content is scaled; center vertically
+  const scaledContentH = baseContentH * scale;
+  const yOffset = Math.max(MARGIN, Math.round((H - scaledContentH) / 2));
 
   const dateObj = new Date(dateStr + "T00:00:00");
   const dayName = HU_DAYS_LOWER[dateObj.getDay()];
@@ -272,12 +285,13 @@ function drawToCanvas(
   ctx.textAlign = "center";
   ctx.fillText("Jó étvágyat kívánunk! 🐥", W / 2, y);
 
-  // Logo watermark (bottom-right)
+  // Logo watermark (bottom-right, relative to content end)
   if (logoImg) {
     const logoSize = Math.round(70 * scale);
+    const logoY = Math.min(y + Math.round(20 * scale), H - logoSize - Math.round(20 * scale));
     ctx.save();
     ctx.globalAlpha = 0.45;
-    ctx.drawImage(logoImg, W - PAD - logoSize, H - Math.round(90 * scale), logoSize, logoSize);
+    ctx.drawImage(logoImg, W - PAD - logoSize, logoY, logoSize, logoSize);
     ctx.restore();
   }
 }
