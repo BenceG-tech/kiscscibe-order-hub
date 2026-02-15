@@ -57,9 +57,237 @@ function getInitialSelectedDate(): string {
   return format(smartDate, "yyyy-MM-dd");
 }
 
+function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+  const words = text.split(" ");
+  const lines: string[] = [];
+  let currentLine = "";
+  for (const word of words) {
+    const test = currentLine ? `${currentLine} ${word}` : word;
+    if (ctx.measureText(test).width > maxWidth) {
+      if (currentLine) lines.push(currentLine);
+      currentLine = word;
+    } else {
+      currentLine = test;
+    }
+  }
+  if (currentLine) lines.push(currentLine);
+  return lines;
+}
+
+interface FormatConfig {
+  key: string;
+  label: string;
+  badge: string;
+  width: number;
+  height: number;
+  filename: string;
+}
+
+const FORMATS: FormatConfig[] = [
+  { key: "facebook", label: "Facebook post", badge: "Facebook", width: 1200, height: 675, filename: "facebook" },
+  { key: "instaPost", label: "Instagram post", badge: "Insta Post", width: 1080, height: 1080, filename: "insta_post" },
+  { key: "instaStory", label: "Instagram story", badge: "Insta Story", width: 1080, height: 1920, filename: "insta_story" },
+];
+
+function drawToCanvas(
+  canvas: HTMLCanvasElement,
+  data: DayData,
+  dateStr: string,
+  W: number,
+  H: number,
+  logoImg?: HTMLImageElement
+) {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  canvas.width = W;
+  canvas.height = H;
+
+  const scale = W / 1200;
+  const YELLOW = "#efbe13";
+  const WHITE = "#ffffff";
+  const PAD = Math.round(50 * scale);
+  const FOOD_FONT = "Arial, Helvetica, sans-serif";
+
+  // Background gradient
+  const bgGrad = ctx.createLinearGradient(0, 0, W, 0);
+  bgGrad.addColorStop(0, "#252b38");
+  bgGrad.addColorStop(1, "#1c232f");
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  const menuItems = data.items.filter((i) => i.is_menu_part);
+  const alacarteItems = data.items.filter((i) => !i.is_menu_part);
+
+  // Calculate content height for vertical centering (story format)
+  let contentHeight = 0;
+  contentHeight += Math.round(60 * scale); // header
+  contentHeight += Math.round(30 * scale); // separator gap
+  contentHeight += alacarteItems.length * Math.round(42 * scale);
+  if (data.offer_note) {
+    contentHeight += Math.round(8 * scale);
+    const estimatedLines = Math.ceil((data.offer_note.length * 12) / (W - PAD * 2));
+    contentHeight += Math.max(1, estimatedLines) * Math.round(28 * scale);
+  }
+  if (menuItems.length > 0) {
+    contentHeight += Math.round(15 * scale) + Math.round(25 * scale) + Math.round(52 * scale);
+    const soup = menuItems.find((i) => i.menu_role === "leves");
+    const main = menuItems.find((i) => i.menu_role === "főétel");
+    if (soup) contentHeight += Math.round(40 * scale);
+    if (main) contentHeight += Math.round(40 * scale);
+    contentHeight += Math.round(10 * scale) + Math.round(50 * scale);
+  }
+  contentHeight += Math.round(100 * scale); // footer
+
+  // Vertical offset for centering (mainly for story)
+  const yOffset = Math.max(Math.round(50 * scale), Math.round((H - contentHeight) / 2));
+
+  const dateObj = new Date(dateStr + "T00:00:00");
+  const dayName = HU_DAYS_LOWER[dateObj.getDay()];
+  const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+  const day = String(dateObj.getDate()).padStart(2, "0");
+
+  let y = yOffset;
+
+  // Header
+  ctx.fillStyle = YELLOW;
+  ctx.font = `${Math.round(40 * scale)}px Sofia, Georgia, serif`;
+  ctx.textAlign = "center";
+  ctx.fillText(`Napi ajánlat  ${month}.${day}. ${dayName}  11:30-tól`, W / 2, y + Math.round(40 * scale));
+  y += Math.round(60 * scale);
+
+  // Yellow separator
+  ctx.strokeStyle = YELLOW;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(PAD, y);
+  ctx.lineTo(W - PAD, y);
+  ctx.stroke();
+  y += Math.round(30 * scale);
+
+  // A la carte items
+  for (const item of alacarteItems) {
+    const name = item.item_name.charAt(0).toUpperCase() + item.item_name.slice(1);
+    ctx.fillStyle = WHITE;
+    ctx.font = `${Math.round(28 * scale)}px ${FOOD_FONT}`;
+    ctx.textAlign = "left";
+    ctx.fillText(name, PAD, y + Math.round(28 * scale));
+
+    if (item.item_price_huf > 0) {
+      ctx.fillStyle = WHITE;
+      ctx.textAlign = "right";
+      ctx.font = `${Math.round(28 * scale)}px ${FOOD_FONT}`;
+      ctx.fillText(formatPrice(item.item_price_huf) + " Ft", W - PAD, y + Math.round(28 * scale));
+    }
+    y += Math.round(42 * scale);
+  }
+
+  // Note
+  if (data.offer_note) {
+    y += Math.round(8 * scale);
+    ctx.fillStyle = "rgba(255,255,255,0.6)";
+    ctx.font = `${Math.round(20 * scale)}px ${FOOD_FONT}`;
+    ctx.textAlign = "left";
+    const lines = wrapText(ctx, data.offer_note, W - PAD * 2);
+    for (const line of lines) {
+      ctx.fillText(line, PAD, y + Math.round(20 * scale));
+      y += Math.round(28 * scale);
+    }
+  }
+
+  // Menu section
+  if (menuItems.length > 0) {
+    y += Math.round(15 * scale);
+
+    ctx.strokeStyle = YELLOW;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(PAD, y);
+    ctx.lineTo(W - PAD, y);
+    ctx.stroke();
+    y += Math.round(25 * scale);
+
+    ctx.fillStyle = YELLOW;
+    ctx.font = `${Math.round(36 * scale)}px Sofia, Georgia, serif`;
+    ctx.textAlign = "left";
+    ctx.fillText("Menü", PAD, y + Math.round(36 * scale));
+    y += Math.round(52 * scale);
+
+    const soup = menuItems.find((i) => i.menu_role === "leves");
+    const main = menuItems.find((i) => i.menu_role === "főétel");
+
+    if (soup) {
+      const name = soup.item_name.charAt(0).toUpperCase() + soup.item_name.slice(1);
+      ctx.fillStyle = WHITE;
+      ctx.font = `${Math.round(26 * scale)}px ${FOOD_FONT}`;
+      ctx.textAlign = "left";
+      ctx.fillText(`🥣  ${name}`, PAD + Math.round(10 * scale), y + Math.round(26 * scale));
+      y += Math.round(40 * scale);
+    }
+
+    if (main) {
+      const name = main.item_name.charAt(0).toUpperCase() + main.item_name.slice(1);
+      ctx.fillStyle = WHITE;
+      ctx.font = `${Math.round(26 * scale)}px ${FOOD_FONT}`;
+      ctx.textAlign = "left";
+      ctx.fillText(`🍖  ${name}`, PAD + Math.round(10 * scale), y + Math.round(26 * scale));
+      y += Math.round(40 * scale);
+    }
+
+    y += Math.round(10 * scale);
+
+    const menuPrice = 2200;
+    ctx.fillStyle = YELLOW;
+    ctx.font = `${Math.round(34 * scale)}px Sofia, Georgia, serif`;
+    ctx.textAlign = "left";
+    ctx.fillText(`Helyben: ${formatPrice(menuPrice)} Ft`, PAD, y + Math.round(34 * scale));
+
+    ctx.fillStyle = YELLOW;
+    ctx.font = `${Math.round(20 * scale)}px Sofia, Georgia, serif`;
+    ctx.textAlign = "right";
+    ctx.fillText("(+ 200.- Ft elvitelre a 2 doboz)", W - PAD, y + Math.round(30 * scale));
+    y += Math.round(50 * scale);
+  }
+
+  // Footer
+  y += Math.round(30 * scale);
+  ctx.fillStyle = "rgba(239, 190, 19, 0.7)";
+  ctx.font = `italic ${Math.round(14 * scale)}px Sofia, Georgia, serif`;
+  ctx.textAlign = "center";
+  ctx.fillText(
+    "A feltüntetett árak köretet nem tartalmazzák! Elviteles doboz: 150.- Ft/étel.",
+    W / 2,
+    y
+  );
+  y += Math.round(20 * scale);
+  ctx.fillText(
+    "Levesből, főzelékekből és a köretekből fél adag is kérhető, fél adagnál 70%-os árat számlázunk.",
+    W / 2,
+    y
+  );
+  y += Math.round(24 * scale);
+
+  ctx.fillStyle = "rgba(255,255,255,0.5)";
+  ctx.font = `${Math.round(16 * scale)}px Sofia, Georgia, serif`;
+  ctx.textAlign = "center";
+  ctx.fillText("Jó étvágyat kívánunk! 🐥", W / 2, y);
+
+  // Logo watermark (bottom-right)
+  if (logoImg) {
+    const logoSize = Math.round(70 * scale);
+    ctx.save();
+    ctx.globalAlpha = 0.45;
+    ctx.drawImage(logoImg, W - PAD - logoSize, H - Math.round(90 * scale), logoSize, logoSize);
+    ctx.restore();
+  }
+}
+
 const DailyOfferImageGenerator = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fbCanvasRef = useRef<HTMLCanvasElement>(null);
+  const instaPostCanvasRef = useRef<HTMLCanvasElement>(null);
+  const instaStoryCanvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedDate, setSelectedDate] = useState<string>(getInitialSelectedDate);
   const [dayData, setDayData] = useState<DayData | null>(null);
@@ -67,12 +295,19 @@ const DailyOfferImageGenerator = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
-  const [canvasDataUrl, setCanvasDataUrl] = useState<string>("");
+  const [previewDataUrl, setPreviewDataUrl] = useState<string>("");
+  const [dataUrls, setDataUrls] = useState<Record<string, string>>({});
   const weekDates = getWeekDates(weekOffset);
 
   const weekStart = new Date(weekDates[0] + "T00:00:00");
   const weekEnd = new Date(weekDates[4] + "T00:00:00");
   const weekLabel = `${format(weekStart, "MMM d.", { locale: hu })} – ${format(weekEnd, "MMM d.", { locale: hu })}`;
+
+  const canvasRefs: Record<string, React.RefObject<HTMLCanvasElement>> = {
+    facebook: fbCanvasRef,
+    instaPost: instaPostCanvasRef,
+    instaStory: instaStoryCanvasRef,
+  };
 
   const handlePrevWeek = () => {
     setWeekOffset(w => w - 1);
@@ -158,240 +393,38 @@ const DailyOfferImageGenerator = () => {
     loadFont();
   }, []);
 
-  // Draw canvas when data changes
+  // Draw all 3 canvases when data changes
   useEffect(() => {
-    if (!dayData || !canvasRef.current) return;
+    if (!dayData) return;
     document.fonts.ready.then(() => {
-      drawCanvas(dayData, selectedDate);
+      const logo = new Image();
+      logo.crossOrigin = "anonymous";
+      logo.onload = () => drawAllCanvases(dayData, selectedDate, logo);
+      logo.onerror = () => drawAllCanvases(dayData, selectedDate);
+      logo.src = "/assets/kiscsibe_logo_round.png";
     });
   }, [dayData, selectedDate]);
 
-  const drawCanvas = (data: DayData, dateStr: string) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const W = 1200;
-    const MIN_H = 675;
-    const YELLOW = "#efbe13";
-    const WHITE = "#ffffff";
-    const PAD = 50;
-    const FOOD_FONT = "Arial, Helvetica, sans-serif";
-
-    // First pass: calculate content height
-    let contentY = 50;
-
-    const dateObj = new Date(dateStr + "T00:00:00");
-    const dayName = HU_DAYS_LOWER[dateObj.getDay()];
-    const month = String(dateObj.getMonth() + 1).padStart(2, "0");
-    const day = String(dateObj.getDate()).padStart(2, "0");
-
-    // Header
-    contentY += 60;
-    contentY += 30;
-
-    const menuItems = data.items.filter((i) => i.is_menu_part);
-    const alacarteItems = data.items.filter((i) => !i.is_menu_part);
-
-    contentY += alacarteItems.length * 42;
-
-    if (data.offer_note) {
-      contentY += 8;
-      const estimatedLines = Math.ceil((data.offer_note.length * 12) / (W - PAD * 2));
-      contentY += Math.max(1, estimatedLines) * 28;
+  const drawAllCanvases = (data: DayData, dateStr: string, logoImg?: HTMLImageElement) => {
+    const newDataUrls: Record<string, string> = {};
+    for (const fmt of FORMATS) {
+      const canvas = canvasRefs[fmt.key]?.current;
+      if (canvas) {
+        drawToCanvas(canvas, data, dateStr, fmt.width, fmt.height, logoImg);
+        newDataUrls[fmt.key] = canvas.toDataURL("image/png");
+      }
     }
-
-    if (menuItems.length > 0) {
-      contentY += 15 + 25 + 52;
-      const soup = menuItems.find((i) => i.menu_role === "leves");
-      const main = menuItems.find((i) => i.menu_role === "főétel");
-      if (soup) contentY += 40;
-      if (main) contentY += 40;
-      contentY += 10 + 50;
-    }
-
-    contentY += 30 + 20 + 20 + 30;
-
-    const H = Math.max(MIN_H, contentY + 20);
-    canvas.width = W;
-    canvas.height = H;
-
-    const renderContent = (logoImg?: HTMLImageElement) => {
-      // Background: blue gradient left-to-right (reversed)
-      const bgGrad = ctx.createLinearGradient(0, 0, W, 0);
-      bgGrad.addColorStop(0, "#252b38");
-      bgGrad.addColorStop(1, "#1c232f");
-      ctx.fillStyle = bgGrad;
-      ctx.fillRect(0, 0, W, H);
-
-      let y = 50;
-
-      // Header
-      ctx.fillStyle = YELLOW;
-      ctx.font = "40px Sofia, Georgia, serif";
-      ctx.textAlign = "center";
-      ctx.fillText(`Napi ajánlat  ${month}.${day}. ${dayName}  11:30-tól`, W / 2, y + 40);
-      y += 60;
-
-      // Yellow separator
-      ctx.strokeStyle = YELLOW;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(PAD, y);
-      ctx.lineTo(W - PAD, y);
-      ctx.stroke();
-      y += 30;
-
-      // A la carte items
-      for (const item of alacarteItems) {
-        const name = item.item_name.charAt(0).toUpperCase() + item.item_name.slice(1);
-        ctx.fillStyle = WHITE;
-        ctx.font = `28px ${FOOD_FONT}`;
-        ctx.textAlign = "left";
-        ctx.fillText(name, PAD, y + 28);
-
-        if (item.item_price_huf > 0) {
-          ctx.fillStyle = WHITE;
-          ctx.textAlign = "right";
-          ctx.font = `28px ${FOOD_FONT}`;
-          ctx.fillText(formatPrice(item.item_price_huf) + " Ft", W - PAD, y + 28);
-        }
-        y += 42;
-      }
-
-      // Note
-      if (data.offer_note) {
-        y += 8;
-        ctx.fillStyle = "rgba(255,255,255,0.6)";
-        ctx.font = `20px ${FOOD_FONT}`;
-        ctx.textAlign = "left";
-        const lines = wrapText(ctx, data.offer_note, W - PAD * 2);
-        for (const line of lines) {
-          ctx.fillText(line, PAD, y + 20);
-          y += 28;
-        }
-      }
-
-      // Menu section
-      if (menuItems.length > 0) {
-        y += 15;
-
-        ctx.strokeStyle = YELLOW;
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(PAD, y);
-        ctx.lineTo(W - PAD, y);
-        ctx.stroke();
-        y += 25;
-
-        ctx.fillStyle = YELLOW;
-        ctx.font = "36px Sofia, Georgia, serif";
-        ctx.textAlign = "left";
-        ctx.fillText("Menü", PAD, y + 36);
-        y += 52;
-
-        const soup = menuItems.find((i) => i.menu_role === "leves");
-        const main = menuItems.find((i) => i.menu_role === "főétel");
-
-        if (soup) {
-          const name = soup.item_name.charAt(0).toUpperCase() + soup.item_name.slice(1);
-          ctx.fillStyle = WHITE;
-          ctx.font = `26px ${FOOD_FONT}`;
-          ctx.textAlign = "left";
-          ctx.fillText(`🥣  ${name}`, PAD + 10, y + 26);
-          y += 40;
-        }
-
-        if (main) {
-          const name = main.item_name.charAt(0).toUpperCase() + main.item_name.slice(1);
-          ctx.fillStyle = WHITE;
-          ctx.font = `26px ${FOOD_FONT}`;
-          ctx.textAlign = "left";
-          ctx.fillText(`🍖  ${name}`, PAD + 10, y + 26);
-          y += 40;
-        }
-
-        y += 10;
-
-        const menuPrice = 2200;
-        ctx.fillStyle = YELLOW;
-        ctx.font = "34px Sofia, Georgia, serif";
-        ctx.textAlign = "left";
-        ctx.fillText(`Helyben: ${formatPrice(menuPrice)} Ft`, PAD, y + 34);
-
-        ctx.fillStyle = YELLOW;
-        ctx.font = "20px Sofia, Georgia, serif";
-        ctx.textAlign = "right";
-        ctx.fillText("(+ 200.- Ft elvitelre a 2 doboz)", W - PAD, y + 30);
-        y += 50;
-      }
-
-      // Footer
-      y += 30;
-      ctx.fillStyle = "rgba(239, 190, 19, 0.7)";
-      ctx.font = "italic 14px Sofia, Georgia, serif";
-      ctx.textAlign = "center";
-      ctx.fillText(
-        "A feltüntetett árak köretet nem tartalmazzák! Elviteles doboz: 150.- Ft/étel.",
-        W / 2,
-        y
-      );
-      y += 20;
-      ctx.fillText(
-        "Levesből, főzelékekből és a köretekből fél adag is kérhető, fél adagnál 70%-os árat számlázunk.",
-        W / 2,
-        y
-      );
-      y += 24;
-
-      ctx.fillStyle = "rgba(255,255,255,0.5)";
-      ctx.font = "16px Sofia, Georgia, serif";
-      ctx.textAlign = "center";
-      ctx.fillText("Jó étvágyat kívánunk! 🐥", W / 2, y);
-
-      // Logo watermark (bottom-right)
-      if (logoImg) {
-        ctx.save();
-        ctx.globalAlpha = 0.45;
-        ctx.drawImage(logoImg, W - PAD - 70, H - 90, 70, 70);
-        ctx.restore();
-      }
-
-      setCanvasDataUrl(canvas.toDataURL("image/png"));
-    };
-
-    // Load logo and render
-    const logo = new Image();
-    logo.crossOrigin = "anonymous";
-    logo.onload = () => renderContent(logo);
-    logo.onerror = () => renderContent();
-    logo.src = "/assets/kiscsibe_logo_round.png";
+    setDataUrls(newDataUrls);
   };
 
-  function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
-    const words = text.split(" ");
-    const lines: string[] = [];
-    let currentLine = "";
-    for (const word of words) {
-      const test = currentLine ? `${currentLine} ${word}` : word;
-      if (ctx.measureText(test).width > maxWidth) {
-        if (currentLine) lines.push(currentLine);
-        currentLine = word;
-      } else {
-        currentLine = test;
-      }
-    }
-    if (currentLine) lines.push(currentLine);
-    return lines;
-  }
-
-  const handleDownload = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+  const handleDownload = (formatKey: string) => {
+    const fmt = FORMATS.find(f => f.key === formatKey);
+    if (!fmt) return;
+    const dataUrl = dataUrls[formatKey];
+    if (!dataUrl) return;
     const link = document.createElement("a");
-    link.download = `napi_ajanlat_${selectedDate}.png`;
-    link.href = canvas.toDataURL("image/png");
+    link.download = `napi_ajanlat_${fmt.filename}_${selectedDate}.png`;
+    link.href = dataUrl;
     link.click();
     toast.success("Kép letöltve!");
   };
@@ -457,8 +490,21 @@ const DailyOfferImageGenerator = () => {
   const dayOfWeek = getDay(dateObj);
   const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
+  const openPreview = (formatKey: string) => {
+    const url = dataUrls[formatKey];
+    if (url) {
+      setPreviewDataUrl(url);
+      setShowPreview(true);
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {/* Hidden canvases */}
+      <canvas ref={fbCanvasRef} className="hidden" />
+      <canvas ref={instaPostCanvasRef} className="hidden" />
+      <canvas ref={instaStoryCanvasRef} className="hidden" />
+
       {/* Day Selector */}
       <Card>
         <CardHeader className="pb-3">
@@ -521,46 +567,61 @@ const DailyOfferImageGenerator = () => {
         </Card>
       ) : (
         <>
-          {/* Canvas Preview + Download */}
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <ImageIcon className="h-5 w-5" />
-                  Napi ajánlat kép
-                </CardTitle>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setShowPreview(true)} className="gap-1.5">
-                    <ZoomIn className="h-4 w-4" />
-                    Nagyítás
-                  </Button>
-                  <Button onClick={handleDownload} size="sm" className="gap-1.5">
-                    <Download className="h-4 w-4" />
-                    Letöltés
-                  </Button>
+          {/* 3 Format Preview Cards */}
+          {FORMATS.map((fmt) => (
+            <Card key={fmt.key}>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <ImageIcon className="h-5 w-5" />
+                    {fmt.label}
+                    <Badge variant="secondary" className="text-xs">
+                      {fmt.width} × {fmt.height}
+                    </Badge>
+                  </CardTitle>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => openPreview(fmt.key)} className="gap-1.5">
+                      <ZoomIn className="h-4 w-4" />
+                      Nagyítás
+                    </Button>
+                    <Button onClick={() => handleDownload(fmt.key)} size="sm" className="gap-1.5">
+                      <Download className="h-4 w-4" />
+                      Letöltés
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-center">
-                <canvas
-                  ref={canvasRef}
-                  onClick={() => setShowPreview(true)}
-                  className="w-full max-w-[500px] rounded-lg shadow-lg border border-border cursor-pointer hover:opacity-90 transition-opacity"
-                />
-              </div>
-            </CardContent>
-          </Card>
+              </CardHeader>
+              <CardContent>
+                <div className="flex justify-center">
+                  {dataUrls[fmt.key] ? (
+                    <img
+                      src={dataUrls[fmt.key]}
+                      alt={fmt.label}
+                      onClick={() => openPreview(fmt.key)}
+                      className={`rounded-lg shadow-lg border border-border cursor-pointer hover:opacity-90 transition-opacity ${
+                        fmt.key === "instaStory" ? "max-w-[250px]" : "max-w-[500px]"
+                      } w-full`}
+                    />
+                  ) : (
+                    <div className="flex items-center gap-2 text-muted-foreground py-8">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Generálás...
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
 
           {/* Lightbox Dialog */}
           <Dialog open={showPreview} onOpenChange={setShowPreview}>
             <DialogContent className="max-w-[95vw] sm:max-w-4xl p-2">
-              <DialogTitle className="sr-only">Napi ajánlat kép előnézet</DialogTitle>
-              {canvasDataUrl && (
+              <DialogTitle className="sr-only">Kép előnézet</DialogTitle>
+              {previewDataUrl && (
                 <img
-                  src={canvasDataUrl}
+                  src={previewDataUrl}
                   alt="Napi ajánlat kép"
-                  className="w-full rounded-lg"
+                  className="w-full rounded-lg max-h-[85vh] object-contain"
                 />
               )}
             </DialogContent>
