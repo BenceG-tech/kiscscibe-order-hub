@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrderNotifications } from "@/contexts/OrderNotificationsContext";
+import { useOverdueInvoices } from "@/hooks/useOverdueInvoices";
 import { 
   Package, 
   Calendar, 
@@ -23,35 +24,49 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const { profile, signOut } = useAuth();
   const { newOrdersCount, clearNewOrdersCount } = useOrderNotifications();
+  const { data: finData } = useOverdueInvoices();
+  const overdueCount = finData?.overdueCount || 0;
 
   const handleSignOut = async () => {
     await signOut();
   };
 
-  // Clear badge when navigating to orders
   const handleOrdersClick = () => {
     clearNewOrdersCount();
   };
 
   const adminNavItems = [
-    { href: "/admin", label: "Irányítópult", mobileLabel: "Kezdő", icon: LayoutDashboard, showBadge: false },
-    { href: "/admin/orders", label: "Rendelések", mobileLabel: "Rendelés", icon: ShoppingBag, showBadge: true },
-    { href: "/admin/menu", label: "Étlap kezelés", mobileLabel: "Étlap", icon: Package, showBadge: false },
-    { href: "/admin/daily-menu", label: "Napi ajánlat", mobileLabel: "Napi", icon: Calendar, showBadge: false },
-    { href: "/admin/gallery", label: "Galéria", mobileLabel: "Galéria", icon: Image, showBadge: false },
-    { href: "/admin/legal", label: "Jogi oldalak", mobileLabel: "Jogi", icon: FileText, showBadge: false },
-    { href: "/admin/about", label: "Rólunk", mobileLabel: "Rólunk", icon: Info, showBadge: false },
-    { href: "/admin/analytics", label: "Statisztika", mobileLabel: "Stat.", icon: BarChart3, showBadge: false },
-    { href: "/admin/coupons", label: "Kuponok", mobileLabel: "Kupon", icon: Tag, showBadge: false },
-    { href: "/admin/invoices", label: "Számlák", mobileLabel: "Számla", icon: Receipt, showBadge: false },
+    { href: "/admin", label: "Irányítópult", mobileLabel: "Kezdő", icon: LayoutDashboard, badgeCount: 0 },
+    { href: "/admin/orders", label: "Rendelések", mobileLabel: "Rendelés", icon: ShoppingBag, badgeCount: newOrdersCount, onClickOverride: handleOrdersClick },
+    { href: "/admin/menu", label: "Étlap kezelés", mobileLabel: "Étlap", icon: Package, badgeCount: 0 },
+    { href: "/admin/daily-menu", label: "Napi ajánlat", mobileLabel: "Napi", icon: Calendar, badgeCount: 0 },
+    { href: "/admin/gallery", label: "Galéria", mobileLabel: "Galéria", icon: Image, badgeCount: 0 },
+    { href: "/admin/legal", label: "Jogi oldalak", mobileLabel: "Jogi", icon: FileText, badgeCount: 0 },
+    { href: "/admin/about", label: "Rólunk", mobileLabel: "Rólunk", icon: Info, badgeCount: 0 },
+    { href: "/admin/analytics", label: "Statisztika", mobileLabel: "Stat.", icon: BarChart3, badgeCount: 0 },
+    { href: "/admin/coupons", label: "Kuponok", mobileLabel: "Kupon", icon: Tag, badgeCount: 0 },
+    { href: "/admin/invoices", label: "Számlák", mobileLabel: "Számla", icon: Receipt, badgeCount: overdueCount },
   ];
+
+  const renderBadge = (count: number, size: "sm" | "lg") => {
+    if (count <= 0) return null;
+    const dim = size === "lg" ? "h-5 w-5" : "h-4 w-4";
+    const text = size === "lg" ? "text-[10px]" : "text-[9px]";
+    return (
+      <span className={`absolute -top-1 -right-1 flex ${dim} items-center justify-center`}>
+        <span className={`absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive opacity-75`}></span>
+        <span className={`relative inline-flex ${dim} items-center justify-center rounded-full bg-destructive ${text} font-bold text-destructive-foreground`}>
+          {count > 9 ? '9+' : count}
+        </span>
+      </span>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background">
       {/* Sticky Admin Header */}
       <header className="sticky top-0 z-50 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 border-b h-14">
         <div className="mx-auto max-w-screen-xl px-3 sm:px-4 flex items-center gap-2 sm:gap-4 h-full">
-          {/* Left: Logo + Brand */}
           <div className="flex items-center gap-2 min-w-0">
             <Button variant="ghost" size="sm" asChild className="hidden sm:flex">
               <Link to="/" className="flex items-center gap-2">
@@ -71,7 +86,6 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
             </div>
           </div>
 
-          {/* Right: User + Actions */}
           <div className="ml-auto flex items-center gap-1 sm:gap-2">
             {profile && (
               <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
@@ -99,14 +113,13 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
 
       {/* Sticky Navigation Tabs */}
       <nav className="sticky top-14 z-40 bg-card/95 backdrop-blur border-b">
-        {/* Desktop: horizontal scroll */}
         <div className="hidden md:block overflow-x-auto no-scrollbar">
           <ul className="flex min-w-full items-center px-3 py-2">
             {adminNavItems.map((item, index) => (
               <li key={item.href} className={index < adminNavItems.length - 1 ? "mr-6" : ""}>
                 <Link
                   to={item.href}
-                  onClick={item.showBadge ? handleOrdersClick : undefined}
+                  onClick={item.onClickOverride}
                   className={`relative flex items-center gap-2 px-3 py-2 rounded-md font-medium transition-all duration-200 whitespace-nowrap min-h-[36px] border-b-2 ${
                     location.pathname === item.href 
                       ? "bg-primary text-primary-foreground border-primary" 
@@ -115,27 +128,19 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
                 >
                   <item.icon className="h-4 w-4" />
                   <span>{item.label}</span>
-                  {item.showBadge && newOrdersCount > 0 && (
-                    <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive opacity-75"></span>
-                      <span className="relative inline-flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
-                        {newOrdersCount > 9 ? '9+' : newOrdersCount}
-                      </span>
-                    </span>
-                  )}
+                  {renderBadge(item.badgeCount, "lg")}
                 </Link>
               </li>
             ))}
           </ul>
         </div>
-        {/* Mobile: compact horizontal scroll */}
         <div className="md:hidden overflow-x-auto no-scrollbar">
           <ul className="flex items-center gap-1 px-2 py-1.5 min-w-max">
             {adminNavItems.map((item) => (
               <li key={item.href}>
                 <Link
                   to={item.href}
-                  onClick={item.showBadge ? handleOrdersClick : undefined}
+                  onClick={item.onClickOverride}
                   className={`relative flex items-center gap-1 px-2.5 py-1.5 rounded-md font-medium transition-all duration-200 whitespace-nowrap text-xs ${
                     location.pathname === item.href 
                       ? "bg-primary text-primary-foreground" 
@@ -144,14 +149,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
                 >
                   <item.icon className="h-3.5 w-3.5" />
                   <span>{item.mobileLabel}</span>
-                  {item.showBadge && newOrdersCount > 0 && (
-                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive opacity-75"></span>
-                      <span className="relative inline-flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground">
-                        {newOrdersCount > 9 ? '9+' : newOrdersCount}
-                      </span>
-                    </span>
-                  )}
+                  {renderBadge(item.badgeCount, "sm")}
                 </Link>
               </li>
             ))}

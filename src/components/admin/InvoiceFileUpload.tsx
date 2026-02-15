@@ -9,6 +9,8 @@ interface Props {
   onChange: (urls: string[]) => void;
 }
 
+const isImageUrl = (url: string) => /\.(jpg|jpeg|png|gif|webp|heic|heif)/i.test(url);
+
 const InvoiceFileUpload = ({ fileUrls, onChange }: Props) => {
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -32,14 +34,13 @@ const InvoiceFileUpload = ({ fileUrls, onChange }: Props) => {
         continue;
       }
 
+      const { data: signedData } = await supabase.storage
+        .from("invoices")
+        .createSignedUrl(path, 60 * 60 * 24 * 365);
+
       const { data: urlData } = supabase.storage
         .from("invoices")
         .getPublicUrl(path);
-
-      // For private buckets we use signed URLs
-      const { data: signedData } = await supabase.storage
-        .from("invoices")
-        .createSignedUrl(path, 60 * 60 * 24 * 365); // 1 year
 
       newUrls.push(signedData?.signedUrl || urlData.publicUrl);
     }
@@ -51,11 +52,6 @@ const InvoiceFileUpload = ({ fileUrls, onChange }: Props) => {
 
   const remove = (idx: number) => {
     onChange(fileUrls.filter((_, i) => i !== idx));
-  };
-
-  const getFileIcon = (url: string) => {
-    if (url.match(/\.(pdf)$/i) || url.includes(".pdf")) return <FileText className="h-4 w-4" />;
-    return <ImageIcon className="h-4 w-4" />;
   };
 
   return (
@@ -110,10 +106,20 @@ const InvoiceFileUpload = ({ fileUrls, onChange }: Props) => {
         <div className="space-y-1">
           {fileUrls.map((url, idx) => (
             <div key={idx} className="flex items-center gap-2 text-sm bg-muted/50 rounded px-2 py-1">
-              {getFileIcon(url)}
-              <span className="truncate flex-1 text-xs">
+              {isImageUrl(url) ? (
+                <img src={url} alt={`Fájl ${idx + 1}`} className="h-8 w-8 rounded object-cover shrink-0" />
+              ) : (
+                <FileText className="h-4 w-4 shrink-0" />
+              )}
+              <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="truncate flex-1 text-xs hover:underline"
+                onClick={(e) => e.stopPropagation()}
+              >
                 Fájl {idx + 1}
-              </span>
+              </a>
               <Button
                 type="button"
                 variant="ghost"
