@@ -1074,6 +1074,10 @@ export type Database = {
       is_date_in_past: { Args: { check_date: string }; Returns: boolean }
       is_staff: { Args: { _user_id?: string }; Returns: boolean }
       is_weekend: { Args: { check_date: string }; Returns: boolean }
+      update_capacity_slot: {
+        Args: { qty?: number; slot_date: string; slot_time: string }
+        Returns: boolean
+      }
       update_daily_portions: {
         Args: { daily_id: string; quantity_needed: number; table_name: string }
         Returns: boolean

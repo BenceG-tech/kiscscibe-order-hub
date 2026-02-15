@@ -142,8 +142,40 @@ serve(async (req) => {
 
         // Use current price from database (not client-submitted price)
         const currentPrice = menuItem.price_huf;
-        const modifiersTotal = (item.modifiers || []).reduce((sum, mod) => sum + mod.price_delta_huf, 0);
-        const sidesTotal = (item.sides || []).reduce((sum, side) => sum + side.price_huf, 0);
+        
+        // Server-side validation of modifier prices (don't trust client)
+        let modifiersTotal = 0;
+        if (item.modifiers && item.modifiers.length > 0) {
+          const { data: modOptions } = await supabase
+            .from('item_modifier_options')
+            .select('label, price_delta_huf')
+            .eq('modifier_id', item.item_id);
+          
+          const modPriceMap = new Map((modOptions || []).map(m => [m.label, m.price_delta_huf]));
+          
+          for (const mod of item.modifiers) {
+            const serverPrice = modPriceMap.get(mod.label_snapshot);
+            modifiersTotal += serverPrice !== undefined ? serverPrice : mod.price_delta_huf;
+          }
+        }
+        
+        // Server-side validation of side prices (don't trust client)
+        let sidesTotal = 0;
+        if (item.sides && item.sides.length > 0) {
+          const sideIds = item.sides.map(s => s.id);
+          const { data: sideItems } = await supabase
+            .from('menu_items')
+            .select('id, price_huf')
+            .in('id', sideIds);
+          
+          const sidePriceMap = new Map((sideItems || []).map(s => [s.id, s.price_huf]));
+          
+          for (const side of item.sides) {
+            const serverPrice = sidePriceMap.get(side.id);
+            sidesTotal += serverPrice !== undefined ? serverPrice : side.price_huf;
+          }
+        }
+        
         const lineTotal = (currentPrice + modifiersTotal + sidesTotal) * item.qty;
         
         calculatedTotal += lineTotal;
@@ -431,22 +463,22 @@ serve(async (req) => {
         throw new Error('Időpont nem elérhető');
       }
 
-      if (capacityData.booked_orders >= capacityData.max_orders) {
-        throw new Error('Az időpont közben betelt. Kérjük válasszon másikat.');
+      // Race-safe atomic capacity slot update
+      const { data: slotUpdateSuccess, error: slotUpdateError } = await supabase
+        .rpc('update_capacity_slot', {
+          slot_date: date,
+          slot_time: time,
+          qty: 1
+        });
+
+      if (slotUpdateError) {
+        console.error('Capacity update error:', slotUpdateError);
+        throw new Error(slotUpdateError.message || 'Hiba az időpont foglalása során');
       }
-
-      // Update booked orders count
-      const { error: updateError } = await supabase
-        .from('capacity_slots')
-        .update({ 
-          booked_orders: capacityData.booked_orders + 1 
-        })
-        .eq('date', date)
-        .eq('timeslot', time); // Already normalized to HH:MM:SS
-
-      if (updateError) {
-        console.error('Capacity update error:', updateError);
-        throw new Error('Hiba az időpont foglalása során');
+      
+      if (!slotUpdateSuccess) {
+        // Slot didn't exist - this shouldn't happen since we just created/fetched it
+        throw new Error('Az időpont nem elérhető');
       }
     }
 
