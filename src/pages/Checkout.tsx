@@ -14,7 +14,60 @@ import { useToast } from "@/components/ui/use-toast";
 import { LoadingSpinner } from "@/components/ui/loading";
 import { Badge } from "@/components/ui/badge";
 import ModernNavigation from "@/components/ModernNavigation";
-import { ArrowLeft, Clock, CreditCard, User } from "lucide-react";
+import { ArrowLeft, Check, Clock, CreditCard, ShoppingCart, User, FileText } from "lucide-react";
+
+// --- Progress Indicator Component ---
+const CheckoutProgress = () => {
+  const steps = [
+    { label: "Kosár", icon: ShoppingCart, status: "done" as const },
+    { label: "Adatok", icon: User, status: "current" as const },
+    { label: "Összesítő", icon: FileText, status: "upcoming" as const },
+  ];
+
+  return (
+    <div className="flex items-center justify-center w-full mb-8">
+      {steps.map((step, index) => (
+        <div key={step.label} className="flex items-center">
+          <div className="flex flex-col items-center">
+            <div
+              className={`flex items-center justify-center w-9 h-9 rounded-full border-2 transition-colors ${
+                step.status === "done"
+                  ? "bg-green-600 border-green-600 text-white"
+                  : step.status === "current"
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-muted-foreground/30 bg-muted text-muted-foreground"
+              }`}
+            >
+              {step.status === "done" ? (
+                <Check className="h-5 w-5" />
+              ) : (
+                <step.icon className="h-4 w-4" />
+              )}
+            </div>
+            <span
+              className={`mt-1.5 text-xs font-medium ${
+                step.status === "done"
+                  ? "text-green-600"
+                  : step.status === "current"
+                  ? "text-primary font-bold"
+                  : "text-muted-foreground"
+              }`}
+            >
+              {step.label}
+            </span>
+          </div>
+          {index < steps.length - 1 && (
+            <div
+              className={`w-12 sm:w-20 h-0.5 mx-2 mt-[-1rem] ${
+                step.status === "done" ? "bg-green-600" : "bg-muted-foreground/20"
+              }`}
+            />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
 
 interface TimeSlot {
   date: string;
@@ -23,6 +76,26 @@ interface TimeSlot {
   max_capacity: number;
   utilization_percent: number;
 }
+
+// --- Validation helpers ---
+const validateName = (v: string): string | undefined => {
+  if (v.length > 0 && v.length < 2) return "A név legalább 2 karakter legyen";
+  if (v.length > 100) return "A név legfeljebb 100 karakter lehet";
+  return undefined;
+};
+
+const validatePhone = (v: string): string | undefined => {
+  if (!v) return undefined;
+  const digits = v.replace(/\s/g, "");
+  if (!/^\d{9}$/.test(digits)) return "Kérjük, adj meg egy érvényes telefonszámot";
+  return undefined;
+};
+
+const validateEmail = (v: string): string | undefined => {
+  if (!v) return undefined;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return "Kérjük, adj meg egy érvényes email címet";
+  return undefined;
+};
 
 const Checkout = () => {
   const { state: cart, clearCart, applyCoupon, removeCoupon } = useCart();
@@ -46,6 +119,29 @@ const Checkout = () => {
   const [couponCode, setCouponCode] = useState("");
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponMessage, setCouponMessage] = useState<{ success: boolean; text: string } | null>(null);
+
+  // --- Inline validation state ---
+  const [fieldErrors, setFieldErrors] = useState<{ name?: string; phone?: string; email?: string }>({});
+  const [touched, setTouched] = useState<{ name?: boolean; phone?: boolean; email?: boolean }>({});
+
+  // Debounced validation
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const errors: typeof fieldErrors = {};
+      if (touched.name) errors.name = validateName(formData.name);
+      if (touched.phone) errors.phone = validatePhone(formData.phone);
+      if (touched.email) errors.email = validateEmail(formData.email);
+      setFieldErrors(errors);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [formData.name, formData.phone, formData.email, touched]);
+
+  const handleBlur = (field: "name" | "phone" | "email") => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+  };
+
+  const hasValidationErrors = Object.values(fieldErrors).some(Boolean);
+  const requiredFieldsMissing = !formData.name || !formData.phone || !formData.email;
   
   // Extract daily item dates from cart with useMemo for efficiency
   const dailyDates = useMemo(() => {
@@ -56,7 +152,6 @@ const Checkout = () => {
 
   // Safe date creation to avoid timezone issues
   const makeDate = (dateStr: string): Date => {
-    // Create date using local timezone to avoid UTC conversion issues
     const [year, month, day] = dateStr.split('-').map(Number);
     return new Date(year, month - 1, day);
   };
@@ -65,27 +160,24 @@ const Checkout = () => {
     const slotDate = makeDate(date);
     const dayOfWeek = slotDate.getDay();
     
-    // Skip Sundays (0)
     if (dayOfWeek === 0) return [];
     
     const slots: TimeSlot[] = [];
     let startHour = 7;
     let endHour = 15;
     
-    // Saturday has different hours
     if (dayOfWeek === 6) {
       startHour = 8;
       endHour = 14;
     }
     
-    // Generate 30-minute slots
     for (let hour = startHour; hour < endHour; hour++) {
       for (let minute = 0; minute < 60; minute += 30) {
         const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:00`;
         slots.push({
           date,
           timeslot: timeString,
-          available_capacity: 8, // Default capacity
+          available_capacity: 8,
           max_capacity: 8,
           utilization_percent: 0
         });
@@ -100,7 +192,6 @@ const Checkout = () => {
     try {
       const today = new Date();
       
-      // Step 1: Determine target dates
       let targetDates: string[] = [];
       
       if (dailyDates.length > 0) {
@@ -128,7 +219,6 @@ const Checkout = () => {
         }
       }
       
-      // Step 1.5: Fetch blackout dates and filter them out
       const { data: blackoutData } = await supabase
         .from("blackout_dates")
         .select("date")
@@ -137,14 +227,12 @@ const Checkout = () => {
       const blackoutSet = new Set((blackoutData || []).map(b => b.date));
       targetDates = targetDates.filter(d => !blackoutSet.has(d));
       
-      // Step 2: Generate all possible business hour slots for target dates
       let allSlots: TimeSlot[] = [];
       for (const date of targetDates) {
         const dateSlots = generateBusinessHourSlots(date);
         allSlots = [...allSlots, ...dateSlots];
       }
       
-      // Step 3: Fetch capacity data from database
       const { data: capacityData, error } = await supabase
         .from("capacity_slots")
         .select("date, timeslot, max_orders, booked_orders, buffer_minutes")
@@ -156,7 +244,6 @@ const Checkout = () => {
         console.error("Error fetching capacity data:", error);
       }
       
-      // Step 4: Build capacity map and buffer set
       const capacityMap = new Map<string, { max_orders: number; booked_orders: number; buffer_minutes: number }>();
       const bufferBlockedSlots = new Set<string>();
       
@@ -169,7 +256,6 @@ const Checkout = () => {
             buffer_minutes: slot.buffer_minutes || 0
           });
           
-          // Mark buffer-blocked slots
           if (slot.buffer_minutes > 0) {
             const [h, m] = slot.timeslot.split(':').map(Number);
             const slotMinutes = h * 60 + m;
@@ -184,7 +270,6 @@ const Checkout = () => {
         }
       }
       
-      // Step 5: Apply capacity data, filter, and add utilization info
       const finalSlots = allSlots
         .map(slot => {
           const key = `${slot.date}_${slot.timeslot}`;
@@ -206,11 +291,8 @@ const Checkout = () => {
         .filter(slot => {
           const key = `${slot.date}_${slot.timeslot}`;
           
-          // Filter out buffer-blocked slots
           if (bufferBlockedSlots.has(key)) return false;
           
-          // Keep full slots (we'll show them as disabled) but filter truly unavailable
-          // Filter out past slots
           const slotDate = makeDate(slot.date);
           const [hours, minutes] = slot.timeslot.split(':').map(Number);
           slotDate.setHours(hours, minutes, 0, 0);
@@ -227,7 +309,6 @@ const Checkout = () => {
       
       setTimeSlots(finalSlots);
       
-      // Auto-select first available slot if no slot is selected
       const availableSlots = finalSlots.filter(s => s.available_capacity > 0);
       if (availableSlots.length > 0 && !formData.pickup_time) {
         const firstSlot = availableSlots[0];
@@ -258,14 +339,12 @@ const Checkout = () => {
     }
   }, [dailyDates, toast, formData.pickup_time]);
 
-  // Redirect if cart is empty and handle initial setup
   useEffect(() => {
     if (cart.items.length === 0) {
       navigate("/etlap");
       return;
     }
     
-    // Auto-select scheduled pickup if cart has daily items
     if (dailyDates.length > 0 && formData.pickup_type === "asap") {
       setFormData(prev => ({ ...prev, pickup_type: "scheduled" }));
     }
@@ -275,13 +354,11 @@ const Checkout = () => {
 
   const getDailyItemDates = () => dailyDates;
 
-  // Check if cart has mixed daily items from different dates
   const hasMultipleDailyDates = () => {
     const dailyDates = getDailyItemDates();
     return dailyDates.length > 1;
   };
 
-  // Get the constraint message for pickup time
   const getPickupConstraint = () => {
     const dailyDates = getDailyItemDates();
     if (dailyDates.length === 0) return null;
@@ -298,19 +375,16 @@ const Checkout = () => {
     return "Különböző dátumú napi ajánlatok/menük miatt korlátozott időpontok";
   };
 
-  
   const isBusinessHours = () => {
     const now = new Date();
     const currentHour = now.getHours();
-    const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const currentDay = now.getDay();
     
-    // Check if it's Sunday (closed)
-    if (currentDay === 0) return false; // Sunday closed
+    if (currentDay === 0) return false;
     
-    // Check opening hours
-    if (currentDay >= 1 && currentDay <= 5) { // Monday-Friday
+    if (currentDay >= 1 && currentDay <= 5) {
       return currentHour >= 7 && currentHour < 15;
-    } else if (currentDay === 6) { // Saturday
+    } else if (currentDay === 6) {
       return currentHour >= 8 && currentHour < 14;
     }
     
@@ -332,6 +406,16 @@ const Checkout = () => {
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Run validation as safety net
+    const nameErr = validateName(formData.name);
+    const phoneErr = validatePhone(formData.phone);
+    const emailErr = validateEmail(formData.email);
+    if (nameErr || phoneErr || emailErr) {
+      setTouched({ name: true, phone: true, email: true });
+      setFieldErrors({ name: nameErr, phone: phoneErr, email: emailErr });
+      return;
+    }
     
     console.log('=== RENDELÉS LEADÁS DEBUG ===');
     console.log('Form data:', formData);
@@ -340,7 +424,6 @@ const Checkout = () => {
     console.log('Multiple daily dates:', hasMultipleDailyDates());
     console.log('Business hours:', isBusinessHours());
     
-    // Prevent submission if cart has multiple daily dates
     if (hasMultipleDailyDates()) {
       toast({
         title: "Hiba",
@@ -350,7 +433,6 @@ const Checkout = () => {
       return;
     }
     
-    // Validate pickup time is not in the past
     if (formData.pickup_type === 'scheduled' && formData.pickup_date && formData.pickup_time) {
       const selectedTime = new Date(`${formData.pickup_date}T${formData.pickup_time}`);
       const now = new Date();
@@ -364,11 +446,9 @@ const Checkout = () => {
         return;
       }
       
-      // Check business hours
       const dayOfWeek = selectedTime.getDay();
       const hour = selectedTime.getHours();
       
-      // Check if it's Sunday (closed)
       if (dayOfWeek === 0) {
         toast({
           title: "Hiba", 
@@ -378,11 +458,10 @@ const Checkout = () => {
         return;
       }
       
-      // Check opening hours
       let isValidTime = false;
-      if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Monday-Friday
+      if (dayOfWeek >= 1 && dayOfWeek <= 5) {
         isValidTime = hour >= 7 && hour < 15;
-      } else if (dayOfWeek === 6) { // Saturday
+      } else if (dayOfWeek === 6) {
         isValidTime = hour >= 8 && hour < 14;
       }
       
@@ -401,7 +480,6 @@ const Checkout = () => {
     try {
       console.log('Calling submit-order edge function...');
       
-      // Call the submit-order edge function
       const { data, error } = await supabase.functions.invoke("submit-order", {
         body: {
           customer: {
@@ -439,7 +517,6 @@ const Checkout = () => {
       
       if (error) throw error;
       
-      // Clear cart and redirect to confirmation
       clearCart();
       navigate(`/order-confirmation?code=${data.order_code}&phone=${encodeURIComponent(formData.phone)}&email=${encodeURIComponent(formData.email)}`);
       
@@ -458,7 +535,7 @@ const Checkout = () => {
   const canOrderToday = isBusinessHours();
   
   if (cart.items.length === 0) {
-    return null; // Will redirect in useEffect
+    return null;
   }
   
   return (
@@ -467,6 +544,9 @@ const Checkout = () => {
       
       <main className="pt-32 pb-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Progress Indicator */}
+          <CheckoutProgress />
+
           <div className="mb-6">
             <Button
               variant="ghost"
@@ -600,9 +680,13 @@ const Checkout = () => {
                         id="name"
                         value={formData.name}
                         onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                        onBlur={() => handleBlur("name")}
                         required
                         placeholder="Teljes név"
                       />
+                      {fieldErrors.name && (
+                        <p className="text-sm text-destructive mt-1">{fieldErrors.name}</p>
+                      )}
                     </div>
                     
                     <div>
@@ -616,15 +700,18 @@ const Checkout = () => {
                           type="tel"
                           value={formData.phone}
                           onChange={(e) => {
-                            // Only allow digits and spaces
                             const val = e.target.value.replace(/[^\d\s]/g, '');
                             setFormData(prev => ({ ...prev, phone: val }));
                           }}
+                          onBlur={() => handleBlur("phone")}
                           required
-                          placeholder="20 123 4567"
+                          placeholder="30 123 4567"
                           className="rounded-l-none"
                         />
                       </div>
+                      {fieldErrors.phone && (
+                        <p className="text-sm text-destructive mt-1">{fieldErrors.phone}</p>
+                      )}
                     </div>
                     
                     <div>
@@ -634,9 +721,13 @@ const Checkout = () => {
                         type="email"
                         value={formData.email}
                         onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                        onBlur={() => handleBlur("email")}
                         required
                         placeholder="pelda@email.com"
                       />
+                      {fieldErrors.email && (
+                        <p className="text-sm text-destructive mt-1">{fieldErrors.email}</p>
+                      )}
                     </div>
                     
                     <div>
@@ -660,7 +751,6 @@ const Checkout = () => {
                       Átvételi idő
                     </Label>
                     
-                    {/* Show pickup constraint for daily items */}
                     {getPickupConstraint() && (
                       <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg p-3">
                         <p className="text-sm text-orange-800 dark:text-orange-200 font-medium">
@@ -669,7 +759,6 @@ const Checkout = () => {
                       </div>
                     )}
                     
-                    {/* Show warning for multiple daily dates */}
                     {hasMultipleDailyDates() && (
                       <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
                         <p className="text-sm text-red-800 dark:text-red-200 font-medium">
@@ -783,14 +872,20 @@ const Checkout = () => {
                         setFormData(prev => ({ ...prev, payment_method: value }))
                       }
                     >
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="cash" id="cash" />
-                        <Label htmlFor="cash">Készpénz átvételkor</Label>
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="cash" id="cash" />
+                          <Label htmlFor="cash">Készpénz átvételkor</Label>
+                        </div>
+                        <p className="text-xs text-muted-foreground ml-6">Fizetés átvételkor a helyszínen</p>
                       </div>
                       
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="card" id="card" />
-                        <Label htmlFor="card">Bankkártya átvételkor</Label>
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="card" id="card" />
+                          <Label htmlFor="card">Bankkártya átvételkor</Label>
+                        </div>
+                        <p className="text-xs text-muted-foreground ml-6">Bankkártyás fizetés átvételkor</p>
                       </div>
                     </RadioGroup>
                   </div>
@@ -814,6 +909,8 @@ const Checkout = () => {
                       disabled={
                         isSubmitting || 
                         hasMultipleDailyDates() ||
+                        hasValidationErrors ||
+                        requiredFieldsMissing ||
                         (formData.pickup_type === "scheduled" && (!formData.pickup_date || !formData.pickup_time))
                       }
                     >
