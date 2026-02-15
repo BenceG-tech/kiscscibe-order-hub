@@ -221,14 +221,11 @@ const DailyOfferImageGenerator = () => {
     canvas.width = W;
     canvas.height = H;
 
-    // Background: #12171A with subtle white gradient left-to-right
-    ctx.fillStyle = "#12171A";
-    ctx.fillRect(0, 0, W, H);
-    const whiteGrad = ctx.createLinearGradient(0, 0, W, 0);
-    whiteGrad.addColorStop(0, "rgba(255,255,255,0.04)");
-    whiteGrad.addColorStop(0.5, "rgba(255,255,255,0.015)");
-    whiteGrad.addColorStop(1, "rgba(255,255,255,0)");
-    ctx.fillStyle = whiteGrad;
+    // Background: blue gradient left-to-right
+    const bgGrad = ctx.createLinearGradient(0, 0, W, 0);
+    bgGrad.addColorStop(0, "#1c232f");
+    bgGrad.addColorStop(1, "#252b38");
+    ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, W, H);
 
     // No border/frame
