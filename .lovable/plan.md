@@ -1,53 +1,49 @@
 
 
-# Kep generator elrendezes finomhangolas -- mind a 3 formatum
+# Instagram elrendezes tomorites + Menu ar alapertelmezett ertek
 
-## Problema
-A `drawToCanvas` fuggveny fix `scale = W / 1200` erteket hasznal, ami nem veszi figyelembe a canvas magassagat. Emiatt:
-- **Facebook (1200x675)**: a tartalom ~800px magas 8 etelnel, de a canvas csak 675px -- az also resz (menu ar, footer) lecsusznak
-- **Insta Post (1080x1080)**: a tartalom a tetejere tomorodik, alul sok ures hely marad
-- **Insta Story (1080x1920)**: a tartalom nagyon kicsi a hatalmas canvas-hez kepest
+## 1. Instagram kepek: szorosabb elrendezes
 
-## Megoldas: ket lepcsos skalazas
+A `drawToCanvas` fuggvenyben az a la carte tetelek kozotti sorkozt (jelenleg `42 * scale`) es a menu tetelek kozotti sorkozt (jelenleg `40 * scale`) csokkentjuk, hogy a szoveg nagyobb es olvashatobb lehessen. Az Instagram formatumoknal (1080px szeles) a tartalom jelenleg tul kicsi, mert a nagy sorozes sok helyet foglal.
 
-A jelenlegi egydimenios `scale = W / 1200` helyett a rajzolo fuggveny:
+Valtozasok a `drawToCanvas`-ben:
+- A la carte sorozes: `42` -> `34` (base px)
+- Menu sorozes: `40` -> `34`
+- Menu cim utani hely: `52` -> `42`
+- Separator utani hely: `30` -> `22`
+- Note sorozes: `28` -> `24`
+- Footer elotti hely: `30` -> `20`
 
-1. Eloszor kiszamolja a tartalom teljes magassagat az alap (1200px-es) meretekkel
-2. Utana kiszamol egy `vScale` (vertikalis skala) erteket: `availableHeight / contentHeight`
-3. A vegso skala: `min(hScale, vScale)` -- igy a tartalom mindig beleferr a canvas-be
-4. Az Instagram story eseten a tartalom kozepre igazodik a magas canvas-ben (ez mar megvan, de a jobb skalazassal szebben fog kinezni)
+A `measureContentHeight` fuggvenyt szinten frissiteni kell ugyanezekkel az ertekekkel, hogy a skalazas konzisztens maradjon.
 
-### Reszletek
+Ezzel a tartalom kevesebb helyet foglal vertikalisan, igy a `vScale` nagyobb lesz es az egesz kep nagyobb/olvashatobb fontmereteket kap.
 
-**Facebook post (1200x675)**:
-- Sok etelnel a fontmeretek es a sorozes automatikusan kisebb lesz, hogy minden beferjen
-- A footer mindig lathato marad
+## 2. Menu ar: 2200 Ft alapertelmezett, de modosithato
 
-**Instagram post (1080x1080)**:
-- A negyzetes formatum elegendo helyet ad, a tartalom szepen kozepen jelenik meg
-- A fontmeretek aranyosan nagyobbak lesznek mint most
+Jelenleg a `menuPrice` fix `2200` a `drawToCanvas`-ben (sor 252). A felhasznalonak nincs lehetosege modositani az admin feluletrol.
 
-**Instagram story (1080x1920)**:
-- A tartalom kozepen marad vertikalisan
-- Nagyobb fontmeretek, mert sok a hely
-
-### Egyeb finomitasok
-- A `contentHeight` szamitas pontositasa (az aktualis elem szamtol fugg)
-- Az `yOffset` szamitas javitasa a kulonbozo formatumokhoz
-- A logo pozicio a valodi tartalomhoz igazodik, nem fix `H - 90px`
+Megoldas:
+- Uj `menuPrice` state a komponensben, alaperteke `2200`
+- A state inicializalasa: ha `dayData.menu_price_huf` letezik es nem nulla, azt hasznalja, egyebkent `2200`
+- Egy szam input mezo a nap valaszto kartya alatt: "Menü ár (Ft)" felirattal, `menuPrice` ertekkel
+- A `drawToCanvas`-nek atadni ezt az erteket parameter-kent a fix `2200` helyett
+- Amikor a `dayData` valtozik, a `menuPrice` frissul: `dayData.menu_price_huf || 2200`
 
 ## Technikai reszletek
 
 | Fajl | Valtozas |
 |------|---------|
-| `src/components/admin/DailyOfferImageGenerator.tsx` | A `drawToCanvas` fuggvenyben: 1) Elso menet: tartalom magassag szamitas fix 1.0 skalaval 2) `finalScale = min(W/1200, (H - margin) / contentHeight)` 3) Masodik menet: rajzolas `finalScale`-lel 4) Logo pozicio: tartalom alajahoz igazitva, nem canvas aljahoz |
+| `src/components/admin/DailyOfferImageGenerator.tsx` | 1) Sorozes ertekek csokkentese a `drawToCanvas`-ben es `measureContentHeight`-ban 2) `menuPrice` parameter hozzaadasa a `drawToCanvas`-hez 3) Uj `menuPrice` state + Input mezo az UI-ban 4) `drawAllCanvases` hivasa a `menuPrice` ertekkel |
 
-### Pelda skalak
+### drawToCanvas signatura valtozas
+```text
+drawToCanvas(canvas, data, dateStr, W, H, logoImg, menuPrice)
+```
 
-| Formatum | W | H | hScale | Becsult contentH | vScale | finalScale |
-|----------|---|---|--------|-----------------|--------|------------|
-| Facebook | 1200 | 675 | 1.0 | ~750 | ~0.85 | ~0.85 |
-| Insta Post | 1080 | 1080 | 0.9 | ~750 | ~1.3 | 0.9 |
-| Insta Story | 1080 | 1920 | 0.9 | ~750 | ~2.3 | 0.9 |
+### UI mezo elhelyezese
+A "Nap kivalasztasa" kartya aljara kerul egy uj sor:
+```text
+Menü ár (Ft): [____2200____]
+```
+Ez egy sima szam input, amit a felhasznalo barrmikor atirhat. A kepek azonnal ujrageneralodnak a valtozaskor.
 
-Igy a Facebook post automatikusan kisebb betukkel irja ki az eteleket ha sok van, mig az Insta formatumok kihasznaljak a teret.
