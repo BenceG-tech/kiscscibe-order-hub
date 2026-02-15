@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, MapPin, Clock, ShoppingCart } from "lucide-react";
+import { useRestaurantSettings, formatOpeningHoursOneLiner } from "@/hooks/useRestaurantSettings";
 
 interface Order {
   id: string;
@@ -33,6 +34,7 @@ const OrderConfirmation = () => {
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(true);
   const orderCode = searchParams.get('code');
+  const { openingHours, address } = useRestaurantSettings();
 
   useEffect(() => {
     if (orderCode) {
@@ -46,7 +48,6 @@ const OrderConfirmation = () => {
     try {
       setLoading(true);
       
-      // Get phone from URL parameters - no need to prompt again
       const phone = searchParams.get('phone');
       if (!phone) {
         console.error('Phone number missing from URL parameters');
@@ -54,7 +55,6 @@ const OrderConfirmation = () => {
         return;
       }
 
-      // Use secure customer order lookup function
       const { data: orderData, error: orderError } = await supabase
         .rpc('get_customer_order_secure', {
           order_code: orderCode,
@@ -71,7 +71,6 @@ const OrderConfirmation = () => {
       const order = orderData[0];
       setOrder(order);
       
-      // Fetch order items
       const { data: itemsData, error: itemsError } = await supabase
         .from('order_items')
         .select('*')
@@ -123,6 +122,8 @@ const OrderConfirmation = () => {
       minute: '2-digit'
     });
   };
+
+  const mapsQuery = encodeURIComponent(address.full);
 
   if (loading) {
     return (
@@ -284,11 +285,11 @@ const OrderConfirmation = () => {
               <div className="space-y-2 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
-                  <span>1141 Budapest, Vezér u. 110.</span>
+                  <span>{address.full}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-primary flex-shrink-0" />
-                  <span>H–P: 7:00–15:00 | Szo: 8:00–14:00 | V: Zárva</span>
+                  <span>{formatOpeningHoursOneLiner(openingHours)}</span>
                 </div>
               </div>
             </CardContent>
@@ -304,7 +305,7 @@ const OrderConfirmation = () => {
             </Button>
             <Button variant="outline" asChild className="flex-1">
               <a 
-                href="https://maps.google.com/?q=1141+Budapest,+Vezér+u.+110" 
+                href={`https://maps.google.com/?q=${mapsQuery}`}
                 target="_blank" 
                 rel="noopener noreferrer"
               >
@@ -315,8 +316,8 @@ const OrderConfirmation = () => {
           </div>
 
           {/* Email Status */}
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <p className="text-sm text-blue-700 text-center">
+          <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+            <p className="text-sm text-blue-700 dark:text-blue-300 text-center">
               📧 A rendelés részleteit e-mailben is elküldtük
             </p>
           </div>

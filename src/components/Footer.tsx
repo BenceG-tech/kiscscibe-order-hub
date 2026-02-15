@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { MapPin, Mail, Clock, Facebook, Instagram } from "lucide-react";
 import kiscsibeLogo from "@/assets/kiscsibe_logo_round.png";
+import { useRestaurantSettings } from "@/hooks/useRestaurantSettings";
 
 const TikTokIcon = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
@@ -19,6 +20,7 @@ const Footer = ({ className }: FooterProps) => {
   const [staffClickCount, setStaffClickCount] = useState(0);
   const adminClickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const staffClickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const { openingHours, address } = useRestaurantSettings();
 
   // Cleanup timeouts on unmount
   useEffect(() => {
@@ -111,6 +113,11 @@ const Footer = ({ className }: FooterProps) => {
     </div>
   );
 
+  // Format hours for footer display
+  const monFriHours = openingHours.mon_fri === "closed" ? "Zárva" : openingHours.mon_fri.replace("-", " - ");
+  const isSatClosed = openingHours.sat === "closed";
+  const isSunClosed = openingHours.sun === "closed";
+
   return (
     <footer className={`bg-gray-900 text-gray-300 ${className || ""}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
@@ -144,7 +151,7 @@ const Footer = ({ className }: FooterProps) => {
             <ul className="space-y-2">
               <li className="flex items-start gap-1.5">
                 <MapPin className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                <span className="text-xs">1145 Budapest, Vezér utca 12.</span>
+                <span className="text-xs">{address.full}</span>
               </li>
               <li className="flex items-center gap-1.5">
                 <Mail className="h-4 w-4 text-primary shrink-0" />
@@ -163,9 +170,9 @@ const Footer = ({ className }: FooterProps) => {
                 <Clock className="h-4 w-4 text-primary shrink-0" />
                 <span className="text-xs">Hétfő - Péntek</span>
               </li>
-              <li className="text-xs ml-5 text-green-400 font-medium">7:00 - 16:00</li>
+              <li className="text-xs ml-5 text-green-400 font-medium">{monFriHours}</li>
               <li className="text-xs ml-5 text-gray-500 mt-1">Szombat - Vasárnap</li>
-              <li className="text-xs ml-5 text-red-400">Zárva</li>
+              <li className="text-xs ml-5 text-red-400">{isSatClosed && isSunClosed ? "Zárva" : isSatClosed ? `Szo: Zárva • V: ${openingHours.sun}` : `Szo: ${openingHours.sat} • V: Zárva`}</li>
             </ul>
           </div>
 
@@ -243,7 +250,7 @@ const Footer = ({ className }: FooterProps) => {
             <ul className="space-y-3">
               <li className="flex items-start justify-center md:justify-start gap-2">
                 <MapPin className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                <span className="text-sm">1145 Budapest, Vezér utca 12.</span>
+                <span className="text-sm">{address.full}</span>
               </li>
               <li className="flex items-center justify-center md:justify-start gap-2">
                 <Mail className="h-5 w-5 text-primary shrink-0" />
@@ -262,9 +269,9 @@ const Footer = ({ className }: FooterProps) => {
                 <Clock className="h-5 w-5 text-primary shrink-0" />
                 <span className="text-sm">Hétfő - Péntek</span>
               </li>
-              <li className="text-sm ml-7 text-green-400 font-medium">7:00 - 16:00</li>
+              <li className="text-sm ml-7 text-green-400 font-medium">{monFriHours}</li>
               <li className="text-sm ml-7 text-gray-500 mt-2">Szombat - Vasárnap</li>
-              <li className="text-sm ml-7 text-red-400">Zárva</li>
+              <li className="text-sm ml-7 text-red-400">{isSatClosed && isSunClosed ? "Zárva" : isSatClosed ? `Szo: Zárva • V: ${openingHours.sun}` : `Szo: ${openingHours.sat} • V: Zárva`}</li>
             </ul>
           </div>
 
