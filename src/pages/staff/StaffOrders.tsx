@@ -114,57 +114,38 @@ const StaffOrders = () => {
 
   // ── Data fetching ──
   const fetchOrders = useCallback(async () => {
-    const { data: ordersData, error: ordersError } = await supabase
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const { data, error } = await supabase
       .from("orders")
-      .select("*")
+      .select(`
+        *,
+        order_items (
+          id, name_snapshot, qty, unit_price_huf, line_total_huf,
+          order_item_options (
+            id, label_snapshot, option_type, price_delta_huf
+          )
+        )
+      `)
+      .gte("created_at", sevenDaysAgo.toISOString())
       .order("created_at", { ascending: false });
 
-    if (ordersError) {
+    if (error) {
       toast.error("Nem sikerült betölteni a rendeléseket");
       setLoading(false);
       return;
     }
 
-    const ordersWithItems = await Promise.all(
-      (ordersData || []).map(async (order) => {
-        const { data: itemsData } = await supabase
-          .from("order_items")
-          .select("id, name_snapshot, qty, unit_price_huf, line_total_huf")
-          .eq("order_id", order.id);
+    const mapped = (data || []).map((order: any) => ({
+      ...order,
+      items: (order.order_items || []).map((item: any) => ({
+        ...item,
+        options: item.order_item_options || [],
+      })),
+    }));
 
-        const itemIds = (itemsData || []).map((i) => i.id);
-        let optionsMap: Record<string, OrderItemOption[]> = {};
-
-        if (itemIds.length > 0) {
-          const { data: optionsData } = await supabase
-            .from("order_item_options")
-            .select("id, label_snapshot, option_type, price_delta_huf, order_item_id")
-            .in("order_item_id", itemIds);
-
-          if (optionsData) {
-            for (const opt of optionsData) {
-              const key = opt.order_item_id || "";
-              if (!optionsMap[key]) optionsMap[key] = [];
-              optionsMap[key].push({
-                id: opt.id,
-                label_snapshot: opt.label_snapshot,
-                option_type: opt.option_type,
-                price_delta_huf: opt.price_delta_huf,
-              });
-            }
-          }
-        }
-
-        const itemsWithOptions = (itemsData || []).map((item) => ({
-          ...item,
-          options: optionsMap[item.id] || [],
-        }));
-
-        return { ...order, items: itemsWithOptions };
-      })
-    );
-
-    setOrders(ordersWithItems);
+    setOrders(mapped);
     setLoading(false);
   }, []);
 
