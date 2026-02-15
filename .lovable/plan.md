@@ -1,34 +1,63 @@
 
 
-# Napi ajanlat kep -- gradiens, logo, betutipus frissites
+# 3 formatum kep generalas + logo fix
 
-## 3 valtozas
+## Jelenlegi helyzet
+- A logo kod mar benne van (sor 354-369), de a `public/assets/kiscsibe_logo_round.png` fajl letezeset ellenorizni kell
+- A menu ar mar 2200-ra van allitva (sor 317)
+- Jelenleg csak 1 kepet general (1200x675 landscape)
 
-### 1. Gradiens forditasa
-Jelenlegi: `#1c232f` (bal) -> `#252b38` (jobb)
-Uj: `#252b38` (bal) -> `#1c232f` (jobb)
+## Valtozasok
 
-### 2. Kiscsibe logo hozzaadasa
-A kerek logo (`kiscsibe_logo_round.png`) betoltese es elhelyezese a kep jobb also sarkaban, halvany (0.4-0.5 opacity) vizjelkent, kb 80x80px meretben.
+### 1. Rajzolas refaktoralas -- kozos `drawToCanvas` fuggveny
+A jelenlegi `drawCanvas` fuggvenyt atalakitjuk, hogy parameterkent kapja a meretet es a canvas elemet. Igy haromszor hivhato kulonbozo meretekkel:
 
-A logo betolteset a `drawCanvas` fuggvenyen belul egy `Image()` objektummal oldjuk meg -- a canvas rajzolast a logo `onload` esemenyere mozditjuk, hogy a logo biztosan megjelenjen.
+| Formatum | Meret | Hasznalat |
+|----------|-------|-----------|
+| Facebook post | 1200 x 675 | Fektetett, jelenlegi |
+| Instagram post | 1080 x 1080 | Negyzetes |
+| Instagram story | 1080 x 1920 | Allo |
 
-### 3. Etelek es arak sima betutipussal
-Az etelnevek es arak jelenlegi `Sofia, Georgia, serif` betutipusat lecsereljuk `Arial, Helvetica, sans-serif`-re, hogy konnyebben olvashatoak legyenek.
+A rajzolas logikaja azonos marad (gradiens hatter, sarga cim, feher etelek, logo vizjel), de:
+- A font meretek es padding aranyosan skalazodjak a canvas merethez
+- Instagram story-nal a tartalom kozepre igazodik vertikalisan (tobb hely fent/lent)
+- Instagram post-nal kompaktabb elrendezes a negyzetes formatumhoz
 
-Erintett sorok:
-- A la carte etelek neve es ara (28px)
-- Menu etelnevek (26px)
-- Note szoveg (20px)
+### 2. 3 rejtett canvas + 3 data URL
+- 3 `useRef<HTMLCanvasElement>` (facebook, instaPost, instaStory)
+- 3 `canvasDataUrl` state (facebookDataUrl, instaPostDataUrl, instaStoryDataUrl)
+- Mindharom automatikusan ujrarajzolodik amikor a `dayData` valtozik
 
-A cimsor ("Napi ajanlat..."), a "Menu" cim, a menu ar, a footer es a branding tovabbra is Sofia marad -- csak az etelek es arak valtoznak.
+### 3. UI: Tab-ok vagy egymás alatti kartyak
+3 kulon kartya a 3 keppel, mindegyiknel:
+- Kep elonezet (kattintasra lightbox)
+- Letoltes gomb
+- Formatum badge (Facebook / Insta Post / Insta Story)
+
+### 4. Logo megjelenes biztositasa
+A logo betoltese `new Image()` + `onload` callback-kel tortenik (mar igy van). Ellenorizzuk hogy a `public/assets/kiscsibe_logo_round.png` fajl letezik -- ha nem, a felhasznalo altal feltoltott logot (`user-uploads://Gemini_Generated_Image_wi4t2nwi4t.png`) masoljuk oda.
+
+### 5. Menu ar
+A menu ar mar 2200 Ft-ra van allitva a kodban (sor 317: `const menuPrice = 2200`). Ez nem valtozik.
 
 ## Technikai reszletek
 
 | Fajl | Valtozas |
 |------|---------|
-| `src/components/admin/DailyOfferImageGenerator.tsx` | 1) Gradiens colorStop-ok felcserelese (2 sor) 2) Logo betoltese Image()-gel es kirajzolasa a jobb also sarokba drawImage-gel 3) Etel/ar fontok `Sofia` -> `Arial, Helvetica, sans-serif` |
+| `src/components/admin/DailyOfferImageGenerator.tsx` | `drawCanvas` refaktor 3 merethez; 3 canvas ref + data URL; 3 letoltes gomb; lightbox bovites; UI kartyak a 3 formatumhoz |
 
-### Logo betoltes technikai megoldas
-A `drawCanvas` fuggveny elejen letrehozunk egy `new Image()` objektumot a `/assets/kiscsibe_logo_round.png` utvonallal. A teljes rajzolasi logika az `img.onload` callback-be kerul, a logo kirajzolasa `ctx.globalAlpha = 0.45` + `ctx.drawImage(img, W - PAD - 70, H - 90, 70, 70)` pozicioba. Ha a logo nem toltodik be (`onerror`), a rajzolas logo nelkul fut le.
+### Meretaranyos skalazas logika
+A kozos rajzolo fuggveny parameterek:
+```text
+drawToCanvas(canvas, data, dateStr, width, height, logoImg)
+```
+- PAD: aranyosan skalazva (50 az 1200px-esnel, ~45 az 1080px-esnel)
+- Font meretek: aranyosan skalazva a szelesseghez
+- Instagram story: a tartalom a kep kozepen, nagy felso/also margoval
+- Instagram post: kompaktabb, de ugyanaz az elrendezes
+
+### Letoltes fajlnevek
+- `napi_ajanlat_facebook_YYYY-MM-DD.png`
+- `napi_ajanlat_insta_post_YYYY-MM-DD.png`
+- `napi_ajanlat_insta_story_YYYY-MM-DD.png`
 
