@@ -1,112 +1,66 @@
 
-
-# N+1 query optimalizalas
+# Checkout UX javitasok
 
 ## Osszefoglalas
 
-Mindket fajlban (`OrdersManagement.tsx` es `StaffOrders.tsx`) a `fetchOrders` fuggveny jelenleg N+1 lekerdezest vegez: eloszor az osszes rendeles, majd egyenkent az itemek es opciok. Ezt egyetlen nested select-re csereljuk, es datumszurot is adunk hozza.
+Harom UX javitas a `src/pages/Checkout.tsx` fajlban: progress indikator, inline form validacio debounce-szal, es fizetesi mod magyarazatok.
 
 ## Valtoztatások
 
-### 1. `src/pages/admin/OrdersManagement.tsx` - fetchOrders (144-203. sor)
+### 1. Progress indikator (oldal tetejere)
 
-A teljes `fetchOrders` fuggvenyt lecsereljuk:
+A fejlec ("Rendeles veglegesitese") fole kerul egy 3 lepesu vizualis indikator:
 
-```typescript
-const fetchOrders = async () => {
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 30);
+- Lepesek: **Kosar** (1) → **Adatok** (2) → **Osszesito** (3)
+- Nincs tenyeleges lepesvaltas/wizard logika - a progress strip vizualisan mutatja a checkout folyamat lepeseit, ahol az "Adatok" az aktualis lepes (kiemelt primary szinnel), a "Kosar" zold pipaval jelolve (kesz), az "Osszesito" pedig halvany (kovetkezo)
+- Mobilon ikonok + rovid szoveg, desktopon teljes szoveg
+- Megvalositas: egyedi komponens a Checkout.tsx-en belul, Tailwind-del stilusozva, `Check` ikon a lucide-react-bol
 
-  const { data, error } = await supabase
-    .from("orders")
-    .select(`
-      *,
-      order_items (
-        id, name_snapshot, qty, unit_price_huf, line_total_huf,
-        order_item_options (
-          id, label_snapshot, option_type, price_delta_huf
-        )
-      )
-    `)
-    .gte("created_at", sevenDaysAgo.toISOString())
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    toast({ title: "Hiba", description: "Nem sikerült betölteni a rendeléseket", variant: "destructive" });
-    return;
-  }
-
-  const mapped = (data || []).map((order) => ({
-    ...order,
-    items: (order.order_items || []).map((item) => ({
-      id: item.id,
-      name_snapshot: item.name_snapshot,
-      qty: item.qty,
-      unit_price_huf: item.unit_price_huf,
-      line_total_huf: item.line_total_huf,
-      options: (item.order_item_options || []).map((opt) => ({
-        id: opt.id,
-        label_snapshot: opt.label_snapshot,
-        option_type: opt.option_type,
-        price_delta_huf: opt.price_delta_huf,
-      })),
-    })),
-  }));
-
-  setOrders(mapped);
-  setLoading(false);
-};
+```text
+  [✓ Kosár] ——— [● Adatok] ——— [○ Összesítő]
 ```
 
-**Megjegyzes a datumszurorol:** Az admin oldalon 30 napot hasznalunk (nem 7-et), mert a "Multbeli" ful regi rendeleseket is mutat. Az aktiv rendelesek (new/preparing/ready) altalaban fressebbek, de a past tab-nal 30 nap kell.
+### 2. Inline form validacio
 
-### 2. `src/pages/staff/StaffOrders.tsx` - fetchOrders (116-169. sor)
+**Uj state-ek:**
+- `fieldErrors: { name?: string; phone?: string; email?: string }` (alapertelmezett: `{}`)
+- `touched: { name?: boolean; phone?: boolean; email?: boolean }` (alapertelmezett: `{}`)
 
-Ugyanez a minta, de 7 napos szuroval, mert a staff KDS feluleten csak az aktiv es friss rendelesek relevansak:
+**Validacios szabalyok (debounce 300ms, `useEffect` + `setTimeout`):**
 
-```typescript
-const fetchOrders = useCallback(async () => {
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+| Mezo | Szabaly | Hibauzenet |
+|------|---------|------------|
+| Nev | min 2, max 100 karakter | "A nev legalabb 2 karakter legyen" / "A nev legfeljebb 100 karakter lehet" |
+| Telefon | `+36` prefix utan pontosan 9 szamjegy (szokozok nelkul szamolva) | "Kerjuk, adj meg egy ervenyes telefonszamot" |
+| Email | standard email regex | "Kerjuk, adj meg egy ervenyes email cimet" |
 
-  const { data, error } = await supabase
-    .from("orders")
-    .select(`
-      *,
-      order_items (
-        id, name_snapshot, qty, unit_price_huf, line_total_huf,
-        order_item_options (
-          id, label_snapshot, option_type, price_delta_huf
-        )
-      )
-    `)
-    .gte("created_at", sevenDaysAgo.toISOString())
-    .order("created_at", { ascending: false });
+**Mukodes:**
+- Csak az `onBlur` utan (touched) indul a validacio, utana gepeles kozben is frissul (300ms debounce)
+- Hibauzenet az adott mezo ALATT jelenik meg piros szovegkent (`text-sm text-destructive`)
+- A submit gomb `disabled` lesz ha barmelyik mezonen hiba van vagy ures a kotelezo mezo
+- A `handleSubmit` elejen is fut a validacio (biztonsagi halo)
 
-  if (error) {
-    toast.error("Nem sikerült betölteni a rendeléseket");
-    setLoading(false);
-    return;
-  }
+### 3. Fizetesi mod magyarazat
 
-  const mapped = (data || []).map((order) => ({
-    ...order,
-    items: (order.order_items || []).map((item) => ({
-      ...item,
-      options: item.order_item_options || [],
-    })),
-  }));
+A jelenlegi RadioGroup elemekhez kis magyarazo szoveg kerul:
 
-  setOrders(mapped);
-  setLoading(false);
-}, []);
+```text
+◉ Készpénz átvételkor
+  Fizetés átvételkor a helyszínen
+
+○ Bankkártya átvételkor
+  Bankkártyás fizetés átvételkor
 ```
 
-## Fontos reszletek
+Megvalositas: `<p className="text-xs text-muted-foreground ml-6">` az egyes radio Label-ek ala.
 
-- A Supabase nested select `order_items` neven adja vissza a kapcsolt adatokat, de a mappeles soran `items`-re nevezzuk at, igy a renderelo komponensek (`ActiveOrderCard`, `KanbanOrderCard`, `PastOrderAdminCard`) valtozatlanul mukodnek
-- Az `options` mezonev megmarad (nem `order_item_options`), a mappeles biztositja ezt
-- Az `option_type !== "daily_meta"` szures a renderelo komponensekben van, azokat nem modositjuk
-- Admin: 30 napos szuro (past tab miatt); Staff KDS: 7 napos szuro
-- Eredmeny: 1 DB lekerdezes a korabbi 100+ helyett
+## Technikai reszletek
 
+| Elem | Megoldas |
+|------|---------|
+| Progress indikator | Inline komponens, `Check` ikon, Tailwind `flex items-center` layout |
+| Debounce validacio | `useEffect` + `setTimeout`/`clearTimeout` (300ms) a `formData` + `touched` fuggvenyeben |
+| Telefon regex | `/^\d{9}$/` a szokozok eltavolitasa utan (a `+36` prefix kulon kezelt) |
+| Email regex | `/^[^\s@]+@[^\s@]+\.[^\s@]+$/` |
+| Submit disable | Bovitett `disabled` feltetel: meglevo feltetelek + `Object.values(fieldErrors).some(Boolean)` + kotelezo mezok uresseg ellenorzese |
+| Erintett fajl | Kizarolag `src/pages/Checkout.tsx` |
