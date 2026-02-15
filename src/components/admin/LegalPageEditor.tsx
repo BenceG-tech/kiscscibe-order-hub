@@ -26,6 +26,7 @@ import {
   type LegalPageContent,
   type LegalSection,
 } from "@/hooks/useLegalContent";
+import InfoTip from "@/components/admin/InfoTip";
 
 // Default content for initial population
 // Default content in plain-text markdown format (no HTML!)
@@ -385,7 +386,10 @@ const LegalPageEditor = () => {
     <div className="py-6 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Jogi oldalak kezelése</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
+          Jogi oldalak kezelése
+          <InfoTip text="Szerkeszd az adatvédelmi tájékoztató, ÁSZF és impresszum szövegeket." />
+        </h1>
         <p className="text-muted-foreground mt-1">Szerkessze a weboldal jogi tartalmait</p>
       </div>
 

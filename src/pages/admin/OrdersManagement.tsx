@@ -39,6 +39,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import InfoTip from "@/components/admin/InfoTip";
 
 interface OrderItemOption {
   id: string;
@@ -363,7 +364,10 @@ const OrdersManagement = () => {
     <AdminLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Rendelések kezelése</h1>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            Rendelések kezelése
+            <InfoTip text="Kezeld a bejövő rendeléseket: fogadd el, állítsd készre, vagy mondd le." />
+          </h1>
           <Badge variant="outline">Összesen: {orders.length} rendelés</Badge>
         </div>
 

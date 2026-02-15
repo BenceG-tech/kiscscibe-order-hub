@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { TrendingDown, TrendingUp, Scale } from "lucide-react";
 import type { Invoice } from "@/hooks/useInvoices";
+import InfoTip from "@/components/admin/InfoTip";
 
 interface Props {
   invoices: Invoice[];
@@ -26,7 +27,7 @@ const InvoiceSummaryCards = ({ invoices }: Props) => {
             <TrendingDown className="h-5 w-5 text-destructive" />
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Költségek (bejövő)</p>
+            <p className="text-xs text-muted-foreground flex items-center gap-1">Költségek (bejövő) <InfoTip text="Az összes bejövő számla összege a szűrt időszakban." side="bottom" /></p>
             <p className="text-lg font-bold text-destructive">{fmt(incoming)}</p>
           </div>
         </CardContent>
@@ -37,7 +38,7 @@ const InvoiceSummaryCards = ({ invoices }: Props) => {
             <TrendingUp className="h-5 w-5 text-green-600" />
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Bevételek (kimenő)</p>
+            <p className="text-xs text-muted-foreground flex items-center gap-1">Bevételek (kimenő) <InfoTip text="Az összes kimenő számla és rendelés-bizonylat összege." side="bottom" /></p>
             <p className="text-lg font-bold text-green-600">{fmt(outgoing)}</p>
           </div>
         </CardContent>
@@ -48,7 +49,7 @@ const InvoiceSummaryCards = ({ invoices }: Props) => {
             <Scale className={`h-5 w-5 ${result >= 0 ? "text-green-600" : "text-destructive"}`} />
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Eredmény</p>
+            <p className="text-xs text-muted-foreground flex items-center gap-1">Eredmény <InfoTip text="Bevételek mínusz költségek. Pozitív szám = nyereség." side="bottom" /></p>
             <p className={`text-lg font-bold ${result >= 0 ? "text-green-600" : "text-destructive"}`}>
               {result >= 0 ? "+" : ""}{fmt(result)}
             </p>

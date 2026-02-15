@@ -23,6 +23,7 @@ import {
   DollarSign,
   Search
 } from "lucide-react";
+import InfoTip from "@/components/admin/InfoTip";
 
 interface MenuCategory {
   id: string;
@@ -237,7 +238,10 @@ const MenuManagement = () => {
     <AdminLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Étlap kezelés</h1>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            Étlap kezelés
+            <InfoTip text="Itt adhatod hozzá, szerkesztheted vagy törölheted az étlapon látható ételek listáját." />
+          </h1>
           <Dialog open={isItemDialogOpen} onOpenChange={setIsItemDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={() => openItemDialog()} className="bg-gradient-to-r from-primary to-primary-glow">
@@ -325,7 +329,7 @@ const MenuManagement = () => {
                       checked={itemForm.is_active}
                       onChange={(e) => setItemForm({...itemForm, is_active: e.target.checked})}
                     />
-                    Aktív
+                    Aktív <InfoTip text="Csak az aktív ételek jelennek meg az étlapon." side="bottom" />
                   </label>
                   
                   <label className="flex items-center gap-2">
@@ -334,7 +338,7 @@ const MenuManagement = () => {
                       checked={itemForm.is_featured}
                       onChange={(e) => setItemForm({...itemForm, is_featured: e.target.checked})}
                     />
-                    Kiemelt
+                    Kiemelt <InfoTip text="A kiemelt ételek elöl jelennek meg a főoldal ajánlottjai között." side="bottom" />
                   </label>
                 </div>
               </div>

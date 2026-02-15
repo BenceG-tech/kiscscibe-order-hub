@@ -19,6 +19,7 @@ import {
   X,
   ImageIcon,
 } from "lucide-react";
+import InfoTip from "@/components/admin/InfoTip";
 
 export interface AboutStat {
   id: string;
@@ -201,7 +202,10 @@ const AboutPageEditor = () => {
     <div className="py-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Rólunk oldal kezelése</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
+            Rólunk oldal kezelése
+            <InfoTip text="Szerkeszd a Rólunk oldal tartalmát: történeted, értékeid, képeid." />
+          </h1>
           <p className="text-muted-foreground mt-1">Szerkessze a Rólunk oldal tartalmát</p>
         </div>
         <Button onClick={handleSave} disabled={saving || !hasChanges} className="gap-2">

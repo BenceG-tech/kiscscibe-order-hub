@@ -6,6 +6,7 @@ import MasterMenuImport from "@/components/admin/MasterMenuImport";
 import WeeklyNewsletterPanel from "@/components/admin/WeeklyNewsletterPanel";
 import DailyOfferImageGenerator from "@/components/admin/DailyOfferImageGenerator";
 import { useIsMobile } from "@/hooks/use-mobile";
+import InfoTip from "@/components/admin/InfoTip";
 
 const DailyMenuManagement = () => {
   const isMobile = useIsMobile();
@@ -15,7 +16,10 @@ const DailyMenuManagement = () => {
       {/* Page Header Section */}
       <section className="pt-3 sm:pt-6 pb-4">
         <div>
-          <h1 className="text-[22px] sm:text-3xl font-bold tracking-tight text-foreground">Napi ajánlatok</h1>
+          <h1 className="text-[22px] sm:text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
+            Napi ajánlatok
+            <InfoTip text="Állítsd be a heti napi menüsort, kapacitást, és küldd ki a hírlevelet." />
+          </h1>
           <p className="mt-1 text-[13px] sm:text-base text-muted-foreground">
             Kezelje a napi ajánlatokat és menüket egy helyen
           </p>
