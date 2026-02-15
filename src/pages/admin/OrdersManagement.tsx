@@ -37,7 +37,9 @@ import {
   Trash2,
   ChevronDown,
   ChevronRight,
+  CheckSquare,
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import InfoTip from "@/components/admin/InfoTip";
 
@@ -637,49 +639,108 @@ const PastOrdersTab = ({
   onDelete: (id: string) => void;
   onArchiveAll: () => void;
 }) => {
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const grouped = groupByDate(orders);
   const unarchivedCount = orders.filter((o) => !(o as any).archived).length;
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (selectedIds.size === orders.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(orders.map(o => o.id)));
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    for (const id of selectedIds) {
+      await onDelete(id);
+    }
+    setSelectedIds(new Set());
+  };
 
   return (
     <div className="space-y-4">
       {/* Controls bar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-        <div className="flex items-center gap-2">
-          <Switch
-            checked={showArchived}
-            onCheckedChange={onToggleArchived}
-            id="show-archived"
-          />
-          <label htmlFor="show-archived" className="text-sm text-muted-foreground cursor-pointer">
-            Archivált mutatása
-          </label>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={showArchived}
+              onCheckedChange={onToggleArchived}
+              id="show-archived"
+            />
+            <label htmlFor="show-archived" className="text-sm text-muted-foreground cursor-pointer">
+              Archivált mutatása
+            </label>
+          </div>
+          {orders.length > 0 && (
+            <Button variant="ghost" size="sm" onClick={toggleAll} className="text-xs">
+              <CheckSquare className="h-3.5 w-3.5 mr-1" />
+              {selectedIds.size === orders.length ? "Kijelölés törlése" : "Összes kijelölése"}
+            </Button>
+          )}
         </div>
 
-        {unarchivedCount > 0 && (
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" size="sm" className="w-full sm:w-auto">
-                <Archive className="h-4 w-4 mr-1" />
-                Összes archiválása ({unarchivedCount})
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Összes archiválása</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Biztosan archiválod az összes ({unarchivedCount}) múltbeli
-                  rendelést? Ez a művelet nem vonható vissza.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Mégsem</AlertDialogCancel>
-                <AlertDialogAction onClick={onArchiveAll}>
-                  Igen, archiválás
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        )}
+        <div className="flex gap-2 flex-wrap">
+          {selectedIds.size > 0 && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm">
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Kijelöltek törlése ({selectedIds.size})
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Kijelölt rendelések törlése</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Biztosan véglegesen törlöd a kijelölt {selectedIds.size} rendelést? Ez a művelet nem vonható vissza.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Mégsem</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDeleteSelected} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    Igen, törlés ({selectedIds.size})
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+
+          {unarchivedCount > 0 && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                  <Archive className="h-4 w-4 mr-1" />
+                  Összes archiválása ({unarchivedCount})
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Összes archiválása</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Biztosan archiválod az összes ({unarchivedCount}) múltbeli
+                    rendelést? Ez a művelet nem vonható vissza.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Mégsem</AlertDialogCancel>
+                  <AlertDialogAction onClick={onArchiveAll}>
+                    Igen, archiválás
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
       </div>
 
       {/* Date-grouped orders */}
@@ -702,6 +763,8 @@ const PastOrdersTab = ({
                   order={order}
                   onArchive={onArchive}
                   onDelete={onDelete}
+                  selected={selectedIds.has(order.id)}
+                  onToggleSelect={() => toggleSelect(order.id)}
                 />
               ))}
             </div>
@@ -717,10 +780,14 @@ const PastOrderAdminCard = ({
   order,
   onArchive,
   onDelete,
+  selected,
+  onToggleSelect,
 }: {
   order: Order;
   onArchive: (id: string) => void;
   onDelete: (id: string) => void;
+  selected: boolean;
+  onToggleSelect: () => void;
 }) => {
   const [expanded, setExpanded] = useState(false);
   const isArchived = (order as any).archived;
@@ -731,7 +798,8 @@ const PastOrderAdminCard = ({
         className={cn(
           "transition-all",
           order.status === "cancelled" && "opacity-60",
-          isArchived && "opacity-40"
+          isArchived && "opacity-40",
+          selected && "ring-2 ring-primary"
         )}
       >
         {/* Header row */}
@@ -742,6 +810,9 @@ const PastOrderAdminCard = ({
           >
             {/* Top row: icon + code + name + price */}
             <div className="flex items-start sm:items-center gap-2 sm:gap-3 min-w-0 flex-1">
+              <div className="shrink-0 mt-0.5 sm:mt-0" onClick={(e) => { e.stopPropagation(); onToggleSelect(); }}>
+                <Checkbox checked={selected} />
+              </div>
               {order.status === "completed" ? (
                 <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5 sm:mt-0" />
               ) : (

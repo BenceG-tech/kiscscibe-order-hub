@@ -14,7 +14,7 @@ import WeeklyDateStrip from "@/components/WeeklyDateStrip";
 import { format, getDay, isPast } from "date-fns";
 import { hu } from "date-fns/locale";
 import { getSmartInitialDate, getContentLabel } from "@/lib/dateUtils";
-import { capitalizeFirst } from "@/lib/utils";
+import { capitalizeFirst, cn } from "@/lib/utils";
 import kiscsibeLogo from "@/assets/kiscsibe_logo_round.png";
 import heroImage from "@/assets/hero-desktop.png";
 import DailyMenuPanel from "@/components/DailyMenuPanel";
@@ -251,6 +251,9 @@ const Etlap = () => {
     });
   };
 
+  // Check if daily offer is sold out
+  const isSoldOut = dailyData?.offer_remaining_portions === 0;
+
   // Get extra items (not part of menu)
   const extraItems = dailyData?.items.filter(item => !item.is_menu_part) || [];
 
@@ -317,6 +320,15 @@ const Etlap = () => {
               </Card>
             ) : dailyData && dailyData.items.length > 0 ? (
               <>
+                {/* Sold Out Banner */}
+                {isSoldOut && (
+                  <Card className="border-destructive/30 bg-destructive/5 rounded-2xl">
+                    <CardContent className="p-4 text-center">
+                      <p className="text-destructive font-semibold text-lg">🚫 A mai napi ajánlat elfogyott!</p>
+                      <p className="text-muted-foreground text-sm mt-1">Kérjük nézd meg a többi napot vagy válassz a fix tételeink közül.</p>
+                    </CardContent>
+                  </Card>
+                )}
                 {/* Facebook Image - uploaded by admin */}
                 {facebookImageUrl && (
                   <Card className="border-0 bg-card/95 backdrop-blur-sm shadow-lg rounded-3xl overflow-hidden">
@@ -336,7 +348,7 @@ const Etlap = () => {
                 )}
 
                 {/* Daily Menu Card - Using shared component for consistency */}
-                {menuData && menuData.soup && menuData.main && (
+                {menuData && menuData.soup && menuData.main && !isSoldOut && (
                   <DailyMenuPanel date={selectedDate} menuData={menuData} loading={false} />
                 )}
 
@@ -348,7 +360,10 @@ const Etlap = () => {
                       {extraItems.map((item) => (
                         <Card 
                           key={item.id} 
-                          className="group border-0 bg-card/95 backdrop-blur-sm shadow-lg rounded-3xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                          className={cn(
+                            "group border-0 bg-card/95 backdrop-blur-sm shadow-lg rounded-3xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300",
+                            isSoldOut && "opacity-50 pointer-events-none"
+                          )}
                         >
                           <CardContent className="p-0">
                             <div className="aspect-video overflow-hidden">
@@ -389,8 +404,9 @@ const Etlap = () => {
                                 onClick={() => handleAddItemToCart(item)}
                                 className="w-full"
                                 size="sm"
+                                disabled={isSoldOut}
                               >
-                                Kosárba
+                                {isSoldOut ? "Elfogyott" : "Kosárba"}
                               </Button>
                             </div>
                           </CardContent>
