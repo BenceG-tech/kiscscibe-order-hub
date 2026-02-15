@@ -142,12 +142,24 @@ const OrdersManagement = () => {
   }, [searchQuery]);
 
   const fetchOrders = async () => {
-    const { data: ordersData, error: ordersError } = await supabase
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const { data, error } = await supabase
       .from("orders")
-      .select("*")
+      .select(`
+        *,
+        order_items (
+          id, name_snapshot, qty, unit_price_huf, line_total_huf,
+          order_item_options (
+            id, label_snapshot, option_type, price_delta_huf
+          )
+        )
+      `)
+      .gte("created_at", thirtyDaysAgo.toISOString())
       .order("created_at", { ascending: false });
 
-    if (ordersError) {
+    if (error) {
       toast({
         title: "Hiba",
         description: "Nem sikerült betölteni a rendeléseket",
@@ -156,49 +168,24 @@ const OrdersManagement = () => {
       return;
     }
 
-    // Fetch items + options
-    const ordersWithItems = await Promise.all(
-      (ordersData || []).map(async (order) => {
-        const { data: itemsData } = await supabase
-          .from("order_items")
-          .select("id, name_snapshot, qty, unit_price_huf, line_total_huf")
-          .eq("order_id", order.id);
+    const mapped = (data || []).map((order: any) => ({
+      ...order,
+      items: (order.order_items || []).map((item: any) => ({
+        id: item.id,
+        name_snapshot: item.name_snapshot,
+        qty: item.qty,
+        unit_price_huf: item.unit_price_huf,
+        line_total_huf: item.line_total_huf,
+        options: (item.order_item_options || []).map((opt: any) => ({
+          id: opt.id,
+          label_snapshot: opt.label_snapshot,
+          option_type: opt.option_type,
+          price_delta_huf: opt.price_delta_huf,
+        })),
+      })),
+    }));
 
-        const itemIds = (itemsData || []).map((i) => i.id);
-        let optionsMap: Record<string, OrderItemOption[]> = {};
-
-        if (itemIds.length > 0) {
-          const { data: optionsData } = await supabase
-            .from("order_item_options")
-            .select(
-              "id, label_snapshot, option_type, price_delta_huf, order_item_id"
-            )
-            .in("order_item_id", itemIds);
-
-          if (optionsData) {
-            for (const opt of optionsData) {
-              const key = opt.order_item_id || "";
-              if (!optionsMap[key]) optionsMap[key] = [];
-              optionsMap[key].push({
-                id: opt.id,
-                label_snapshot: opt.label_snapshot,
-                option_type: opt.option_type,
-                price_delta_huf: opt.price_delta_huf,
-              });
-            }
-          }
-        }
-
-        const itemsWithOptions = (itemsData || []).map((item) => ({
-          ...item,
-          options: optionsMap[item.id] || [],
-        }));
-
-        return { ...order, items: itemsWithOptions };
-      })
-    );
-
-    setOrders(ordersWithItems);
+    setOrders(mapped);
     setLoading(false);
   };
 
