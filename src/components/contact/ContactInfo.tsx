@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MapPin, Mail, Clock, Car, Bus, ExternalLink, Facebook, Instagram } from "lucide-react";
+import { useRestaurantSettings, getOpeningHoursList } from "@/hooks/useRestaurantSettings";
 
 const TikTokIcon = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
@@ -8,17 +9,11 @@ const TikTokIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-const openingHours = [
-  { day: "Hétfő", hours: "7:00 - 16:00", isOpen: true },
-  { day: "Kedd", hours: "7:00 - 16:00", isOpen: true },
-  { day: "Szerda", hours: "7:00 - 16:00", isOpen: true },
-  { day: "Csütörtök", hours: "7:00 - 16:00", isOpen: true },
-  { day: "Péntek", hours: "7:00 - 16:00", isOpen: true },
-  { day: "Szombat", hours: "Zárva", isOpen: false },
-  { day: "Vasárnap", hours: "Zárva", isOpen: false },
-];
-
 const ContactInfo = () => {
+  const { openingHours, address } = useRestaurantSettings();
+  const openingHoursList = getOpeningHoursList(openingHours);
+  const mapsQuery = encodeURIComponent(address.full);
+
   return (
     <div className="space-y-6">
       {/* Basic Info */}
@@ -36,7 +31,7 @@ const ContactInfo = () => {
             <MapPin className="h-5 w-5 text-primary mt-0.5" />
             <div>
               <p className="font-semibold">Kiscsibe Reggeliző & Étterem</p>
-              <p className="text-muted-foreground">1145 Budapest, Vezér utca 12.</p>
+              <p className="text-muted-foreground">{address.full}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -90,7 +85,7 @@ const ContactInfo = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {openingHours.map((day, index) => (
+            {openingHoursList.map((day, index) => (
               <div key={index} className="flex justify-between items-center py-2 px-3 rounded-xl bg-muted/30">
                 <span className="font-medium">{day.day}</span>
                 <span className={`${day.isOpen ? 'text-primary' : 'text-muted-foreground'} font-semibold`}>
@@ -135,7 +130,7 @@ const ContactInfo = () => {
         asChild
       >
         <a
-          href="https://maps.google.com/?q=1145+Budapest+Vezér+utca+12"
+          href={`https://maps.google.com/?q=${mapsQuery}`}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2"

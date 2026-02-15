@@ -8,6 +8,7 @@ import { useCart } from "@/contexts/CartContext";
 import { CartDialog } from "@/components/CartDialog";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRestaurantSettings, formatOpeningHoursOneLiner } from "@/hooks/useRestaurantSettings";
 
 const ModernNavigation = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -17,6 +18,7 @@ const ModernNavigation = () => {
   const location = useLocation();
   const { state: cart } = useCart();
   const { isAdmin, isStaff, canViewOrders } = useAuth();
+  const { openingHours } = useRestaurantSettings();
 
   useEffect(() => {
     let lastScrollY = window.scrollY;
@@ -72,7 +74,7 @@ const ModernNavigation = () => {
             <div className={`text-foreground font-medium text-center md:text-left transition-all duration-300 ${
               scrolled ? "text-[11px] md:text-xs" : "text-[11px] md:text-sm"
             }`}>
-              Ma nyitva: H–P 7:00–16:00 • Szo-V Zárva
+              Ma nyitva: {formatOpeningHoursOneLiner(openingHours)}
             </div>
             
             <div className="hidden md:flex items-center gap-2">
