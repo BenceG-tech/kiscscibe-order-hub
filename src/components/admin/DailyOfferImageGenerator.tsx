@@ -3,14 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { format, addDays, startOfWeek, getDay } from "date-fns";
+import { format, addDays, getDay } from "date-fns";
 import { getSmartWeekStart, getSmartInitialDate } from "@/lib/dateUtils";
 import { hu } from "date-fns/locale";
-import { Download, Image as ImageIcon, Upload, Trash2, Loader2, Calendar, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
+import { Download, Image as ImageIcon, Upload, Trash2, Loader2, Calendar, ChevronLeft, ChevronRight, RotateCcw, ZoomIn } from "lucide-react";
 import { toast } from "sonner";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 interface MenuItem {
   id: string;
@@ -59,7 +58,6 @@ function getInitialSelectedDate(): string {
 }
 
 const DailyOfferImageGenerator = () => {
-  const isMobile = useIsMobile();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [weekOffset, setWeekOffset] = useState(0);
@@ -68,6 +66,8 @@ const DailyOfferImageGenerator = () => {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const [canvasDataUrl, setCanvasDataUrl] = useState<string>("");
   const weekDates = getWeekDates(weekOffset);
 
   const weekStart = new Date(weekDates[0] + "T00:00:00");
@@ -97,7 +97,6 @@ const DailyOfferImageGenerator = () => {
       const { data, error } = await supabase.rpc("get_daily_data", { target_date: dateStr });
       if (error) throw error;
 
-      // Also fetch facebook_image_url
       const { data: offerRow } = await supabase
         .from("daily_offers")
         .select("facebook_image_url")
@@ -162,7 +161,6 @@ const DailyOfferImageGenerator = () => {
   // Draw canvas when data changes
   useEffect(() => {
     if (!dayData || !canvasRef.current) return;
-    // Wait for fonts to be ready
     document.fonts.ready.then(() => {
       drawCanvas(dayData, selectedDate);
     });
@@ -179,18 +177,32 @@ const DailyOfferImageGenerator = () => {
     canvas.width = W;
     canvas.height = H;
 
-    // Background gradient - dark blue
-    const bg = ctx.createLinearGradient(0, 0, W, H);
-    bg.addColorStop(0, "#1a1a2e");
-    bg.addColorStop(1, "#16213e");
+    // Background: dark blue-black gradient matching reference
+    const bg = ctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, "#0f0f1a");
+    bg.addColorStop(0.15, "#1a1a2e");
+    bg.addColorStop(0.5, "#1e2040");
+    bg.addColorStop(0.85, "#1a1a2e");
+    bg.addColorStop(1, "#0f0f1a");
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, W, H);
 
+    // Gold border frame
     const GOLD = "#d4a843";
     const WHITE = "#ffffff";
     const GRAY = "#9ca3af";
+    const BORDER = 8;
+    ctx.strokeStyle = GOLD;
+    ctx.lineWidth = BORDER;
+    ctx.strokeRect(BORDER / 2, BORDER / 2, W - BORDER, H - BORDER);
+
+    // Inner subtle border
+    ctx.strokeStyle = "rgba(212, 168, 67, 0.3)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(20, 20, W - 40, H - 40);
+
     const PAD = 50;
-    let y = 45;
+    let y = 50;
 
     // Date info
     const dateObj = new Date(dateStr + "T00:00:00");
@@ -198,18 +210,14 @@ const DailyOfferImageGenerator = () => {
     const month = String(dateObj.getMonth() + 1).padStart(2, "0");
     const day = String(dateObj.getDate()).padStart(2, "0");
 
-    // Header: "Napi ajánlat" + date on one line
+    // Header: "Napi ajánlat  MM.DD. napnév  11:30-tól" — single line, large
     ctx.fillStyle = GOLD;
-    ctx.font = "42px Sofia, Georgia, serif";
-    ctx.textAlign = "left";
-    ctx.fillText("Napi ajánlat", PAD, y + 42);
-
-    ctx.font = "28px Sofia, Georgia, serif";
-    ctx.textAlign = "right";
-    ctx.fillText(`${month}.${day}. ${dayName}`, W - PAD, y + 42);
+    ctx.font = "40px Sofia, Georgia, serif";
+    ctx.textAlign = "center";
+    ctx.fillText(`Napi ajánlat  ${month}.${day}. ${dayName}  11:30-tól`, W / 2, y + 40);
     y += 60;
 
-    // Gold line
+    // Gold separator line
     ctx.strokeStyle = GOLD;
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -222,24 +230,24 @@ const DailyOfferImageGenerator = () => {
     const menuItems = data.items.filter((i) => i.is_menu_part);
     const alacarteItems = data.items.filter((i) => !i.is_menu_part);
 
-    // A la carte items - left aligned name, right aligned price
+    // A la carte items
     for (const item of alacarteItems) {
       const name = item.item_name.charAt(0).toUpperCase() + item.item_name.slice(1);
       ctx.fillStyle = WHITE;
-      ctx.font = "26px Sofia, Georgia, serif";
+      ctx.font = "28px Sofia, Georgia, serif";
       ctx.textAlign = "left";
-      ctx.fillText(name, PAD, y + 26);
+      ctx.fillText(name, PAD, y + 28);
 
       if (item.item_price_huf > 0) {
         ctx.fillStyle = GOLD;
         ctx.textAlign = "right";
-        ctx.font = "26px Sofia, Georgia, serif";
-        ctx.fillText(formatPrice(item.item_price_huf) + " Ft", W - PAD, y + 26);
+        ctx.font = "28px Sofia, Georgia, serif";
+        ctx.fillText(formatPrice(item.item_price_huf) + " Ft", W - PAD, y + 28);
       }
-      y += 40;
+      y += 42;
     }
 
-    // Note section (if exists)
+    // Note section
     if (data.offer_note) {
       y += 8;
       ctx.fillStyle = GRAY;
@@ -267,55 +275,72 @@ const DailyOfferImageGenerator = () => {
 
       // "Menü" title
       ctx.fillStyle = GOLD;
-      ctx.font = "34px Sofia, Georgia, serif";
+      ctx.font = "36px Sofia, Georgia, serif";
       ctx.textAlign = "left";
-      ctx.fillText("Menü", PAD, y + 34);
-      y += 50;
+      ctx.fillText("Menü", PAD, y + 36);
+      y += 52;
 
-      // Menu items
       const soup = menuItems.find((i) => i.menu_role === "leves");
       const main = menuItems.find((i) => i.menu_role === "főétel");
 
       if (soup) {
         const name = soup.item_name.charAt(0).toUpperCase() + soup.item_name.slice(1);
         ctx.fillStyle = WHITE;
-        ctx.font = "24px Sofia, Georgia, serif";
+        ctx.font = "26px Sofia, Georgia, serif";
         ctx.textAlign = "left";
-        ctx.fillText(`🥣  ${name}`, PAD + 10, y + 24);
-        y += 38;
+        ctx.fillText(`🥣  ${name}`, PAD + 10, y + 26);
+        y += 40;
       }
 
       if (main) {
         const name = main.item_name.charAt(0).toUpperCase() + main.item_name.slice(1);
         ctx.fillStyle = WHITE;
-        ctx.font = "24px Sofia, Georgia, serif";
+        ctx.font = "26px Sofia, Georgia, serif";
         ctx.textAlign = "left";
-        ctx.fillText(`🍖  ${name}`, PAD + 10, y + 24);
-        y += 38;
+        ctx.fillText(`🍖  ${name}`, PAD + 10, y + 26);
+        y += 40;
       }
 
       y += 10;
 
-      // Menu price - use data or fallback to 2200
-      const menuPrice = data.menu_price_huf || 2200;
+      // Menu price — ALWAYS 2200
+      const menuPrice = 2200;
       ctx.fillStyle = GOLD;
-      ctx.font = "32px Sofia, Georgia, serif";
+      ctx.font = "34px Sofia, Georgia, serif";
       ctx.textAlign = "left";
-      ctx.fillText(`Helyben: ${formatPrice(menuPrice)} Ft`, PAD, y + 32);
+      ctx.fillText(`Helyben: ${formatPrice(menuPrice)} Ft`, PAD, y + 34);
 
       ctx.fillStyle = GRAY;
       ctx.font = "20px Sofia, Georgia, serif";
       ctx.textAlign = "right";
-      ctx.fillText("(+ 200,- Ft elvitelre a 2 doboz)", W - PAD, y + 28);
+      ctx.fillText("(+ 200,- Ft elvitelre a 2 doboz)", W - PAD, y + 30);
       y += 50;
     }
 
-    // Footer
-    y = Math.max(y + 10, H - 50);
-    ctx.fillStyle = GRAY;
-    ctx.font = "18px Sofia, Georgia, serif";
+    // Footer disclaimer text
+    const footerY = H - 60;
+    ctx.fillStyle = "rgba(212, 168, 67, 0.7)";
+    ctx.font = "italic 14px Sofia, Georgia, serif";
     ctx.textAlign = "center";
-    ctx.fillText("Köretek minden nap választhatók. Jó étvágyat kívánunk! 🐥", W / 2, y);
+    ctx.fillText(
+      "A feltüntetett árak köretet nem tartalmazzák! Elviteles doboz: 150,- Ft/étel.",
+      W / 2,
+      footerY
+    );
+    ctx.fillText(
+      "Levesből, főzelékekből és a köretekből fél adag is kérhető, fél adagnál 70%-os árat számlázunk.",
+      W / 2,
+      footerY + 20
+    );
+
+    // Footer branding
+    ctx.fillStyle = GRAY;
+    ctx.font = "16px Sofia, Georgia, serif";
+    ctx.textAlign = "center";
+    ctx.fillText("Jó étvágyat kívánunk! 🐥", W / 2, footerY + 44);
+
+    // Save data URL for lightbox
+    setCanvasDataUrl(canvas.toDataURL("image/png"));
   };
 
   function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
@@ -345,7 +370,6 @@ const DailyOfferImageGenerator = () => {
     toast.success("Kép letöltve!");
   };
 
-  // Upload image
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !dayData) return;
@@ -355,7 +379,6 @@ const DailyOfferImageGenerator = () => {
       const ext = file.name.split(".").pop() || "jpg";
       const path = `facebook/${selectedDate}.${ext}`;
 
-      // Upload to storage
       const { error: uploadErr } = await supabase.storage
         .from("menu-images")
         .upload(path, file, { upsert: true });
@@ -364,7 +387,6 @@ const DailyOfferImageGenerator = () => {
       const { data: urlData } = supabase.storage.from("menu-images").getPublicUrl(path);
       const publicUrl = urlData.publicUrl;
 
-      // Update daily_offers row
       const { error: updateErr } = await supabase
         .from("daily_offers")
         .update({ facebook_image_url: publicUrl } as any)
@@ -392,7 +414,6 @@ const DailyOfferImageGenerator = () => {
         .eq("id", dayData.offer_id);
       if (updateErr) throw updateErr;
 
-      // Try to delete from storage
       const path = `facebook/${selectedDate}`;
       await supabase.storage.from("menu-images").remove([`${path}.jpg`, `${path}.jpeg`, `${path}.png`]);
 
@@ -421,7 +442,6 @@ const DailyOfferImageGenerator = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {/* Week navigation */}
           <div className="flex items-center justify-between gap-2">
             <Button variant="ghost" size="icon" onClick={handlePrevWeek} className="h-8 w-8">
               <ChevronLeft className="h-4 w-4" />
@@ -437,7 +457,6 @@ const DailyOfferImageGenerator = () => {
               </Button>
             )}
           </div>
-          {/* Day buttons */}
           <div className="flex flex-wrap gap-2">
             {weekDates.map((d) => {
               const dObj = new Date(d + "T00:00:00");
@@ -484,22 +503,43 @@ const DailyOfferImageGenerator = () => {
                   <ImageIcon className="h-5 w-5" />
                   Napi ajánlat kép
                 </CardTitle>
-                <Button onClick={handleDownload} size="sm" className="gap-1.5">
-                  <Download className="h-4 w-4" />
-                  Letöltés
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setShowPreview(true)} className="gap-1.5">
+                    <ZoomIn className="h-4 w-4" />
+                    Nagyítás
+                  </Button>
+                  <Button onClick={handleDownload} size="sm" className="gap-1.5">
+                    <Download className="h-4 w-4" />
+                    Letöltés
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
               <div className="flex justify-center">
                 <canvas
                   ref={canvasRef}
-                  className="w-full max-w-[400px] rounded-lg shadow-lg border border-border"
+                  onClick={() => setShowPreview(true)}
+                  className="w-full max-w-[500px] rounded-lg shadow-lg border border-border cursor-pointer hover:opacity-90 transition-opacity"
                   style={{ aspectRatio: "1200/675" }}
                 />
               </div>
             </CardContent>
           </Card>
+
+          {/* Lightbox Dialog */}
+          <Dialog open={showPreview} onOpenChange={setShowPreview}>
+            <DialogContent className="max-w-[95vw] sm:max-w-4xl p-2">
+              <DialogTitle className="sr-only">Napi ajánlat kép előnézet</DialogTitle>
+              {canvasDataUrl && (
+                <img
+                  src={canvasDataUrl}
+                  alt="Napi ajánlat kép"
+                  className="w-full rounded-lg"
+                />
+              )}
+            </DialogContent>
+          </Dialog>
 
           {/* Upload Section */}
           <Card>
