@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Megaphone, ChevronDown, Save, Loader2, Info, AlertTriangle, Gift, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
+import ImageUpload from "@/components/admin/ImageUpload";
 
 interface AnnouncementData {
   enabled: boolean;
@@ -41,6 +42,14 @@ const TYPE_CONFIG = {
   promo: { label: "Akció / Promóció", icon: Gift, color: "text-primary" },
 };
 
+const PREDEFINED_ROUTES = [
+  { label: "Étlap", value: "/etlap" },
+  { label: "Galéria", value: "/gallery" },
+  { label: "Rólunk", value: "/about" },
+  { label: "Kapcsolat", value: "/contact" },
+  { label: "Pénztár", value: "/checkout" },
+];
+
 const AnnouncementEditor = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -48,6 +57,7 @@ const AnnouncementEditor = () => {
   const [saving, setSaving] = useState(false);
   const [open, setOpen] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [linkMode, setLinkMode] = useState<string>(""); // route value or "custom"
 
   const { data, isLoading } = useQuery({
     queryKey: ["announcement-settings"],
@@ -63,8 +73,26 @@ const AnnouncementEditor = () => {
   });
 
   useEffect(() => {
-    if (data) setForm(data);
+    if (data) {
+      setForm(data);
+      // Determine link mode from existing value
+      if (data.ctaLink) {
+        const isPredefined = PREDEFINED_ROUTES.some((r) => r.value === data.ctaLink);
+        setLinkMode(isPredefined ? data.ctaLink : "custom");
+      } else {
+        setLinkMode("");
+      }
+    }
   }, [data]);
+
+  const handleLinkModeChange = (value: string) => {
+    setLinkMode(value);
+    if (value === "custom" || value === "") {
+      setForm((f) => ({ ...f, ctaLink: value === "" ? "" : f.ctaLink }));
+    } else {
+      setForm((f) => ({ ...f, ctaLink: value }));
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -167,6 +195,15 @@ const AnnouncementEditor = () => {
               />
             </div>
 
+            {/* Image Upload */}
+            <ImageUpload
+              currentImageUrl={form.imageUrl || undefined}
+              onImageUploaded={(url) => setForm((f) => ({ ...f, imageUrl: url }))}
+              onImageRemoved={() => setForm((f) => ({ ...f, imageUrl: null }))}
+              bucketName="menu-images"
+              maxSize={5}
+            />
+
             {/* CTA */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
@@ -179,11 +216,28 @@ const AnnouncementEditor = () => {
               </div>
               <div className="space-y-1.5">
                 <Label>Gomb link (opcionális)</Label>
-                <Input
-                  value={form.ctaLink}
-                  onChange={(e) => setForm((f) => ({ ...f, ctaLink: e.target.value }))}
-                  placeholder="pl. /etlap"
-                />
+                <Select value={linkMode} onValueChange={handleLinkModeChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Válassz oldalt..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Nincs link</SelectItem>
+                    {PREDEFINED_ROUTES.map((r) => (
+                      <SelectItem key={r.value} value={r.value}>
+                        {r.label}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="custom">Egyedi link...</SelectItem>
+                  </SelectContent>
+                </Select>
+                {linkMode === "custom" && (
+                  <Input
+                    value={form.ctaLink}
+                    onChange={(e) => setForm((f) => ({ ...f, ctaLink: e.target.value }))}
+                    placeholder="https://... vagy /utvonal"
+                    className="mt-1.5"
+                  />
+                )}
               </div>
             </div>
 
@@ -215,12 +269,23 @@ const AnnouncementEditor = () => {
                   <span className="font-semibold text-sm">{form.title}</span>
                 </div>
                 {form.message && <p className="text-sm text-muted-foreground">{form.message}</p>}
+                {form.imageUrl && (
+                  <img src={form.imageUrl} alt={form.title} className="w-full rounded-md object-cover max-h-48" />
+                )}
                 {form.ctaText && (
                   <Button size="sm" variant="outline" className="mt-1 pointer-events-none">
                     {form.ctaText}
                   </Button>
                 )}
               </div>
+            )}
+
+            {/* Disabled warning */}
+            {!form.enabled && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                Az értesítő ki van kapcsolva – a látogatók nem fogják látni.
+              </p>
             )}
 
             {/* Save */}
