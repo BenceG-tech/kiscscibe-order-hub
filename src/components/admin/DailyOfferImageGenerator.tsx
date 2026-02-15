@@ -36,10 +36,10 @@ function formatPrice(price: number): string {
   if (price >= 1000) {
     const thousands = Math.floor(price / 1000);
     const remainder = price % 1000;
-    if (remainder === 0) return `${thousands}.000,-`;
-    return `${thousands}.${String(remainder).padStart(3, "0")},-`;
+    if (remainder === 0) return `${thousands}.000.-`;
+    return `${thousands}.${String(remainder).padStart(3, "0")}.-`;
   }
-  return `${price},-`;
+  return `${price}.-`;
 }
 
 function getWeekDates(offset: number = 0): string[] {
@@ -173,52 +173,77 @@ const DailyOfferImageGenerator = () => {
     if (!ctx) return;
 
     const W = 1200;
-    const H = 675;
-    canvas.width = W;
-    canvas.height = H;
-
-    // Background: dark blue-black gradient matching reference
-    const bg = ctx.createLinearGradient(0, 0, 0, H);
-    bg.addColorStop(0, "#0f0f1a");
-    bg.addColorStop(0.15, "#1a1a2e");
-    bg.addColorStop(0.5, "#1e2040");
-    bg.addColorStop(0.85, "#1a1a2e");
-    bg.addColorStop(1, "#0f0f1a");
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, W, H);
-
-    // Gold border frame
-    const GOLD = "#d4a843";
+    const MIN_H = 675;
+    const YELLOW = "#efbe13";
     const WHITE = "#ffffff";
-    const GRAY = "#9ca3af";
-    const BORDER = 8;
-    ctx.strokeStyle = GOLD;
-    ctx.lineWidth = BORDER;
-    ctx.strokeRect(BORDER / 2, BORDER / 2, W - BORDER, H - BORDER);
-
-    // Inner subtle border
-    ctx.strokeStyle = "rgba(212, 168, 67, 0.3)";
-    ctx.lineWidth = 1;
-    ctx.strokeRect(20, 20, W - 40, H - 40);
-
     const PAD = 50;
-    let y = 50;
 
-    // Date info
+    // First pass: calculate content height
+    let contentY = 50;
+
     const dateObj = new Date(dateStr + "T00:00:00");
     const dayName = HU_DAYS_LOWER[dateObj.getDay()];
     const month = String(dateObj.getMonth() + 1).padStart(2, "0");
     const day = String(dateObj.getDate()).padStart(2, "0");
 
-    // Header: "Napi ajánlat  MM.DD. napnév  11:30-tól" — single line, large
-    ctx.fillStyle = GOLD;
+    // Header
+    contentY += 60; // title
+    contentY += 30; // separator + gap
+
+    const menuItems = data.items.filter((i) => i.is_menu_part);
+    const alacarteItems = data.items.filter((i) => !i.is_menu_part);
+
+    // A la carte items
+    contentY += alacarteItems.length * 42;
+
+    // Note
+    if (data.offer_note) {
+      contentY += 8;
+      // Estimate note lines (rough)
+      const estimatedLines = Math.ceil((data.offer_note.length * 12) / (W - PAD * 2));
+      contentY += Math.max(1, estimatedLines) * 28;
+    }
+
+    // Menu section
+    if (menuItems.length > 0) {
+      contentY += 15 + 25 + 52; // separator + gap + title
+      const soup = menuItems.find((i) => i.menu_role === "leves");
+      const main = menuItems.find((i) => i.menu_role === "főétel");
+      if (soup) contentY += 40;
+      if (main) contentY += 40;
+      contentY += 10 + 50; // gap + price
+    }
+
+    // Footer: 3 lines
+    contentY += 30 + 20 + 20 + 30; // gap + line1 + line2 + branding
+
+    const H = Math.max(MIN_H, contentY + 20);
+    canvas.width = W;
+    canvas.height = H;
+
+    // Background: #12171A with subtle white gradient left-to-right
+    ctx.fillStyle = "#12171A";
+    ctx.fillRect(0, 0, W, H);
+    const whiteGrad = ctx.createLinearGradient(0, 0, W, 0);
+    whiteGrad.addColorStop(0, "rgba(255,255,255,0.04)");
+    whiteGrad.addColorStop(0.5, "rgba(255,255,255,0.015)");
+    whiteGrad.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = whiteGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    // No border/frame
+
+    let y = 50;
+
+    // Header
+    ctx.fillStyle = YELLOW;
     ctx.font = "40px Sofia, Georgia, serif";
     ctx.textAlign = "center";
     ctx.fillText(`Napi ajánlat  ${month}.${day}. ${dayName}  11:30-tól`, W / 2, y + 40);
     y += 60;
 
-    // Gold separator line
-    ctx.strokeStyle = GOLD;
+    // Yellow separator
+    ctx.strokeStyle = YELLOW;
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(PAD, y);
@@ -226,11 +251,7 @@ const DailyOfferImageGenerator = () => {
     ctx.stroke();
     y += 30;
 
-    // Separate menu items and a la carte items
-    const menuItems = data.items.filter((i) => i.is_menu_part);
-    const alacarteItems = data.items.filter((i) => !i.is_menu_part);
-
-    // A la carte items
+    // A la carte items — white name + white price
     for (const item of alacarteItems) {
       const name = item.item_name.charAt(0).toUpperCase() + item.item_name.slice(1);
       ctx.fillStyle = WHITE;
@@ -239,7 +260,7 @@ const DailyOfferImageGenerator = () => {
       ctx.fillText(name, PAD, y + 28);
 
       if (item.item_price_huf > 0) {
-        ctx.fillStyle = GOLD;
+        ctx.fillStyle = WHITE;
         ctx.textAlign = "right";
         ctx.font = "28px Sofia, Georgia, serif";
         ctx.fillText(formatPrice(item.item_price_huf) + " Ft", W - PAD, y + 28);
@@ -247,10 +268,10 @@ const DailyOfferImageGenerator = () => {
       y += 42;
     }
 
-    // Note section
+    // Note
     if (data.offer_note) {
       y += 8;
-      ctx.fillStyle = GRAY;
+      ctx.fillStyle = "rgba(255,255,255,0.6)";
       ctx.font = "20px Sofia, Georgia, serif";
       ctx.textAlign = "left";
       const lines = wrapText(ctx, data.offer_note, W - PAD * 2);
@@ -264,8 +285,7 @@ const DailyOfferImageGenerator = () => {
     if (menuItems.length > 0) {
       y += 15;
 
-      // Gold separator
-      ctx.strokeStyle = GOLD;
+      ctx.strokeStyle = YELLOW;
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(PAD, y);
@@ -273,8 +293,8 @@ const DailyOfferImageGenerator = () => {
       ctx.stroke();
       y += 25;
 
-      // "Menü" title
-      ctx.fillStyle = GOLD;
+      // "Menü" title — yellow
+      ctx.fillStyle = YELLOW;
       ctx.font = "36px Sofia, Georgia, serif";
       ctx.textAlign = "left";
       ctx.fillText("Menü", PAD, y + 36);
@@ -303,41 +323,43 @@ const DailyOfferImageGenerator = () => {
 
       y += 10;
 
-      // Menu price — ALWAYS 2200
+      // Menu price — ALWAYS 2200, yellow
       const menuPrice = 2200;
-      ctx.fillStyle = GOLD;
+      ctx.fillStyle = YELLOW;
       ctx.font = "34px Sofia, Georgia, serif";
       ctx.textAlign = "left";
       ctx.fillText(`Helyben: ${formatPrice(menuPrice)} Ft`, PAD, y + 34);
 
-      ctx.fillStyle = GRAY;
+      ctx.fillStyle = YELLOW;
       ctx.font = "20px Sofia, Georgia, serif";
       ctx.textAlign = "right";
-      ctx.fillText("(+ 200,- Ft elvitelre a 2 doboz)", W - PAD, y + 30);
+      ctx.fillText("(+ 200.- Ft elvitelre a 2 doboz)", W - PAD, y + 30);
       y += 50;
     }
 
-    // Footer disclaimer text
-    const footerY = H - 60;
-    ctx.fillStyle = "rgba(212, 168, 67, 0.7)";
+    // Footer disclaimer — dynamic y position (no overlap)
+    y += 30;
+    ctx.fillStyle = "rgba(239, 190, 19, 0.7)";
     ctx.font = "italic 14px Sofia, Georgia, serif";
     ctx.textAlign = "center";
     ctx.fillText(
-      "A feltüntetett árak köretet nem tartalmazzák! Elviteles doboz: 150,- Ft/étel.",
+      "A feltüntetett árak köretet nem tartalmazzák! Elviteles doboz: 150.- Ft/étel.",
       W / 2,
-      footerY
+      y
     );
+    y += 20;
     ctx.fillText(
       "Levesből, főzelékekből és a köretekből fél adag is kérhető, fél adagnál 70%-os árat számlázunk.",
       W / 2,
-      footerY + 20
+      y
     );
+    y += 24;
 
-    // Footer branding
-    ctx.fillStyle = GRAY;
+    // Branding
+    ctx.fillStyle = "rgba(255,255,255,0.5)";
     ctx.font = "16px Sofia, Georgia, serif";
     ctx.textAlign = "center";
-    ctx.fillText("Jó étvágyat kívánunk! 🐥", W / 2, footerY + 44);
+    ctx.fillText("Jó étvágyat kívánunk! 🐥", W / 2, y);
 
     // Save data URL for lightbox
     setCanvasDataUrl(canvas.toDataURL("image/png"));
@@ -521,7 +543,6 @@ const DailyOfferImageGenerator = () => {
                   ref={canvasRef}
                   onClick={() => setShowPreview(true)}
                   className="w-full max-w-[500px] rounded-lg shadow-lg border border-border cursor-pointer hover:opacity-90 transition-opacity"
-                  style={{ aspectRatio: "1200/675" }}
                 />
               </div>
             </CardContent>
