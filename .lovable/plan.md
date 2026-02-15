@@ -1,70 +1,112 @@
 
 
-# Admin rendelés keresés és CSV export
+# N+1 query optimalizalas
 
 ## Osszefoglalas
 
-Keresomezo es CSV export gomb hozzaadasa az admin rendeleskezelo oldalhoz. A kereses valos idoben szur rendelesszam, nev vagy telefon alapjan az aktiv tab-on belul. Az export az aktualisan latható (szurt) rendeleseket menti CSV fajlba.
+Mindket fajlban (`OrdersManagement.tsx` es `StaffOrders.tsx`) a `fetchOrders` fuggveny jelenleg N+1 lekerdezest vegez: eloszor az osszes rendeles, majd egyenkent az itemek es opciok. Ezt egyetlen nested select-re csereljuk, es datumszurot is adunk hozza.
 
 ## Valtoztatások
 
-### 1. Uj fajl: `src/lib/orderExport.ts`
+### 1. `src/pages/admin/OrdersManagement.tsx` - fetchOrders (144-203. sor)
 
-CSV export segédfuggveny:
-- Bemenet: szurt rendelesek tombje (Order interfesz az items tombbol)
-- CSV oszlopok: Rendelésszám, Dátum, Név, Telefon, Email, Tételek, Összeg (Ft), Fizetés, Státusz
-- Tetelek oszlop: `nev x db` formatumban, pontosvesszoval elvalasztva
-- Fizetes: "Készpénz" / "Kártya"
-- Statusz: magyar forditas (Uj, Keszites alatt, Kesz, Atveve, Lemondva)
-- UTF-8 BOM (`\uFEFF`) a fajl elejere Excel kompatibilitashoz
-- Fajlnev: `kiscsibe-rendelesek-YYYY-MM-DD.csv`
-- Letoltes: `Blob` + `URL.createObjectURL` + rejtett `<a>` elem
+A teljes `fetchOrders` fuggvenyt lecsereljuk:
 
-### 2. Modositas: `src/pages/admin/OrdersManagement.tsx`
+```typescript
+const fetchOrders = async () => {
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 30);
 
-**Uj importok:**
-- `Search`, `Download`, `X` a `lucide-react`-bol
-- `Input` a `@/components/ui/input`-bol
-- `Tooltip`, `TooltipTrigger`, `TooltipContent`, `TooltipProvider` a `@/components/ui/tooltip`-bol
-- `exportOrdersToCSV` az `src/lib/orderExport.ts`-bol
+  const { data, error } = await supabase
+    .from("orders")
+    .select(`
+      *,
+      order_items (
+        id, name_snapshot, qty, unit_price_huf, line_total_huf,
+        order_item_options (
+          id, label_snapshot, option_type, price_delta_huf
+        )
+      )
+    `)
+    .gte("created_at", sevenDaysAgo.toISOString())
+    .order("created_at", { ascending: false });
 
-**Uj state-ek:**
-- `searchQuery: string` (alapertelmezett: `""`)
-- `debouncedSearch: string` (alapertelmezett: `""`)
+  if (error) {
+    toast({ title: "Hiba", description: "Nem sikerült betölteni a rendeléseket", variant: "destructive" });
+    return;
+  }
 
-**Debounce logika:**
-- `useEffect` a `searchQuery`-re: 300ms `setTimeout`-tal frissiti a `debouncedSearch`-ot, cleanup-pal
+  const mapped = (data || []).map((order) => ({
+    ...order,
+    items: (order.order_items || []).map((item) => ({
+      id: item.id,
+      name_snapshot: item.name_snapshot,
+      qty: item.qty,
+      unit_price_huf: item.unit_price_huf,
+      line_total_huf: item.line_total_huf,
+      options: (item.order_item_options || []).map((opt) => ({
+        id: opt.id,
+        label_snapshot: opt.label_snapshot,
+        option_type: opt.option_type,
+        price_delta_huf: opt.price_delta_huf,
+      })),
+    })),
+  }));
 
-**Uj UI sor a fejlec es a Tabs kozott** (368-374. sor kozott, a `<Tabs>` ele):
-
-```text
-┌─────────────────────────────────────────────┐ ┌──────────┐
-│ 🔍 Keresés rendelésszám, név vagy telefon...│ │ 📥 Export │
-└─────────────────────────────────────────────┘ └──────────┘
-  3 találat
+  setOrders(mapped);
+  setLoading(false);
+};
 ```
 
-- Bal oldal: `Input` mezo `Search` ikonnal elotte, `X` gomb ha van szoveg
-- Jobb oldal: `Button` variant="outline" `Download` ikonnal, tooltip-pel
-- Input alatt kis szurke szoveg: `"{N} találat"`
+**Megjegyzes a datumszurorol:** Az admin oldalon 30 napot hasznalunk (nem 7-et), mert a "Multbeli" ful regi rendeleseket is mutat. Az aktiv rendelesek (new/preparing/ready) altalaban fressebbek, de a past tab-nal 30 nap kell.
 
-**Szuresi logika modositas:**
-- A meglevo `filterOrders()` eredmenyet tovabb szurjuk a `debouncedSearch` alapjan
-- Case-insensitive `includes` a `code`, `name`, `phone` mezokon
-- Uj `getFilteredOrders(tabValue)` fuggveny ami a ket szurest kombinalja
-- A TabsContent rendereles es az export gomb is ezt a szurt tombot hasznalja
+### 2. `src/pages/staff/StaffOrders.tsx` - fetchOrders (116-169. sor)
 
-**Export gomb:**
-- Kattintaskor `exportOrdersToCSV(getFilteredOrders(activeTab))` hivas
-- `disabled` ha a szurt tomb ures
+Ugyanez a minta, de 7 napos szuroval, mert a staff KDS feluleten csak az aktiv es friss rendelesek relevansak:
 
-## Technikai reszletek
+```typescript
+const fetchOrders = useCallback(async () => {
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-| Elem | Megoldas |
-|------|---------|
-| Debounce | `useState` + `useEffect` + `setTimeout`/`clearTimeout` (300ms) |
-| CSV escape | Idezojelek koze zaras, belso idezojelek duplazasa |
-| Fajl letoltes | `Blob("text/csv;charset=utf-8")` + `URL.createObjectURL` + `<a>` click + `URL.revokeObjectURL` |
-| Magyar karakterek | UTF-8 BOM prefix (`\uFEFF`) |
-| Szures hatokore | Mindig az aktiv tab rendelesein belul szur |
+  const { data, error } = await supabase
+    .from("orders")
+    .select(`
+      *,
+      order_items (
+        id, name_snapshot, qty, unit_price_huf, line_total_huf,
+        order_item_options (
+          id, label_snapshot, option_type, price_delta_huf
+        )
+      )
+    `)
+    .gte("created_at", sevenDaysAgo.toISOString())
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    toast.error("Nem sikerült betölteni a rendeléseket");
+    setLoading(false);
+    return;
+  }
+
+  const mapped = (data || []).map((order) => ({
+    ...order,
+    items: (order.order_items || []).map((item) => ({
+      ...item,
+      options: item.order_item_options || [],
+    })),
+  }));
+
+  setOrders(mapped);
+  setLoading(false);
+}, []);
+```
+
+## Fontos reszletek
+
+- A Supabase nested select `order_items` neven adja vissza a kapcsolt adatokat, de a mappeles soran `items`-re nevezzuk at, igy a renderelo komponensek (`ActiveOrderCard`, `KanbanOrderCard`, `PastOrderAdminCard`) valtozatlanul mukodnek
+- Az `options` mezonev megmarad (nem `order_item_options`), a mappeles biztositja ezt
+- Az `option_type !== "daily_meta"` szures a renderelo komponensekben van, azokat nem modositjuk
+- Admin: 30 napos szuro (past tab miatt); Staff KDS: 7 napos szuro
+- Eredmeny: 1 DB lekerdezes a korabbi 100+ helyett
 
