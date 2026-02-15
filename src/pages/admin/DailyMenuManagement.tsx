@@ -59,7 +59,7 @@ const DailyMenuManagement = () => {
                 value="facebook" 
                 className="!h-8 !px-3 !text-xs sm:!text-sm !whitespace-nowrap !rounded-md data-[state=active]:!bg-background data-[state=active]:!text-foreground data-[state=active]:!shadow-sm data-[state=active]:!scale-100"
               >
-                {isMobile ? "FB kép" : "Facebook kép"}
+                {isMobile ? "Kép" : "Kép generátor"}
               </TabsTrigger>
             </TabsList>
           </div>

@@ -2,8 +2,10 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Plus, X, ImageIcon, Pencil } from "lucide-react";
+import { Plus, X, ImageIcon, Pencil, Ban } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { QuickImageUpload } from "./QuickImageUpload";
 import { QuickPriceEdit } from "./QuickPriceEdit";
 import { MenuPartToggle } from "./MenuPartToggle";
@@ -25,6 +27,7 @@ interface SelectedItem {
   price?: number;
   isMenuPart: boolean;
   menuRole?: string | null;
+  isSoldOut?: boolean;
 }
 
 interface WeeklyGridCellProps {
@@ -70,6 +73,21 @@ export function WeeklyGridCell({
     onImageUpdated?.();
   };
 
+  const handleToggleSoldOut = async (offerItemId: string, currentSoldOut: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("daily_offer_items")
+        .update({ is_sold_out: !currentSoldOut } as any)
+        .eq("id", offerItemId);
+      if (error) throw error;
+      toast.success(!currentSoldOut ? "Elfogyottnak jelölve" : "Újra elérhető");
+      onImageUpdated?.(); // triggers refetch
+    } catch (err) {
+      console.error("Error toggling sold out:", err);
+      toast.error("Hiba történt");
+    }
+  };
+
   // Filter out already selected items from the dropdown
   const availableItems = items.filter(
     item => !selectedItems.some(sel => sel.itemId === item.id)
@@ -81,7 +99,10 @@ export function WeeklyGridCell({
       {selectedItems.map((selectedItem) => (
         <div
           key={selectedItem.offerItemId}
-          className="flex items-center gap-1 p-1 bg-background rounded border group"
+          className={cn(
+            "flex items-center gap-1 p-1 rounded border group",
+            selectedItem.isSoldOut ? "bg-destructive/10 border-destructive/30 opacity-60" : "bg-background"
+          )}
         >
           {/* Image Thumbnail */}
           {selectedItem.imageUrl ? (
@@ -96,9 +117,28 @@ export function WeeklyGridCell({
             </div>
           )}
           
-          <span className="flex-1 text-xs font-medium truncate" title={selectedItem.itemName}>
+          <span className={cn("flex-1 text-xs font-medium truncate", selectedItem.isSoldOut && "line-through")} title={selectedItem.itemName}>
             {selectedItem.itemName}
           </span>
+          
+          {/* Sold Out Toggle */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(
+              "h-5 w-5 shrink-0",
+              selectedItem.isSoldOut 
+                ? "text-destructive opacity-100 hover:bg-destructive/10" 
+                : "opacity-40 hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
+            )}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleToggleSoldOut(selectedItem.offerItemId, !!selectedItem.isSoldOut);
+            }}
+            title={selectedItem.isSoldOut ? "Újra elérhetővé tesz" : "Elfogyottnak jelöl"}
+          >
+            <Ban className="h-3 w-3" />
+          </Button>
           
           {/* Menu Part Toggle */}
           {onMenuPartToggle && (

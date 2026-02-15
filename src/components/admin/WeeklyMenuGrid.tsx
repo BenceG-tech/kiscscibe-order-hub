@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, addDays, addWeeks, subWeeks } from "date-fns";
+import { getSmartWeekStart } from "@/lib/dateUtils";
 import { hu } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -55,6 +56,7 @@ interface DailyOfferItem {
   item_id: string | null;
   is_menu_part: boolean;
   menu_role: string | null;
+  is_sold_out?: boolean;
   menu_items: MenuItem | null;
 }
 
@@ -76,12 +78,11 @@ interface SelectedItem {
   price?: number;
   isMenuPart: boolean;
   menuRole?: string | null;
+  isSoldOut?: boolean;
 }
 
 export default function WeeklyMenuGrid() {
-  const [currentWeekStart, setCurrentWeekStart] = useState(() => 
-    startOfWeek(new Date(), { weekStartsOn: 1 })
-  );
+  const [currentWeekStart, setCurrentWeekStart] = useState(() => getSmartWeekStart());
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
 
@@ -161,6 +162,7 @@ export default function WeeklyMenuGrid() {
             item_id,
             is_menu_part,
             menu_role,
+            is_sold_out,
             menu_items (
               id,
               name,
@@ -202,6 +204,7 @@ export default function WeeklyMenuGrid() {
             price: item.menu_items.price_huf,
             isMenuPart: item.is_menu_part,
             menuRole: item.menu_role,
+            isSoldOut: (item as any).is_sold_out || false,
           });
         }
       });
@@ -438,7 +441,7 @@ export default function WeeklyMenuGrid() {
           .select("price_huf")
           .eq("id", offerId)
           .single();
-        const menuPrice = offerData?.price_huf || 1800;
+        const menuPrice = offerData?.price_huf || 2200;
 
         const { error: insertError } = await supabase
           .from("daily_offer_menus")
@@ -465,7 +468,7 @@ export default function WeeklyMenuGrid() {
       queryClient.invalidateQueries({ queryKey: ["daily-offers-week"] });
       const result = _data as { action: string; price?: number } | undefined;
       if (result?.action === "created") {
-        toast.success(`Napi menü automatikusan létrehozva (${result.price || 1800} Ft)`);
+        toast.success(`Napi menü automatikusan létrehozva (${result.price || 2200} Ft)`);
       } else if (result?.action === "deleted") {
         toast.success("Napi menü eltávolítva");
       } else {
@@ -567,11 +570,11 @@ export default function WeeklyMenuGrid() {
   };
 
   const goToCurrentWeek = () => {
-    setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }));
+    setCurrentWeekStart(getSmartWeekStart());
   };
 
   const isCurrentWeek = format(currentWeekStart, "yyyy-MM-dd") === 
-    format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
+    format(getSmartWeekStart(), "yyyy-MM-dd");
 
   const isPending = addItemMutation.isPending || 
     removeItemMutation.isPending || updatePriceMutation.isPending || 

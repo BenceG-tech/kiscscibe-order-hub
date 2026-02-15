@@ -1,0 +1,1 @@
+ALTER TABLE public.daily_offer_items ADD COLUMN is_sold_out boolean NOT NULL DEFAULT false;

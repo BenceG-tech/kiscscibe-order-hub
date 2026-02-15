@@ -241,6 +241,7 @@ export type Database = {
           daily_offer_id: string | null
           id: string
           is_menu_part: boolean
+          is_sold_out: boolean
           item_id: string | null
           menu_role: string | null
           portions_needed: number
@@ -249,6 +250,7 @@ export type Database = {
           daily_offer_id?: string | null
           id?: string
           is_menu_part?: boolean
+          is_sold_out?: boolean
           item_id?: string | null
           menu_role?: string | null
           portions_needed?: number
@@ -257,6 +259,7 @@ export type Database = {
           daily_offer_id?: string | null
           id?: string
           is_menu_part?: boolean
+          is_sold_out?: boolean
           item_id?: string | null
           menu_role?: string | null
           portions_needed?: number
