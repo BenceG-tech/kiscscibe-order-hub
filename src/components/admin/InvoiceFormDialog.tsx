@@ -2,13 +2,20 @@ import { useState, useEffect, useMemo } from "react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Trash2 } from "lucide-react";
 import InvoiceFileUpload from "./InvoiceFileUpload";
-import { useCreateInvoice, useUpdateInvoice, usePartnerSuggestions } from "@/hooks/useInvoices";
+import { useCreateInvoice, useUpdateInvoice, useDeleteInvoice, usePartnerSuggestions } from "@/hooks/useInvoices";
+import { supabase } from "@/integrations/supabase/client";
 import type { Invoice } from "@/hooks/useInvoices";
 
 interface Props {
@@ -50,6 +57,7 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
 
   const create = useCreateInvoice();
   const update = useUpdateInvoice();
+  const del = useDeleteInvoice();
   const { data: partners } = usePartnerSuggestions();
 
   const isEdit = !!invoice;
@@ -117,7 +125,25 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
     }
   };
 
-  const isPending = create.isPending || update.isPending;
+  const handleDelete = async () => {
+    if (!invoice) return;
+
+    // Delete attached files from storage
+    if (invoice.file_urls && invoice.file_urls.length > 0) {
+      const paths = invoice.file_urls.map((url) => {
+        const parts = url.split("/invoices/");
+        return parts.length > 1 ? parts[parts.length - 1] : "";
+      }).filter(Boolean);
+
+      if (paths.length > 0) {
+        await supabase.storage.from("invoices").remove(paths);
+      }
+    }
+
+    del.mutate(invoice.id, { onSuccess: () => onOpenChange(false) });
+  };
+
+  const isPending = create.isPending || update.isPending || del.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -275,6 +301,30 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
         </div>
 
         <DialogFooter className="shrink-0 gap-2 sm:gap-2">
+          {isEdit && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm" disabled={isPending} className="mr-auto">
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Törlés
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Biztosan törlöd ezt a bizonylatot?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Ez a művelet nem visszavonható. A csatolt fájlok is törlődnek.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Mégse</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    Törlés
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
           <Button variant="outline" onClick={() => handleSave("draft")} disabled={isPending || !form.partner_name.trim()}>
             Piszkozat mentés
           </Button>
