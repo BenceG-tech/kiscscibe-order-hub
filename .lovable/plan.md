@@ -1,125 +1,235 @@
 
-# Osszetett fejlesztes: Tobbszoros torles, ikon nevek, szamla-fejlesztesek, elfogyott jeloles, changelog
+# AUDIT AND IMPROVEMENT PLAN -- Kiscsibe Order Hub
 
-Ez a terv tobb kisebb fejlesztest fog ossze egyetlen nagy frissitesbe.
-
----
-
-## 1. Multbeli rendelesek tobbszoros kivalasztasa es torles
-
-A "Multbeli" tabon jelenleg egyenkent kell torolni a rendeleseket. Uj funkcio: checkbox-ok a rendelesekknel, es egy "Kivalasztottak torlese" gomb.
-
-### Valtozasok
-| Fajl | Leiras |
-|------|--------|
-| `src/pages/admin/OrdersManagement.tsx` | - `PastOrdersTab`-ba uj allapot: `selectedIds: Set<string>` - Minden `PastOrderAdminCard` kap egy checkbox-ot a bal oldalon - "Osszes kivalasztasa" / "Kivalasztottak torlese (X db)" gombok a vezerlosavoban - AlertDialog megerosites a tobbszoros torlesnel - `deleteMultiple` fuggveny ami vegigmegy a kivalasztott ID-kon |
+A comprehensive security, architecture, UX, and future-proofing audit.
 
 ---
 
-## 2. Ikon nevek magyarul + ikon elonezet a Rolunk szerkesztoben
+## Pillar 1: Architecture and Database Integrity
 
-Jelenleg a kepernyon lathato: "CalendarDays", "Star", "Heart" stb. angol ikon nevekkel. Ezek helyett magyar cimkek jelenjenek meg, es az ikon is latszodjon a neve mellett.
+### 1.1 Capacity Management Conflict (Priority: HIGH)
 
-### Megvalositas
-A `ICON_OPTIONS` tombot atalakitjuk egy tetellistava: `{ value: "CalendarDays", label: "Naptar", icon: CalendarDays }` formaban. A `<select>` elemet lecsereljuk egy szebb Radix `Select` komponensre, ahol az ikon is latszik minden opcio mellett.
+**Finding:** Two parallel systems exist for limiting orders:
+- `capacity_slots` table: time-slot based booking (max_orders / booked_orders per 30-min slot)
+- `remaining_portions` fields on `daily_offers`, `daily_menus`, `daily_offer_menus`: item-level stock
 
-### Valtozasok
-| Fajl | Leiras |
-|------|--------|
-| `src/components/admin/AboutPageEditor.tsx` | - ICON_OPTIONS atalakitasa: value + magyar label + lucide komponens - HTML select helyett Radix Select az ikonvalaszsztohoz - Minden opcio elejen az ikon megjelenitese (pl. `<Heart /> Sziv`) - A kivalasztott ikon is latszik a SelectTrigger-ben |
+These serve different purposes but overlap conceptually. In `submit-order/index.ts` (lines 370-451), the capacity slot system runs independently of the portions system (lines 246-256), meaning a single order decrements BOTH systems. If either one blocks, the order fails -- but they are not transactionally linked.
 
-Magyar forditas tabla:
-- CalendarDays = "Naptar"
-- Users = "Vendegek"
-- ChefHat = "Szakacs sapka"
-- Star = "Csillag"
-- Heart = "Sziv"
-- Clock = "Ora"
-- Leaf = "Level"
-- Award = "Dij"
-- Coffee = "Kave"
-- Utensils = "Evoezkozok"
-- MapPin = "Helyszin"
-- ThumbsUp = "Tetszik"
+**Risk:** An order could decrement `remaining_portions` successfully but then fail on `capacity_slots`, leaving orphaned portion decrements with no rollback.
 
----
+**Proposed Solution (step-by-step):**
+1. Wrap the entire order in a database transaction (use a single `plpgsql` function called via `supabase.rpc()` that handles both portion decrement AND capacity booking atomically)
+2. Alternatively, move capacity slot update BEFORE portion updates so the cheaper check fails first
+3. Long-term: consider if `capacity_slots` is truly needed -- if it duplicates the concept of "how many orders can we handle per time slot," it could be replaced by a simple per-slot counter derived from order count queries
 
-## 3. Szamla rendszer tovabbfejlesztesek
+### 1.2 Race Condition in Capacity Slots (Priority: CRITICAL)
 
-### 3a. Lejart szamlak automatikus jelolese
-Jelenleg a "pending" + lejart `due_date` szamlakat csak a Dashboard alert mutatja. De magat a szamlat nem allitja "overdue"-ra. Uj: a szamla listaban vizualisan megkulonboztetjuk a lejart szamlakat (piros due_date szoveg), es egy "Figyelem: X lejart szamla!" banner jelenik meg a szamla oldal tetejen is.
+**Finding:** The `update_daily_portions` RPC function uses `FOR UPDATE` row locks -- this is correctly race-safe. However, the `capacity_slots` update in `submit-order/index.ts` (lines 434-450) does NOT use atomic updates. It reads `booked_orders`, checks the value client-side, then issues a separate UPDATE. Two concurrent orders could both read `booked_orders = 7` (max 8), both pass the check, and both increment to 8 -- resulting in overbooking.
 
-### 3b. Szamla reszletek jobb megjelenitese a listaban
-- Due date megjelenitese a listaban (ha van)
-- Ha lejart: piros betuszin es "Lejart X napja" felirat
+```typescript
+// CURRENT (UNSAFE - lines 434-445):
+if (capacityData.booked_orders >= capacityData.max_orders) { throw ... }
+await supabase.from('capacity_slots')
+  .update({ booked_orders: capacityData.booked_orders + 1 })
+```
 
-### Valtozasok
-| Fajl | Leiras |
-|------|--------|
-| `src/components/admin/InvoiceListItem.tsx` | - Due date megjelenitese - Lejart jelzes piros szinnel es "X napja lejart" szoveggel |
-| `src/pages/admin/Invoices.tsx` | - Lejart szamlak figyelmezteto banner a lista felett |
+**Proposed Solution:** Create an `update_capacity_slot` RPC function similar to `update_daily_portions` that uses `FOR UPDATE` locks:
 
----
+```sql
+CREATE OR REPLACE FUNCTION update_capacity_slot(slot_date date, slot_time time, qty integer DEFAULT 1)
+RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE current_booked integer; max_cap integer;
+BEGIN
+  SELECT booked_orders, max_orders INTO current_booked, max_cap
+  FROM capacity_slots WHERE date = slot_date AND timeslot = slot_time FOR UPDATE;
+  IF current_booked + qty > max_cap THEN
+    RAISE EXCEPTION 'Time slot is full';
+  END IF;
+  UPDATE capacity_slots SET booked_orders = booked_orders + qty
+  WHERE date = slot_date AND timeslot = slot_time;
+  RETURN true;
+END; $$;
+```
 
-## 4. Napi ajanlat "Elfogyott" jeloles (admin/staff)
+### 1.3 No Rollback on Partial Failure (Priority: HIGH)
 
-Az admin es staff feluleten lehessen manualissan megjelolni egy napi ajanlat etelt "elfogyott"-nak. Ez a frontenden is megjelenik es nem engedi megrendelni.
+**Finding:** In `submit-order/index.ts`, daily portions are decremented (line 246-256) BEFORE the order is inserted (line 454). If the order insert fails (line 472), the decremented portions are never restored. Similarly, coupon `used_count` is incremented (line 298-301) before the order is created.
 
-### Megvalositas
-A `daily_offers` tablan mar van `remaining_portions` mezo. Ha ezt 0-ra allitjuk, az etel elfogyottnak szamit.
+**Proposed Solution:** Restructure the edge function to:
+1. First validate everything (prices, dates, availability) WITHOUT side effects
+2. Then execute all mutations in sequence: order insert first, then portion decrements, then capacity update
+3. Add a try/catch with compensating actions (re-increment portions) if later steps fail
+4. Ideal long-term: single database function that does all writes atomically
 
-Uj UI elem: az admin Weekly Grid-ben es a staff feluleten egy "Elfogyott" gomb/toggle az egyes napi etelek mellett. A frontenden (Etlap.tsx) ha `remaining_portions === 0`, az etel szurkeve valik es "Elfogyott" badge jelenik meg, a "Kosarba" gomb letiltva.
+### 1.4 Migration Sprawl (Priority: LOW)
 
-### Valtozasok
-| Fajl | Leiras |
-|------|--------|
-| `src/components/admin/WeeklyMenuGrid.tsx` | - "Elfogyott" toggle gomb a napi ajanlat soroknal |
-| `src/components/staff/StaffOrders.tsx` vagy uj komponens | - Staff feluleten is "Elfogyott" jelolesi lehetoseg |
-| `src/pages/Etlap.tsx` | - Elfogyott etelek szurke kartya + "Elfogyott" badge + letiltott gomb |
-| `src/components/sections/AlwaysAvailableSection.tsx` | - Fix teteleknels nincs elfogyott (nem relevans) |
-| `src/components/DailyOffersPanel.tsx` vagy `UnifiedDailySection.tsx` | - Frontenden elfogyott jeloles |
+**Finding:** 61 migration files exist. While not technically problematic, this makes debugging schema issues difficult. Many appear to be incremental additions from Sep 2025 through Feb 2026.
 
----
-
-## 5. Changelog: feb 12-15 valtoztatasok osszefoglalasa
-
-Ez nem kod-valtozas, hanem egy osszefoglalo a tulajnak. A terv implementalasakor egy changelog szekciokent is megjelenik, de most itt irasom ossze:
-
-### Februar 12 (csutortok)
-- **Rendelesi rendszer javitasok**: A staff Kanban-tablan az orderkartya fejlesztese (uj megjelenesek, kontakt infok, opcio-megjelenites)
-- **Multbeli rendelesek**: Datumok szerint csoportositott, kibonthato kartyas megjelenes a staff es admin feluleten
-
-### Februar 13 (pentek)
-- **Bizonylat rendszer (1-2. fazis)**: Teljes CRUD, szamla rogzites (bejovo/kimeno), fajl-feltoltes (foto + PDF), automatikus bizonylat-generalas rendelesekbol (order_receipt trigger), Excel export konyvelonek
-- **Szamla rendszer UI**: InvoiceListItem, InvoiceFormDialog, InvoiceFilters, InvoiceSummaryCards (koltseg/bevetel/eredmeny kartyak), InvoiceFileUpload
-
-### Februar 14 (szombat)
-- **Bizonylat rendszer (3. fazis)**: Dashboard penzugyi osszesito kartyak (havi bevetel/koltseg/eredmeny), lejart szamlak figyelmeztetese a Dashboard-on, gyors statusz-valtas a szamla listaban, thumbnail elonezet csatolt kepeknel, "Fizeteresre var" (pending) gomb, order_receipt bizonylatok readonly mod, havi gyorsszurok (Ez a honap / Elozo honap), lejart szamlak badge az admin navigacioban
-
-### Februar 15 (vasarnap)
-- **Admin tooltip rendszer**: Minden admin oldalra InfoTip (i) ikonok kerultek, rovid magyar nyelvü magyarazatokkal: Dashboard, Rendelesek, Etlap, Napi ajanlatok, Szamlak, Galeria, Statisztika, Kuponok, Jogi oldalak, Rolunk, Ertesitok
-- **Fix tetelek kezelese**: Uj `is_always_available` mezo a menu_items tablan, admin feluleten "Fix tetel" checkbox, szurogomb es badge, Etlap oldalon uj "Mindig elerheto" szekcio kategoria szerinti csoportositassal, fooldali kiemelt fix tetelek (max 6)
+**Proposed Solution:** No immediate action needed. Consider a "squash" migration for a fresh deployment baseline after launch stabilizes.
 
 ---
 
-## Modositando fajlok osszesitese
+## Pillar 2: Security and Validation
 
-| Fajl | Valtozas |
-|------|--------|
-| `src/pages/admin/OrdersManagement.tsx` | Tobbszoros kivalasztas + torles a Multbeli tabon |
-| `src/components/admin/AboutPageEditor.tsx` | Ikon nevek magyarul + ikon elonezet |
-| `src/components/admin/InvoiceListItem.tsx` | Due date + lejart jelzes |
-| `src/pages/admin/Invoices.tsx` | Lejart figyelmeztetes banner |
-| `src/components/admin/WeeklyMenuGrid.tsx` | Elfogyott toggle |
-| `src/pages/Etlap.tsx` | Elfogyott jelzes frontenden |
-| `src/components/DailyOffersPanel.tsx` | Elfogyott jelzes a napi ajanlat panelen |
+### 2.1 Past Order Prevention (Priority: MEDIUM -- Already Well-Implemented)
 
-### Uj fajl (opcionalis)
-Nem szukseges uj fajl, minden letezo fajlba integralhato.
+**Finding:** Three-layer protection is correctly in place:
+- **Client (Checkout.tsx lines 354-396):** Validates pickup time is not in the past and within business hours
+- **Server (submit-order lines 224-230):** Re-validates daily item dates against today
+- **Database trigger (`validate_order_date`):** INSERT-only trigger prevents past pickup times and validates business hours
+
+**One gap:** The edge function validates daily item dates (line 228) but for "ASAP" orders (no `pickup_date`), no date validation occurs beyond what the DB trigger does. The trigger checks `pickup_time`, which is NULL for ASAP orders -- so ASAP orders bypass the DB-level time check.
+
+**Proposed Solution:** In the `validate_order_date` trigger, add a fallback that checks `created_at` against business hours if `pickup_time` is NULL, ensuring ASAP orders can only be placed during open hours (or remove ASAP ordering entirely -- it's unusual for a pickup-only restaurant).
+
+### 2.2 RLS Policies on Orders Table (Priority: LOW -- Already Secure)
+
+**Finding:** The `orders` table RLS is well-configured:
+- SELECT/UPDATE: `is_admin_or_staff()` only
+- DELETE: `is_admin()` only
+- ALL: `service_role` only
+- No public or customer-facing SELECT policy exists
+
+Customers access their order data exclusively through `get_customer_order_secure()` -- a `SECURITY DEFINER` function requiring both `order_code` AND `phone`, preventing enumeration.
+
+**Status:** No issues found. This is correctly implemented.
+
+### 2.3 Edge Function Secrets (Priority: LOW -- Already Secure)
+
+**Finding:** All secrets are accessed via `Deno.env.get()`:
+- `SUPABASE_URL` (line 61)
+- `SUPABASE_SERVICE_ROLE_KEY` (line 62)
+- `RESEND_API_KEY` (line 575)
+
+No hardcoded keys found. The `RESEND_API_KEY` is confirmed configured in Supabase secrets.
+
+**One minor concern:** The BCC list in the email (line 665) contains hardcoded email addresses (`kiscsibeetterem@gmail.com`, `gataibence@gmail.com`). These are not security issues but could be moved to a `settings` table or env variable for flexibility.
+
+### 2.4 Modifier/Side Price Trust (Priority: MEDIUM)
+
+**Finding:** For regular items, the server fetches `price_huf` from the database (line 144) -- correct. However, modifier `price_delta_huf` (line 145) and side `price_huf` (line 146) are taken directly from the client-submitted payload without server-side validation.
+
+A malicious user could submit `price_delta_huf: -1000` to get a discount.
+
+**Proposed Solution:** Fetch modifier and side prices from `item_modifier_options` and `menu_items` tables respectively, similar to how menu item prices are validated.
 
 ---
 
-## Nem tartalmazza ez a terv
-- PDF szamla generalas (4. fazis)
-- OCR (fotobol adat kinyeres)
-- Ismetlodo koltsegek automatizalasa
+## Pillar 3: Admin Interface and UX
+
+### 3.1 Order Status Workflow Efficiency (Priority: MEDIUM)
+
+**Finding:** Status updates are one-at-a-time. The recent bulk delete feature (for past orders) is good but there's no bulk status update for active orders.
+
+**Proposed Solutions:**
+1. **Quick-action buttons:** Instead of a dropdown, show direct action buttons per status (e.g., on "new" orders show a single "Elfogadás" button that moves to "preparing")
+2. **Keyboard shortcuts:** `A` = accept next new order, `R` = mark next preparing order as ready
+3. **Swipe gestures** on mobile for status changes (swipe right = advance status)
+4. **Batch select + status change** for morning rush scenarios
+
+### 3.2 Error Handling UX (Priority: MEDIUM)
+
+**Finding:** Most error handling uses `toast()` notifications, which is good. The edge function returns descriptive Hungarian error messages. However:
+- Modifier/side insert failures are silently swallowed (lines 548-551, 564-567) -- the order succeeds but data is incomplete
+- The "Unique item save failed" troubleshooting item from docs doesn't have a visible UI solution
+
+**Proposed Solution:** Add a `warnings` array to the order response. If non-critical inserts fail, return `{ success: true, warnings: ["Módosító mentése sikertelen..."] }` so the admin can see partial failures.
+
+### 3.3 "Sold Out" Admin Toggle (Priority: LOW -- Recently Implemented)
+
+**Finding:** The "Elfogyott" toggle was just added to `WeeklyMenuGrid.tsx`. This sets `remaining_portions = 0`. However, staff users on the `StaffOrders` page cannot currently mark items as sold out.
+
+**Proposed Solution:** Add a small "Készlet" panel to the staff layout showing today's daily items with sold-out toggles.
+
+---
+
+## Pillar 4: Client-Side UI/UX
+
+### 4.1 "Sold Out" Visual States (Priority: MEDIUM)
+
+**Finding:** In `DailyItemSelector.tsx`:
+- The "Elfogyott" badge uses `variant="destructive"` (line 194-195) -- good contrast
+- The button is correctly disabled when `remaining_portions <= 0` (line 325)
+- However, individual item checkboxes are NOT disabled when sold out -- users can still select items then hit a disabled button, which is confusing
+
+**Proposed Solution:**
+- Disable all checkboxes when `remaining_portions <= 0`
+- Add `opacity-50 pointer-events-none` to the entire card when sold out
+- Show the remaining portions count more prominently (e.g., progress bar)
+
+### 4.2 Mobile Touch Targets (Priority: LOW)
+
+**Finding:** `MobileBottomNav.tsx` uses `h-14` (56px) height with `h-5 w-5` icons and `text-[10px]` labels. The touch targets are the full flex-1 width of each tab, which is adequate. The Sheet trigger button has the same sizing.
+
+**Minor issues:**
+- The "More" sheet links have `py-3` padding (approx 44px height) -- meets the 44px minimum
+- The `text-[10px]` labels may be too small for some users
+
+**Proposed Solution:** Increase label text to `text-[11px]` and ensure minimum 48px touch targets on all interactive elements.
+
+### 4.3 DailyMenuPanel Responsiveness (Priority: LOW)
+
+**Finding:** Uses responsive grid (`grid-cols-2 gap-3 md:gap-4`) and responsive padding. Image aspect ratio changes between mobile/desktop (`aspect-[4/3] md:aspect-[16/9]`). The CTA button has `h-12` which is good for mobile.
+
+**No critical issues found.** Minor suggestion: add `scroll-margin-top` so navigating to this section doesn't hide content behind the sticky nav.
+
+---
+
+## Pillar 5: Future-Proofing
+
+### 5.1 Real-time WebSocket Notifications (Priority: LOW -- Already Implemented)
+
+**Finding:** The system ALREADY has a robust real-time notification architecture:
+- `useGlobalOrderNotifications.tsx`: Supabase Realtime `postgres_changes` subscription for INSERT events on the `orders` table
+- Exponential backoff retry (up to 5 retries)
+- Auth token synchronization on JWT refresh
+- Audio notification with Web Audio API
+- Known-order-ID deduplication via `knownOrderIdsRef`
+- Global context via `OrderNotificationsProvider` in `App.tsx`
+
+**Assessment:** This is production-quality. No changes needed for the current feature set.
+
+**For future "customer sees real-time stock updates":**
+- Subscribe to `daily_offers` table changes (UPDATE on `remaining_portions`)
+- Debounce UI updates to avoid flicker during rush periods
+- Consider a "polling fallback" for browsers that lose WebSocket connections
+
+### 5.2 Cutoff Time System (Priority: MEDIUM -- Mentioned in Docs)
+
+**Finding:** No cutoff time logic exists. The system only prevents ordering for past dates, not "it's 2pm, you can no longer order today's menu."
+
+**Proposed Solution:** Add a `cutoff_time` column to `daily_offers` (e.g., `'14:00'`), or a global setting in the `settings` table. The edge function and Checkout UI should check this before allowing orders for today's daily items.
+
+---
+
+## Summary Table
+
+| # | Issue | Priority | Status |
+|---|-------|----------|--------|
+| 1.2 | Capacity slot race condition (no FOR UPDATE) | CRITICAL | Open |
+| 1.1 | Capacity + portions not transactionally linked | HIGH | Open |
+| 1.3 | No rollback on partial order failure | HIGH | Open |
+| 2.4 | Modifier/side prices not server-validated | MEDIUM | Open |
+| 2.1 | ASAP orders bypass business-hours DB check | MEDIUM | Open |
+| 3.1 | Order status workflow could be faster | MEDIUM | Open |
+| 3.2 | Silent failures on modifier/side inserts | MEDIUM | Open |
+| 4.1 | Sold-out items still selectable via checkboxes | MEDIUM | Open |
+| 5.2 | No cutoff time system for daily orders | MEDIUM | Open |
+| 1.4 | 61 migration files (sprawl) | LOW | Acceptable |
+| 2.2 | Orders RLS | LOW | Secure |
+| 2.3 | Edge function secrets | LOW | Secure |
+| 3.3 | Staff sold-out toggle missing | LOW | Open |
+| 4.2 | Mobile touch targets slightly small | LOW | Acceptable |
+| 4.3 | DailyMenuPanel responsive | LOW | Good |
+| 5.1 | Real-time notifications | LOW | Already done |
+
+---
+
+## Recommended Implementation Order
+
+1. **Fix capacity slot race condition** (Critical -- 1.2)
+2. **Add modifier/side price server validation** (Medium security -- 2.4)
+3. **Restructure submit-order for atomic operations** (High -- 1.1, 1.3)
+4. **Disable sold-out item checkboxes on frontend** (Medium UX -- 4.1)
+5. **Add cutoff time system** (Medium feature -- 5.2)
+6. **Improve order status workflow** (Medium UX -- 3.1)
