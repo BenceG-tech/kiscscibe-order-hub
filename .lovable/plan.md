@@ -1,124 +1,107 @@
 
 
-# Bizonylat-kezelő Rendszer -- 3. Fazis: Hasznossag, Atlathato, Ertek
+# Admin Tooltip Rendszer -- Hasznalati utasitasok mindenhova
 
-Az 1-2. fazis megvan (CRUD, feltoltes, torles, export, auto-bevetel trigger). Most a rendszer napi hasznalhatosagat, atlathatasagat es erteket noveljuk.
-
----
-
-## 1. Dashboard penzugyi osszesito kartyak
-
-A fo iranyitopultra (`Dashboard.tsx`) kerul egy "Penzugyi attekintes" szekcio, ami egy pillantasra megmutatja a havi helyzetet.
-
-### Valtozasok
-| Fajl | Leiras |
-|------|--------|
-| `src/pages/admin/Dashboard.tsx` | Uj szekcio: havi bevetel, koltseg, eredmeny kartyak + lejart szamlak figyelmeztetese |
-
-- 3 kartya: "Havi bevétel", "Havi költség", "Eredmény" (a DashboardStatCard-ot hasznaljuk)
-- Ha van lejart (overdue) vagy fizetetlen szamla, piros alert jelenik meg a DashboardAlerts-ben
-- Adatok: az invoices tablabol az aktualis honap szurt adatai (egyetlen query)
+Minden admin oldal fejleceihez, gombjaihoz, kartyaihoz es fontos UI elemeihez kis info-tooltip kerul, ami roviden elmagyarazza a tulaj szamara az adott funkciok celját es hasznalatat.
 
 ---
 
-## 2. Lejart szamlak figyelmeztetese a Dashboard-on
+## Megvalositasi modszer
 
-A `DashboardAlerts.tsx`-be uj ellenorzes: ha van `status = 'pending'` es `due_date < today`, piros alert jelenik meg: "3 lejart szamla, osszesen 234.500 Ft!"
+Egy `InfoTip` segéd-komponens keszul, ami egy kis `(i)` ikont jelenít meg, és hover/kattintasra mutatja a szoveget. Ez a `TooltipProvider` + `Tooltip` + `TooltipTrigger` + `TooltipContent` Radix komponensekre epul, amik mar leteznek a projektben.
 
-### Valtozasok
+### Uj fajl
+
 | Fajl | Leiras |
 |------|--------|
-| `src/components/admin/DashboardAlerts.tsx` | Uj ellenorzes: lejart fizetesi hatarideju szamlak |
+| `src/components/admin/InfoTip.tsx` | Ujrahasznalhato info-tooltip komponens (ikon + szoveg) |
 
 ---
 
-## 3. Bizonylat lista fejlesztesek
+## Tooltip elhelyezesek oldalonkent
 
-### 3a. Fajl elonezet es megnyitas
+### 1. Dashboard (`Dashboard.tsx`)
+- "Iranytiopult" cim melle: "Itt latod a mai forgalom osszesiteset es a legfontosabb szamokat."
+- "Havi penzugyi attekintes" cim melle: "Az aktualis honap szamlai alapjan szamolt bevetel, koltseg es eredmeny."
+- "Holnapi menu beallitasa" gomb: "Ugras a napi ajanlat oldalra, ahol beallithatod a holnapi menut."
+- "Teszt napi riport" gomb: "Elkueld magadnak emailben a mai nap osszesiteset."
 
-Jelenleg a csatolt fajlok csak "Fajl 1", "Fajl 2" felirattal jelennek meg. Fejlesztes:
-- Kepek: kicsi thumbnail elonezet a lista soron belul
-- PDF: kattintasra uj lapon megnyilik
-- A fajlokat a `InvoiceListItem`-ben is megjelenitjuk (kis ikon + kattinthato)
+### 2. Rendelesek (`OrdersManagement.tsx`)
+- "Rendelesek kezelese" cim melle: "Kezeld a bejovo rendeleseket: fogadd el, allitsd keszre, vagy monddd le."
+- Tab-ok ("Uj", "Keszites alatt", "Kesz", "Multbeli", "Aktiv"): mindegyikhez rovid magyarazat
 
-### 3b. Gyors statusz valtas
+### 3. Etlap kezeles (`MenuManagement.tsx`)
+- "Etlap kezeles" cim melle: "Itt adhatod hozza, szerkesztheted vagy torold az etlapon lathato etelek listajat."
+- "Uj etel" gomb: "Uj etel hozzaadasa az etlaphoz."
+- "Aktiv" checkbox: "Csak az aktiv etelek jelennek meg az etlapon."
+- "Kiemelt" checkbox: "A kiemelt etelek elol jelennek meg a fooldal ajanlottjai kozott."
 
-A listaban kozvetlenul lehessen statuszt valtani (pl. "Fuggobe" → "Fizetve") anelkul hogy megnyitnak a szerkeszto dialogust. Egy kis dropdown a statusz badge-re kattintva.
+### 4. Napi ajanlatszk (`DailyMenuManagement.tsx`)
+- "Napi ajanlatok" cim melle: "Allitsd be a heti napi menusort, kapacitast, es kueld ki hirlevelet."
+- Tab-ok ("Ajanlatok", "Kapacitas", "Import", "Hirlevel", "FB kep"): mindegyikhez rovid leiras
 
-### 3c. Rendeles-bizonylatok megkulonboztetese
+### 5. Szamlak (`Invoices.tsx`)
+- "Szamlak kezelese" cim melle: "Rogzitsd a bejovo koltsegszamlakat es kovetsd a penzugyi helyzetet."
+- "Export" gomb: "Letoltes Excel fajlkent a konyvelonek."
+- "Uj bizonylat" gomb: "Uj szamla vagy bizonylat rogzitese (koltseg vagy bevetel)."
+- Osszesito kartyak ("Koltsegek", "Bevetelek", "Eredmeny"): rovid magyarazat mindegyiknel
 
-Az `order_receipt` tipusu bizonylatok mas szinnel / badge-dzsel jelenjenek meg a listaban, es a szerkeszto dialogban readonly modban nyiljanak meg (mivel automatikusan generalodjak).
+### 6. Galeria (`Gallery.tsx`)
+- "Galeria" cim melle: "Toltsd fel es kezeld a fooldali galeriaban megjelen kepeket."
 
-### Valtozasok
-| Fajl | Leiras |
-|------|--------|
-| `src/components/admin/InvoiceListItem.tsx` | Thumbnail elonezet, kattinthato fajlok, gyors statusz dropdown, order_receipt jeloles |
-| `src/components/admin/InvoiceFormDialog.tsx` | Readonly mod order_receipt tipusnal |
-| `src/components/admin/InvoiceFileUpload.tsx` | Kep thumbnail elonezet a feltoltott fajloknal |
+### 7. Statisztika (`Analytics.tsx`)
+- "Statisztika" cim melle: "Reszletes elemzesek a beveteledrol, rendelesekrol es az etlap teljesitmenyerol."
+- Tab-ok ("Bevetel", "Rendelesek", "Menu teljesitmeny", "Vasarlok", "Pazarlas"): rovid leiras
 
----
+### 8. Kuponok (`Coupons.tsx`)
+- "Kuponok" cim melle: "Hozz letre kedvezmeny kuponokat amiket a vasarlok a rendelesnel hasznalhatnak."
+- "Uj kupon" gomb: "Uj kedvezmeny kupon letrehozasa."
 
-## 4. "Fuggobe" (Pending) mentes gomb
+### 9. Jogi oldalak (`LegalPageEditor.tsx`)
+- Cim melle: "Szerkeszd az adatvedelmi tajekoztato, ASZF es impresszum szovegeket."
 
-Jelenleg a dialog-ban csak "Piszkozat" es "Fizetve" gomb van. A "Fuggobe" (pending) statusz fontos a bejovo szamlaknalz mert a tulaj latja melyik szamlat kell meg kifizetnie.
+### 10. Rolunk (`AboutPageEditor.tsx`)
+- Cim melle: "Szerkeszd a Rolunk oldal tartalmat: torteneted, ertekeid, kepeid."
 
-### Valtozas
-| Fajl | Leiras |
-|------|--------|
-| `src/components/admin/InvoiceFormDialog.tsx` | 3. gomb: "Mentes fizetesre varonak" (pending) |
+### 11. Ertesito szerkeszto (`AnnouncementEditor.tsx`)
+- "Ertesito / Pop-up" cim melle: "Allits be egy felugro ertesitest ami a latogatoknak megjelenik a fooldalon."
 
----
-
-## 5. Szamlak szama badge az admin nav-ban
-
-Ahogy a rendeleseknel latjuk az uj rendelesek szamat, a szamlak menupont mellett is jelenjen meg egy badge, ha van lejart (overdue) szamla.
-
-### Valtozas
-| Fajl | Leiras |
-|------|--------|
-| `src/pages/admin/AdminLayout.tsx` | Lejart szamlak szama badge a "Szamlak" menupont mellett |
-| `src/pages/admin/Invoices.tsx` | Vagy: a szamot a szulo komponens adja at, vagy kulon hook |
-
-Megvalositas: egy egyszeru `useOverdueInvoiceCount` hook ami figyeli a lejart szamlak szamat.
-
----
-
-## 6. Havi szuro gyorsgombok
-
-A szurokhoz ket gyorsgomb: "Ez a honap" es "Elozo honap" — igy a konyveloi export soran nem kell datumot allitgatni.
-
-### Valtozas
-| Fajl | Leiras |
-|------|--------|
-| `src/components/admin/InvoiceFilters.tsx` | "Ez a honap" / "Elozo honap" gyorsgombok a datum szurok melle |
+### 12. Szamla form dialog (`InvoiceFormDialog.tsx`)
+- Kulonbozo mezok: "Brutto osszeg" melle "A teljes osszeg AFA-val egyutt", "AFA kulcs" melle "A legtobb szamlara 27% vonatkozik"
 
 ---
 
-## Uj fajlok
+## Technikai reszletek
 
-| Fajl | Leiras |
-|------|--------|
-| `src/hooks/useOverdueInvoices.ts` | Hook: lejart szamlak szamat es osszegeit figyeli (a dashboard-hoz es a nav badge-hez) |
+### InfoTip komponens
+- Props: `text: string`, opcionalisan `side?: "top" | "bottom" | "left" | "right"`
+- Megjelenes: kis `HelpCircle` (lucide) ikon, halva szurke, hover-re kek
+- Mobil: kattintasra is megjelenik (a Radix Tooltip tamogatja)
+- Max szelesseg: 250px, sotetebb hatter a jobb lathatosagert
 
-## Modositando fajlok osszesitese
+### Modositando fajlok
 
 | Fajl | Valtozas |
 |------|--------|
-| `src/pages/admin/Dashboard.tsx` | Havi penzugyi osszesito kartyak |
-| `src/components/admin/DashboardAlerts.tsx` | Lejart szamlak alert |
-| `src/components/admin/InvoiceListItem.tsx` | Thumbnail, gyors statusz, order_receipt jeloles |
-| `src/components/admin/InvoiceFormDialog.tsx` | Pending gomb, readonly mod order_receipt-nel |
-| `src/components/admin/InvoiceFileUpload.tsx` | Kep thumbnail |
-| `src/components/admin/InvoiceFilters.tsx` | Havi gyorsgombok |
-| `src/pages/admin/AdminLayout.tsx` | Lejart szamlak badge |
+| `src/pages/admin/Dashboard.tsx` | Cimek es gombok melle InfoTip |
+| `src/pages/admin/OrdersManagement.tsx` | Cim melle InfoTip |
+| `src/pages/admin/MenuManagement.tsx` | Cim, gombok, checkbox-ok melle |
+| `src/pages/admin/DailyMenuManagement.tsx` | Cim es tab-ok melle |
+| `src/pages/admin/Invoices.tsx` | Cim, gombok melle |
+| `src/pages/admin/Analytics.tsx` | Cim melle |
+| `src/pages/admin/Coupons.tsx` | Cim, gomb melle |
+| `src/pages/admin/Gallery.tsx` | Cim melle |
+| `src/components/admin/AnnouncementEditor.tsx` | Cim melle |
+| `src/components/admin/InvoiceSummaryCards.tsx` | Kartya cimek melle |
+| `src/components/admin/InvoiceFormDialog.tsx` | Mezo cimkek melle |
+| `src/components/admin/InvoiceFilters.tsx` | Gyorsgombok melle |
 
 ---
 
-## Nem tartalmazza a 3. fazis
+## Pelda tooltip szovegek
 
-- Rendeles-bizonylat nyomtathato PDF generalas → 4. fazis
-- Ismetlodo koltsegek automatizalasa → 4. fazis
-- Csatolt fajlok ZIP export a konyvelonek → 4. fazis
-- OCR (fotobol adat kinyeres) → kesobb
-- Partner-nyilvantartas kulon oldal → kesobb
+Minden szoveg rovid, 1-2 mondatos, kozertheto (nem technikai). Pelda:
+- **Mai rendelesek kartya**: "A mai nap osszes bejott rendelese es azok osszerteke."
+- **Export gomb**: "Letolti az aktualis szurt listat Excel fajlkent, amit atkuldhetsz a konyvelodnek."
+- **Kapacitas tab**: "Allitsd be hany adag etelt tudsz kesziteni egy adott napon."
 
