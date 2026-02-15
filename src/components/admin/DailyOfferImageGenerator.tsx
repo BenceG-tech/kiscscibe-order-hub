@@ -90,28 +90,27 @@ const FORMATS: FormatConfig[] = [
 ];
 
 function measureContentHeight(data: DayData, noteText?: string): number {
-  // Measure content height at base scale (1200px reference width)
   const menuItems = data.items.filter((i) => i.is_menu_part);
   const alacarteItems = data.items.filter((i) => !i.is_menu_part);
 
   let h = 0;
   h += 60; // header
-  h += 30; // separator gap
-  h += alacarteItems.length * 42; // a la carte items
+  h += 22; // separator gap
+  h += alacarteItems.length * 34; // a la carte items
   if (noteText) {
     h += 8;
     const estimatedLines = Math.ceil((noteText.length * 12) / (1200 - 100));
-    h += Math.max(1, estimatedLines) * 28;
+    h += Math.max(1, estimatedLines) * 24;
   }
   if (menuItems.length > 0) {
-    h += 15 + 25 + 52; // separator + gap + "Menü" title
+    h += 15 + 22 + 42; // separator + gap + "Menü" title
     const soup = menuItems.find((i) => i.menu_role === "leves");
     const main = menuItems.find((i) => i.menu_role === "főétel");
-    if (soup) h += 40;
-    if (main) h += 40;
+    if (soup) h += 34;
+    if (main) h += 34;
     h += 10 + 50; // gap + price line
   }
-  h += 30 + 20 + 20 + 24; // footer lines
+  h += 20 + 20 + 20 + 24; // footer lines
   return h;
 }
 
@@ -121,7 +120,8 @@ function drawToCanvas(
   dateStr: string,
   W: number,
   H: number,
-  logoImg?: HTMLImageElement
+  logoImg?: HTMLImageElement,
+  menuPrice: number = 2200
 ) {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
@@ -176,7 +176,7 @@ function drawToCanvas(
   ctx.moveTo(PAD, y);
   ctx.lineTo(W - PAD, y);
   ctx.stroke();
-  y += Math.round(30 * scale);
+  y += Math.round(22 * scale);
 
   // A la carte items
   for (const item of alacarteItems) {
@@ -192,7 +192,7 @@ function drawToCanvas(
       ctx.font = `${Math.round(28 * scale)}px ${FOOD_FONT}`;
       ctx.fillText(formatPrice(item.item_price_huf) + " Ft", W - PAD, y + Math.round(28 * scale));
     }
-    y += Math.round(42 * scale);
+    y += Math.round(34 * scale);
   }
 
   // Note
@@ -204,7 +204,7 @@ function drawToCanvas(
     const lines = wrapText(ctx, data.offer_note, W - PAD * 2);
     for (const line of lines) {
       ctx.fillText(line, PAD, y + Math.round(20 * scale));
-      y += Math.round(28 * scale);
+      y += Math.round(24 * scale);
     }
   }
 
@@ -218,13 +218,13 @@ function drawToCanvas(
     ctx.moveTo(PAD, y);
     ctx.lineTo(W - PAD, y);
     ctx.stroke();
-    y += Math.round(25 * scale);
+    y += Math.round(22 * scale);
 
     ctx.fillStyle = YELLOW;
     ctx.font = `${Math.round(36 * scale)}px Sofia, Georgia, serif`;
     ctx.textAlign = "left";
     ctx.fillText("Menü", PAD, y + Math.round(36 * scale));
-    y += Math.round(52 * scale);
+    y += Math.round(42 * scale);
 
     const soup = menuItems.find((i) => i.menu_role === "leves");
     const main = menuItems.find((i) => i.menu_role === "főétel");
@@ -235,7 +235,7 @@ function drawToCanvas(
       ctx.font = `${Math.round(26 * scale)}px ${FOOD_FONT}`;
       ctx.textAlign = "left";
       ctx.fillText(`🥣  ${name}`, PAD + Math.round(10 * scale), y + Math.round(26 * scale));
-      y += Math.round(40 * scale);
+      y += Math.round(34 * scale);
     }
 
     if (main) {
@@ -244,12 +244,12 @@ function drawToCanvas(
       ctx.font = `${Math.round(26 * scale)}px ${FOOD_FONT}`;
       ctx.textAlign = "left";
       ctx.fillText(`🍖  ${name}`, PAD + Math.round(10 * scale), y + Math.round(26 * scale));
-      y += Math.round(40 * scale);
+      y += Math.round(34 * scale);
     }
 
     y += Math.round(10 * scale);
 
-    const menuPrice = 2200;
+    // menuPrice is now a parameter
     ctx.fillStyle = YELLOW;
     ctx.font = `${Math.round(34 * scale)}px Sofia, Georgia, serif`;
     ctx.textAlign = "left";
@@ -263,7 +263,7 @@ function drawToCanvas(
   }
 
   // Footer
-  y += Math.round(30 * scale);
+  y += Math.round(20 * scale);
   ctx.fillStyle = "rgba(239, 190, 19, 0.7)";
   ctx.font = `italic ${Math.round(14 * scale)}px Sofia, Georgia, serif`;
   ctx.textAlign = "center";
@@ -311,6 +311,7 @@ const DailyOfferImageGenerator = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [previewDataUrl, setPreviewDataUrl] = useState<string>("");
   const [dataUrls, setDataUrls] = useState<Record<string, string>>({});
+  const [menuPrice, setMenuPrice] = useState<number>(2200);
   const weekDates = getWeekDates(weekOffset);
 
   const weekStart = new Date(weekDates[0] + "T00:00:00");
@@ -407,7 +408,16 @@ const DailyOfferImageGenerator = () => {
     loadFont();
   }, []);
 
-  // Draw all 3 canvases when data changes
+  // Update menuPrice when dayData changes
+  useEffect(() => {
+    if (dayData?.menu_price_huf) {
+      setMenuPrice(dayData.menu_price_huf);
+    } else {
+      setMenuPrice(2200);
+    }
+  }, [dayData]);
+
+  // Draw all 3 canvases when data or menuPrice changes
   useEffect(() => {
     if (!dayData) return;
     document.fonts.ready.then(() => {
@@ -417,14 +427,14 @@ const DailyOfferImageGenerator = () => {
       logo.onerror = () => drawAllCanvases(dayData, selectedDate);
       logo.src = "/assets/kiscsibe_logo_round.png";
     });
-  }, [dayData, selectedDate]);
+  }, [dayData, selectedDate, menuPrice]);
 
   const drawAllCanvases = (data: DayData, dateStr: string, logoImg?: HTMLImageElement) => {
     const newDataUrls: Record<string, string> = {};
     for (const fmt of FORMATS) {
       const canvas = canvasRefs[fmt.key]?.current;
       if (canvas) {
-        drawToCanvas(canvas, data, dateStr, fmt.width, fmt.height, logoImg);
+        drawToCanvas(canvas, data, dateStr, fmt.width, fmt.height, logoImg, menuPrice);
         newDataUrls[fmt.key] = canvas.toDataURL("image/png");
       }
     }
@@ -560,6 +570,19 @@ const DailyOfferImageGenerator = () => {
                 </Button>
               );
             })}
+          </div>
+          <div className="flex items-center gap-2 pt-1">
+            <label className="text-sm font-medium text-muted-foreground whitespace-nowrap">Menü ár (Ft):</label>
+            <Input
+              type="number"
+              value={menuPrice}
+              onChange={(e) => {
+                const v = parseInt(e.target.value, 10);
+                if (!isNaN(v) && v > 0) setMenuPrice(v);
+              }}
+              className="h-8 w-28 text-sm"
+              min={0}
+            />
           </div>
         </CardContent>
       </Card>
