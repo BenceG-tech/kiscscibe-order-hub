@@ -12,7 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Trash2, Lock } from "lucide-react";
 import InvoiceFileUpload from "./InvoiceFileUpload";
 import { useCreateInvoice, useUpdateInvoice, useDeleteInvoice, usePartnerSuggestions } from "@/hooks/useInvoices";
 import { supabase } from "@/integrations/supabase/client";
@@ -61,6 +62,8 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
   const { data: partners } = usePartnerSuggestions();
 
   const isEdit = !!invoice;
+  const isOrderReceipt = invoice?.type === "order_receipt";
+  const isReadonly = isOrderReceipt;
 
   useEffect(() => {
     if (invoice) {
@@ -128,11 +131,10 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
   const handleDelete = async () => {
     if (!invoice) return;
 
-    // Delete attached files from storage
     if (invoice.file_urls && invoice.file_urls.length > 0) {
       const paths = invoice.file_urls.map((url) => {
         const parts = url.split("/invoices/");
-        return parts.length > 1 ? parts[parts.length - 1] : "";
+        return parts.length > 1 ? parts[parts.length - 1].split("?")[0] : "";
       }).filter(Boolean);
 
       if (paths.length > 0) {
@@ -149,15 +151,27 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg flex flex-col max-h-[calc(100dvh-2rem)] overflow-hidden">
         <DialogHeader className="shrink-0">
-          <DialogTitle>{isEdit ? "Bizonylat szerkesztése" : "Új bizonylat"}</DialogTitle>
-          <DialogDescription>Töltsd ki az adatokat és csatolj fájlokat.</DialogDescription>
+          <DialogTitle className="flex items-center gap-2">
+            {isEdit ? "Bizonylat szerkesztése" : "Új bizonylat"}
+            {isOrderReceipt && (
+              <Badge variant="secondary" className="text-xs gap-1">
+                <Lock className="h-3 w-3" />
+                Automatikus
+              </Badge>
+            )}
+          </DialogTitle>
+          <DialogDescription>
+            {isReadonly
+              ? "Ez a bizonylat automatikusan jött létre egy rendelésből. Csak megtekintésre szolgál."
+              : "Töltsd ki az adatokat és csatolj fájlokat."}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto space-y-4 py-2 pr-1">
           {/* Type */}
           <div className="space-y-1.5">
             <Label>Típus</Label>
-            <Select value={form.type} onValueChange={(v) => set("type", v)}>
+            <Select value={form.type} onValueChange={(v) => set("type", v)} disabled={isReadonly}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -181,8 +195,9 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
               onFocus={() => setShowSuggestions(true)}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
               placeholder="pl. Metro Kft."
+              disabled={isReadonly}
             />
-            {showSuggestions && filteredPartners.length > 0 && (
+            {showSuggestions && filteredPartners.length > 0 && !isReadonly && (
               <div className="absolute z-10 top-full left-0 right-0 bg-popover border rounded-md shadow-md mt-1 max-h-32 overflow-y-auto">
                 {filteredPartners.map((p) => (
                   <button
@@ -207,19 +222,11 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1.5">
               <Label>Adószám</Label>
-              <Input
-                value={form.partner_tax_id}
-                onChange={(e) => set("partner_tax_id", e.target.value)}
-                placeholder="12345678-2-42"
-              />
+              <Input value={form.partner_tax_id} onChange={(e) => set("partner_tax_id", e.target.value)} placeholder="12345678-2-42" disabled={isReadonly} />
             </div>
             <div className="space-y-1.5">
               <Label>Számla szám</Label>
-              <Input
-                value={form.invoice_number}
-                onChange={(e) => set("invoice_number", e.target.value)}
-                placeholder="M-2025/0234"
-              />
+              <Input value={form.invoice_number} onChange={(e) => set("invoice_number", e.target.value)} placeholder="M-2025/0234" disabled={isReadonly} />
             </div>
           </div>
 
@@ -227,18 +234,18 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1.5">
               <Label>Kiállítás dátuma</Label>
-              <Input type="date" value={form.issue_date} onChange={(e) => set("issue_date", e.target.value)} />
+              <Input type="date" value={form.issue_date} onChange={(e) => set("issue_date", e.target.value)} disabled={isReadonly} />
             </div>
             <div className="space-y-1.5">
               <Label>Fizetési határidő</Label>
-              <Input type="date" value={form.due_date} onChange={(e) => set("due_date", e.target.value)} />
+              <Input type="date" value={form.due_date} onChange={(e) => set("due_date", e.target.value)} disabled={isReadonly} />
             </div>
           </div>
 
           {/* Category */}
           <div className="space-y-1.5">
             <Label>Kategória</Label>
-            <Select value={form.category} onValueChange={(v) => set("category", v)}>
+            <Select value={form.category} onValueChange={(v) => set("category", v)} disabled={isReadonly}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -254,16 +261,11 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1.5">
               <Label>Bruttó összeg (Ft)</Label>
-              <Input
-                type="number"
-                value={form.gross_amount}
-                onChange={(e) => set("gross_amount", e.target.value)}
-                placeholder="0"
-              />
+              <Input type="number" value={form.gross_amount} onChange={(e) => set("gross_amount", e.target.value)} placeholder="0" disabled={isReadonly} />
             </div>
             <div className="space-y-1.5">
               <Label>ÁFA kulcs</Label>
-              <Select value={form.vat_rate} onValueChange={(v) => set("vat_rate", v)}>
+              <Select value={form.vat_rate} onValueChange={(v) => set("vat_rate", v)} disabled={isReadonly}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -283,10 +285,12 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
           )}
 
           {/* Files */}
-          <div className="space-y-1.5">
-            <Label>Csatolt fájlok</Label>
-            <InvoiceFileUpload fileUrls={form.file_urls} onChange={(urls) => set("file_urls", urls)} />
-          </div>
+          {!isReadonly && (
+            <div className="space-y-1.5">
+              <Label>Csatolt fájlok</Label>
+              <InvoiceFileUpload fileUrls={form.file_urls} onChange={(urls) => set("file_urls", urls)} />
+            </div>
+          )}
 
           {/* Notes */}
           <div className="space-y-1.5">
@@ -296,12 +300,13 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
               onChange={(e) => set("notes", e.target.value)}
               placeholder="Opcionális megjegyzés..."
               rows={2}
+              disabled={isReadonly}
             />
           </div>
         </div>
 
         <DialogFooter className="shrink-0 gap-2 sm:gap-2">
-          {isEdit && (
+          {isEdit && !isReadonly && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive" size="sm" disabled={isPending} className="mr-auto">
@@ -325,12 +330,21 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
               </AlertDialogContent>
             </AlertDialog>
           )}
-          <Button variant="outline" onClick={() => handleSave("draft")} disabled={isPending || !form.partner_name.trim()}>
-            Piszkozat mentés
-          </Button>
-          <Button onClick={() => handleSave("paid")} disabled={isPending || !form.partner_name.trim()}>
-            Mentés fizetettként
-          </Button>
+          {isReadonly ? (
+            <Button variant="outline" onClick={() => onOpenChange(false)}>Bezárás</Button>
+          ) : (
+            <>
+              <Button variant="outline" onClick={() => handleSave("draft")} disabled={isPending || !form.partner_name.trim()}>
+                Piszkozat
+              </Button>
+              <Button variant="secondary" onClick={() => handleSave("pending")} disabled={isPending || !form.partner_name.trim()}>
+                Fizetésre vár
+              </Button>
+              <Button onClick={() => handleSave("paid")} disabled={isPending || !form.partner_name.trim()}>
+                Fizetve
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

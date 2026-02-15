@@ -9,8 +9,9 @@ import RecentOrdersFeed from "@/components/admin/RecentOrdersFeed";
 import DashboardAlerts from "@/components/admin/DashboardAlerts";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { ShoppingBag, Activity, Gauge, TrendingUp, Calendar, Package, ArrowRight, Mail, Loader2 } from "lucide-react";
+import { ShoppingBag, Activity, Gauge, TrendingUp, Calendar, Package, Mail, Loader2, Wallet, TrendingDown, DollarSign } from "lucide-react";
 import AnnouncementEditor from "@/components/admin/AnnouncementEditor";
+import { useOverdueInvoices } from "@/hooks/useOverdueInvoices";
 
 interface Stats {
   todayOrders: number;
@@ -34,6 +35,7 @@ const Dashboard = () => {
   const [sendingReport, setSendingReport] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { data: finData } = useOverdueInvoices();
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -74,7 +76,6 @@ const Dashboard = () => {
 
     fetchStats();
 
-    // Realtime refresh for orders
     const channel = supabase
       .channel("dashboard-stats")
       .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
@@ -93,6 +94,8 @@ const Dashboard = () => {
     stats.capacityTotal !== null
       ? `${stats.capacityUsed}/${stats.capacityTotal} adag`
       : "Nincs mai ajánlat";
+
+  const fmtHuf = (n: number) => `${n.toLocaleString("hu-HU")} Ft`;
 
   return (
     <AdminLayout>
@@ -113,7 +116,7 @@ const Dashboard = () => {
           <DashboardStatCard
             title="Mai rendelések"
             value={loading ? "–" : stats.todayOrders}
-            subtitle={loading ? "" : `${stats.todayRevenue.toLocaleString("hu-HU")} Ft`}
+            subtitle={loading ? "" : fmtHuf(stats.todayRevenue)}
             icon={ShoppingBag}
           />
           <DashboardStatCard
@@ -131,10 +134,38 @@ const Dashboard = () => {
           />
           <DashboardStatCard
             title="Átlagos rendelés"
-            value={loading ? "–" : `${stats.avgOrderValue.toLocaleString("hu-HU")} Ft`}
+            value={loading ? "–" : fmtHuf(stats.avgOrderValue)}
             icon={TrendingUp}
           />
         </div>
+
+        {/* Financial Summary */}
+        {finData && (
+          <div>
+            <h2 className="text-lg font-semibold mb-3">Havi pénzügyi áttekintés</h2>
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+              <DashboardStatCard
+                title="Havi bevétel"
+                value={fmtHuf(finData.monthlyIncome)}
+                icon={Wallet}
+                iconClassName="bg-green-500/15"
+              />
+              <DashboardStatCard
+                title="Havi költség"
+                value={fmtHuf(finData.monthlyExpense)}
+                icon={TrendingDown}
+                iconClassName="bg-destructive/15"
+              />
+              <DashboardStatCard
+                title="Eredmény"
+                value={fmtHuf(finData.monthlyResult)}
+                subtitle={finData.monthlyResult >= 0 ? "Nyereség" : "Veszteség"}
+                icon={DollarSign}
+                iconClassName={finData.monthlyResult >= 0 ? "bg-green-500/15" : "bg-destructive/15"}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Announcement Editor */}
         <AnnouncementEditor />
