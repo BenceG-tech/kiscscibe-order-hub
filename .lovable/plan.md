@@ -1,130 +1,98 @@
 
 
-# Bizonylat-kezelő Rendszer -- 1. Fazis
+# Bizonylat-kezelő Rendszer -- 2. Fazis
 
-Ez egy nagy projekt, ezert fazisokra bontjuk. Az 1. fazis a legfontosabb alapokat rakja le: adatbazis, fajl feltoltes, lista nezet, uj szamla dialog.
-
----
-
-## Adatbazis
-
-### Uj tablak
-
-**invoices** -- fo bizonylat tabla:
-- `id` uuid PK
-- `type` text ('incoming' | 'outgoing' | 'order_receipt')
-- `status` text ('draft' | 'pending' | 'paid' | 'overdue' | 'cancelled'), default 'draft'
-- `invoice_number` text (nullable, kezzel megadott szamla sorszam)
-- `partner_name` text
-- `partner_tax_id` text (nullable)
-- `order_id` uuid FK orders (nullable)
-- `issue_date` date, default CURRENT_DATE
-- `due_date` date (nullable)
-- `payment_date` date (nullable)
-- `net_amount` integer, default 0
-- `vat_amount` integer, default 0
-- `gross_amount` integer, default 0
-- `vat_rate` integer, default 27
-- `category` text ('ingredient' | 'utility' | 'rent' | 'equipment' | 'salary' | 'tax' | 'food_sale' | 'other')
-- `notes` text (nullable)
-- `file_urls` text[] default '{}'
-- `created_at` timestamptz default now()
-- `updated_at` timestamptz default now()
-- `created_by` uuid (nullable)
-
-**invoice_items** -- szamla tetelsorok (opcionalis reszletezeshez):
-- `id` uuid PK
-- `invoice_id` uuid FK invoices ON DELETE CASCADE
-- `description` text
-- `quantity` numeric default 1
-- `unit` text default 'db'
-- `unit_price` integer default 0
-- `line_total` integer default 0
-
-### RLS policyk
-- Csak admin lathassa, szerkeszthesse, torolhesse (is_admin)
-- Staff nem lat semmit
-
-### Storage bucket
-- Uj privat bucket: `invoices` (public: false)
-- RLS: csak admin tolthet fel / olvashat / torolhet
-- Elfogadott tipusok: PDF, JPG, PNG, HEIC
-- Max 10MB
+Az 1. fazis (adatbazis, CRUD, feltoltes, lista) kesz. A 2. fazis a napi hasznalhatosagot javitja: torles, napi riportbol automatikus bevetel rogzites, es havi export a konyvelonek.
 
 ---
 
-## Uj fajlok
+## 1. Bizonylat torles funkció
 
+Jelenleg a szerkeszto dialogban nincs torles gomb — ezt potolni kell.
+
+### Valtozas
 | Fajl | Leiras |
 |------|--------|
-| `src/pages/admin/Invoices.tsx` | Fo oldal: lista nezet + szurok + osszesito kartyak |
-| `src/components/admin/InvoiceListItem.tsx` | Egy szamla sor a listaban |
-| `src/components/admin/InvoiceFormDialog.tsx` | Uj/szerkeszto dialog a bizonylat rogzitesehez |
-| `src/components/admin/InvoiceFilters.tsx` | Szuro sor: tipus, statusz, kategoria, datum |
-| `src/components/admin/InvoiceSummaryCards.tsx` | Osszesito kartyak (beJovo/kimeno/eredmeny) |
-| `src/components/admin/InvoiceFileUpload.tsx` | Fajl feltoltes komponens (PDF + kep, tobbszoros, kamera gomb mobilon) |
-| `src/hooks/useInvoices.ts` | React Query hook a szamlak CRUD muveleteire |
+| `src/components/admin/InvoiceFormDialog.tsx` | Torles gomb (piros, AlertDialog megerositessel) a dialog footer-ben, csak szerkesztes modban latszik |
 
-## Modositando fajlok
+- `useDeleteInvoice` hook mar letezik a `useInvoices.ts`-ben
+- A torles utan a dialog bezarul es a lista frissul
+- AlertDialog megerosites: "Biztosan torlod ezt a bizonylatot?"
+- A csatolt fajlokat is torolni kell a storage-bol (a `file_urls`-bol kinyerjuk a path-okat)
 
-| Fajl | Valtozas |
+---
+
+## 2. Automatikus bevetel rogzites completed rendelesekbol
+
+Minden `completed` statuszra valtozott rendeles automatikusan letrehoz egy `outgoing` / `food_sale` bizonylat rekordot az invoices tablaban. Igy a tulajdonosnak CSAK a koltseg szamlakat kell kezzel feltoltenie.
+
+### Megoldas: Database trigger
+
+Uj SQL trigger az `orders` tablan:
+- Amikor egy rendeles `status` mezoje `completed`-re valt
+- Letrehoz egy `invoices` rekordot:
+  - `type = 'order_receipt'`
+  - `status = 'paid'`
+  - `partner_name = orders.name`
+  - `gross_amount = orders.total_huf`
+  - `vat_rate = 27`
+  - `category = 'food_sale'`
+  - `issue_date = CURRENT_DATE`
+  - `order_id = orders.id`
+  - `invoice_number = orders.code`
+- Ne hozzon letre duplikatumot (ellenorzes: ha mar letezik invoice ezzel az `order_id`-val, kihagyja)
+
+### Valtozasok
+| Fajl | Leiras |
 |------|--------|
-| `src/App.tsx` | Uj route: `/admin/invoices` |
-| `src/pages/admin/AdminLayout.tsx` | Uj menupont: "Szamlak" (Receipt ikon) |
+| SQL Migration | Uj trigger: `create_invoice_on_order_complete` |
 
 ---
 
-## UI terv
+## 3. Havi export a konyvelonek (Excel)
 
-### Lista nezet (/admin/invoices)
+Az admin feluletrol egy gombbal letoltheto Excel fajl az adott honap osszes bizonylatarrol.
 
-- Felso sav: "Szamlak kezelese" cim + "[+ Uj bizonylat]" gomb
-- Szuro sor: Tipus dropdown (Mind/Bejovo/Kimeno), Statusz dropdown, Kategoria dropdown, datumtartomany
-- 3 osszesito kartya: Bejovo osszeg, Kimeno osszeg, Eredmeny (+/-)
-- Lista: kartyak mobilon, tabla desktopon
-  - Partner neve, kategoria badge, osszeg (piros/zold), datum, statusz badge, csatolt fajlok szama
-  - Kattintasra megnyilik a szerkeszto dialog
+### UI
+- Uj gomb az Invoices oldal fejleceben: "Exportalás" ikon
+- Kattintasra letolti az aktualis szurt listat Excel-kent
+- Az `xlsx` csomag mar telepitve van a projektben
 
-### Uj bizonylat dialog
+### Excel tartalma
+- Sheet 1 "Bizonylatok": Datum, Partner, Szamla szam, Tipus, Kategoria, Netto, AFA, Brutto, Statusz
+- Sheet 2 "Osszesito": Bejovo osszesen, Kimeno osszesen, Eredmeny, Kategoriankenti bontás
 
-- Tipus valaszto: Bejovo (koltseg) / Kimeno (bevetel)
-- Partner neve (autocomplete korabbi partnerekbol)
-- Adoszam (opcionalis)
-- Szamla szam (opcionalis)
-- Kiallitas datuma + fizetesi hatarido
-- Kategoria dropdown (Alapanyagok, Rezsi, Berleti dij, Felszereles, Ber, Ado, Etel ertekesites, Egyeb)
-- Brutto osszeg + AFA kulcs (27%, 5%, 0%) → netto es AFA automatikus szamitas
-- Fajl feltoltes: tobbszoros, kamera gomb mobilon, drag-and-drop
-- Megjegyzes
-- Mentes gomb (piszkozat / fizetve)
-
-### Mobil optimalizacio
-
-- A fajl feltoltes komponensnel nagy "Foto keszitese" gomb ami `capture="environment"` attributummal nyitja a kamerat
-- Vertikalis kartya elrendezes a listaban
-- Dialog a standard dialog-accessibility-standard szerint (max-h calc, fix header/footer)
+### Valtozasok
+| Fajl | Leiras |
+|------|--------|
+| `src/pages/admin/Invoices.tsx` | Export gomb a fejlecbe |
+| `src/lib/invoiceExport.ts` | Uj fajl: Excel generalas az xlsx csomaggal |
 
 ---
 
-## Nem tartalmazza az 1. fazis
+## 4. Datumszuro javitas
 
-Ezek kesobb jonnek (2-3. fazis):
-- Rendeles-bizonylat PDF generalas
-- Havi export ZIP + Excel a konyvelonek
-- Automatikus bevetel rogzites completed rendelesekbol
-- Ismetlodo koltsegek
-- Dashboard penzugyi osszesito kartyak
-- Partner-nyilvantartas kulon oldal
-- OCR (fotobol adat kinyeres)
-- NAV integracioval nem foglalkozunk
+Jelenleg a datumszuro nincs az `InvoiceFilters` komponensben implementalva. Hozzaadunk ket date input-ot (tol-ig).
+
+### Valtozasok
+| Fajl | Leiras |
+|------|--------|
+| `src/components/admin/InvoiceFilters.tsx` | Ket date input: dateFrom, dateTo |
+
+---
+
+## Nem tartalmazza a 2. fazis
+
+- Rendeles-bizonylat PDF generalas (nyomtathato osszesito) → 3. fazis
+- Havi export ZIP a csatolt fajlokkal → 3. fazis
+- Ismetlodo koltsegek → 3. fazis
+- Dashboard penzugyi osszesito → 3. fazis
+- OCR → kesobb
 
 ---
 
 ## Technikai megjegyzesek
 
-- A `useInvoices` hook React Query-t hasznal (`useQuery` + `useMutation`) a mar letezo mintaknak megfeleloen
-- Az AFA szamitas kliens oldalon tortenik: netto = brutto / (1 + vat_rate/100), vat = brutto - netto
-- A partner autocomplete a korabbi invoices-bol szedi az egyedi partner neveket (distinct query)
-- Toast ertesitesek sonner-rel (a projekt szabvanya szerint)
-- A dialog a `Dialog` komponenst hasznalja a standard accessibility minta szerint
-
+- Az Excel export a kliens oldalon tortenik az `xlsx` konyvtarral (mar telepitve), nem kell edge function
+- A database trigger `SECURITY DEFINER`-kent fut, igy az RLS-t megkerueli — szukseges, mert a rendeles statuszat staff is valtoztathatja, de az invoice tabla admin-only
+- A trigger ellenorzi hogy ne legyen duplikat invoice ugyanahhoz a rendeleshez
