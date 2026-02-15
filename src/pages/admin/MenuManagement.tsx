@@ -41,6 +41,7 @@ interface MenuItem {
   category_id: string;
   is_active: boolean;
   is_featured: boolean;
+  is_always_available: boolean;
 }
 
 const MenuManagement = () => {
@@ -61,7 +62,8 @@ const MenuManagement = () => {
     allergens: "",
     image_url: "",
     is_active: true,
-    is_featured: false
+    is_featured: false,
+    is_always_available: false
   });
 
   // Filter menu items based on search and category
@@ -70,7 +72,11 @@ const MenuManagement = () => {
     const matchesSearch = searchTerm === "" || 
       normalizeText(item.name).includes(normalizedSearch) ||
       (item.description && normalizeText(item.description).includes(normalizedSearch));
-    const matchesCategory = selectedCategory === "all" || item.category_id === selectedCategory;
+    const matchesCategory = selectedCategory === "all" 
+      ? true 
+      : selectedCategory === "fix" 
+        ? item.is_always_available 
+        : item.category_id === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
@@ -118,7 +124,8 @@ const MenuManagement = () => {
         allergens: item.allergens.join(', '),
         image_url: item.image_url || "",
         is_active: item.is_active,
-        is_featured: item.is_featured
+        is_featured: item.is_featured,
+        is_always_available: item.is_always_available
       });
     } else {
       setEditingItem(null);
@@ -130,7 +137,8 @@ const MenuManagement = () => {
         allergens: "",
         image_url: "",
         is_active: true,
-        is_featured: false
+        is_featured: false,
+        is_always_available: false
       });
     }
     setIsItemDialogOpen(true);
@@ -150,7 +158,8 @@ const MenuManagement = () => {
       allergens: allergensArray,
       image_url: itemForm.image_url || null,
       is_active: itemForm.is_active,
-      is_featured: itemForm.is_featured
+      is_featured: itemForm.is_featured,
+      is_always_available: itemForm.is_always_available
     };
 
     let result;
@@ -340,6 +349,15 @@ const MenuManagement = () => {
                     />
                     Kiemelt <InfoTip text="A kiemelt ételek elöl jelennek meg a főoldal ajánlottjai között." side="bottom" />
                   </label>
+                  
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={itemForm.is_always_available}
+                      onChange={(e) => setItemForm({...itemForm, is_always_available: e.target.checked})}
+                    />
+                    Fix tétel <InfoTip text="A fix tételek (pl. italok, savanyúság) mindig megjelennek a honlapon, függetlenül a napi ajánlattól." side="bottom" />
+                  </label>
                 </div>
               </div>
               
@@ -388,6 +406,13 @@ const MenuManagement = () => {
                 onClick={() => setSelectedCategory("all")}
               >
                 Összes ({menuItems.length})
+              </Badge>
+              <Badge
+                variant={selectedCategory === "fix" ? "default" : "outline"}
+                className="cursor-pointer hover:bg-primary/80 transition-colors bg-blue-50 text-blue-700 border-blue-200"
+                onClick={() => setSelectedCategory(selectedCategory === "fix" ? "all" : "fix")}
+              >
+                📌 Fix tételek ({menuItems.filter(i => i.is_always_available).length})
               </Badge>
               {categories.map(category => {
                 const count = menuItems.filter(i => i.category_id === category.id).length;
@@ -444,14 +469,17 @@ const MenuManagement = () => {
                                className={`w-12 h-12 object-cover rounded-lg ${!item.image_url ? 'opacity-40' : ''}`}
                              />
                              <h4 className="font-medium">{capitalizeFirst(item.name)}</h4>
-                            <div className="flex gap-2">
-                              {!item.is_active && (
-                                <Badge variant="secondary">Inaktív</Badge>
-                              )}
-                              {item.is_featured && (
-                                <Badge className="bg-yellow-100 text-yellow-800">Kiemelt</Badge>
-                              )}
-                            </div>
+                             <div className="flex gap-2">
+                               {!item.is_active && (
+                                 <Badge variant="secondary">Inaktív</Badge>
+                               )}
+                               {item.is_featured && (
+                                 <Badge className="bg-yellow-100 text-yellow-800">Kiemelt</Badge>
+                               )}
+                               {item.is_always_available && (
+                                 <Badge className="bg-blue-100 text-blue-800">📌 Fix</Badge>
+                               )}
+                             </div>
                           </div>
                           <p className="text-sm text-muted-foreground mt-1">
                             {item.description}
