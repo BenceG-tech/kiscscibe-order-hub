@@ -14,17 +14,25 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { 
   ShoppingBag, 
   ArrowLeft,
   LogOut,
-  User
+  User,
+  Volume2,
+  VolumeX
 } from "lucide-react";
 
 const StaffLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const { profile, signOut } = useAuth();
-  const { newOrdersCount, clearNewOrdersCount } = useOrderNotifications();
+  const { newOrdersCount, clearNewOrdersCount, playNotificationSound, audioUnlocked } = useOrderNotifications();
 
   const handleSignOut = async () => {
     await signOut();
@@ -71,6 +79,29 @@ const StaffLayout = ({ children }: { children: React.ReactNode }) => {
               Személyzet
             </Badge>
 
+            {/* Sound test button */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={playNotificationSound}
+                    className="min-h-[44px] min-w-[44px] p-0 flex items-center justify-center"
+                  >
+                    {audioUnlocked ? (
+                      <Volume2 className="h-5 w-5 text-green-600" />
+                    ) : (
+                      <VolumeX className="h-5 w-5 text-yellow-500" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Értesítési hang tesztelése</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
             {/* Logout with confirmation dialog */}
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -102,7 +133,7 @@ const StaffLayout = ({ children }: { children: React.ReactNode }) => {
         </div>
       </header>
 
-      {/* Sticky Navigation Tabs - Only Orders for Staff */}
+      {/* Sticky Navigation Tabs */}
       <nav className="sticky top-[calc(env(safe-area-inset-top,0)+56px)] z-40 bg-card/95 backdrop-blur border-b">
         <div className="overflow-x-auto no-scrollbar">
           <ul className="flex min-w-full items-center px-3 py-2">
