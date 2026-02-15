@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import AdminLayout from "./AdminLayout";
 import { Button } from "@/components/ui/button";
-import { Plus, Download } from "lucide-react";
+import { Plus, Download, AlertTriangle } from "lucide-react";
 import InvoiceSummaryCards from "@/components/admin/InvoiceSummaryCards";
 import InvoiceFilters from "@/components/admin/InvoiceFilters";
 import InvoiceListItem from "@/components/admin/InvoiceListItem";
@@ -16,6 +16,17 @@ const Invoices = () => {
   const [editInvoice, setEditInvoice] = useState<Invoice | null>(null);
 
   const { data: invoices = [], isLoading } = useInvoices(filters);
+
+  const overdueInvoices = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return invoices.filter(inv => 
+      inv.due_date && 
+      new Date(inv.due_date) < today && 
+      inv.status !== "paid" && 
+      inv.status !== "cancelled"
+    );
+  }, [invoices]);
 
   const openNew = () => {
     setEditInvoice(null);
@@ -47,6 +58,14 @@ const Invoices = () => {
             </Button>
           </div>
         </div>
+
+        {/* Overdue warning */}
+        {overdueInvoices.length > 0 && (
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm font-medium">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            Figyelem: {overdueInvoices.length} lejárt fizetési határidejű bizonylat!
+          </div>
+        )}
 
         {/* Filters */}
         <InvoiceFilters filters={filters} onChange={setFilters} />

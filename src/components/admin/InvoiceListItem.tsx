@@ -1,7 +1,8 @@
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Paperclip, Bot, FileText, Image as ImageIcon, ExternalLink } from "lucide-react";
+import { Paperclip, Bot, FileText, Image as ImageIcon, ExternalLink, AlertTriangle } from "lucide-react";
 import { useUpdateInvoice, type Invoice } from "@/hooks/useInvoices";
+import { differenceInDays } from "date-fns";
 
 interface Props {
   invoice: Invoice;
@@ -80,7 +81,7 @@ const InvoiceListItem = ({ invoice, onClick }: Props) => {
             </Badge>
           )}
         </div>
-        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-wrap">
           <span>{new Date(invoice.issue_date).toLocaleDateString("hu-HU")}</span>
           {invoice.invoice_number && (
             <>
@@ -88,6 +89,20 @@ const InvoiceListItem = ({ invoice, onClick }: Props) => {
               <span>{invoice.invoice_number}</span>
             </>
           )}
+          {invoice.due_date && (() => {
+            const daysOverdue = differenceInDays(new Date(), new Date(invoice.due_date));
+            const isPastDue = daysOverdue > 0 && invoice.status !== "paid" && invoice.status !== "cancelled";
+            return (
+              <>
+                <span>•</span>
+                <span className={isPastDue ? "text-destructive font-medium flex items-center gap-1" : ""}>
+                  {isPastDue && <AlertTriangle className="h-3 w-3" />}
+                  Hat.idő: {new Date(invoice.due_date).toLocaleDateString("hu-HU")}
+                  {isPastDue && ` (${daysOverdue} napja lejárt)`}
+                </span>
+              </>
+            );
+          })()}
           {invoice.file_urls.length > 0 && (
             <>
               <span>•</span>

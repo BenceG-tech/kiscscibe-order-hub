@@ -18,7 +18,21 @@ import {
   Upload,
   X,
   ImageIcon,
+  CalendarDays,
+  Users,
+  ChefHat,
+  Star,
+  Heart,
+  Clock,
+  Leaf,
+  Award,
+  Coffee,
+  Utensils,
+  MapPin,
+  ThumbsUp,
+  type LucideIcon,
 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import InfoTip from "@/components/admin/InfoTip";
 
 export interface AboutStat {
@@ -48,9 +62,19 @@ export interface AboutPageContent {
   missionText: string;
 }
 
-const ICON_OPTIONS = [
-  "CalendarDays", "Users", "ChefHat", "Star", "Heart", "Clock", "Leaf",
-  "Award", "Coffee", "Utensils", "MapPin", "ThumbsUp",
+const ICON_OPTIONS: { value: string; label: string; icon: LucideIcon }[] = [
+  { value: "CalendarDays", label: "Naptár", icon: CalendarDays },
+  { value: "Users", label: "Vendégek", icon: Users },
+  { value: "ChefHat", label: "Szakács sapka", icon: ChefHat },
+  { value: "Star", label: "Csillag", icon: Star },
+  { value: "Heart", label: "Szív", icon: Heart },
+  { value: "Clock", label: "Óra", icon: Clock },
+  { value: "Leaf", label: "Levél", icon: Leaf },
+  { value: "Award", label: "Díj", icon: Award },
+  { value: "Coffee", label: "Kávé", icon: Coffee },
+  { value: "Utensils", label: "Evőeszközök", icon: Utensils },
+  { value: "MapPin", label: "Helyszín", icon: MapPin },
+  { value: "ThumbsUp", label: "Tetszik", icon: ThumbsUp },
 ];
 
 const DEFAULT_CONTENT: AboutPageContent = {
@@ -261,15 +285,25 @@ const AboutPageEditor = () => {
                   update("stats", stats);
                 }} />
               </div>
-              <div className="w-full md:w-32 space-y-1">
+              <div className="w-full md:w-44 space-y-1">
                 <Label className="text-xs">Ikon</Label>
-                <select className="w-full h-10 rounded-md border border-input bg-background px-2 text-sm" value={stat.icon} onChange={e => {
+                <Select value={stat.icon} onValueChange={v => {
                   const stats = [...editData.stats];
-                  stats[i] = { ...stats[i], icon: e.target.value };
+                  stats[i] = { ...stats[i], icon: v };
                   update("stats", stats);
                 }}>
-                  {ICON_OPTIONS.map(ic => <option key={ic} value={ic}>{ic}</option>)}
-                </select>
+                  <SelectTrigger className="h-10">
+                    <SelectValue>
+                      {(() => { const opt = ICON_OPTIONS.find(o => o.value === stat.icon); if (!opt) return stat.icon; const Icon = opt.icon; return <span className="flex items-center gap-2"><Icon className="h-4 w-4" />{opt.label}</span>; })()}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ICON_OPTIONS.map(opt => {
+                      const Icon = opt.icon;
+                      return <SelectItem key={opt.value} value={opt.value}><span className="flex items-center gap-2"><Icon className="h-4 w-4" />{opt.label}</span></SelectItem>;
+                    })}
+                  </SelectContent>
+                </Select>
               </div>
               <Button variant="ghost" size="icon" className="text-destructive self-end" onClick={() => {
                 update("stats", editData.stats.filter((_, j) => j !== i));
@@ -344,15 +378,25 @@ const AboutPageEditor = () => {
           </div>
           {editData.values.map((val, i) => (
             <div key={val.id} className="flex flex-col md:flex-row gap-2 md:items-end p-3 md:p-0 rounded-lg md:rounded-none bg-muted/30 md:bg-transparent">
-              <div className="w-full md:w-28 space-y-1">
+              <div className="w-full md:w-44 space-y-1">
                 <Label className="text-xs">Ikon</Label>
-                <select className="w-full h-10 rounded-md border border-input bg-background px-2 text-sm" value={val.icon} onChange={e => {
+                <Select value={val.icon} onValueChange={v => {
                   const values = [...editData.values];
-                  values[i] = { ...values[i], icon: e.target.value };
+                  values[i] = { ...values[i], icon: v };
                   update("values", values);
                 }}>
-                  {ICON_OPTIONS.map(ic => <option key={ic} value={ic}>{ic}</option>)}
-                </select>
+                  <SelectTrigger className="h-10">
+                    <SelectValue>
+                      {(() => { const opt = ICON_OPTIONS.find(o => o.value === val.icon); if (!opt) return val.icon; const Icon = opt.icon; return <span className="flex items-center gap-2"><Icon className="h-4 w-4" />{opt.label}</span>; })()}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ICON_OPTIONS.map(opt => {
+                      const Icon = opt.icon;
+                      return <SelectItem key={opt.value} value={opt.value}><span className="flex items-center gap-2"><Icon className="h-4 w-4" />{opt.label}</span></SelectItem>;
+                    })}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="flex-1 space-y-1">
                 <Label className="text-xs">Cím</Label>

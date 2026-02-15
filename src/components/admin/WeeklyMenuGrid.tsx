@@ -5,7 +5,7 @@ import { format, startOfWeek, addDays, addWeeks, subWeeks } from "date-fns";
 import { hu } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { ChevronLeft, ChevronRight, Loader2, Check, Download } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, Check, Download, Ban } from "lucide-react";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { WeeklyGridCell } from "./WeeklyGridCell";
@@ -62,6 +62,8 @@ interface DailyOffer {
   id: string;
   date: string;
   price_huf: number | null;
+  max_portions: number | null;
+  remaining_portions: number | null;
   daily_offer_items: DailyOfferItem[];
 }
 
@@ -151,6 +153,8 @@ export default function WeeklyMenuGrid() {
           id,
           date,
           price_huf,
+          max_portions,
+          remaining_portions,
           daily_offer_items (
             id,
             daily_offer_id,
@@ -211,6 +215,15 @@ export default function WeeklyMenuGrid() {
     const lookup: Record<string, { offerId: string; price: number | null }> = {};
     dailyOffers.forEach(offer => {
       lookup[offer.date] = { offerId: offer.id, price: offer.price_huf };
+    });
+    return lookup;
+  }, [dailyOffers]);
+
+  // Build soldOut lookup: date -> boolean
+  const soldOutData = useMemo(() => {
+    const lookup: Record<string, boolean> = {};
+    dailyOffers.forEach(offer => {
+      lookup[offer.date] = offer.remaining_portions === 0;
     });
     return lookup;
   }, [dailyOffers]);
@@ -469,6 +482,32 @@ export default function WeeklyMenuGrid() {
     updateMenuPartMutation.mutate({ offerItemId, isMenuPart, menuRole });
   };
 
+  // Mutation to toggle sold out
+  const toggleSoldOutMutation = useMutation({
+    mutationFn: async ({ date, soldOut }: { date: string; soldOut: boolean }) => {
+      const existingOffer = dailyOffers.find(o => o.date === date);
+      if (!existingOffer) return;
+      
+      const { error } = await supabase
+        .from("daily_offers")
+        .update({ remaining_portions: soldOut ? 0 : existingOffer.max_portions || 50 })
+        .eq("id", existingOffer.id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["daily-offers-week"] });
+      toast.success("Elfogyott jelölés mentve");
+    },
+    onError: () => {
+      toast.error("Hiba történt");
+    },
+  });
+
+  const handleToggleSoldOut = (date: string, soldOut: boolean) => {
+    toggleSoldOutMutation.mutate({ date, soldOut });
+  };
+
   // Excel export function
   const exportToExcel = () => {
     const exportData: (string | number)[][] = [];
@@ -647,6 +686,36 @@ export default function WeeklyMenuGrid() {
                         onChange={(price) => handleDailyPriceChange(dateStr, price)}
                         isPending={updatePriceMutation.isPending}
                       />
+                    </td>
+                  );
+                })}
+              </tr>
+
+              {/* Sold Out Row */}
+              <tr className="bg-destructive/5">
+                <td className="sticky left-0 z-20 bg-destructive/10 border-b border-r p-3 font-medium text-sm">
+                  <span className="flex items-center gap-1.5">
+                    <Ban className="h-4 w-4 text-destructive" />
+                    Elfogyott
+                  </span>
+                </td>
+                {weekDates.map((date, idx) => {
+                  const dateStr = format(date, "yyyy-MM-dd");
+                  const isSoldOut = soldOutData[dateStr] || false;
+                  const hasOffer = !!priceData[dateStr];
+                  
+                  return (
+                    <td key={idx} className="border-b border-l p-2 text-center">
+                      {hasOffer && (
+                        <Button
+                          variant={isSoldOut ? "destructive" : "outline"}
+                          size="sm"
+                          className="text-xs h-7"
+                          onClick={() => handleToggleSoldOut(dateStr, !isSoldOut)}
+                        >
+                          {isSoldOut ? "Elfogyott ✓" : "Elérhető"}
+                        </Button>
+                      )}
                     </td>
                   );
                 })}
