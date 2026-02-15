@@ -1,48 +1,56 @@
 
 
-# Admin UI javitasok: Mobil tab bar + Pentek delutani auto-navigacio
+# Announcement Popup fejlesztesek
 
-## 1. Mobil tab bar: vissza a horizontalis scroll-ra
+## 1. Problema: A popup nem jelenik meg
 
-A 3x3 grid tul sok helyet foglal mobilon. Visszaallitjuk a korabbi horizontalis scrollozhato megoldast, de optimalizalva:
+Az adatbazisban az ertesito `enabled: false` allapotra van mentve. Valoszinuleg az editor nem volt bekapcsolt allapotban a mentes elott, vagy a Switch alapertelmezetten ki volt kapcsolva. Ellenorizni kell, hogy az admin bekapcsolta-e -- de a kodban nincs bug, egyszeruen az `enabled` mezo `false`.
 
-- A `grid grid-cols-3` blokkot lecsereljuk egy `overflow-x-auto flex` elrendezesre
-- Kompakt gombok: ikon + rovid cimke egymas mellett (nem egymas alatt)
-- `no-scrollbar` class a scroll bar elrejtesere
-- Kisebb padding es spacing a kompaktsag erdekeben
-
-### Erintett fajl
-| Fajl | Valtozas |
-|------|----------|
-| `src/pages/admin/AdminLayout.tsx` | Mobil navigacio: grid helyett horizontalis scroll visszaallitasa, kompaktabb elemekkel |
+**Megoldas**: A menteskor figyelmeztetes jelenik meg, ha `enabled` ki van kapcsolva: "Figyelem: az ertesito ki van kapcsolva, a latogatok nem fogjak latni." Ez egy kis info szoveg a Mentes gomb felett.
 
 ---
 
-## 2. FB kep generator: pentek 16:00 utan jovo het
+## 2. Kep feltoltes hozzaadasa az ertesitohoz
 
-A `DailyOfferImageGenerator.tsx`-ben a `weekOffset` allapot inicializalasat modositjuk:
+Az `AnnouncementEditor`-ba beepitjuk a mar meglevo `ImageUpload` komponenst, ami a `menu-images` bucket-be tolt fel.
 
-- Ha pentek van es 16:00 utan van → `weekOffset` alaperteke `1` (jovo het)
-- Egyebkent `0` (aktualis het)
-- A `selectedDate` szinten a jovo het hetfojere all ilyenkor
-
-```text
-Logika:
-const now = new Date();
-const isFridayAfternoon = getDay(now) === 5 && now.getHours() >= 16;
-const initialOffset = isFridayAfternoon ? 1 : 0;
-```
-
-### Erintett fajl
-| Fajl | Valtozas |
-|------|----------|
-| `src/components/admin/DailyOfferImageGenerator.tsx` | `weekOffset` es `selectedDate` init logika: pentek 16:00 utan jovo het |
+- Uj szekcio a CTA mezok alatt: "Kep (opcionalis)"
+- Az `ImageUpload` komponens hasznalata (`bucketName="menu-images"`)
+- `onImageUploaded` → `form.imageUrl` beallitasa
+- `onImageRemoved` → `form.imageUrl = null`
+- Az elonezet is megjeleníti a kepet (ahogy a popup maga is -- az mar implementalva van az `AnnouncementPopup`-ban)
 
 ---
 
-## Nem modosul
-- Adatbazis, RLS
-- Desktop tab bar (az marad ahogy van)
-- Canvas rajzolas / feltoltes logika
+## 3. Gomb link dropdown az eloredefinalt oldalakkal
+
+A "Gomb link" `Input` mezot lecsereljuk egy kombinalt mezocsoportra:
+- Egy `Select` dropdown az oldal elore definialt utvonalakkal:
+  - Etlap → `/etlap`
+  - Galeria → `/gallery`
+  - Rolunk → `/about`
+  - Kapcsolat → `/contact`
+  - Penztar → `/checkout`
+  - Egyedi link... → szabadon irható Input mezo jelenik meg
+- Ha az admin "Egyedi link..."-et valaszt, megjelenik egy `Input` mezo ahova barmit irhat (pl. kulso URL)
+- Ha meglevo ertek van ami nem egyezik egy opcio-val sem, automatikusan "Egyedi link" modba kerul
+
+---
+
+## Technikai reszletek
+
+### Modositando fajlok
+
+| Fajl | Valtozas |
+|------|----------|
+| `src/components/admin/AnnouncementEditor.tsx` | ImageUpload hozzaadasa, link dropdown Select+Input kombo, figyelmeztetes ha kikapcsolt |
+
+### Nem modosul
+- `AnnouncementPopup.tsx` -- a popup mar kezel kepet (`imageUrl`) es CTA linket, nem kell modositani
+- Adatbazis / storage bucket -- a `menu-images` bucket mar letezik
 - Egyeb oldalak
+
+### Uj importok az AnnouncementEditor-ban
+- `ImageUpload` komponens (mar letezo)
+- `ImageIcon` ikon (lucide)
 
