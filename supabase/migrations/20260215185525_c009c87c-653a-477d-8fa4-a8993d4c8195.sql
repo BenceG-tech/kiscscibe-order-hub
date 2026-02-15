@@ -1,0 +1,1 @@
+ALTER TABLE menu_items ADD COLUMN is_always_available boolean NOT NULL DEFAULT false;

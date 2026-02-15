@@ -1,4 +1,5 @@
  import { useState, useEffect } from "react";
+ import InfoTip from "@/components/admin/InfoTip";
  import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
  import { supabase } from "@/integrations/supabase/client";
  import {
@@ -60,7 +61,8 @@ import { capitalizeFirst } from "@/lib/utils";
    const [allergens, setAllergens] = useState<string[]>([]);
    const [isActive, setIsActive] = useState(true);
    const [isFeatured, setIsFeatured] = useState(false);
-   const [requiresSideSelection, setRequiresSideSelection] = useState(false);
+    const [requiresSideSelection, setRequiresSideSelection] = useState(false);
+    const [isAlwaysAvailable, setIsAlwaysAvailable] = useState(false);
  
    // Fetch categories
    const { data: categories = [] } = useQuery({
@@ -128,9 +130,10 @@ import { capitalizeFirst } from "@/lib/utils";
        setCategoryId(item.category_id || null);
        setImageUrl(item.image_url || null);
        setAllergens(item.allergens || []);
-       setIsActive(item.is_active ?? true);
-       setIsFeatured(item.is_featured ?? false);
-       setRequiresSideSelection(item.requires_side_selection ?? false);
+        setIsActive(item.is_active ?? true);
+        setIsFeatured(item.is_featured ?? false);
+        setRequiresSideSelection(item.requires_side_selection ?? false);
+        setIsAlwaysAvailable((item as any).is_always_available ?? false);
      }
    }, [item]);
  
@@ -148,10 +151,11 @@ import { capitalizeFirst } from "@/lib/utils";
            category_id: categoryId,
            image_url: imageUrl,
            allergens,
-           is_active: isActive,
-           is_featured: isFeatured,
-           requires_side_selection: requiresSideSelection,
-         })
+            is_active: isActive,
+            is_featured: isFeatured,
+            requires_side_selection: requiresSideSelection,
+            is_always_available: isAlwaysAvailable,
+          } as any)
          .eq("id", itemId);
  
        if (error) throw error;
@@ -327,15 +331,26 @@ import { capitalizeFirst } from "@/lib/utils";
                    onCheckedChange={setIsFeatured}
                  />
                </div>
-               <div className="flex items-center justify-between">
-                 <Label htmlFor="sides">Köret választás kötelező</Label>
-                 <Switch
-                   id="sides"
-                   checked={requiresSideSelection}
-                   onCheckedChange={setRequiresSideSelection}
-                 />
-               </div>
-             </div>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="sides">Köret választás kötelező</Label>
+                  <Switch
+                    id="sides"
+                    checked={requiresSideSelection}
+                    onCheckedChange={setRequiresSideSelection}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1">
+                    <Label htmlFor="always-available">Fix tétel</Label>
+                    <InfoTip text="A fix tételek (pl. italok, savanyúság) mindig megjelennek a honlapon, függetlenül a napi ajánlattól." />
+                  </div>
+                  <Switch
+                    id="always-available"
+                    checked={isAlwaysAvailable}
+                    onCheckedChange={setIsAlwaysAvailable}
+                  />
+                </div>
+              </div>
            </div>
          )}
 

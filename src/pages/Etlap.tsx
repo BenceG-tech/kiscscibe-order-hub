@@ -18,6 +18,7 @@ import { capitalizeFirst } from "@/lib/utils";
 import kiscsibeLogo from "@/assets/kiscsibe_logo_round.png";
 import heroImage from "@/assets/hero-desktop.png";
 import DailyMenuPanel from "@/components/DailyMenuPanel";
+import AlwaysAvailableSection from "@/components/sections/AlwaysAvailableSection";
 
 interface MenuItem {
   id: string;
@@ -420,6 +421,9 @@ const Etlap = () => {
                 </CardContent>
               </Card>
             )}
+
+            {/* Always Available Items */}
+            <AlwaysAvailableSection />
           </div>
         </section>
       </main>
