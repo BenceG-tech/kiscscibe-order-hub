@@ -180,8 +180,10 @@ const DailyItemSelector = ({ type, data, canOrder, showDetails = false, deadline
   const totalPrice = calculatePrice();
   const savings = allSelected ? items.reduce((sum, item) => sum + (item.menu_items?.price_huf || 0), 0) - data.price_huf : 0;
 
+  const isSoldOut = data.remaining_portions <= 0;
+
   return (
-    <Card className={`${showDetails ? 'border-2 border-primary/30 bg-gradient-to-br from-background to-primary/5 shadow-lg' : 'border-2 border-dashed border-primary/20 bg-gradient-to-br from-background to-primary/5'}`}>
+    <Card className={`${isSoldOut ? 'border-2 border-destructive/30 opacity-60' : showDetails ? 'border-2 border-primary/30 bg-gradient-to-br from-background to-primary/5 shadow-lg' : 'border-2 border-dashed border-primary/20 bg-gradient-to-br from-background to-primary/5'}`}>
       <CardContent className="p-4 space-y-4">
         {showDetails && (
           <div className="space-y-4 mb-6">
@@ -219,6 +221,7 @@ const DailyItemSelector = ({ type, data, canOrder, showDetails = false, deadline
             variant="outline"
             size="sm"
             onClick={handleSelectAll}
+            disabled={isSoldOut}
             className="text-xs font-sofia font-bold"
           >
             {allSelected ? 'Egyik sem' : 'Mind'}
@@ -232,6 +235,7 @@ const DailyItemSelector = ({ type, data, canOrder, showDetails = false, deadline
                 id={item.id}
                 checked={selectedItems.includes(item.id)}
                 onCheckedChange={() => handleItemToggle(item.id)}
+                disabled={isSoldOut}
                 className="mt-1"
               />
               <div className="w-48 aspect-video rounded-xl overflow-hidden shrink-0 shadow-md">
