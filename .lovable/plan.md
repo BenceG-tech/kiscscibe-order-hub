@@ -1,107 +1,79 @@
 
 
-# Admin Tooltip Rendszer -- Hasznalati utasitasok mindenhova
+# Fix tetelek kezelese es megjelenites
 
-Minden admin oldal fejleceihez, gombjaihoz, kartyaihoz es fontos UI elemeihez kis info-tooltip kerul, ami roviden elmagyarazza a tulaj szamara az adott funkciok celját es hasznalatat.
+A cel: bizonyos etelek/italok (viz, cola, savanyusag stb.) mindig elerheto legyen a honlapon, fuggetlenul a napi ajanlatoktol. Az admin tudja kezelni melyik tetel "fix", es a latogatol ezeket barmelyik napon megrendelhetik.
 
 ---
 
-## Megvalositasi modszer
+## 1. Adatbazis: uj mezo a menu_items tablan
 
-Egy `InfoTip` segéd-komponens keszul, ami egy kis `(i)` ikont jelenít meg, és hover/kattintasra mutatja a szoveget. Ez a `TooltipProvider` + `Tooltip` + `TooltipTrigger` + `TooltipContent` Radix komponensekre epul, amik mar leteznek a projektben.
+Uj `is_always_available` boolean mezo a `menu_items` tablara. Ez jeloli, hogy az adott tetel napitol fuggetlenul mindig rendelheto.
 
-### Uj fajl
+| Valtozas | Leiras |
+|----------|--------|
+| SQL Migration | `ALTER TABLE menu_items ADD COLUMN is_always_available boolean NOT NULL DEFAULT false;` |
 
-| Fajl | Leiras |
+---
+
+## 2. Admin feluleti: fix tetel jeloles
+
+A `MenuManagement.tsx` oldalon:
+- Uj checkbox az etel szerkeszto dialogban: "Mindig elerheto (fix tetel)" + InfoTip: "A fix tetelek (pl. italok, savanyusag) mindig megjelennek a honlapon, fuggetlenul a napi ajanlattol."
+- Uj szurogomb a kategoria szurok soraban: "Fix tetelek" badge, amivel csak a fix teteleket szuri
+- A listaban a fix teteleknel egy kis "Fix" badge jelenik meg (ahogy az "Inaktiv" es "Kiemelt" badge-ek mar megjelennek)
+
+| Fajl | Valtozas |
 |------|--------|
-| `src/components/admin/InfoTip.tsx` | Ujrahasznalhato info-tooltip komponens (ikon + szoveg) |
+| `src/pages/admin/MenuManagement.tsx` | Checkbox a dialogban, szurogomb, badge a listaban |
 
 ---
 
-## Tooltip elhelyezesek oldalonkent
+## 3. Latogatoi oldal: fix tetelek szekcio az Etlapon
 
-### 1. Dashboard (`Dashboard.tsx`)
-- "Iranytiopult" cim melle: "Itt latod a mai forgalom osszesiteset es a legfontosabb szamokat."
-- "Havi penzugyi attekintes" cim melle: "Az aktualis honap szamlai alapjan szamolt bevetel, koltseg es eredmeny."
-- "Holnapi menu beallitasa" gomb: "Ugras a napi ajanlat oldalra, ahol beallithatod a holnapi menut."
-- "Teszt napi riport" gomb: "Elkueld magadnak emailben a mai nap osszesiteset."
+Az `Etlap.tsx` oldalon a napi ajanlat/menu kártya ALATT megjelenik egy "Mindig elerheto" szekcio a fix tetelekkel. Ezeket a latogato barmikor kosarba teheti.
 
-### 2. Rendelesek (`OrdersManagement.tsx`)
-- "Rendelesek kezelese" cim melle: "Kezeld a bejovo rendeleseket: fogadd el, allitsd keszre, vagy monddd le."
-- Tab-ok ("Uj", "Keszites alatt", "Kesz", "Multbeli", "Aktiv"): mindegyikhez rovid magyarazat
+### Megjelenes
+- "Mindig elerheto" cimke egy kis ikon mellett
+- Grid elrendezes (2 oszlop mobil, 3 desktop), kompakt kartya: kep + nev + ar + "Kosarba" gomb
+- A fix tetelek nem fuggnek a kivalasztott datumtol, mindig megjelennek
+- Kategoria szerint csoportositva (pl. "Italok", "Egyeb")
 
-### 3. Etlap kezeles (`MenuManagement.tsx`)
-- "Etlap kezeles" cim melle: "Itt adhatod hozza, szerkesztheted vagy torold az etlapon lathato etelek listajat."
-- "Uj etel" gomb: "Uj etel hozzaadasa az etlaphoz."
-- "Aktiv" checkbox: "Csak az aktiv etelek jelennek meg az etlapon."
-- "Kiemelt" checkbox: "A kiemelt etelek elol jelennek meg a fooldal ajanlottjai kozott."
+### Adatlekerdezes
+- Egyetlen egyszeru query: `menu_items` tabla, `is_always_available = true` es `is_active = true`
+- Kategoria nevek lekerdezese a csoportositashoz
 
-### 4. Napi ajanlatszk (`DailyMenuManagement.tsx`)
-- "Napi ajanlatok" cim melle: "Allitsd be a heti napi menusort, kapacitast, es kueld ki hirlevelet."
-- Tab-ok ("Ajanlatok", "Kapacitas", "Import", "Hirlevel", "FB kep"): mindegyikhez rovid leiras
+| Fajl | Valtozas |
+|------|--------|
+| `src/pages/Etlap.tsx` | Uj szekcio a napi etelek alatt: fix tetelek grid + kosarba gomb |
 
-### 5. Szamlak (`Invoices.tsx`)
-- "Szamlak kezelese" cim melle: "Rogzitsd a bejovo koltsegszamlakat es kovetsd a penzugyi helyzetet."
-- "Export" gomb: "Letoltes Excel fajlkent a konyvelonek."
-- "Uj bizonylat" gomb: "Uj szamla vagy bizonylat rogzitese (koltseg vagy bevetel)."
-- Osszesito kartyak ("Koltsegek", "Bevetelek", "Eredmeny"): rovid magyarazat mindegyiknel
+---
 
-### 6. Galeria (`Gallery.tsx`)
-- "Galeria" cim melle: "Toltsd fel es kezeld a fooldali galeriaban megjelen kepeket."
+## 4. Fooldal: fix tetelek opcionalis megjelenites
 
-### 7. Statisztika (`Analytics.tsx`)
-- "Statisztika" cim melle: "Reszletes elemzesek a beveteledrol, rendelesekrol es az etlap teljesitmenyerol."
-- Tab-ok ("Bevetel", "Rendelesek", "Menu teljesitmeny", "Vasarlok", "Pazarlas"): rovid leiras
+A fooldal `Index.tsx` napi menu szekcioja alatt is megjelenhetnek a fix tetelek, de csak egy rovid valogatas (max 4-6 tetel, a `is_featured` + `is_always_available` kombinalasaval), hogy ne legyen tulzsufolt.
 
-### 8. Kuponok (`Coupons.tsx`)
-- "Kuponok" cim melle: "Hozz letre kedvezmeny kuponokat amiket a vasarlok a rendelesnel hasznalhatnak."
-- "Uj kupon" gomb: "Uj kedvezmeny kupon letrehozasa."
+Ez opcionalis -- csak ha van `is_featured` es `is_always_available` egyszerre megjelolt tetel.
 
-### 9. Jogi oldalak (`LegalPageEditor.tsx`)
-- Cim melle: "Szerkeszd az adatvedelmi tajekoztato, ASZF es impresszum szovegeket."
-
-### 10. Rolunk (`AboutPageEditor.tsx`)
-- Cim melle: "Szerkeszd a Rolunk oldal tartalmat: torteneted, ertekeid, kepeid."
-
-### 11. Ertesito szerkeszto (`AnnouncementEditor.tsx`)
-- "Ertesito / Pop-up" cim melle: "Allits be egy felugro ertesitest ami a latogatoknak megjelenik a fooldalon."
-
-### 12. Szamla form dialog (`InvoiceFormDialog.tsx`)
-- Kulonbozo mezok: "Brutto osszeg" melle "A teljes osszeg AFA-val egyutt", "AFA kulcs" melle "A legtobb szamlara 27% vonatkozik"
+| Fajl | Valtozas |
+|------|--------|
+| `src/pages/Index.tsx` | Kis szekcio a napi menu alatt, ha vannak kiemelt fix tetelek |
 
 ---
 
 ## Technikai reszletek
 
-### InfoTip komponens
-- Props: `text: string`, opcionalisan `side?: "top" | "bottom" | "left" | "right"`
-- Megjelenes: kis `HelpCircle` (lucide) ikon, halva szurke, hover-re kek
-- Mobil: kattintasra is megjelenik (a Radix Tooltip tamogatja)
-- Max szelesseg: 250px, sotetebb hatter a jobb lathatosagert
+- A `menu_items` tabla `is_always_available` mezoje `DEFAULT false`, tehat a letezo 500+ tetel nem valtozik
+- Az RLS mar megfelelo: `Anyone can view active menu items` (is_active = true) biztositja a publikus hozzaferest
+- A kosar rendszer mar tamogatja az egyedi teteleket (id, name, price_huf, modifiers, sides) -- nincs kulonleges logika szukseges
+- A types.ts automatikusan frissul a migracio utan
 
-### Modositando fajlok
+### Erinto fajlok osszesitese
 
-| Fajl | Valtozas |
-|------|--------|
-| `src/pages/admin/Dashboard.tsx` | Cimek es gombok melle InfoTip |
-| `src/pages/admin/OrdersManagement.tsx` | Cim melle InfoTip |
-| `src/pages/admin/MenuManagement.tsx` | Cim, gombok, checkbox-ok melle |
-| `src/pages/admin/DailyMenuManagement.tsx` | Cim es tab-ok melle |
-| `src/pages/admin/Invoices.tsx` | Cim, gombok melle |
-| `src/pages/admin/Analytics.tsx` | Cim melle |
-| `src/pages/admin/Coupons.tsx` | Cim, gomb melle |
-| `src/pages/admin/Gallery.tsx` | Cim melle |
-| `src/components/admin/AnnouncementEditor.tsx` | Cim melle |
-| `src/components/admin/InvoiceSummaryCards.tsx` | Kartya cimek melle |
-| `src/components/admin/InvoiceFormDialog.tsx` | Mezo cimkek melle |
-| `src/components/admin/InvoiceFilters.tsx` | Gyorsgombok melle |
-
----
-
-## Pelda tooltip szovegek
-
-Minden szoveg rovid, 1-2 mondatos, kozertheto (nem technikai). Pelda:
-- **Mai rendelesek kartya**: "A mai nap osszes bejott rendelese es azok osszerteke."
-- **Export gomb**: "Letolti az aktualis szurt listat Excel fajlkent, amit atkuldhetsz a konyvelodnek."
-- **Kapacitas tab**: "Allitsd be hany adag etelt tudsz kesziteni egy adott napon."
+| Fajl | Tipus |
+|------|-------|
+| SQL Migration | Uj mezo: `is_always_available` |
+| `src/pages/admin/MenuManagement.tsx` | Checkbox + szuro + badge |
+| `src/pages/Etlap.tsx` | Fix tetelek szekcio |
+| `src/pages/Index.tsx` | Kiemelt fix tetelek (opcionalis) |
 
