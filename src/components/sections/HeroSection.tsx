@@ -7,9 +7,13 @@ const HeroSection = () => {
 
   return (
     <section className="relative min-h-[55vh] md:min-h-[80vh] flex items-center justify-center overflow-hidden">
-      {/* Background Image with responsive desktop/mobile versions */}
+      {/* Background Image with responsive desktop/mobile versions + WebP */}
       <div className="absolute inset-0">
         <picture>
+          {/* WebP sources (optimized, ~200-400KB) */}
+          <source media="(min-width: 768px)" srcSet="/images/hero-desktop.webp" type="image/webp" />
+          <source srcSet="/images/hero-mobile.webp" type="image/webp" />
+          {/* PNG fallback */}
           <source media="(min-width: 768px)" srcSet={heroDesktop} />
           <img
             src={heroMobile}

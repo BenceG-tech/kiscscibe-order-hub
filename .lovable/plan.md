@@ -8,11 +8,11 @@
 
 ### K1. Hero kepek merete -- 2.9MB + 2.5MB
 - **Fajlok**: `src/assets/hero-desktop.png`, `src/assets/hero-mobile.png`, `src/components/sections/HeroSection.tsx`
-- **Allapot**: ⬜ TODO
+- **Allapot**: ✅ KÉSZ — WebP verziók generálva (`public/images/`), `<picture>` elem frissítve WebP source-okkal
 
 ### K2. CORS -- `Access-Control-Allow-Origin: *` az edge function-okben
 - **Fajlok**: Osszes `supabase/functions/*/index.ts`
-- **Allapot**: ⬜ TODO
+- **Allapot**: ✅ KÉSZ — Shared `_shared/cors.ts` létrehozva, minden function frissítve origin-validációval
 
 ### K3. Nincs rate limiting a publikus edge function-okon
 - **Fajlok**: Osszes `supabase/functions/` konyvtar
@@ -28,7 +28,7 @@
 
 ### K6. OG/Twitter kepek Lovable alapertelmezett
 - **Fajlok**: `index.html`
-- **Allapot**: ⬜ TODO
+- **Allapot**: ✅ KÉSZ — Egyedi Kiscsibe OG kép generálva, meta tag-ek frissítve
 
 ---
 
