@@ -27,6 +27,7 @@ import AdminLegalPages from "./pages/admin/LegalPages";
 import AdminAboutPage from "./pages/admin/AboutPage";
 import AdminAnalytics from "./pages/admin/Analytics";
 import AdminCoupons from "./pages/admin/Coupons";
+import AdminInvoices from "./pages/admin/Invoices";
 import StaffOrders from "./pages/staff/StaffOrders";
 import Impresszum from "./pages/legal/Impresszum";
 import PrivacyPolicy from "./pages/legal/PrivacyPolicy";
@@ -125,6 +126,11 @@ const App = () => (
               <Route path="/admin/coupons" element={
                 <ProtectedRoute requireAdmin>
                   <AdminCoupons />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/invoices" element={
+                <ProtectedRoute requireAdmin>
+                  <AdminInvoices />
                 </ProtectedRoute>
               } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

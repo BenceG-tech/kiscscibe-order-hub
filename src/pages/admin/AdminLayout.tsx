@@ -15,7 +15,8 @@ import {
   Info,
   LayoutDashboard,
   BarChart3,
-  Tag
+  Tag,
+  Receipt
 } from "lucide-react";
 
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
@@ -42,6 +43,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     { href: "/admin/about", label: "Rólunk", mobileLabel: "Rólunk", icon: Info, showBadge: false },
     { href: "/admin/analytics", label: "Statisztika", mobileLabel: "Stat.", icon: BarChart3, showBadge: false },
     { href: "/admin/coupons", label: "Kuponok", mobileLabel: "Kupon", icon: Tag, showBadge: false },
+    { href: "/admin/invoices", label: "Számlák", mobileLabel: "Számla", icon: Receipt, showBadge: false },
   ];
 
   return (
