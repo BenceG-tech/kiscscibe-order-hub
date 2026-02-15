@@ -227,5 +227,6 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
     dismissNotification,
     clearNewOrdersCount,
     audioUnlocked,
+    playNotificationSound,
   };
 };
