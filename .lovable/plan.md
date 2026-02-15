@@ -1,52 +1,70 @@
 
 
-# Kiscsibe Ettermi Rendszer -- Teljes Audit es Javitasi Javaslatok
+# Admin rendelés keresés és CSV export
 
----
+## Osszefoglalas
 
-## KRITIKUS (azonnali javitas szukseges)
+Keresomezo es CSV export gomb hozzaadasa az admin rendeleskezelo oldalhoz. A kereses valos idoben szur rendelesszam, nev vagy telefon alapjan az aktiv tab-on belul. Az export az aktualisan latható (szurt) rendeleseket menti CSV fajlba.
 
-### K1. Hero kepek merete -- 2.9MB + 2.5MB
-- **Fajlok**: `src/assets/hero-desktop.png`, `src/assets/hero-mobile.png`, `src/components/sections/HeroSection.tsx`
-- **Allapot**: ✅ KÉSZ — WebP verziók generálva (`public/images/`), `<picture>` elem frissítve WebP source-okkal
+## Valtoztatások
 
-### K2. CORS -- `Access-Control-Allow-Origin: *` az edge function-okben
-- **Fajlok**: Osszes `supabase/functions/*/index.ts`
-- **Allapot**: ✅ KÉSZ — Shared `_shared/cors.ts` létrehozva, minden function frissítve origin-validációval
+### 1. Uj fajl: `src/lib/orderExport.ts`
 
-### K3. Nincs rate limiting a publikus edge function-okon
-- **Fajlok**: Osszes `supabase/functions/` konyvtar
-- **Allapot**: ⬜ TODO
+CSV export segédfuggveny:
+- Bemenet: szurt rendelesek tombje (Order interfesz az items tombbol)
+- CSV oszlopok: Rendelésszám, Dátum, Név, Telefon, Email, Tételek, Összeg (Ft), Fizetés, Státusz
+- Tetelek oszlop: `nev x db` formatumban, pontosvesszoval elvalasztva
+- Fizetes: "Készpénz" / "Kártya"
+- Statusz: magyar forditas (Uj, Keszites alatt, Kesz, Atveve, Lemondva)
+- UTF-8 BOM (`\uFEFF`) a fajl elejere Excel kompatibilitashoz
+- Fajlnev: `kiscsibe-rendelesek-YYYY-MM-DD.csv`
+- Letoltes: `Blob` + `URL.createObjectURL` + rejtett `<a>` elem
 
-### K4. Nyitvatartasi adatok inkonzisztensek
-- **Fajlok**: `ModernNavigation.tsx`, `Footer.tsx`, `OrderConfirmation.tsx`, `Checkout.tsx`, `submit-order/index.ts`
-- **Allapot**: ⬜ TODO
+### 2. Modositas: `src/pages/admin/OrdersManagement.tsx`
 
-### K5. N+1 query problema rendeleseknel
-- **Fajlok**: `OrdersManagement.tsx`, `StaffOrders.tsx`
-- **Allapot**: ⬜ TODO
+**Uj importok:**
+- `Search`, `Download`, `X` a `lucide-react`-bol
+- `Input` a `@/components/ui/input`-bol
+- `Tooltip`, `TooltipTrigger`, `TooltipContent`, `TooltipProvider` a `@/components/ui/tooltip`-bol
+- `exportOrdersToCSV` az `src/lib/orderExport.ts`-bol
 
-### K6. OG/Twitter kepek Lovable alapertelmezett
-- **Fajlok**: `index.html`
-- **Allapot**: ✅ KÉSZ — Egyedi Kiscsibe OG kép generálva, meta tag-ek frissítve
+**Uj state-ek:**
+- `searchQuery: string` (alapertelmezett: `""`)
+- `debouncedSearch: string` (alapertelmezett: `""`)
 
----
+**Debounce logika:**
+- `useEffect` a `searchQuery`-re: 300ms `setTimeout`-tal frissiti a `debouncedSearch`-ot, cleanup-pal
 
-## MAGAS PRIORITAS
+**Uj UI sor a fejlec es a Tabs kozott** (368-374. sor kozott, a `<Tabs>` ele):
 
-### M1. Checkout progress indikator
-### M2. Admin rendelesek kereses
-### M3. Admin rendelesek export
-### M4. Hirlevel leiratkozasi link (GDPR)
-### M5. Checkout inline validacio
-### M6. FAQ schema.org markup
-### M7. React.lazy() admin oldalakra
-### M8. Velemenyek dinamikus kezelese
-### M9. Footer cim inkonzisztens
-### M10. Cookie consent granularis valasztas
+```text
+┌─────────────────────────────────────────────┐ ┌──────────┐
+│ 🔍 Keresés rendelésszám, név vagy telefon...│ │ 📥 Export │
+└─────────────────────────────────────────────┘ └──────────┘
+  3 találat
+```
 
----
+- Bal oldal: `Input` mezo `Search` ikonnal elotte, `X` gomb ha van szoveg
+- Jobb oldal: `Button` variant="outline" `Download` ikonnal, tooltip-pel
+- Input alatt kis szurke szoveg: `"{N} találat"`
 
-## KOZEPES PRIORITAS
+**Szuresi logika modositas:**
+- A meglevo `filterOrders()` eredmenyet tovabb szurjuk a `debouncedSearch` alapjan
+- Case-insensitive `includes` a `code`, `name`, `phone` mezokon
+- Uj `getFilteredOrders(tabValue)` fuggveny ami a ket szurest kombinalja
+- A TabsContent rendereles es az export gomb is ezt a szurt tombot hasznalja
 
-### Z1-Z11. Lasd reszletes audit dokumentum: AUDIT_AND_IMPROVEMENT_PLAN.md
+**Export gomb:**
+- Kattintaskor `exportOrdersToCSV(getFilteredOrders(activeTab))` hivas
+- `disabled` ha a szurt tomb ures
+
+## Technikai reszletek
+
+| Elem | Megoldas |
+|------|---------|
+| Debounce | `useState` + `useEffect` + `setTimeout`/`clearTimeout` (300ms) |
+| CSV escape | Idezojelek koze zaras, belso idezojelek duplazasa |
+| Fajl letoltes | `Blob("text/csv;charset=utf-8")` + `URL.createObjectURL` + `<a>` click + `URL.revokeObjectURL` |
+| Magyar karakterek | UTF-8 BOM prefix (`\uFEFF`) |
+| Szures hatokore | Mindig az aktiv tab rendelesein belul szur |
+
