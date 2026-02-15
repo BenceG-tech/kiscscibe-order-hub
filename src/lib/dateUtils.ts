@@ -1,4 +1,36 @@
-import { addDays, getDay, setHours, setMinutes, setSeconds, setMilliseconds, startOfWeek, differenceInCalendarWeeks } from "date-fns";
+import { addDays, getDay, setHours, setMinutes, setSeconds, setMilliseconds, startOfWeek, addWeeks, differenceInCalendarWeeks } from "date-fns";
+
+/**
+ * Get the smart week start for admin views.
+ * After Friday 16:00 (admin closing), returns next week's Monday.
+ * On Saturday/Sunday, returns next Monday.
+ * Otherwise returns current week's Monday.
+ */
+export const getSmartWeekStart = (): Date => {
+  const now = new Date();
+  const currentDay = getDay(now);
+  const currentWeekMonday = startOfWeek(now, { weekStartsOn: 1 });
+
+  // Sunday
+  if (currentDay === 0) {
+    return addWeeks(currentWeekMonday, 1);
+  }
+
+  // Saturday
+  if (currentDay === 6) {
+    return addWeeks(currentWeekMonday, 1);
+  }
+
+  // Friday after 16:00
+  if (currentDay === 5) {
+    const fridayCutoff = setMilliseconds(setSeconds(setMinutes(setHours(now, 16), 0), 0), 0);
+    if (now >= fridayCutoff) {
+      return addWeeks(currentWeekMonday, 1);
+    }
+  }
+
+  return currentWeekMonday;
+};
 
 // ... keep existing code (getSmartInitialDate, isAfterClosingHours, getNextBusinessDay, shouldShowTomorrowContent, getContentLabel)
 

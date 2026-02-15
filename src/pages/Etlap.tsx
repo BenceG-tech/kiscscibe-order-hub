@@ -25,6 +25,7 @@ interface MenuItem {
   item_id: string;
   is_menu_part: boolean;
   menu_role?: string;
+  is_sold_out?: boolean;
   item_name: string;
   item_description?: string;
   item_price_huf: number;
@@ -84,6 +85,7 @@ const Etlap = () => {
               item_id: item.item_id,
               is_menu_part: item.is_menu_part,
               menu_role: item.menu_role,
+              is_sold_out: item.is_sold_out || false,
               item_name: item.item_name,
               item_description: item.item_description,
               item_price_huf: item.item_price_huf,
@@ -357,12 +359,14 @@ const Etlap = () => {
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold">További napi ételek</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {extraItems.map((item) => (
+                      {extraItems.map((item) => {
+                        const itemSoldOut = isSoldOut || item.is_sold_out;
+                        return (
                         <Card 
                           key={item.id} 
                           className={cn(
                             "group border-0 bg-card/95 backdrop-blur-sm shadow-lg rounded-3xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300",
-                            isSoldOut && "opacity-50 pointer-events-none"
+                            itemSoldOut && "opacity-50 pointer-events-none"
                           )}
                         >
                           <CardContent className="p-0">
@@ -404,14 +408,15 @@ const Etlap = () => {
                                 onClick={() => handleAddItemToCart(item)}
                                 className="w-full"
                                 size="sm"
-                                disabled={isSoldOut}
+                                disabled={itemSoldOut}
                               >
-                                {isSoldOut ? "Elfogyott" : "Kosárba"}
+                                {itemSoldOut ? "Elfogyott" : "Kosárba"}
                               </Button>
                             </div>
                           </CardContent>
                         </Card>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}
