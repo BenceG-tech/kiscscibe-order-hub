@@ -10,6 +10,7 @@ import CustomersTab from "@/components/admin/analytics/CustomersTab";
 import WasteTracking from "@/components/admin/WasteTracking";
 import { subDays } from "date-fns";
 import { Loader2 } from "lucide-react";
+import InfoTip from "@/components/admin/InfoTip";
 
 const Analytics = () => {
   const [preset, setPreset] = useState<PeriodPreset>("month");
@@ -24,7 +25,10 @@ const Analytics = () => {
     <AdminLayout>
       <div className="py-6 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <h1 className="text-2xl font-bold">Statisztika</h1>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            Statisztika
+            <InfoTip text="Részletes elemzések a bevételedről, rendelésekről és az étlap teljesítményéről." />
+          </h1>
           <PeriodSelector
             preset={preset}
             customRange={customRange}

@@ -12,6 +12,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { ShoppingBag, Activity, Gauge, TrendingUp, Calendar, Package, Mail, Loader2, Wallet, TrendingDown, DollarSign } from "lucide-react";
 import AnnouncementEditor from "@/components/admin/AnnouncementEditor";
 import { useOverdueInvoices } from "@/hooks/useOverdueInvoices";
+import InfoTip from "@/components/admin/InfoTip";
 
 interface Stats {
   todayOrders: number;
@@ -102,7 +103,10 @@ const Dashboard = () => {
       <div className="py-4 sm:py-6 space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Irányítópult</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
+            Irányítópult
+            <InfoTip text="Itt látod a mai forgalom összesítését és a legfontosabb számokat." />
+          </h1>
           <p className="text-muted-foreground text-sm mt-1">
             {format(new Date(), "yyyy. MMMM d., EEEE", { locale: hu })}
           </p>
@@ -142,7 +146,10 @@ const Dashboard = () => {
         {/* Financial Summary */}
         {finData && (
           <div>
-            <h2 className="text-lg font-semibold mb-3">Havi pénzügyi áttekintés</h2>
+            <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+              Havi pénzügyi áttekintés
+              <InfoTip text="Az aktuális hónap számlái alapján számolt bevétel, költség és eredmény." />
+            </h2>
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               <DashboardStatCard
                 title="Havi bevétel"
@@ -181,7 +188,7 @@ const Dashboard = () => {
             onClick={() => navigate("/admin/daily-menu")}
           >
             <Calendar className="h-5 w-5" />
-            <span>Holnapi menü beállítása</span>
+            <span className="flex items-center gap-1">Holnapi menü beállítása <InfoTip text="Ugrás a napi ajánlat oldalra, ahol beállíthatod a holnapi menüt." side="bottom" /></span>
           </Button>
           <Button
             variant="outline"
@@ -217,7 +224,7 @@ const Dashboard = () => {
             }}
           >
             {sendingReport ? <Loader2 className="h-5 w-5 animate-spin" /> : <Mail className="h-5 w-5" />}
-            <span>Teszt napi riport</span>
+            <span className="flex items-center gap-1">Teszt napi riport <InfoTip text="Elküld magadnak emailben a mai nap összesítését." side="bottom" /></span>
           </Button>
         </div>
       </div>

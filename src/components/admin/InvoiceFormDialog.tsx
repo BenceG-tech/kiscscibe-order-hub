@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Trash2, Lock } from "lucide-react";
+import InfoTip from "@/components/admin/InfoTip";
 import InvoiceFileUpload from "./InvoiceFileUpload";
 import { useCreateInvoice, useUpdateInvoice, useDeleteInvoice, usePartnerSuggestions } from "@/hooks/useInvoices";
 import { supabase } from "@/integrations/supabase/client";
@@ -260,11 +261,11 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
           {/* Amount + VAT */}
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1.5">
-              <Label>Bruttó összeg (Ft)</Label>
+              <Label className="flex items-center gap-1">Bruttó összeg (Ft) <InfoTip text="A teljes összeg ÁFA-val együtt." side="right" /></Label>
               <Input type="number" value={form.gross_amount} onChange={(e) => set("gross_amount", e.target.value)} placeholder="0" disabled={isReadonly} />
             </div>
             <div className="space-y-1.5">
-              <Label>ÁFA kulcs</Label>
+              <Label className="flex items-center gap-1">ÁFA kulcs <InfoTip text="A legtöbb számlára 27% vonatkozik." side="right" /></Label>
               <Select value={form.vat_rate} onValueChange={(v) => set("vat_rate", v)} disabled={isReadonly}>
                 <SelectTrigger>
                   <SelectValue />

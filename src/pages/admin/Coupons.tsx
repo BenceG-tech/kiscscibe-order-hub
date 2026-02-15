@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, Plus, Tag, Trash2 } from "lucide-react";
+import InfoTip from "@/components/admin/InfoTip";
 import { format } from "date-fns";
 import { hu } from "date-fns/locale";
 
@@ -108,7 +109,10 @@ const Coupons = () => {
     <AdminLayout>
       <div className="py-6 space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Kuponok</h1>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            Kuponok
+            <InfoTip text="Hozz létre kedvezmény kuponokat amiket a vásárlók a rendelésnél használhatnak." />
+          </h1>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button>

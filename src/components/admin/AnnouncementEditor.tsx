@@ -13,6 +13,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Megaphone, ChevronDown, Save, Loader2, Info, AlertTriangle, Gift, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ImageUpload from "@/components/admin/ImageUpload";
+import InfoTip from "@/components/admin/InfoTip";
 
 interface AnnouncementData {
   enabled: boolean;
@@ -125,7 +126,7 @@ const AnnouncementEditor = () => {
             <CardTitle className="flex items-center justify-between text-base">
               <div className="flex items-center gap-2">
                 <Megaphone className="h-5 w-5 text-primary" />
-                <span>Értesítő / Pop-up</span>
+                <span className="flex items-center gap-1">Értesítő / Pop-up <InfoTip text="Állíts be egy felugró értesítést ami a látogatóknak megjelenik a főoldalon." /></span>
                 {form.enabled && (
                   <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
                     Aktív
