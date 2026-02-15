@@ -38,9 +38,15 @@ import {
   ChevronDown,
   ChevronRight,
   CheckSquare,
+  Search,
+  Download,
+  X,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { exportOrdersToCSV } from "@/lib/orderExport";
 import InfoTip from "@/components/admin/InfoTip";
 
 interface OrderItemOption {
@@ -109,6 +115,8 @@ const OrdersManagement = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("new");
   const [showArchived, setShowArchived] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
   useEffect(() => {
     fetchOrders();
@@ -126,6 +134,12 @@ const OrdersManagement = () => {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const fetchOrders = async () => {
     const { data: ordersData, error: ordersError } = await supabase
@@ -333,6 +347,18 @@ const OrdersManagement = () => {
     return orders.filter((order) => order.status === status);
   };
 
+  const getFilteredOrders = (tabValue: string) => {
+    const base = filterOrders(tabValue);
+    if (!debouncedSearch) return base;
+    const q = debouncedSearch.toLowerCase();
+    return base.filter(
+      (o) =>
+        o.code.toLowerCase().includes(q) ||
+        o.name.toLowerCase().includes(q) ||
+        o.phone.toLowerCase().includes(q)
+    );
+  };
+
   const getOrderCounts = () => {
     const activeOrders = orders.filter(
       (o) => !["completed", "cancelled"].includes(o.status)
@@ -371,6 +397,49 @@ const OrdersManagement = () => {
             <InfoTip text="Kezeld a bejövő rendeléseket: fogadd el, állítsd készre, vagy mondd le." />
           </h1>
           <Badge variant="outline">Összesen: {orders.length} rendelés</Badge>
+        </div>
+
+        {/* Search + Export row */}
+        <div className="flex items-start gap-3">
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Keresés rendelésszám, név vagy telefon alapján..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 pr-9"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            {debouncedSearch && (
+              <p className="text-xs text-muted-foreground mt-1 ml-1">
+                {getFilteredOrders(activeTab).length} találat
+              </p>
+            )}
+          </div>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  onClick={() => exportOrdersToCSV(getFilteredOrders(activeTab))}
+                  disabled={getFilteredOrders(activeTab).length === 0}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Export
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Rendelések exportálása CSV-be</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -414,7 +483,7 @@ const OrdersManagement = () => {
           {["new", "preparing", "ready", "all"].map((tabValue) => (
             <TabsContent key={tabValue} value={tabValue} className="mt-6">
               <div className="grid gap-4">
-                {filterOrders(tabValue).map((order) => (
+                {getFilteredOrders(tabValue).map((order) => (
                   <ActiveOrderCard
                     key={order.id}
                     order={order}
@@ -422,7 +491,7 @@ const OrdersManagement = () => {
                     onStatusChange={updateOrderStatus}
                   />
                 ))}
-                {filterOrders(tabValue).length === 0 && (
+                {getFilteredOrders(tabValue).length === 0 && (
                   <Card>
                     <CardContent className="p-8 text-center">
                       <p className="text-muted-foreground">
@@ -442,7 +511,7 @@ const OrdersManagement = () => {
           {/* Past orders tab */}
           <TabsContent value="past" className="mt-6">
             <PastOrdersTab
-              orders={filterOrders("past")}
+              orders={getFilteredOrders("past")}
               showArchived={showArchived}
               onToggleArchived={setShowArchived}
               onArchive={archiveOrder}
