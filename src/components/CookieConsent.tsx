@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Cookie } from "lucide-react";
 
 const STORAGE_KEY = "cookie-consent";
+const LEVEL_KEY = "cookie-consent-level";
 
 const CookieConsent = () => {
   const [visible, setVisible] = useState(false);
@@ -12,16 +13,16 @@ const CookieConsent = () => {
   useEffect(() => {
     const consent = localStorage.getItem(STORAGE_KEY);
     if (!consent) {
-      // Small delay so it doesn't flash on page load
       const timer = setTimeout(() => setVisible(true), 800);
       return () => clearTimeout(timer);
     }
   }, []);
 
-  const handleAccept = () => {
+  const handleConsent = (level: "necessary" | "all") => {
     setAnimateOut(true);
     setTimeout(() => {
       localStorage.setItem(STORAGE_KEY, "accepted");
+      localStorage.setItem(LEVEL_KEY, level);
       setVisible(false);
     }, 300);
   };
@@ -45,9 +46,14 @@ const CookieConsent = () => {
             </Link>
           </p>
         </div>
-        <Button onClick={handleAccept} size="sm" className="w-full sm:w-auto shrink-0 whitespace-nowrap">
-          Elfogadom
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto shrink-0">
+          <Button onClick={() => handleConsent("necessary")} variant="outline" size="sm" className="w-full sm:w-auto whitespace-nowrap">
+            Csak szükséges
+          </Button>
+          <Button onClick={() => handleConsent("all")} size="sm" className="w-full sm:w-auto whitespace-nowrap">
+            Összes elfogadása
+          </Button>
+        </div>
       </div>
     </div>
   );
