@@ -1,115 +1,36 @@
 
 
-# AI szamla felismeres hozzaadasa
+# Executive Summary fajl letrehozasa
 
-## Osszefoglalas
+## Cel
 
-Harom resz: (1) uj edge function a szamla adatok kinyeresere, (2) "AI kitoltes" gomb az InvoiceFileUpload komponensben, (3) az InvoiceFormDialog bovitese az AI altal kinyert adatok fogadasara es sargan jelolt mezo-kitoltessel.
+Egy uj `EXECUTIVE_SUMMARY_FEB12_16.md` fajl a projekt gyokereben, ami egy rovid, vizualisan latvanyos osszefoglalo a tulajdonos szamara a februar 12-16 kozotti fejlesztesekrol. Nem technikai nyelven, PDF-be exportalasra optimalizalva (tiszta markdown, tablazatok, kiemelések).
 
-## 1. Uj Edge Function: `extract-invoice-data`
+## Tartalom
 
-**Fajl:** `supabase/functions/extract-invoice-data/index.ts`
+A fajl a kovetkezo szekciókat tartalmazza:
 
-- A `generate-food-image` mintat kovetjuk (CORS, LOVABLE_API_KEY, hibakezel es)
-- Input: `{ image_url: string }` — a feltoltott kep/PDF signed URL-je
-- A Lovable AI Gateway-t hivja: `https://ai.gateway.lovable.dev/v1/chat/completions`
-- Model: `google/gemini-2.5-flash` (a szoveges/vizualis ertelmezesre optimalizalt; a `-image` modell kep generalasr a valo, nem kep elemzesre)
-- A prompt a user message-ben megy, az image URL-t mint kep tartalmat kuldjuk el (multimodal uzenetkent)
-- Tool calling-ot hasznalunk a strukturalt JSON kinyeresere (nem raw JSON-t kerunk a modelltol)
-- Tool definition: `extract_invoice_data` fuggveny a kovetkezo parameterekkel:
-  - `partner_name`, `partner_tax_id`, `invoice_number`
-  - `issue_date` (YYYY-MM-DD), `due_date` (YYYY-MM-DD)
-  - `gross_amount` (integer, HUF), `vat_rate` (27, 5, vagy 0)
-  - `category` (ingredients, utility, rent, equipment, salary, tax, other)
-  - `line_items` (array: description, quantity, unit_price, line_total)
-- 429/402 hibak kezelese toast-baratan
-- Timeout: a kliens oldalon 30 masodperces AbortController
+1. **Fejlec** — Kiscsibe Order Hub logo hivatkozas, idoszak, datum
+2. **Attekintes** — 3-4 soros osszefoglalo az egesz het munkájarol, fo szamokkal (13 commit, ~4500 sor, 13 migracio)
+3. **Top 10 fejlesztes tabla** — Tablazat: Funkció neve | Mit old meg | Uzleti ertek rovid leirasa
+   - Rendelesi kapacitas-kezeles
+   - Kuponrendszer
+   - Szamlakezelő modul (CRUD + Excel export)
+   - AI szamlafelismeres
+   - Hulladekkovetes
+   - "Mindig elerheto" menu tetelek
+   - Elfogyott jelzes rendszer
+   - Popuphirdetesek
+   - Napi menu optimalizacio (get_daily_data RPC)
+   - Kupon megjelentes rendeleseknel
+4. **Szamszerusitett eredmenyek** — Egyszerű tablazat: mutato | ertek (pl. uj adattabla: 6, edge function: 2, UI komponens: ~15)
+5. **Fejlesztesi ertek** — Becsult munkaora es piaci ertek (50-69 ora, 900k-1.25M Ft)
 
-**Fajl:** `supabase/config.toml`
-
-- Uj szekci o: `[functions.extract-invoice-data]` verify_jwt = false
-
-## 2. InvoiceFileUpload bovitese
-
-**Fajl:** `src/components/admin/InvoiceFileUpload.tsx`
-
-- Uj prop: `onExtracted?: (data: ExtractedInvoiceData) => void`
-- Uj state: `extracting: boolean`
-- Ha van legalabb egy kep URL a `fileUrls`-ben, megjelenik egy "AI kitoltes" gomb (Wand2 ikon, lucide-react)
-- Kattintasra: az elso kep URL-t elkuldi az `extract-invoice-data` edge function-nek
-- Loading: "Szamla feldolgozasa..." szoveg animalt pulzalassal
-- Siker: meghivja az `onExtracted` callback-et
-- Hiba: `toast.error("Nem sikerult szamla adatokat felismerni")`
-- 30mp timeout AbortController-rel
-
-## 3. InvoiceFormDialog bovitese
-
-**Fajl:** `src/components/admin/InvoiceFormDialog.tsx`
-
-- Uj state: `aiFilledFields: Set<string>` — az AI altal kitoltott mezok neveit tarolja
-- Az `InvoiceFileUpload` komponensnek atadjuk az `onExtracted` callback-et
-- A callback logikaja: vegigmegy az AI altal visszaadott mezokon, es **csak az ures** mezoket tolti ki
-  - pl. ha `form.partner_name` ures es az AI adott partner_name-et, kitolti es hozzaadja az `aiFilledFields`-hez
-  - Ha a mezo mar ki van toltve, nem irja felul
-- Az AI altal kitoltott mezok vilagos sarga hatteret kapnak: `bg-yellow-50 dark:bg-yellow-950/30 border-yellow-300`
-- Ha a user modositja az AI-kitoltott mezot, torlodik a sarga jeloles (eltavolitjuk az `aiFilledFields`-bol)
-- Toast: `toast.success("AI kitoltotte a szamla adatait — kerlek ellenorizd!")`
-- A `category` mezo mapping: az AI "ingredients"-et ad vissza -> a form "ingredient"-et var, tehat egy egyszeru mapping szotar kell
-
-## Erintett fajlok
+## Erintett fajl
 
 | Fajl | Muvelet |
 |------|---------|
-| `supabase/functions/extract-invoice-data/index.ts` | **UJ** — edge function |
-| `supabase/config.toml` | Modositas — uj function szekci o |
-| `src/components/admin/InvoiceFileUpload.tsx` | Modositas — AI gomb + extracting logika |
-| `src/components/admin/InvoiceFormDialog.tsx` | Modositas — AI adatok fogadasa + sarga jeloles |
+| `EXECUTIVE_SUMMARY_FEB12_16.md` | **UJ** |
 
-## Technikai reszletek
-
-### Edge function AI hivas
-
-A multimodal kerest igy epitjuk fel:
-
-```text
-messages: [
-  {
-    role: "user",
-    content: [
-      { type: "image_url", image_url: { url: imageUrl } },
-      { type: "text", text: "Extract all data from this Hungarian invoice/receipt image." }
-    ]
-  }
-]
-tools: [ { type: "function", function: { name: "extract_invoice_data", ... } } ]
-tool_choice: { type: "function", function: { name: "extract_invoice_data" } }
-```
-
-A tool calling valaszt igy olvassuk ki:
-```text
-const toolCall = aiData.choices[0].message.tool_calls[0];
-const extracted = JSON.parse(toolCall.function.arguments);
-```
-
-### Kategoria mapping
-
-Az AI "ingredients" -> form "ingredient", "utility" -> "utility", stb. Egy egyszeru objektum:
-```text
-const CATEGORY_MAP: Record<string, string> = {
-  ingredients: "ingredient",
-  utility: "utility",
-  rent: "rent",
-  equipment: "equipment",
-  salary: "salary",
-  tax: "tax",
-  other: "other",
-};
-```
-
-### Sarga jeloles CSS
-
-Az AI altal kitoltott Input/Select mezoket egy wrapper `div`-vel vagy kozvetlenul a `className`-jukra alkalmazott felteteles stilussal jeloljuk:
-```text
-className={cn("...", aiFilledFields.has("partner_name") && "bg-yellow-50 dark:bg-yellow-950/30 border-yellow-300")}
-```
+Egyetlen uj markdown fajl, semmilyen mas fajlt nem modositunk.
 
