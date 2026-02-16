@@ -1,136 +1,109 @@
 
-# Penugyi / Szamla Kiegeszitesek — 5 uj funkcio
+
+# Napi Uzemeltetesi Funkciok — 5 uj fejlesztes
 
 ## Osszefoglalas
 
-Ot uj penugyi funkcio hozzaadasa a Kiscsibe admin rendszerhez: (1) havi penugyi osszefoglalo email, (2) AFA osszesito export, (3) ismetlodo szamlak, (4) fizetesi emlekezteto, (5) eves osszehasonlitas. Az implementacio a meglevo `invoices` tabla, `send-daily-report` edge function minta es `invoiceExport.ts` export logika mintajat koveti.
+Ot uj funkcio a napi mukodesek egyszerusitesere: (1) automatikus napi zaro riport bovitese, (2) keszlet/alapanyag becsles, (3) idojaras-alapu forgalom elorejelzes, (4) egy kattintasos heti menu masolas, (5) nyomtathato napi osszesito.
 
 ---
 
-## 1. Havi penugyi osszefoglalo email
+## 1. Automatikus napi zaro riport bovitese
 
-**Cel:** Honap vegen automatikus email a tulajdonosnak: bevetel, kiadas, eredmeny, AFA osszesito.
+**Cel:** A meglevo `send-daily-report` edge function bovitese az elfogyott etelek listajával, majd pg_cron utemezese este 20:00-ra.
+
+**Modositott fajlok:**
+- `supabase/functions/send-daily-report/index.ts` — Uj szekciok az email-ben:
+  - "Elfogyott etelek": lekerdezi a `daily_offer_items` tablat ahol `is_sold_out = true` az adott napra, a `menu_items` nevet is lekerdezve
+  - "Maradek adagok": a `daily_offers.remaining_portions` es `daily_offer_menus.remaining_portions` ertekeit
+  - Idosavos bontas: reggeli rendelesek (7-10), delutas (10-14), keso (14-16) — az orders created_at alapjan
+  - Az emailben ezek uj szekciokent jelennek meg a meglevo top etelek es fizetesi modok mellett
+
+**Automatizalas:** pg_cron job minden munkanapon 20:00-kor meghivja a `send-daily-report` edge function-t. Ezt SQL inserttel rogzitjuk (nem migracio).
+
+---
+
+## 2. Keszlet/alapanyag becsles
+
+**Cel:** A holnapi menu tetelek es korabbi rendelesi adatok alapjan becsulje meg a szukseges adagszamot.
 
 **Uj fajlok:**
-- `supabase/functions/send-monthly-report/index.ts` — Edge function a `send-daily-report` mintajara
-  - Lekerdezi az adott honap osszes szamlajat az `invoices` tablabol (service role kliens)
-  - Szamolja: ossz bevetel (outgoing + order_receipt), ossz koltseg (incoming), eredmeny, AFA osszesito (27%, 5%, 0% bontasban)
-  - Kategoria-bontasos tablazat az emailben
-  - HTML email sablon a napi riport stilusat kovetva
-  - Resend API-val kuldi a `kiscsibeetterem@gmail.com` cimre
-  - Query param: `?month=YYYY-MM` (alapertelmezett: elozo honap)
+- `src/components/admin/IngredientEstimate.tsx` — UI komponens a DailyMenuManagement oldalra
+  - Lekerdezi a holnapi (vagy kivalasztott nap) `daily_offer_items`-et a `menu_items` nevel
+  - Lekerdezi az elozo 4 het azonos napjainak rendeleseit (pl. ha holnap szerda, az elmult 4 szerda)
+  - Kiszamolja az atlagos rendelt adagszamot tetelenkent
+  - Megjelenitit tablazatban: Etel neve | Beallitott adag | Becsult igeny (atlag) | Javasolt adag
+  - Szinkodolas: zold ha eleg, sarga ha szoros, piros ha tul keves a beallitott
+  - Nyomtathato: egyetlen gombnyomasra `window.print()` kompatibilis
 
 **Modositott fajlok:**
-- `supabase/config.toml` — uj `[functions.send-monthly-report]` szekci o, `verify_jwt = false`
-- `src/pages/admin/Dashboard.tsx` — uj "Havi riport kuldese" gomb a meglevo "Teszt napi riport" melle
-
-**Automatizalas:** pg_cron job minden honap 1-jen 6:00-kor meghivja az edge function-t az elozo honappal. Ezt SQL insert-kent rogzitjuk (nem migracio, mert user-specifikus adatokat tartalmaz).
+- `src/pages/admin/DailyMenuManagement.tsx` — uj "Becsles" tab a meglevo tabfuulek melle
 
 ---
 
-## 2. AFA osszesito export
+## 3. Idojaras-alapu forgalom elorejelzes
 
-**Cel:** Negyedeves/havi AFA kimutas letoltheto Excel fajlkent a konyvelonek.
-
-**Modositott fajlok:**
-- `src/lib/invoiceExport.ts` — uj `exportVatSummaryToExcel(invoices, period)` fuggveny
-  - 1. munkalap: "AFA osszesito" — AFA-kulcsonkenti bontas (27%, 5%, 0%): netto, AFA, brutto oszlopok, bejovo/kimeno kulon
-  - 2. munkalap: "Reszletes" — minden szamla, rendezve datum szerint
-  - 3. munkalap: "Kategoria bontas" — kategoriak szerinti osszesites AFA-val
-  - Fajlnev: `afa_osszesito_2025_Q1.xlsx` vagy `afa_osszesito_2025_01.xlsx`
-
-- `src/pages/admin/Invoices.tsx` — uj "AFA export" gomb a meglevo Export melle
-  - Dropdown menu: "Havi AFA export" / "Negyedeves AFA export"
-  - Idoszak-valaszto: ev + honap/negyedev
-  - A szurt szamlakat hasznalja
-
----
-
-## 3. Ismetlodo szamlak
-
-**Cel:** Berleti dij, rezsi stb. automatikus letrehozasa havonta.
-
-**Adatbazis muvelet (migracio):**
-- Uj tabla: `recurring_invoices`
-  - `id` uuid PK
-  - `partner_name` text NOT NULL
-  - `partner_tax_id` text
-  - `category` text NOT NULL DEFAULT 'rent'
-  - `gross_amount` integer NOT NULL
-  - `vat_rate` integer NOT NULL DEFAULT 27
-  - `net_amount` integer NOT NULL
-  - `vat_amount` integer NOT NULL
-  - `frequency` text NOT NULL DEFAULT 'monthly' (monthly, quarterly, yearly)
-  - `day_of_month` integer NOT NULL DEFAULT 1
-  - `next_due_date` date NOT NULL
-  - `notes` text
-  - `is_active` boolean NOT NULL DEFAULT true
-  - `created_at` timestamptz DEFAULT now()
-  - `created_by` uuid
-  - RLS: admin-only CRUD
+**Cel:** Korabbi rendelesi adatok + ingyenes idojaras API alapjan becsult forgalom holnapra.
 
 **Uj fajlok:**
-- `supabase/functions/process-recurring-invoices/index.ts` — Edge function
-  - Lekerdezi az aktiv ismetlodo szamlakat ahol `next_due_date <= today`
-  - Mindegyikhez letrehoz egy uj `invoices` rekordot (status: 'pending', type: 'incoming')
-  - Frissiti a `next_due_date`-et a kovetkezo idopontra
-  - pg_cron: minden nap 5:00-kor fut
+- `supabase/functions/weather-forecast/index.ts` — Edge function
+  - Meghivja az Open-Meteo API-t (ingyenes, nincs API kulcs szukseges): `https://api.open-meteo.com/v1/forecast`
+  - Az ettermere vonatkozo GPS koordinatakat hasznaja (Budapest kornyeke)
+  - Visszaadja: holnapi homerseklet, csapadek valoszinuseg, idojaras kod
+  - Lekerdezi az `orders` tablabol az elmult 8 het azonos napjainak rendelesi adatait
+  - Egyszeru korrelacio: esos napokon atlagosan hany %-kal kevesebb rendeles volt
+  - Visszaad: becsult rendelesi szam, becsult bevetel, idojaras szoveg
 
-- `src/components/admin/RecurringInvoices.tsx` — UI komponens
-  - Lista az ismetlodo szamlakrol: partner, osszeg, gyakorisag, kovetkezo esedekesseg
-  - Uj ismetlodo szamla hozzaadasa dialog
-  - Aktivalas/deaktivalas toggle
-  - Szerkesztes es torles
-
-- `src/hooks/useRecurringInvoices.ts` — CRUD hook (useQuery + useMutation)
+- `src/components/admin/WeatherForecast.tsx` — Dashboard kartya
+  - Megjeleníti: holnapi idojaras ikon + homerseklet + csapadek %
+  - Becsult forgalom: "Holnap varhato: ~25 rendeles (~85.000 Ft)"
+  - Osszehasonlitas: "Ez ~20%-kal kevesebb a szokasosnal (esos ido)"
+  - Egyszeruu vizualizacio, nem pontos — "tapasztalati becsles" felirattal
 
 **Modositott fajlok:**
+- `src/pages/admin/Dashboard.tsx` — WeatherForecast komponens beillesztese a stat kartyak ala
 - `supabase/config.toml` — uj function szekci o
-- `src/pages/admin/Invoices.tsx` — uj "Ismetlodo szamlak" tab vagy szekci o a lista felett
 
 ---
 
-## 4. Fizetesi emlekezteto
+## 4. "Egy kattintasos" heti menu masolas
 
-**Cel:** Lejarat elott 3 nappal + lejaratkor ertesites (toast az admin feluleten + opcionalis email).
-
-**Uj fajlok:**
-- `src/hooks/usePaymentReminders.ts` — hook ami lekerdezi a kozelgo es lejart szamlakat
-  - "Kozelgo" = due_date 3 napon belul, status != paid/cancelled
-  - "Lejart" = due_date < today, status != paid/cancelled
-  - Csoportositva: "Ma jar le", "3 napon belul", "Lejart"
-
-- `src/components/admin/PaymentReminders.tsx` — UI komponens
-  - Kartya a Dashboard-on a penugyi attekintes mellett
-  - Lista: szamla partner neve, osszeg, hatarido, napok szama
-  - Kattintasra megnyitja a szamlat az InvoiceFormDialog-ban
-  - Szin-kodolas: sarga (kozelgo), piros (lejart)
+**Cel:** Az elozo het teljes menujenet atmasolasa az aktualis hetre.
 
 **Modositott fajlok:**
-- `src/pages/admin/Dashboard.tsx` — PaymentReminders komponens beillesztese a "Havi penugyi attekintes" szekci o ala
-- `src/components/admin/DashboardAlerts.tsx` — uj alert tipus: "X szamla jar le 3 napon belul"
+- `src/components/admin/WeeklyMenuGrid.tsx` — Uj "Het masolasa" gomb a heti navigacio sorabol
+  - Kattintasra dialog: "Atmasolja az elozo het osszes napi ajanlat-tetelet az aktualis hetre?"
+  - Logika:
+    1. Lekerdezi az elozo het (currentWeekStart - 7 nap) `daily_offers` + `daily_offer_items` adatait
+    2. Minden napra: ha meg nincs `daily_offer`, letrehozza
+    3. A meglevo tetelek NEM torlodnek — csak azokat adja hozza, amik meg nincsenek (duplikaciomegelozés item_id alapjan)
+    4. Atmasolja az arat (`price_huf`) es a menu beallitasokat (`is_menu_part`, `menu_role`)
+    5. A `max_portions` es `remaining_portions` ujra 50-re allnak
+  - Sikeruzenet: "X nap menuje atmasolva, Y uj tetel hozzaadva"
+  - Hiba eseten rollback (nincs kulon tranzakcio, de az egyes muveletek hibait kezeli)
 
 ---
 
-## 5. Eves osszehasonlitas
+## 5. Nyomtathato napi osszesito (konyhai lista)
 
-**Cel:** Havi bevetel/kiadas grafikon, elozo evvel osszevetve.
+**Cel:** A mai nap osszesitoje nyomtatobarat formaban, amit ki lehet nyomtatni es kitenni a konyhaban.
 
 **Uj fajlok:**
-- `src/components/admin/analytics/YearlyComparisonTab.tsx` — Uj tab az Analytics oldalon
-  - Ket vonaldiagram egymas felett: aktualis ev vs elozo ev
-  - X tengely: honapok (Jan-Dec), Y tengely: osszeg
-  - Harom vonal: Bevetel (zold), Kiadas (piros), Eredmeny (kek)
-  - Ket ev adatait overlay-kent mutatja
-  - Tablazat alatta: honapokenkenti szamszeru osszehasonlitas (% valtozas)
+- `src/components/staff/PrintableDailySummary.tsx` — Nyomtatobarat komponens
+  - Tartalom:
+    - Datum es nap neve
+    - Mai napi ajanlat tetelek listaja (nev, kategoria, beallitott adagszam)
+    - Menu beallitas: melyik a leves, melyik a foetel, menu ar
+    - Aktiv rendelesek osszesitese: tetelenkent hany darabot kell kesziteni (aggregalt, mint az ItemsToPrepareSummary)
+    - Idosavos bontas: melyik rendelest mikorra kell elkesziteni (pickup_time alapjan)
+  - CSS: `@media print` stilus — feher hatter, fekete szoveg, nincs navigacio, kompakt tabla
+  - Gomb: "Nyomtatas" → `window.print()` hivasa
 
-- `src/hooks/useYearlyInvoiceData.ts` — hook ami ket ev szamla adatait kerdezi le
-  - Aktualis ev + elozo ev osszes szamlaja
-  - Honaponkenti aggregacio: bevetel, kiadas, eredmeny
-  - % valtozas szamitas
+- `src/components/staff/PrintButton.tsx` — Kicsi gomb komponens ami megnyitja a nyomtatasi nezetet
 
 **Modositott fajlok:**
-- `src/pages/admin/Analytics.tsx` — uj "Eves" tab a TabsList-ben + TabsContent
+- `src/pages/staff/StaffOrders.tsx` — PrintButton hozzaadasa a DailyStaffSummary melle
+- Globalis CSS (`src/index.css` vagy `src/App.css`) — `@media print` szabalyok: elrejti a navigaciot, sidebarat, footer-t
 
 ---
 
@@ -138,33 +111,31 @@ Ot uj penugyi funkcio hozzaadasa a Kiscsibe admin rendszerhez: (1) havi penugyi 
 
 | Fajl | Muvelet |
 |------|---------|
-| `supabase/functions/send-monthly-report/index.ts` | UJ |
-| `supabase/functions/process-recurring-invoices/index.ts` | UJ |
-| `supabase/config.toml` | Modositas (2 uj function) |
-| `src/lib/invoiceExport.ts` | Modositas (AFA export) |
-| `src/pages/admin/Invoices.tsx` | Modositas (AFA gomb + ismetlodo szekci o) |
-| `src/pages/admin/Dashboard.tsx` | Modositas (havi riport gomb + fizetesi emlekezteto) |
-| `src/pages/admin/Analytics.tsx` | Modositas (eves tab) |
-| `src/components/admin/RecurringInvoices.tsx` | UJ |
-| `src/hooks/useRecurringInvoices.ts` | UJ |
-| `src/components/admin/PaymentReminders.tsx` | UJ |
-| `src/hooks/usePaymentReminders.ts` | UJ |
-| `src/components/admin/analytics/YearlyComparisonTab.tsx` | UJ |
-| `src/hooks/useYearlyInvoiceData.ts` | UJ |
-| `src/components/admin/DashboardAlerts.tsx` | Modositas |
-| Adatbazis migracio: `recurring_invoices` tabla | UJ |
+| `supabase/functions/send-daily-report/index.ts` | Modositas (elfogyott etelek, idosavos bontas) |
+| `src/components/admin/IngredientEstimate.tsx` | UJ |
+| `src/pages/admin/DailyMenuManagement.tsx` | Modositas (uj tab) |
+| `supabase/functions/weather-forecast/index.ts` | UJ |
+| `src/components/admin/WeatherForecast.tsx` | UJ |
+| `src/pages/admin/Dashboard.tsx` | Modositas (idojaras kartya) |
+| `supabase/config.toml` | Modositas (uj function) |
+| `src/components/admin/WeeklyMenuGrid.tsx` | Modositas (masolas gomb) |
+| `src/components/staff/PrintableDailySummary.tsx` | UJ |
+| `src/components/staff/PrintButton.tsx` | UJ |
+| `src/pages/staff/StaffOrders.tsx` | Modositas (nyomtatas gomb) |
+| `src/App.css` | Modositas (print stilus) |
 
 ## Implementacios sorrend
 
-1. **Adatbazis migracio** — `recurring_invoices` tabla letrehozasa RLS-sel
-2. **AFA osszesito export** — tisztan kliens oldali, nincs fuggoseg
-3. **Fizetesi emlekezteto** — meglevo adatokon dolgozik, nincs uj tabla
-4. **Ismetlodo szamlak** — tabla + edge function + UI
-5. **Havi riport email** — edge function + Dashboard gomb
-6. **Eves osszehasonlitas** — Analytics tab bovites
+1. **Napi zaro riport bovitese** — meglevo edge function modositasa, legkisebb kockazat
+2. **Heti menu masolas** — tisztan kliens oldali, a WeeklyMenuGrid-be epul
+3. **Nyomtathato napi osszesito** — uj komponensek, print CSS
+4. **Keszlet becsles** — korabbi adatok aggregalasa, uj tab
+5. **Idojaras elorejelzes** — uj edge function + external API, Dashboard bovites
 
 ## Megjegyzesek
 
-- A pg_cron job-okat (havi riport + ismetlodo szamlak feldolgozasa) SQL insert-kent rogzitjuk, nem migraci okent, mert user-specifikus adatokat (URL, anon key) tartalmaznak
-- A `recurring_invoices` tabla a meglevo `invoices` tabla szerkezetet koveti, de nem kapcsolodik hozza foreign key-jel — az edge function hoz letre uj `invoices` rekordokat beloule
-- Az eves osszehasonlitas a meglevo recharts konyvtarat hasznalja, ami mar telepitve van
+- Az Open-Meteo API ingyenes es nem igenyel API kulcsot, ezert nincs szukseg uj secret-re
+- A pg_cron job-ot (napi riport 20:00) SQL inserttel rogzitjuk, nem migraci oval
+- A heti menu masolas nem torol semmit, csak hozzaad — biztonsagos muvelet
+- A nyomtatasi nezet CSS-alapu, nem general PDF-et — egyszeruen a bongeszo nyomtatasi funkciojaval mukodik
+
