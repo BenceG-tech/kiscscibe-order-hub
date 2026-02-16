@@ -40,3 +40,33 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Print styles */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  
+  /* Hide everything except printable content */
+  nav, footer, header,
+  .print\\:hidden,
+  [class*="sidebar"],
+  [class*="bottom-nav"],
+  [class*="MobileBottomNav"],
+  [class*="TopOrderBar"],
+  [class*="sticky"] {
+    display: none !important;
+  }
+  
+  /* Show print content */
+  .print\\:block {
+    display: block !important;
+  }
+  
+  #root {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+}

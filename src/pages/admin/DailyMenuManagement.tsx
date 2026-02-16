@@ -5,6 +5,7 @@ import CapacityManagement from "@/components/admin/CapacityManagement";
 import MasterMenuImport from "@/components/admin/MasterMenuImport";
 import WeeklyNewsletterPanel from "@/components/admin/WeeklyNewsletterPanel";
 import DailyOfferImageGenerator from "@/components/admin/DailyOfferImageGenerator";
+import IngredientEstimate from "@/components/admin/IngredientEstimate";
 import { useIsMobile } from "@/hooks/use-mobile";
 import InfoTip from "@/components/admin/InfoTip";
 
@@ -61,6 +62,12 @@ const DailyMenuManagement = () => {
               >
                 {isMobile ? "Kép" : "Kép generátor"}
               </TabsTrigger>
+              <TabsTrigger 
+                value="estimate" 
+                className="!h-8 !px-3 !text-xs sm:!text-sm !whitespace-nowrap !rounded-md data-[state=active]:!bg-background data-[state=active]:!text-foreground data-[state=active]:!shadow-sm data-[state=active]:!scale-100"
+              >
+                Becslés
+              </TabsTrigger>
             </TabsList>
           </div>
           
@@ -82,6 +89,10 @@ const DailyMenuManagement = () => {
 
           <TabsContent value="facebook" className="mt-0">
             <DailyOfferImageGenerator />
+          </TabsContent>
+
+          <TabsContent value="estimate" className="mt-0">
+            <IngredientEstimate />
           </TabsContent>
         </Tabs>
       </div>

@@ -6,13 +6,24 @@ import { getSmartWeekStart } from "@/lib/dateUtils";
 import { hu } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { ChevronLeft, ChevronRight, Loader2, Check, Download, Ban } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, Check, Download, Ban, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { WeeklyGridCell } from "./WeeklyGridCell";
 import { WeeklyGridMobile } from "./WeeklyGridMobile";
 import { DailyPriceInput } from "./DailyPriceInput";
 import * as XLSX from "xlsx";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 // Category color mapping based on Excel design
 // Row colors use transparency for the table rows
@@ -573,6 +584,86 @@ export default function WeeklyMenuGrid() {
     setCurrentWeekStart(getSmartWeekStart());
   };
 
+  // Copy previous week's menu to current week
+  const [isCopying, setIsCopying] = useState(false);
+  const copyPreviousWeek = async () => {
+    setIsCopying(true);
+    try {
+      const prevWeekStart = subWeeks(currentWeekStart, 1);
+      const prevDates = Array.from({ length: 5 }, (_, i) => format(addDays(prevWeekStart, i), "yyyy-MM-dd"));
+      const currDates = Array.from({ length: 5 }, (_, i) => format(addDays(currentWeekStart, i), "yyyy-MM-dd"));
+
+      // Fetch previous week's offers + items
+      const { data: prevOffers, error: prevErr } = await supabase
+        .from("daily_offers")
+        .select("id, date, price_huf, max_portions, daily_offer_items(item_id, is_menu_part, menu_role)")
+        .in("date", prevDates);
+
+      if (prevErr) throw prevErr;
+      if (!prevOffers || prevOffers.length === 0) {
+        toast.error("Az előző héten nincs napi ajánlat.");
+        setIsCopying(false);
+        return;
+      }
+
+      let daysCreated = 0;
+      let itemsAdded = 0;
+
+      for (let i = 0; i < 5; i++) {
+        const prevDate = prevDates[i];
+        const currDate = currDates[i];
+        const prevOffer = prevOffers.find(o => o.date === prevDate);
+        if (!prevOffer || !prevOffer.daily_offer_items?.length) continue;
+
+        // Check/create current day's offer
+        let currOffer = dailyOffers.find(o => o.date === currDate);
+        let currOfferId: string;
+
+        if (currOffer) {
+          currOfferId = currOffer.id;
+        } else {
+          const { data: newOffer, error: createErr } = await supabase
+            .from("daily_offers")
+            .insert({ date: currDate, price_huf: prevOffer.price_huf, max_portions: 50, remaining_portions: 50 })
+            .select("id")
+            .single();
+          if (createErr) throw createErr;
+          currOfferId = newOffer.id;
+          daysCreated++;
+        }
+
+        // Get existing items for this day
+        const existingItemIds = currOffer?.daily_offer_items?.map(i => i.item_id) || [];
+
+        // Add items that don't exist yet
+        const newItems = (prevOffer.daily_offer_items as any[])
+          .filter(item => item.item_id && !existingItemIds.includes(item.item_id))
+          .map(item => ({
+            daily_offer_id: currOfferId,
+            item_id: item.item_id,
+            is_menu_part: item.is_menu_part,
+            menu_role: item.menu_role,
+          }));
+
+        if (newItems.length > 0) {
+          const { error: insertErr } = await supabase
+            .from("daily_offer_items")
+            .insert(newItems);
+          if (insertErr) throw insertErr;
+          itemsAdded += newItems.length;
+        }
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["daily-offers-week"] });
+      toast.success(`Hét másolva: ${daysCreated} új nap, ${itemsAdded} új tétel hozzáadva`);
+    } catch (err: any) {
+      console.error("Copy week error:", err);
+      toast.error("Hiba a hét másolásakor: " + err.message);
+    } finally {
+      setIsCopying(false);
+    }
+  };
+
   const isCurrentWeek = format(currentWeekStart, "yyyy-MM-dd") === 
     format(getSmartWeekStart(), "yyyy-MM-dd");
 
@@ -646,6 +737,26 @@ export default function WeeklyMenuGrid() {
           {isLoading && (
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           )}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="sm" disabled={isCopying}>
+                {isCopying ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Copy className="h-4 w-4 mr-1" />}
+                Hét másolása
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Előző hét másolása</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Átmásolja az előző hét összes napi ajánlat-tételét az aktuális hétre. A meglévő tételek NEM törlődnek, csak az újak kerülnek hozzáadásra.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Mégsem</AlertDialogCancel>
+                <AlertDialogAction onClick={copyPreviousWeek}>Másolás</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           <Button variant="outline" size="sm" onClick={exportToExcel}>
             <Download className="h-4 w-4 mr-1" />
             Export

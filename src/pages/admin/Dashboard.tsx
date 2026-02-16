@@ -12,6 +12,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { ShoppingBag, Activity, Gauge, TrendingUp, Calendar, Package, Mail, Loader2, Wallet, TrendingDown, DollarSign } from "lucide-react";
 import AnnouncementEditor from "@/components/admin/AnnouncementEditor";
 import PaymentReminders from "@/components/admin/PaymentReminders";
+import WeatherForecast from "@/components/admin/WeatherForecast";
 import { useOverdueInvoices } from "@/hooks/useOverdueInvoices";
 import InfoTip from "@/components/admin/InfoTip";
 
@@ -174,6 +175,9 @@ const Dashboard = () => {
             </div>
           </div>
         )}
+
+        {/* Weather Forecast */}
+        <WeatherForecast />
 
         {/* Payment Reminders */}
         <PaymentReminders />
