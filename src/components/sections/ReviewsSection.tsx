@@ -29,7 +29,7 @@ const ReviewsSection = () => {
     },
     {
       name: "Szabó Péter",
-      rating: 4,
+      rating: 5,
       date: "3 hete",
       text: "Jó ár-érték arány, bőséges adagok. A guláslevest különösen ajánlom! Az étterem kellemes, tiszta környezet.",
       verified: false
@@ -43,7 +43,7 @@ const ReviewsSection = () => {
     },
     {
       name: "Tóth Márk",
-      rating: 4,
+      rating: 5,
       date: "2 hónapja",
       text: "Kiváló helyi étterem a környéken. A schnitzel nagyszerű volt, és a köretek is finomak. Tiszta, rendezett hely.",
       verified: false
@@ -57,7 +57,7 @@ const ReviewsSection = () => {
     }
   ];
 
-  const averageRating = 4.7;
+  const averageRating = 5.0;
   const totalReviews = 127;
 
   const [emblaRef, emblaApi] = useEmblaCarousel({ 

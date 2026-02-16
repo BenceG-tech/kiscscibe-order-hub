@@ -251,10 +251,14 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    // 4. Fetch all subscribers
-    const { data: subscribers, error: subError } = await adminClient
-      .from("subscribers")
-      .select("email");
+    // 4. Fetch subscribers (optionally filtered by selected_emails)
+    let subscriberQuery = adminClient.from("subscribers").select("email");
+    
+    if (body.selected_emails && Array.isArray(body.selected_emails) && body.selected_emails.length > 0) {
+      subscriberQuery = subscriberQuery.in("email", body.selected_emails);
+    }
+
+    const { data: subscribers, error: subError } = await subscriberQuery;
 
     if (subError) {
       throw new Error("Nem sikerült lekérni a feliratkozókat: " + subError.message);
