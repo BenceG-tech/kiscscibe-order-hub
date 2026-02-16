@@ -40,7 +40,7 @@ const AdminAboutPage = React.lazy(() => import("./pages/admin/AboutPage"));
 const AdminAnalytics = React.lazy(() => import("./pages/admin/Analytics"));
 const AdminCoupons = React.lazy(() => import("./pages/admin/Coupons"));
 const AdminInvoices = React.lazy(() => import("./pages/admin/Invoices"));
-const AdminQRGenerator = React.lazy(() => import("./pages/admin/QRGenerator"));
+
 const StaffOrders = React.lazy(() => import("./pages/staff/StaffOrders"));
 
 const queryClient = new QueryClient();
@@ -146,11 +146,6 @@ const App = () => (
               <Route path="/admin/invoices" element={
                 <ProtectedRoute requireAdmin>
                   <Suspense fallback={<LazyFallback />}><AdminInvoices /></Suspense>
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/qr" element={
-                <ProtectedRoute requireAdmin>
-                  <Suspense fallback={<LazyFallback />}><AdminQRGenerator /></Suspense>
                 </ProtectedRoute>
               } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
