@@ -10,6 +10,7 @@ import { hu } from "date-fns/locale";
 import { Download, Image as ImageIcon, Upload, Trash2, Loader2, Calendar, ChevronLeft, ChevronRight, RotateCcw, ZoomIn } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import FacebookPostGenerator from "@/components/admin/FacebookPostGenerator";
 
 interface MenuItem {
   id: string;
@@ -715,6 +716,9 @@ const DailyOfferImageGenerator = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* Facebook Post Text Generator */}
+          <FacebookPostGenerator selectedDate={selectedDate} />
         </>
       )}
     </div>

@@ -17,7 +17,8 @@ import {
   LayoutDashboard,
   BarChart3,
   Tag,
-  Receipt
+  Receipt,
+  QrCode
 } from "lucide-react";
 
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
@@ -46,6 +47,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     { href: "/admin/analytics", label: "Statisztika", mobileLabel: "Stat.", icon: BarChart3, badgeCount: 0 },
     { href: "/admin/coupons", label: "Kuponok", mobileLabel: "Kupon", icon: Tag, badgeCount: 0 },
     { href: "/admin/invoices", label: "Számlák", mobileLabel: "Számla", icon: Receipt, badgeCount: overdueCount },
+    { href: "/admin/qr", label: "QR Kódok", mobileLabel: "QR", icon: QrCode, badgeCount: 0 },
   ];
 
   const renderBadge = (count: number, size: "sm" | "lg") => {
