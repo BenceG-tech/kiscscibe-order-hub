@@ -1,109 +1,193 @@
 
 
-# Napi Uzemeltetesi Funkciok — 5 uj fejlesztes
+# Ugyfelelmenyt Novelo Funkciok — 5 uj fejlesztes
 
 ## Osszefoglalas
 
-Ot uj funkcio a napi mukodesek egyszerusitesere: (1) automatikus napi zaro riport bovitese, (2) keszlet/alapanyag becsles, (3) idojaras-alapu forgalom elorejelzes, (4) egy kattintasos heti menu masolas, (5) nyomtathato napi osszesito.
+Ot uj funkcio az ugyfelek elmenynek javitasara es a visszatero vasarlok szamanak novelesere. Mivel a rendszer jelenleg anonim rendelest hasznal (nincs vevoi bejelentkezes), a megoldasok telefon + email alapu azonositasra epulnek.
 
 ---
 
-## 1. Automatikus napi zaro riport bovitese
+## 1. Torzsvasarloi rendszer
 
-**Cel:** A meglevo `send-daily-report` edge function bovitese az elfogyott etelek listajával, majd pg_cron utemezese este 20:00-ra.
+**Cel:** X rendeles utan automatikus kedvezmeny/kupon generalas. A vendeg telefon + email paros alapjan van azonositva.
+
+**Adatbazis migracio:**
+- Uj tabla: `customer_loyalty`
+  - `id` uuid PK default gen_random_uuid()
+  - `phone` text NOT NULL (normalizalt, pl. +36...)
+  - `email` text
+  - `order_count` integer NOT NULL DEFAULT 0
+  - `total_spent_huf` integer NOT NULL DEFAULT 0
+  - `current_tier` text NOT NULL DEFAULT 'bronze' (bronze/silver/gold)
+  - `last_order_at` timestamptz
+  - `created_at` timestamptz DEFAULT now()
+  - UNIQUE(phone)
+  - RLS: service_role full access, public no access
+
+- Uj tabla: `loyalty_rewards`
+  - `id` uuid PK
+  - `phone` text NOT NULL
+  - `reward_type` text NOT NULL ('percentage_discount' | 'fixed_discount' | 'free_item')
+  - `reward_value` integer NOT NULL
+  - `coupon_code` text (ha kupon generalodott)
+  - `is_claimed` boolean DEFAULT false
+  - `triggered_at_order_count` integer NOT NULL
+  - `created_at` timestamptz DEFAULT now()
+  - RLS: service_role only
 
 **Modositott fajlok:**
-- `supabase/functions/send-daily-report/index.ts` — Uj szekciok az email-ben:
-  - "Elfogyott etelek": lekerdezi a `daily_offer_items` tablat ahol `is_sold_out = true` az adott napra, a `menu_items` nevet is lekerdezve
-  - "Maradek adagok": a `daily_offers.remaining_portions` es `daily_offer_menus.remaining_portions` ertekeit
-  - Idosavos bontas: reggeli rendelesek (7-10), delutas (10-14), keso (14-16) — az orders created_at alapjan
-  - Az emailben ezek uj szekciokent jelennek meg a meglevo top etelek es fizetesi modok mellett
+- `supabase/functions/submit-order/index.ts` — rendeles vegén:
+  1. Upsert `customer_loyalty` rekord (order_count + 1, total_spent + amount)
+  2. Ellenorzi milestoneokat (5., 10., 20. rendeles)
+  3. Ha milestone: general kupon kodot a `coupons` tablaba es `loyalty_rewards`-ba menti
+  4. A valasz tartalmazza ha van uj jutalom
 
-**Automatizalas:** pg_cron job minden munkanapon 20:00-kor meghivja a `send-daily-report` edge function-t. Ezt SQL inserttel rogzitjuk (nem migracio).
+- `src/pages/OrderConfirmation.tsx` — ha a submit-order valaszban van `loyalty_reward`:
+  - Megjelenit egy szines kartya: "Koszonjuk a husegeted! 🎉 Uj kuponod: XXXXX (10% kedvezmeny)"
+
+**Tier logika (submit-order-ben):**
+- 5 rendeles: 5% kedvezmeny kupon
+- 10 rendeles: 10% kedvezmeny kupon
+- 20 rendeles: 500 Ft kedvezmeny kupon
+- Minden 10. rendeles utan: 5% kedvezmeny kupon
 
 ---
 
-## 2. Keszlet/alapanyag becsles
+## 2. "Kedvenc rendelesem" gomb
 
-**Cel:** A holnapi menu tetelek es korabbi rendelesi adatok alapjan becsulje meg a szukseges adagszamot.
+**Cel:** Ugyfel elmentheti korabbi rendeleset es egy kattintassal ujrarendelheti. localStorage-alapu (nincs bejelentkezes).
 
 **Uj fajlok:**
-- `src/components/admin/IngredientEstimate.tsx` — UI komponens a DailyMenuManagement oldalra
-  - Lekerdezi a holnapi (vagy kivalasztott nap) `daily_offer_items`-et a `menu_items` nevel
-  - Lekerdezi az elozo 4 het azonos napjainak rendeleseit (pl. ha holnap szerda, az elmult 4 szerda)
-  - Kiszamolja az atlagos rendelt adagszamot tetelenkent
-  - Megjelenitit tablazatban: Etel neve | Beallitott adag | Becsult igeny (atlag) | Javasolt adag
-  - Szinkodolas: zold ha eleg, sarga ha szoros, piros ha tul keves a beallitott
-  - Nyomtathato: egyetlen gombnyomasra `window.print()` kompatibilis
+- `src/hooks/useFavoriteOrders.ts` — localStorage hook
+  - `saveFavorite(order)` — elmenti a rendelest: nev, tetelek (item_id, name, price, sides, modifiers), datum
+  - `getFavorites()` — visszaadja az elmentett rendleseket (max 5)
+  - `removeFavorite(id)` — torli az elmentettet
+  - `reorder(favorite)` — betolti a kosarba (CartContext addItem-mel)
+  - Kulcs: `kiscsibe-favorites`
+  - Validacio: ujrarendeles elott ellenorzi, hogy a menu item-ek meg aktívak-e (is_active check)
+
+- `src/components/FavoriteOrderButton.tsx` — "Mentes kedvencnek" gomb
+  - Sziv ikon + felirat
+  - Az OrderConfirmation oldalon jelenik meg a rendelesi osszesito alatt
+  - Kattintasra menti az aktualis rendeles osszetevoit
+
+- `src/components/FavoriteOrdersPanel.tsx` — Kedvencek panel
+  - Az Etlap oldalon jelenik meg egy kicsi kartya: "Kedvenc rendelseid"
+  - Lista: rendeles nev, tetelek osszefoglalas, osszeg
+  - "Ujrarendeles" gomb: betolti a kosarba es atiranyit a checkout-ra
+  - "Torles" gomb: eltavolitja a kedvencek kozul
 
 **Modositott fajlok:**
-- `src/pages/admin/DailyMenuManagement.tsx` — uj "Becsles" tab a meglevo tabfuulek melle
+- `src/pages/OrderConfirmation.tsx` — FavoriteOrderButton beillesztese az akciogombok koze
+- `src/pages/Etlap.tsx` — FavoriteOrdersPanel megjelenitese a napi ajanlat felett (ha vannak mentett kedvencek)
 
 ---
 
-## 3. Idojaras-alapu forgalom elorejelzes
+## 3. Rendelesi elozmynyek
 
-**Cel:** Korabbi rendelesi adatok + ingyenes idojaras API alapjan becsult forgalom holnapra.
+**Cel:** Email/telefon alapjan megtekinthetoek a korabbi rendelesek.
+
+**Adatbazis:**
+- Uj RPC fuggveny: `get_customer_orders(customer_phone text)`
+  - SECURITY DEFINER, stabil
+  - Visszaadja az utolso 20 rendelest: id, code, total_huf, status, created_at, pickup_time
+  - Csak a phone alapjan szur (nem igenyel auth-t)
 
 **Uj fajlok:**
-- `supabase/functions/weather-forecast/index.ts` — Edge function
-  - Meghivja az Open-Meteo API-t (ingyenes, nincs API kulcs szukseges): `https://api.open-meteo.com/v1/forecast`
-  - Az ettermere vonatkozo GPS koordinatakat hasznaja (Budapest kornyeke)
-  - Visszaadja: holnapi homerseklet, csapadek valoszinuseg, idojaras kod
-  - Lekerdezi az `orders` tablabol az elmult 8 het azonos napjainak rendelesi adatait
-  - Egyszeru korrelacio: esos napokon atlagosan hany %-kal kevesebb rendeles volt
-  - Visszaad: becsult rendelesi szam, becsult bevetel, idojaras szoveg
-
-- `src/components/admin/WeatherForecast.tsx` — Dashboard kartya
-  - Megjeleníti: holnapi idojaras ikon + homerseklet + csapadek %
-  - Becsult forgalom: "Holnap varhato: ~25 rendeles (~85.000 Ft)"
-  - Osszehasonlitas: "Ez ~20%-kal kevesebb a szokasosnal (esos ido)"
-  - Egyszeruu vizualizacio, nem pontos — "tapasztalati becsles" felirattal
+- `src/components/OrderHistoryLookup.tsx` — komponens
+  - Telefonszam mezo + "Kereses" gomb
+  - RPC hivassal lekerdezi a korabbi rendleseket
+  - Lista: datum, kod, osszeg, statusz badge
+  - Kattintasra megnyitja a reszleteket (uj lapon: /order-confirmation?code=X&phone=Y)
+  - Max 20 rendeles, rendezve datum szerint csokkenoen
 
 **Modositott fajlok:**
-- `src/pages/admin/Dashboard.tsx` — WeatherForecast komponens beillesztese a stat kartyak ala
+- `src/pages/Etlap.tsx` — Uj szekci o az oldal aljan: "Korabbi rendelseid"
+  - Collapsible/Accordion, alapbol zarva
+  - Benne: OrderHistoryLookup komponens
+
+---
+
+## 4. Ertekeles rendeles utan
+
+**Cel:** 1 oraval az atvétel után email: "Hogy izlett?" 1-5 csillag + szoveg.
+
+**Adatbazis migracio:**
+- Uj tabla: `order_ratings`
+  - `id` uuid PK
+  - `order_id` uuid NOT NULL UNIQUE
+  - `rating` integer NOT NULL (1-5)
+  - `comment` text
+  - `created_at` timestamptz DEFAULT now()
+  - RLS: insert barhonnan (anon), select admin-only
+
+**Uj fajlok:**
+- `supabase/functions/send-rating-request/index.ts` — Edge function
+  - Bemenet: `{ order_id }`
+  - Lekerdezi a rendelest
+  - General egy egyedi tokent (order_id hash-elve)
+  - Email: "Hogy izlett?" + 5 csillag link (1-5, mindegyik kulon URL)
+  - Link: `{SITE_URL}/rate?order={order_id}&token={token}&rating=5`
+  - A Google Review link is szerepel a levélben
+
+- `src/pages/Rate.tsx` — Ertekeles oldal
+  - URL param-bol kiolvassa az order_id-t, tokent, elozeteli ertékelést
+  - Megjeleníti a csillagokat (1-5, kattinthato)
+  - Opcionalis megjegyzes mezo
+  - "Kuldés" gomb — insert `order_ratings`-ba
+  - Sikeres kuldes utan: "Koszonjuk! 💛" + Google Review redirect link
+
+**Modositott fajlok:**
+- `supabase/functions/send-order-status-email/index.ts` — a `completed` status email-hez hozzaadja: "1 ora mulva kuldunk egy rovid kérdoivet"
+- `src/App.tsx` — uj Route: `/rate` => Rate komponens
 - `supabase/config.toml` — uj function szekci o
 
----
-
-## 4. "Egy kattintasos" heti menu masolas
-
-**Cel:** Az elozo het teljes menujenet atmasolasa az aktualis hetre.
-
-**Modositott fajlok:**
-- `src/components/admin/WeeklyMenuGrid.tsx` — Uj "Het masolasa" gomb a heti navigacio sorabol
-  - Kattintasra dialog: "Atmasolja az elozo het osszes napi ajanlat-tetelet az aktualis hetre?"
-  - Logika:
-    1. Lekerdezi az elozo het (currentWeekStart - 7 nap) `daily_offers` + `daily_offer_items` adatait
-    2. Minden napra: ha meg nincs `daily_offer`, letrehozza
-    3. A meglevo tetelek NEM torlodnek — csak azokat adja hozza, amik meg nincsenek (duplikaciomegelozés item_id alapjan)
-    4. Atmasolja az arat (`price_huf`) es a menu beallitasokat (`is_menu_part`, `menu_role`)
-    5. A `max_portions` es `remaining_portions` ujra 50-re allnak
-  - Sikeruzenet: "X nap menuje atmasolva, Y uj tetel hozzaadva"
-  - Hiba eseten rollback (nincs kulon tranzakcio, de az egyes muveletek hibait kezeli)
+**Automatizalas:** A `send-order-status-email` function-ben, ha a status `completed`, beallítunk egy 60 perces keseltetést: a `completed` email elkuldese utan meghivja a `send-rating-request` edge function-t (vagy pg_cron schedule-t hasznalunk a kozeljovoben esedékes ratingekre).
 
 ---
 
-## 5. Nyomtathato napi osszesito (konyhai lista)
+## 5. PWA push ertesites
 
-**Cel:** A mai nap osszesitoje nyomtatobarat formaban, amit ki lehet nyomtatni es kitenni a konyhaban.
+**Cel:** "A rendelesed elkeszult!" + napi menu ertesites — nem kell emailt nezni.
 
 **Uj fajlok:**
-- `src/components/staff/PrintableDailySummary.tsx` — Nyomtatobarat komponens
-  - Tartalom:
-    - Datum es nap neve
-    - Mai napi ajanlat tetelek listaja (nev, kategoria, beallitott adagszam)
-    - Menu beallitas: melyik a leves, melyik a foetel, menu ar
-    - Aktiv rendelesek osszesitese: tetelenkent hany darabot kell kesziteni (aggregalt, mint az ItemsToPrepareSummary)
-    - Idosavos bontas: melyik rendelest mikorra kell elkesziteni (pickup_time alapjan)
-  - CSS: `@media print` stilus — feher hatter, fekete szoveg, nincs navigacio, kompakt tabla
-  - Gomb: "Nyomtatas" → `window.print()` hivasa
+- `public/manifest.json` — PWA manifest
+  - name: "Kiscsibe Rendelés"
+  - short_name: "Kiscsibe"
+  - start_url: "/etlap"
+  - display: "standalone"
+  - theme_color, background_color, icons (a meglevo logok)
 
-- `src/components/staff/PrintButton.tsx` — Kicsi gomb komponens ami megnyitja a nyomtatasi nezetet
+- `public/sw.js` — Service Worker (minimal, cache-first statikus fajlokra + push event handler)
+  - `push` event: notification megjelenitese
+  - `notificationclick` event: megnyitja az etlapot vagy rendelest
+
+- `src/hooks/usePushNotifications.ts` — hook
+  - `requestPermission()` — megkeri az engedelyt
+  - `subscribe()` — PushManager.subscribe(), elkuldi a subscription-t a szervernek
+  - `unsubscribe()` — leiratozas
+  - Megegyszer: a subscription endpoint-ot elkuldi egy Edge Function-nek
+
+- `supabase/functions/register-push/index.ts` — Edge function
+  - Fogadja a push subscription-t (endpoint, keys)
+  - Elmenti a `push_subscriptions` tablaba (phone-hoz kotve)
+
+**Adatbazis migracio:**
+- Uj tabla: `push_subscriptions`
+  - `id` uuid PK
+  - `phone` text NOT NULL
+  - `endpoint` text NOT NULL UNIQUE
+  - `keys_json` jsonb NOT NULL
+  - `created_at` timestamptz DEFAULT now()
+  - RLS: service_role only
 
 **Modositott fajlok:**
-- `src/pages/staff/StaffOrders.tsx` — PrintButton hozzaadasa a DailyStaffSummary melle
-- Globalis CSS (`src/index.css` vagy `src/App.css`) — `@media print` szabalyok: elrejti a navigaciot, sidebarat, footer-t
+- `index.html` — manifest link + service worker regisztracio script
+- `src/pages/OrderConfirmation.tsx` — "Ertesitesek bekapcsolasa" gomb, ha a bongeszo tamogatja
+- `supabase/config.toml` — uj function
+
+**Megjegyzes:** A push notification kuldese a `send-order-status-email` edge function-bol tortenik: a status valtozas utan nem csak emailt kuld, hanem push notification-t is (ha van subscription az adott telefonszamhoz). Ehhez VAPID kulcsok szuksegesek (uj secret-knt: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`).
 
 ---
 
@@ -111,31 +195,42 @@ Ot uj funkcio a napi mukodesek egyszerusitesere: (1) automatikus napi zaro ripor
 
 | Fajl | Muvelet |
 |------|---------|
-| `supabase/functions/send-daily-report/index.ts` | Modositas (elfogyott etelek, idosavos bontas) |
-| `src/components/admin/IngredientEstimate.tsx` | UJ |
-| `src/pages/admin/DailyMenuManagement.tsx` | Modositas (uj tab) |
-| `supabase/functions/weather-forecast/index.ts` | UJ |
-| `src/components/admin/WeatherForecast.tsx` | UJ |
-| `src/pages/admin/Dashboard.tsx` | Modositas (idojaras kartya) |
-| `supabase/config.toml` | Modositas (uj function) |
-| `src/components/admin/WeeklyMenuGrid.tsx` | Modositas (masolas gomb) |
-| `src/components/staff/PrintableDailySummary.tsx` | UJ |
-| `src/components/staff/PrintButton.tsx` | UJ |
-| `src/pages/staff/StaffOrders.tsx` | Modositas (nyomtatas gomb) |
-| `src/App.css` | Modositas (print stilus) |
+| Migracio: `customer_loyalty` + `loyalty_rewards` | UJ |
+| Migracio: `order_ratings` | UJ |
+| Migracio: `push_subscriptions` | UJ |
+| DB RPC: `get_customer_orders` | UJ |
+| `supabase/functions/submit-order/index.ts` | Modositas (loyalty logika) |
+| `supabase/functions/send-order-status-email/index.ts` | Modositas (push + rating trigger) |
+| `supabase/functions/send-rating-request/index.ts` | UJ |
+| `supabase/functions/register-push/index.ts` | UJ |
+| `supabase/config.toml` | Modositas (2 uj function) |
+| `src/hooks/useFavoriteOrders.ts` | UJ |
+| `src/hooks/usePushNotifications.ts` | UJ |
+| `src/components/FavoriteOrderButton.tsx` | UJ |
+| `src/components/FavoriteOrdersPanel.tsx` | UJ |
+| `src/components/OrderHistoryLookup.tsx` | UJ |
+| `src/pages/Rate.tsx` | UJ |
+| `src/pages/OrderConfirmation.tsx` | Modositas (kedvenc + push + loyalty) |
+| `src/pages/Etlap.tsx` | Modositas (kedvencek panel + elozmynyek) |
+| `src/App.tsx` | Modositas (uj /rate route) |
+| `public/manifest.json` | UJ |
+| `public/sw.js` | UJ |
+| `index.html` | Modositas (manifest + SW) |
 
 ## Implementacios sorrend
 
-1. **Napi zaro riport bovitese** — meglevo edge function modositasa, legkisebb kockazat
-2. **Heti menu masolas** — tisztan kliens oldali, a WeeklyMenuGrid-be epul
-3. **Nyomtathato napi osszesito** — uj komponensek, print CSS
-4. **Keszlet becsles** — korabbi adatok aggregalasa, uj tab
-5. **Idojaras elorejelzes** — uj edge function + external API, Dashboard bovites
+1. **Adatbazis migraciok** — 3 uj tabla + 1 RPC fuggveny
+2. **Kedvenc rendelesem** — tisztan kliens oldali (localStorage), legkisebb kockazat
+3. **Rendelesi elozmynyek** — RPC + UI komponens
+4. **Torzsvasarloi rendszer** — submit-order bovites + OrderConfirmation UI
+5. **Ertekeles rendeles utan** — uj edge function + Rate oldal
+6. **PWA push ertesites** — manifest + SW + push subscription + VAPID
 
-## Megjegyzesek
+## Fontos megjegyzesek
 
-- Az Open-Meteo API ingyenes es nem igenyel API kulcsot, ezert nincs szukseg uj secret-re
-- A pg_cron job-ot (napi riport 20:00) SQL inserttel rogzitjuk, nem migraci oval
-- A heti menu masolas nem torol semmit, csak hozzaad — biztonsagos muvelet
-- A nyomtatasi nezet CSS-alapu, nem general PDF-et — egyszeruen a bongeszo nyomtatasi funkciojaval mukodik
+- A torzsvasarloi rendszer es az elozmynyek telefon alapjan azonositanak — nincs szukseg bejelentkezesre
+- A kedvencek localStorage-ban tarolodnak, igy eszkoz-fuggoek (de nincs szukseg auth-ra)
+- A push notification-hoz VAPID kulcsok szuksegesek — ezeket uj secretkent kell beallitani
+- Az ertekeles oldal publikusan elerheto (token-nel vedve), nem igenyel bejelentkezest
+- A `get_customer_orders` RPC SECURITY DEFINER, igy nem fedi fel mas vendegek adatait — csak a sajat telefonszammal lekerdezhetok
 
