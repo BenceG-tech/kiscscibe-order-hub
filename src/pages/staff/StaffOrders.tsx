@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { useTickTimer } from "@/hooks/useTickTimer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { RefreshCw, Inbox } from "lucide-react";
+import PrintableDailySummary from "@/components/staff/PrintableDailySummary";
+import PrintButton from "@/components/staff/PrintButton";
 
 interface OrderItemOption {
   id: string;
@@ -265,8 +267,13 @@ const StaffOrders = () => {
   return (
     <StaffLayout>
       <div className="space-y-3 pb-8">
-        {/* Daily summary */}
+        {/* Daily summary + print button */}
+        <div className="flex items-center justify-between px-2 print:hidden">
+          <div className="flex-1" />
+          <PrintButton />
+        </div>
         <DailyStaffSummary orders={orders} tick={tick} />
+        <PrintableDailySummary orders={orders} />
 
         {/* Items to prepare */}
         <ItemsToPrepareSummary orders={orders} />
