@@ -50,45 +50,47 @@ export const CartDialog = ({ open, onOpenChange }: CartDialogProps) => {
         <DialogHeader>
           <DialogTitle>Kosár</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
+        <div className="space-y-2">
           {cart.items.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">
               A kosár üres
             </p>
           ) : (
             <>
-              {cart.items.map((item) => (
-                <div key={item.id} className="flex items-center justify-between py-2 border-b">
-                  <div className="flex-1">
-                    <h4 className="font-medium">{capitalizeFirst(item.name)}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {item.price_huf} Ft / db
-                    </p>
-                    {item.sides && item.sides.length > 0 && (
-                      <p className="text-xs text-muted-foreground">
-                        Köret: {item.sides.map(side => capitalizeFirst(side.name)).join(', ')}
+              <div className="space-y-4 overflow-y-auto max-h-[50vh] pr-1">
+                {cart.items.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between py-2 border-b">
+                    <div className="flex-1">
+                      <h4 className="font-medium">{capitalizeFirst(item.name)}</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {item.price_huf} Ft / db
                       </p>
-                    )}
+                      {item.sides && item.sides.length > 0 && (
+                        <p className="text-xs text-muted-foreground">
+                          Köret: {item.sides.map(side => capitalizeFirst(side.name)).join(', ')}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleUpdateCartQuantity(item.id, -1)}
+                      >
+                        <Minus className="h-3 w-3" />
+                      </Button>
+                      <span className="w-8 text-center">{item.quantity}</span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleUpdateCartQuantity(item.id, 1)}
+                      >
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleUpdateCartQuantity(item.id, -1)}
-                    >
-                      <Minus className="h-3 w-3" />
-                    </Button>
-                    <span className="w-8 text-center">{item.quantity}</span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleUpdateCartQuantity(item.id, 1)}
-                    >
-                      <Plus className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
               <div className="border-t pt-4">
                 <div className="flex justify-between items-center text-lg font-bold">
                   <span>Összesen:</span>

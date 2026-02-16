@@ -301,7 +301,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const addCompleteMenu = (menu: CompleteMenu) => {
     addItem({
-      id: `complete_menu_${menu.id}_${Date.now()}`,
+      id: `complete_menu_${menu.id}_${menu.soup.id}_${menu.main.id}`,
       name: `Napi menü - ${menu.soup.name} + ${menu.main.name}`,
       price_huf: menu.price_huf,
       modifiers: [],
