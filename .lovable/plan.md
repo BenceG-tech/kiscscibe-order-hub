@@ -1,63 +1,115 @@
 
-# Kupon megjelenites a rendeleseknel
+
+# AI szamla felismeres hozzaadasa
 
 ## Osszefoglalas
 
-A `coupon_code` es `discount_huf` mezok mar leteznek az `orders` tablaban, es a `select('*')` lekerdezesek mar lekerdezik oket. A feladat: az Order interface-ek bovitese es a kupon informacio megjelentitese az admin es staff rendelesi kartyakon.
+Harom resz: (1) uj edge function a szamla adatok kinyeresere, (2) "AI kitoltes" gomb az InvoiceFileUpload komponensben, (3) az InvoiceFormDialog bovitese az AI altal kinyert adatok fogadasara es sargan jelolt mezo-kitoltessel.
 
-## Valtozasok
+## 1. Uj Edge Function: `extract-invoice-data`
 
-### 1. Admin OrdersManagement - Order interface bovitese
+**Fajl:** `supabase/functions/extract-invoice-data/index.ts`
 
-**Fajl:** `src/pages/admin/OrdersManagement.tsx`
+- A `generate-food-image` mintat kovetjuk (CORS, LOVABLE_API_KEY, hibakezel es)
+- Input: `{ image_url: string }` — a feltoltott kep/PDF signed URL-je
+- A Lovable AI Gateway-t hivja: `https://ai.gateway.lovable.dev/v1/chat/completions`
+- Model: `google/gemini-2.5-flash` (a szoveges/vizualis ertelmezesre optimalizalt; a `-image` modell kep generalasr a valo, nem kep elemzesre)
+- A prompt a user message-ben megy, az image URL-t mint kep tartalmat kuldjuk el (multimodal uzenetkent)
+- Tool calling-ot hasznalunk a strukturalt JSON kinyeresere (nem raw JSON-t kerunk a modelltol)
+- Tool definition: `extract_invoice_data` fuggveny a kovetkezo parameterekkel:
+  - `partner_name`, `partner_tax_id`, `invoice_number`
+  - `issue_date` (YYYY-MM-DD), `due_date` (YYYY-MM-DD)
+  - `gross_amount` (integer, HUF), `vat_rate` (27, 5, vagy 0)
+  - `category` (ingredients, utility, rent, equipment, salary, tax, other)
+  - `line_items` (array: description, quantity, unit_price, line_total)
+- 429/402 hibak kezelese toast-baratan
+- Timeout: a kliens oldalon 30 masodperces AbortController
 
-- Az `Order` interface-hez ket uj mezo: `coupon_code?: string | null` es `discount_huf?: number`
-- Az `ActiveOrderCard`-ban a vegosszeg mellett megjelenik a kupon info, ha van:
-  - Pelda: "Kupon: KISCSIBENCE (-12 270 Ft)"
-  - A `Tag` ikont hasznaljuk (lucide-react)
-  - Szin: zold badge stilusban
+**Fajl:** `supabase/config.toml`
 
-### 2. Staff KanbanOrderCard bovitese
+- Uj szekci o: `[functions.extract-invoice-data]` verify_jwt = false
 
-**Fajl:** `src/components/staff/KanbanOrderCard.tsx`
+## 2. InvoiceFileUpload bovitese
 
-- Az `Order` interface-hez: `coupon_code?: string | null`, `discount_huf?: number`
-- A vegosszeg ala, ha `coupon_code` letezik, egy kis sor: "Kupon: CODE (-X Ft)"
-- Diszkret megjelenes, `text-xs text-green-600 dark:text-green-400`
+**Fajl:** `src/components/admin/InvoiceFileUpload.tsx`
 
-### 3. Staff KanbanColumn interface szinkron
+- Uj prop: `onExtracted?: (data: ExtractedInvoiceData) => void`
+- Uj state: `extracting: boolean`
+- Ha van legalabb egy kep URL a `fileUrls`-ben, megjelenik egy "AI kitoltes" gomb (Wand2 ikon, lucide-react)
+- Kattintasra: az elso kep URL-t elkuldi az `extract-invoice-data` edge function-nek
+- Loading: "Szamla feldolgozasa..." szoveg animalt pulzalassal
+- Siker: meghivja az `onExtracted` callback-et
+- Hiba: `toast.error("Nem sikerult szamla adatokat felismerni")`
+- 30mp timeout AbortController-rel
 
-**Fajl:** `src/components/staff/KanbanColumn.tsx`
+## 3. InvoiceFormDialog bovitese
 
-- Az `Order` interface-hez szinten hozzaadjuk: `coupon_code?: string | null`, `discount_huf?: number`
+**Fajl:** `src/components/admin/InvoiceFormDialog.tsx`
 
-### 4. Staff StaffOrders interface szinkron
-
-**Fajl:** `src/pages/staff/StaffOrders.tsx`
-
-- Az `Order` interface-hez: `coupon_code?: string | null`, `discount_huf?: number`
+- Uj state: `aiFilledFields: Set<string>` — az AI altal kitoltott mezok neveit tarolja
+- Az `InvoiceFileUpload` komponensnek atadjuk az `onExtracted` callback-et
+- A callback logikaja: vegigmegy az AI altal visszaadott mezokon, es **csak az ures** mezoket tolti ki
+  - pl. ha `form.partner_name` ures es az AI adott partner_name-et, kitolti es hozzaadja az `aiFilledFields`-hez
+  - Ha a mezo mar ki van toltve, nem irja felul
+- Az AI altal kitoltott mezok vilagos sarga hatteret kapnak: `bg-yellow-50 dark:bg-yellow-950/30 border-yellow-300`
+- Ha a user modositja az AI-kitoltott mezot, torlodik a sarga jeloles (eltavolitjuk az `aiFilledFields`-bol)
+- Toast: `toast.success("AI kitoltotte a szamla adatait — kerlek ellenorizd!")`
+- A `category` mezo mapping: az AI "ingredients"-et ad vissza -> a form "ingredient"-et var, tehat egy egyszeru mapping szotar kell
 
 ## Erintett fajlok
 
 | Fajl | Muvelet |
 |------|---------|
-| `src/pages/admin/OrdersManagement.tsx` | Interface bovites + kupon megjelenites az ActiveOrderCard-ban |
-| `src/components/staff/KanbanOrderCard.tsx` | Interface bovites + kupon megjelenites |
-| `src/components/staff/KanbanColumn.tsx` | Interface bovites |
-| `src/pages/staff/StaffOrders.tsx` | Interface bovites |
+| `supabase/functions/extract-invoice-data/index.ts` | **UJ** — edge function |
+| `supabase/config.toml` | Modositas — uj function szekci o |
+| `src/components/admin/InvoiceFileUpload.tsx` | Modositas — AI gomb + extracting logika |
+| `src/components/admin/InvoiceFormDialog.tsx` | Modositas — AI adatok fogadasa + sarga jeloles |
 
 ## Technikai reszletek
 
-A kupon informacio megjelenesenek feltetele: `order.coupon_code && order.discount_huf && order.discount_huf > 0`
+### Edge function AI hivas
 
-Admin kartyan (ActiveOrderCard) a vegosszeg alatt:
+A multimodal kerest igy epitjuk fel:
+
 ```text
-1 250 Ft
-Kupon: KISCSIBENCE (-12 270 Ft)
+messages: [
+  {
+    role: "user",
+    content: [
+      { type: "image_url", image_url: { url: imageUrl } },
+      { type: "text", text: "Extract all data from this Hungarian invoice/receipt image." }
+    ]
+  }
+]
+tools: [ { type: "function", function: { name: "extract_invoice_data", ... } } ]
+tool_choice: { type: "function", function: { name: "extract_invoice_data" } }
 ```
 
-Staff kartyan (KanbanOrderCard) a vegosszeg alatt:
+A tool calling valaszt igy olvassuk ki:
 ```text
-12 520 Ft
-Kupon: KISCSIBENCE (-12 270 Ft)
+const toolCall = aiData.choices[0].message.tool_calls[0];
+const extracted = JSON.parse(toolCall.function.arguments);
 ```
+
+### Kategoria mapping
+
+Az AI "ingredients" -> form "ingredient", "utility" -> "utility", stb. Egy egyszeru objektum:
+```text
+const CATEGORY_MAP: Record<string, string> = {
+  ingredients: "ingredient",
+  utility: "utility",
+  rent: "rent",
+  equipment: "equipment",
+  salary: "salary",
+  tax: "tax",
+  other: "other",
+};
+```
+
+### Sarga jeloles CSS
+
+Az AI altal kitoltott Input/Select mezoket egy wrapper `div`-vel vagy kozvetlenul a `className`-jukra alkalmazott felteteles stilussal jeloljuk:
+```text
+className={cn("...", aiFilledFields.has("partner_name") && "bg-yellow-50 dark:bg-yellow-950/30 border-yellow-300")}
+```
+
