@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -15,10 +15,32 @@ const ModernNavigation = () => {
   const [scrolled, setScrolled] = useState(false);
   const [visible, setVisible] = useState(true);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [adminClickCount, setAdminClickCount] = useState(0);
+  const adminClickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const location = useLocation();
+  const navigate = useNavigate();
   const { state: cart } = useCart();
   const { isAdmin, isStaff, canViewOrders } = useAuth();
   const { openingHours } = useRestaurantSettings();
+
+  useEffect(() => {
+    return () => {
+      if (adminClickTimeoutRef.current) clearTimeout(adminClickTimeoutRef.current);
+    };
+  }, []);
+
+  const handleLogoClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const newCount = adminClickCount + 1;
+    setAdminClickCount(newCount);
+    if (adminClickTimeoutRef.current) clearTimeout(adminClickTimeoutRef.current);
+    if (newCount >= 5) {
+      navigate('/auth');
+      setAdminClickCount(0);
+    } else {
+      adminClickTimeoutRef.current = setTimeout(() => setAdminClickCount(0), 2000);
+    }
+  };
 
   useEffect(() => {
     let lastScrollY = window.scrollY;
@@ -108,12 +130,12 @@ const ModernNavigation = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             {/* Logo */}
-            <Link 
-              to="/" 
-              className="font-sofia font-bold text-xl md:text-2xl text-primary hover:text-primary/80 transition-all duration-300"
+            <span 
+              onClick={handleLogoClick}
+              className="font-sofia font-bold text-xl md:text-2xl text-primary hover:text-primary/80 transition-all duration-300 cursor-pointer select-none"
             >
               Kiscsibe Reggeliző & Étterem
-            </Link>
+            </span>
 
             {/* Desktop Menu */}
             <div className="hidden md:flex items-center space-x-8">
