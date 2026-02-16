@@ -5,11 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, Trash2, TrendingDown, AlertTriangle, Plus } from "lucide-react";
 import { format, subDays, startOfDay, endOfDay } from "date-fns";
 import { hu } from "date-fns/locale";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import WasteTrends from "@/components/admin/analytics/WasteTrends";
 
 interface WasteEntry {
   id: string;
@@ -182,8 +184,14 @@ const WasteTracking = () => {
   }
 
   return (
+    <Tabs defaultValue="log" className="w-full">
+      <TabsList className="!h-auto !shadow-none !scale-100 flex flex-wrap gap-1 bg-muted/50 p-1 rounded-lg w-fit mb-6">
+        <TabsTrigger value="log" className="!h-9 !shadow-none !scale-100 text-sm">Naplózás</TabsTrigger>
+        <TabsTrigger value="trends" className="!h-9 !shadow-none !scale-100 text-sm">Trendek</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="log" className="mt-0">
     <div className="space-y-6">
-      {/* Actions */}
       <div className="flex flex-wrap gap-3">
         <Button onClick={handleCloseDay} disabled={closingDay} variant="destructive">
           {closingDay ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <TrendingDown className="h-4 w-4 mr-2" />}
@@ -330,6 +338,12 @@ const WasteTracking = () => {
         </CardContent>
       </Card>
     </div>
+      </TabsContent>
+
+      <TabsContent value="trends" className="mt-0">
+        <WasteTrends />
+      </TabsContent>
+    </Tabs>
   );
 };
 

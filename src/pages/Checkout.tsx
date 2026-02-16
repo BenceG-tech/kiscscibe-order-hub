@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -100,6 +100,8 @@ const validateEmail = (v: string): string | undefined => {
 const Checkout = () => {
   const { state: cart, clearCart, applyCoupon, removeCoupon } = useCart();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const tableNumber = searchParams.get('table');
   const { toast } = useToast();
   
   const [formData, setFormData] = useState({
@@ -486,7 +488,7 @@ const Checkout = () => {
             name: formData.name,
             phone: `+36${formData.phone.replace(/\s/g, '')}`,
             email: formData.email,
-            notes: formData.notes || null
+            notes: (tableNumber ? `[Asztal: ${tableNumber}] ` : '') + (formData.notes || '') || null
           },
           payment_method: formData.payment_method,
           pickup_date: formData.pickup_type === "asap" ? null : formData.pickup_date,

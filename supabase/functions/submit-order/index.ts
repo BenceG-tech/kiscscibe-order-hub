@@ -744,6 +744,18 @@ serve(async (req) => {
             </tr>
           </table>
 
+          <div style="background: #f0f4f8; padding: 16px; border-radius: 8px; margin: 20px 0; border: 1px solid #d0d5dd;">
+            <h4 style="margin: 0 0 8px; font-size: 14px; color: #333;">🧾 Digitális nyugta</h4>
+            <table style="width: 100%; font-size: 13px; color: #555;">
+              <tr><td>Nettó összeg:</td><td style="text-align: right;">${Math.round(calculatedTotal / 1.27).toLocaleString()} Ft</td></tr>
+              <tr><td>ÁFA (27%):</td><td style="text-align: right;">${(calculatedTotal - Math.round(calculatedTotal / 1.27)).toLocaleString()} Ft</td></tr>
+              <tr style="font-weight: bold;"><td>Bruttó összeg:</td><td style="text-align: right;">${calculatedTotal.toLocaleString()} Ft</td></tr>
+            </table>
+            <p style="margin: 8px 0 0; font-size: 11px; color: #999; font-style: italic;">
+              Bizonylat szám: ${orderCode} · Dátum: ${new Date().toLocaleDateString('hu-HU')} · Ez a dokumentum nem minősül adóügyi bizonylatnak.
+            </p>
+          </div>
+
           ${loyaltyHtml}
 
           <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 20px 0;">

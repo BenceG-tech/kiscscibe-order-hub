@@ -38,3 +38,9 @@ verify_jwt = false
 
 [functions.register-push]
 verify_jwt = false
+
+[functions.ai-pricing-suggestions]
+verify_jwt = false
+
+[functions.generate-facebook-post]
+verify_jwt = false

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import ModernNavigation from "@/components/ModernNavigation";
 import Footer from "@/components/Footer";
@@ -59,6 +60,8 @@ interface DailyMenuData {
 const Etlap = () => {
   const { toast } = useToast();
   const { state: cart, addItem, addCompleteMenu } = useCart();
+  const [searchParams] = useSearchParams();
+  const tableNumber = searchParams.get('table');
   const [selectedDate, setSelectedDate] = useState<Date>(getSmartInitialDate());
   const [dailyData, setDailyData] = useState<DailyOffersData | null>(null);
   const [menuData, setMenuData] = useState<DailyMenuData | null>(null);
@@ -267,6 +270,14 @@ const Etlap = () => {
     <div className="min-h-screen bg-background">
       <ModernNavigation />
       <main className="pt-20">
+        {/* Table number badge */}
+        {tableNumber && (
+          <div className="fixed top-20 right-4 z-40 print:hidden">
+            <Badge className="text-sm px-3 py-1.5 bg-primary text-primary-foreground shadow-lg">
+              🍽️ Asztal {tableNumber}
+            </Badge>
+          </div>
+        )}
         {/* Hero Section with image */}
         <section className="relative h-[35vh] md:h-[40vh] overflow-hidden">
           <img 
