@@ -1,55 +1,63 @@
 
-# Kosar es rendeles javitasok
+# Kupon megjelenites a rendeleseknel
 
 ## Osszefoglalas
 
-Harom hiba javitasa: (1) kosar dialog gorgethetoseg, (2) napi menu duplikacio megakadalyozasa, (3) CORS konfiguracio bovitese a rendeles leadashoz.
+A `coupon_code` es `discount_huf` mezok mar leteznek az `orders` tablaban, es a `select('*')` lekerdezesek mar lekerdezik oket. A feladat: az Order interface-ek bovitese es a kupon informacio megjelentitese az admin es staff rendelesi kartyakon.
 
-## 1. Kosar dialog gorgethetoseg
+## Valtozasok
 
-**Fajl:** `src/components/CartDialog.tsx`
+### 1. Admin OrdersManagement - Order interface bovitese
 
-- A kosar tetelek listaja (`space-y-4` div) nem gorgethet, igy sok tetelnel a "Tovabb a fizeteshez" gomb kilog a kepernyorol
-- Megoldas: a tetelek listajat `overflow-y-auto` es `max-h-[50vh]` stilussal latjuk el, hogy goergetheto legyen
-- Az osszesito/gomb resz (`border-t pt-4`) a lista alatt marad, mindig lathato
+**Fajl:** `src/pages/admin/OrdersManagement.tsx`
 
-## 2. Napi menu duplikacio javitasa
+- Az `Order` interface-hez ket uj mezo: `coupon_code?: string | null` es `discount_huf?: number`
+- Az `ActiveOrderCard`-ban a vegosszeg mellett megjelenik a kupon info, ha van:
+  - Pelda: "Kupon: KISCSIBENCE (-12 270 Ft)"
+  - A `Tag` ikont hasznaljuk (lucide-react)
+  - Szin: zold badge stilusban
 
-**Fajl:** `src/contexts/CartContext.tsx`
+### 2. Staff KanbanOrderCard bovitese
 
-- Az `addCompleteMenu` fuggvenyben az ID jelenleg: `complete_menu_${menu.id}_${Date.now()}`
-- A `Date.now()` miatt minden kattintas egyedi ID-t general, igy a reducer `findIndex`-e soha nem talalja meg a meglevo tetelt
-- Megoldas: az ID-bol eltavolitjuk a `Date.now()` reszt: `complete_menu_${menu.id}_${menu.soup.id}_${menu.main.id}`
-- Igy ugyanazt a menut tobbszor megnyomva a darabszam no, nem jon letre uj sor
+**Fajl:** `src/components/staff/KanbanOrderCard.tsx`
 
-## 3. CORS konfiguracio bovitese
+- Az `Order` interface-hez: `coupon_code?: string | null`, `discount_huf?: number`
+- A vegosszeg ala, ha `coupon_code` letezik, egy kis sor: "Kupon: CODE (-X Ft)"
+- Diszkret megjelenes, `text-xs text-green-600 dark:text-green-400`
 
-**Fajl:** `supabase/functions/_shared/cors.ts`
+### 3. Staff KanbanColumn interface szinkron
 
-- A jelenlegi CORS ellenorzes: `origin.endsWith(".lovable.app")`
-- A preview kornyezet viszont `.lovableproject.com` domainrol fut (lasd console logokban: `98ed56c3-...lovableproject.com`)
-- Emiatt a `submit-order` edge function elutasitja a kerest es "Failed to fetch" hibauzenet jelenik meg
-- Megoldas: a CORS `isAllowed` feltetelben hozzaadjuk: `|| origin.endsWith(".lovableproject.com")`
-- Az edge function ujratelepitese is szukseges a valtozas utan
+**Fajl:** `src/components/staff/KanbanColumn.tsx`
+
+- Az `Order` interface-hez szinten hozzaadjuk: `coupon_code?: string | null`, `discount_huf?: number`
+
+### 4. Staff StaffOrders interface szinkron
+
+**Fajl:** `src/pages/staff/StaffOrders.tsx`
+
+- Az `Order` interface-hez: `coupon_code?: string | null`, `discount_huf?: number`
 
 ## Erintett fajlok
 
 | Fajl | Muvelet |
 |------|---------|
-| `src/components/CartDialog.tsx` | Modositas — gorgethetoseg + fix gomb |
-| `src/contexts/CartContext.tsx` | Modositas — `Date.now()` torles az ID-bol |
-| `supabase/functions/_shared/cors.ts` | Modositas — `.lovableproject.com` hozzaadasa |
+| `src/pages/admin/OrdersManagement.tsx` | Interface bovites + kupon megjelenites az ActiveOrderCard-ban |
+| `src/components/staff/KanbanOrderCard.tsx` | Interface bovites + kupon megjelenites |
+| `src/components/staff/KanbanColumn.tsx` | Interface bovites |
+| `src/pages/staff/StaffOrders.tsx` | Interface bovites |
 
 ## Technikai reszletek
 
-**CartDialog.tsx valtozas:**
-- A tetelek `div`-je: `className="space-y-4 overflow-y-auto max-h-[50vh] pr-1"` (pr-1 a scrollbar hely)
-- Az osszesito `div` kint marad a gorgetett teruletbol
+A kupon informacio megjelenesenek feltetele: `order.coupon_code && order.discount_huf && order.discount_huf > 0`
 
-**CartContext.tsx valtozas (283. sor):**
-- Regi: `id: \`complete_menu_\${menu.id}_\${Date.now()}\``
-- Uj: `id: \`complete_menu_\${menu.id}_\${menu.soup.id}_\${menu.main.id}\``
+Admin kartyan (ActiveOrderCard) a vegosszeg alatt:
+```text
+1 250 Ft
+Kupon: KISCSIBENCE (-12 270 Ft)
+```
 
-**CORS valtozas (16. sor):**
-- Regi: `origin.endsWith(".lovable.app")`
-- Uj: `origin.endsWith(".lovable.app") || origin.endsWith(".lovableproject.com")`
+Staff kartyan (KanbanOrderCard) a vegosszeg alatt:
+```text
+12 520 Ft
+Kupon: KISCSIBENCE (-12 270 Ft)
+```
