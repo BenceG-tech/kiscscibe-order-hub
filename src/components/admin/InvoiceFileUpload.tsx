@@ -1,18 +1,32 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Camera, Upload, X, FileText, Image as ImageIcon } from "lucide-react";
+import { Camera, Upload, X, FileText, Wand2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+export interface ExtractedInvoiceData {
+  partner_name?: string;
+  partner_tax_id?: string;
+  invoice_number?: string;
+  issue_date?: string;
+  due_date?: string;
+  gross_amount?: number;
+  vat_rate?: number;
+  category?: string;
+  line_items?: { description: string; quantity?: number; unit_price?: number; line_total?: number }[];
+}
 
 interface Props {
   fileUrls: string[];
   onChange: (urls: string[]) => void;
+  onExtracted?: (data: ExtractedInvoiceData) => void;
 }
 
 const isImageUrl = (url: string) => /\.(jpg|jpeg|png|gif|webp|heic|heif)/i.test(url);
 
-const InvoiceFileUpload = ({ fileUrls, onChange }: Props) => {
+const InvoiceFileUpload = ({ fileUrls, onChange, onExtracted }: Props) => {
   const [uploading, setUploading] = useState(false);
+  const [extracting, setExtracting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
 
@@ -54,14 +68,52 @@ const InvoiceFileUpload = ({ fileUrls, onChange }: Props) => {
     onChange(fileUrls.filter((_, i) => i !== idx));
   };
 
+  const handleExtract = async () => {
+    const imageUrl = fileUrls.find((u) => isImageUrl(u));
+    if (!imageUrl) {
+      toast.error("Nincs kép a csatolt fájlok között.");
+      return;
+    }
+
+    setExtracting(true);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("extract-invoice-data", {
+        body: { image_url: imageUrl },
+      });
+
+      if (error) throw error;
+
+      if (data?.success && data?.data) {
+        onExtracted?.(data.data);
+      } else {
+        toast.error(data?.error || "Nem sikerült számla adatokat felismerni");
+      }
+    } catch (err: any) {
+      if (err?.name === "AbortError") {
+        toast.error("Időtúllépés — próbáld újra.");
+      } else {
+        toast.error("Nem sikerült számla adatokat felismerni");
+      }
+      console.error("Extract error:", err);
+    } finally {
+      clearTimeout(timeout);
+      setExtracting(false);
+    }
+  };
+
+  const hasImage = fileUrls.some((u) => isImageUrl(u));
+
   return (
     <div className="space-y-3">
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <Button
           type="button"
           variant="outline"
           size="sm"
-          disabled={uploading}
+          disabled={uploading || extracting}
           onClick={() => cameraRef.current?.click()}
           className="flex-1 sm:flex-none"
         >
@@ -72,13 +124,26 @@ const InvoiceFileUpload = ({ fileUrls, onChange }: Props) => {
           type="button"
           variant="outline"
           size="sm"
-          disabled={uploading}
+          disabled={uploading || extracting}
           onClick={() => fileRef.current?.click()}
           className="flex-1 sm:flex-none"
         >
           <Upload className="h-4 w-4 mr-1" />
           Fájl kiválasztása
         </Button>
+        {hasImage && onExtracted && (
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            disabled={extracting || uploading}
+            onClick={handleExtract}
+            className="flex-1 sm:flex-none"
+          >
+            <Wand2 className="h-4 w-4 mr-1" />
+            {extracting ? "Feldolgozás..." : "AI kitöltés"}
+          </Button>
+        )}
       </div>
 
       <input
@@ -100,6 +165,10 @@ const InvoiceFileUpload = ({ fileUrls, onChange }: Props) => {
 
       {uploading && (
         <p className="text-sm text-muted-foreground animate-pulse">Feltöltés...</p>
+      )}
+
+      {extracting && (
+        <p className="text-sm text-muted-foreground animate-pulse">Számla feldolgozása...</p>
       )}
 
       {fileUrls.length > 0 && (
