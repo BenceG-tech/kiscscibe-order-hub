@@ -1,126 +1,99 @@
 
-
-# Staff "Elfogyott" jeloles + hang teszt
+# Hirlevel GDPR + PromoSection javitas
 
 ## Osszefoglalas
 
-Ket fejlesztes a staff feluleten: (1) az elkeszitendo tetelek listajan "Elfogyott" kapcsolo minden etelhez, amely a `daily_offer_items.is_sold_out` mezot allitja, es (2) ertesitesi hang teszt gomb a fejlecben.
+Ket javitas: (1) GDPR-kompatibilis leiratkozasi rendszer kiepitese HMAC-SHA256 token vedelemmel, (2) hamis "eredeti ar" eltavolitasa a PromoSection-bol.
 
-## 1. "Elfogyott" jeloles az ItemsToPrepareSummary-ban
+## 1. PromoSection hamis ar eltavolitasa
 
-### Problema
+**Fajl:** `src/components/sections/PromoSection.tsx`
 
-A jelenlegi komponens csak aggregalt etelnev + darabszam parokat mutat, a rendelesekbol szarmaztatva. Nincs kapcsolata a `daily_offer_items` tablaval, igy nem tudja kozvetlenul megjelolni az eteleket elfogyottnak.
+- Toroljuk az `originalPrice` es `displayOriginal` valtozokat (51. es 53. sor)
+- Toroljuk az athuzott ar megjelenites sort mind a desktop (89. sor), mind a mobil (136. sor) layout-bol
+- Csak a valos menuarat mutatjuk: "Napi menu helyben — 2.200 Ft"
 
-### Megoldas
+## 2. Leiratkozasi rendszer
 
-A komponensbe beepitjuk a mai nap `daily_offer_items` rekordjainak lekerdezeset, es nev alapjan osszekapcsoljuk az aggregalt tetelek listajaval.
+### 2.1 Uj Supabase secret szukseges
 
-**Uj logika az `ItemsToPrepareSummary.tsx`-ben:**
+- `NEWSLETTER_HMAC_SECRET` — egy veletlenszeru string, amelybol az HMAC-SHA256 token keszul. Ezt a `secrets` tool-lal kerjuk be.
 
-1. `useEffect`-tel lekerdezzuk a mai nap `daily_offer_items` rekordjait (a `daily_offers` tablan keresztul, `date = today`):
-   ```
-   supabase
-     .from("daily_offer_items")
-     .select("id, is_sold_out, menu_items(name), daily_offer_id, daily_offers!inner(date)")
-     .eq("daily_offers.date", today)
-   ```
-2. Letrehozunk egy `Map<string, { id: string; is_sold_out: boolean }>` strukturat az etelnev -> daily_offer_item_id parokkal
-3. Minden aggregalt etelhez: ha talalhato a map-ben, megjelenik egy piros/zold toggle gomb
-4. Kattintasra: `supabase.from("daily_offer_items").update({ is_sold_out: !current }).eq("id", itemId)`
-5. Vizualis visszajelzes: athuzott nev + halvany szin + "Elfogyott" badge
-6. Toast ertesites: "Husleves megjelolve elfogyottkent" / "Husleves ujra elerheto"
+### 2.2 Edge function modositasok
 
-**Interfesz bovites:**
+**`supabase/functions/send-welcome-newsletter/index.ts`:**
+- HMAC-SHA256 token generalas az email cimbol a `NEWSLETTER_HMAC_SECRET` kulccsal
+- Leiratkozasi link beszurasa az email HTML aljara: `https://kiscscibe-order-hub.lovable.app/leiratkozas?email={email}&token={token}`
+- A jelenlegi "irj nekunk" szoveget lecsereljuk kattinthato linkre
 
-- Az aggregalt tetelek listaja kiegeszul az `is_sold_out` allapottal es a `daily_offer_item_id`-val
-- Uj state: `soldOutMap` (a DB-bol toltott es lokalis toggle utan frissitett)
-- Uj state: `togglingId` (loading allapot az eppen toggle-olt itemhez)
+**`supabase/functions/send-weekly-menu/index.ts`:**
+- Ugyanaz az HMAC token generalas
+- A `generateEmailHtml` fuggveny kap egy opcionalisan uj parametert (email + token), es a lablechoz leiratkozasi linket general
+- Minden feliratkozonak sajat token-nel kuldi a linket (a batch loop-ban generalva)
 
-**UI:**
-
-```text
-  3x  Húsleves                    [Elfogyott]    <- piros toggle gomb
-  2x  ~~Rántott csirke~~  Elfogyott  [Elérhető]  <- athuzva + badge + zold gomb
-  5x  Túrós csusza                [Elfogyott]
+**HMAC generalas (Deno):**
+```typescript
+async function generateUnsubscribeToken(email: string, secret: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(email));
+  return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
 ```
 
-- A gomb `variant="ghost"` + `size="sm"`, piros szoveg ha aktiv, zold ha visszaallithato
-- Az athuzott stilus: `line-through opacity-60` a neven
-- Badge: `variant="destructive"` "Elfogyott" szoveggel
+### 2.3 Leiratkozas oldal
 
-**RLS:** A `daily_offer_items` UPDATE policy `is_admin(auth.uid())`-t hasznal. A staff felhasznaloknak nincs UPDATE joguk. Ez problema!
+**Uj fajl:** `src/pages/Unsubscribe.tsx`
 
-**RLS javitas szukseges:** Uj policy kell a `daily_offer_items` tablara:
-```sql
-CREATE POLICY "Staff can update sold out status"
-ON daily_offer_items FOR UPDATE
-USING (is_admin_or_staff(auth.uid()))
-WITH CHECK (is_admin_or_staff(auth.uid()));
-```
+- URL query parameterek: `email` es `token`
+- Oldalon: Kiscsibe branding, "Biztosan le szeretnel iratkozni?" uzenet, "Leiratkozas" gomb
+- Gombra kattintva: meghivja a leiratkozas edge function-t
+- Sikeres leiratkozas: "Sikeresen leiratkoztal a hirleverlrol" uzenet
+- Hibas token: "Ervenytelen leiratkozasi link" uzenet
 
-Mivel a jelenlegi admin UPDATE policy mar letezik, a staff policy nem utkozik vele (mindketto RESTRICTIVE, de az `is_admin_or_staff` tartalmazza az admint is). **A legegyszerubb megoldas:** a meglevo "Admin can update daily offer items" policyt modositjuk `is_admin_or_staff`-ra, vagy uj PERMISSIVE policyt adunk hozza.
+### 2.4 Leiratkozas edge function
 
-### Erintett fajlok
+**Uj fajl:** `supabase/functions/unsubscribe-newsletter/index.ts`
 
-- `src/components/staff/ItemsToPrepareSummary.tsx` — teljes atalakitas
-- Supabase migracio — RLS policy bovites a `daily_offer_items` tablara staff UPDATE-hez
+- Fogadja: `{ email, token }`
+- HMAC-SHA256 token validacio a `NEWSLETTER_HMAC_SECRET` kulccsal
+- Ha ervenyes: `supabase.from("subscribers").delete().eq("email", email)` (service role client-tel)
+- Ha ervenytelen: 403 hiba
 
-## 2. Hang teszt gomb a StaffLayout fejlecben
+### 2.5 RLS modositas
 
-### Megoldas
+A `subscribers` tablanak jelenleg nincs DELETE policy-je. Mivel az edge function service role-t hasznal, nincs szukseg uj RLS policy-ra — a service role megkerueli az RLS-t.
 
-Az `OrderNotificationsContext`-bol expozaljuk a `playNotificationSound` es `audioUnlocked` ertekeket.
+### 2.6 Route hozzaadasa
 
-**Modositasok:**
+**Fajl:** `src/App.tsx`
 
-1. **`src/hooks/useGlobalOrderNotifications.tsx`**: Mar visszaadja az `audioUnlocked`-ot (229. sor), es a `playNotificationSound`-ot kozvetetten hasznalja. A hook-bol expozaljuk a `playNotificationSound` fuggvenyt is a return-ben.
+- Import: `Unsubscribe` a `src/pages/Unsubscribe.tsx`-bol
+- Uj route a legal pages blokkba: `<Route path="/leiratkozas" element={<Unsubscribe />} />`
 
-2. **`src/contexts/OrderNotificationsContext.tsx`**:
-   - Interface bovites: `playNotificationSound: () => void` es `audioUnlocked: boolean`
-   - Hook-bol kinyerjuk es tovabbitjuk a context value-ban
+### 2.7 Config
 
-3. **`src/pages/staff/StaffLayout.tsx`**:
-   - Import: `Volume2`, `VolumeX` a `lucide-react`-bol
-   - Import: `Tooltip`, `TooltipTrigger`, `TooltipContent`, `TooltipProvider` a `@/components/ui/tooltip`-bol
-   - A "Szemelyzet" badge melle kerul egy ikongomb
-   - Ha `audioUnlocked`: zold `Volume2` ikon
-   - Ha nem: sarga `VolumeX` ikon
-   - Kattintasra: `playNotificationSound()` hivas
-   - Tooltip: "Ertesitesi hang tesztelese"
-   - `min-h-[44px] min-w-[44px]` az erintesi terulethez
+**Fajl:** `supabase/config.toml`
 
-**UI:**
+- Uj bejegyzes: `[functions.unsubscribe-newsletter]` `verify_jwt = false`
 
-```text
-  [Szemelyzet badge] [🔊] [Kijelentkezes]
-```
+## Erintett fajlok osszefoglalva
 
-### Erintett fajlok
-
-- `src/hooks/useGlobalOrderNotifications.tsx` — `playNotificationSound` expozalasa a return-ben
-- `src/contexts/OrderNotificationsContext.tsx` — `playNotificationSound` + `audioUnlocked` expozalasa
-- `src/pages/staff/StaffLayout.tsx` — hang teszt gomb UI
-
-## Technikai reszletek
-
-| Elem | Megoldas |
+| Fajl | Muvelet |
 |------|---------|
-| Napi tetelek lekerdezes | `daily_offer_items` + `daily_offers!inner(date)` + `menu_items(name)` join, `date = today` |
-| Sold-out toggle | `supabase.from("daily_offer_items").update({ is_sold_out }).eq("id", id)` |
-| RLS | Uj/modositott policy: `is_admin_or_staff(auth.uid())` az UPDATE-hez |
-| Hang expozalas | `playNotificationSound` hozzaadasa a context interface-hez es return-hez |
-| Audio allapot | `audioUnlocked` boolean az ikon szinehez |
-| Erintesi terulet | `min-h-[44px] min-w-[44px]` a hang teszt gombra |
-| Toast | `sonner` toast a sold-out toggle utan |
+| `src/components/sections/PromoSection.tsx` | Modositas — hamis ar torles |
+| `supabase/functions/send-welcome-newsletter/index.ts` | Modositas — HMAC token + leiratkozasi link |
+| `supabase/functions/send-weekly-menu/index.ts` | Modositas — HMAC token + leiratkozasi link |
+| `supabase/functions/unsubscribe-newsletter/index.ts` | **UJ** — leiratkozas endpoint |
+| `src/pages/Unsubscribe.tsx` | **UJ** — leiratkozas UI oldal |
+| `src/App.tsx` | Modositas — uj route |
+| `supabase/config.toml` | Modositas — uj function config |
 
-## Migracio
+## Elofeltetelek
 
-```sql
--- Staff sold-out toggle engedelyezese
-CREATE POLICY "Staff can update daily offer items sold out"
-ON public.daily_offer_items
-FOR UPDATE
-USING (is_admin_or_staff(auth.uid()));
-```
-
+- `NEWSLETTER_HMAC_SECRET` secret hozzaadasa a Supabase-hez (a megvalositasnal kerjuk be)
