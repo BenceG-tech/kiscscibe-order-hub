@@ -19,10 +19,17 @@
     <meta name="twitter:title" content="Kiscsibe Étterem — Napi menü és rendelés" />
     <meta name="twitter:description" content="Friss levesek, kiadós főételek, gyors átvétel Zuglóban. Napi menü online rendeléssel." />
     <meta name="twitter:image" content="https://kiscscibe-order-hub.lovable.app/images/og-kiscsibe.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#f59e0b" />
   </head>
 
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      }
+    </script>
   </body>
 </html>

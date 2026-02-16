@@ -1,0 +1,20 @@
+{
+  "name": "Kiscsibe Rendelés",
+  "short_name": "Kiscsibe",
+  "start_url": "/etlap",
+  "display": "standalone",
+  "theme_color": "#f59e0b",
+  "background_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/assets/kiscsibe_logo_round.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/kiscsibe_logo_round.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

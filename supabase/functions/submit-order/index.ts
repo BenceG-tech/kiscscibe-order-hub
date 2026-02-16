@@ -596,6 +596,93 @@ serve(async (req) => {
 
     console.log('Order completed successfully:', orderCode);
 
+    // === LOYALTY SYSTEM ===
+    let loyaltyReward = null;
+    try {
+      // Upsert customer loyalty record
+      const { data: existingLoyalty } = await supabase
+        .from('customer_loyalty')
+        .select('*')
+        .eq('phone', customer.phone)
+        .maybeSingle();
+
+      let newOrderCount = 1;
+      if (existingLoyalty) {
+        newOrderCount = existingLoyalty.order_count + 1;
+        await supabase
+          .from('customer_loyalty')
+          .update({
+            order_count: newOrderCount,
+            total_spent_huf: existingLoyalty.total_spent_huf + calculatedTotal,
+            email: customer.email || existingLoyalty.email,
+            last_order_at: new Date().toISOString(),
+            current_tier: newOrderCount >= 20 ? 'gold' : newOrderCount >= 10 ? 'silver' : 'bronze',
+          })
+          .eq('phone', customer.phone);
+      } else {
+        await supabase
+          .from('customer_loyalty')
+          .insert({
+            phone: customer.phone,
+            email: customer.email || null,
+            order_count: 1,
+            total_spent_huf: calculatedTotal,
+            last_order_at: new Date().toISOString(),
+          });
+      }
+
+      // Check milestones
+      const milestones: Record<number, { type: string; value: number }> = {
+        5: { type: 'percentage', value: 5 },
+        10: { type: 'percentage', value: 10 },
+        20: { type: 'fixed', value: 500 },
+      };
+
+      // Also every 10th order after 20
+      let milestone = milestones[newOrderCount];
+      if (!milestone && newOrderCount > 20 && newOrderCount % 10 === 0) {
+        milestone = { type: 'percentage', value: 5 };
+      }
+
+      if (milestone) {
+        // Generate coupon code
+        const couponCode = `HUSEG${newOrderCount}_${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+        
+        // Create coupon
+        await supabase.from('coupons').insert({
+          code: couponCode,
+          discount_type: milestone.type,
+          discount_value: milestone.value,
+          is_active: true,
+          min_order_huf: 0,
+          max_uses: 1,
+          valid_from: new Date().toISOString(),
+          valid_until: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(), // 90 days
+        });
+
+        // Record reward
+        await supabase.from('loyalty_rewards').insert({
+          phone: customer.phone,
+          reward_type: milestone.type === 'percentage' ? 'percentage_discount' : 'fixed_discount',
+          reward_value: milestone.value,
+          coupon_code: couponCode,
+          triggered_at_order_count: newOrderCount,
+        });
+
+        loyaltyReward = {
+          coupon_code: couponCode,
+          discount_type: milestone.type,
+          discount_value: milestone.value,
+          order_count: newOrderCount,
+        };
+
+        console.log(`Loyalty reward generated: ${couponCode} for order #${newOrderCount}`);
+      }
+    } catch (loyaltyError) {
+      console.error('Loyalty system error (non-fatal):', loyaltyError);
+      // Don't fail the order for loyalty errors
+    }
+
     // Initialize Resend client
     const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
 
@@ -620,6 +707,19 @@ serve(async (req) => {
         `;
       }).join('');
 
+      const loyaltyHtml = loyaltyReward ? `
+        <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
+          <p style="margin: 0 0 8px; font-size: 18px;">🎉 Köszönjük a hűségedet!</p>
+          <p style="margin: 0 0 8px; font-size: 14px;">Ez a ${loyaltyReward.order_count}. rendelésed!</p>
+          <p style="margin: 0; font-size: 20px; font-weight: bold; color: #d97706;">
+            Kuponod: ${loyaltyReward.coupon_code}
+          </p>
+          <p style="margin: 4px 0 0; font-size: 14px; color: #666;">
+            ${loyaltyReward.discount_type === 'percentage' ? `${loyaltyReward.discount_value}% kedvezmény` : `${loyaltyReward.discount_value} Ft kedvezmény`} a következő rendelésedből!
+          </p>
+        </div>
+      ` : '';
+
       const emailHtml = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #333;">Kiscsibe – Rendelés visszaigazolás</h2>
@@ -643,6 +743,8 @@ serve(async (req) => {
               <td style="padding: 12px; border-top: 2px solid #333; text-align: right;">${calculatedTotal.toLocaleString()} Ft</td>
             </tr>
           </table>
+
+          ${loyaltyHtml}
 
           <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 20px 0;">
             <p style="margin: 0 0 4px 0;"><strong>Kiscsibe Reggeliző & Étterem</strong></p>
@@ -676,6 +778,7 @@ serve(async (req) => {
         ${validatedItems.map(item => `- ${item.name_snapshot} × ${item.qty}: ${item.line_total_huf.toLocaleString()} Ft${item.modifiers.length > 0 ? ` (+ ${item.modifiers.map(mod => mod.label_snapshot).join(', ')})` : ''}`).join('\n')}
 
         Összesen: ${calculatedTotal.toLocaleString()} Ft
+        ${loyaltyReward ? `\nHűségkupon: ${loyaltyReward.coupon_code} (${loyaltyReward.discount_type === 'percentage' ? `${loyaltyReward.discount_value}%` : `${loyaltyReward.discount_value} Ft`} kedvezmény)` : ''}
 
         Kiscsibe Reggeliző & Étterem
         1141 Budapest, Vezér u. 110.
@@ -706,7 +809,8 @@ serve(async (req) => {
         success: true,
         order_code: orderCode,
         total_huf: calculatedTotal,
-        request_id: requestId
+        request_id: requestId,
+        loyalty_reward: loyaltyReward,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

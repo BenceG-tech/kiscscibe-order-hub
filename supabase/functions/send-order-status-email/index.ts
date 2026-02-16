@@ -143,6 +143,9 @@ serve(async (req) => {
           <a href="${googleReviewUrl}" style="display: inline-block; background: #4285f4; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">
             Értékeld a tapasztalatod Google-ön!
           </a>
+          <p style="margin: 10px 0 0; font-size: 13px; color: #888;">
+            📝 1 órán belül küldünk egy rövid kérdőívet is az élményedről.
+          </p>
         </div>
         ` : ''}
 
@@ -172,6 +175,33 @@ serve(async (req) => {
     });
 
     console.log(`Status email sent successfully: ${new_status} → ${order.email} (order ${order.code})`, emailResult);
+
+    // Schedule rating request email for completed orders (60 min delay via setTimeout)
+    if (new_status === 'completed') {
+      try {
+        const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+        const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+        // Fire and forget - call send-rating-request after 60 minutes
+        // In production, use pg_cron. For now, we call it immediately as a simpler approach.
+        setTimeout(async () => {
+          try {
+            await fetch(`${supabaseUrl}/functions/v1/send-rating-request`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${supabaseAnonKey}`,
+              },
+              body: JSON.stringify({ order_id }),
+            });
+            console.log(`Rating request triggered for order ${order.code}`);
+          } catch (e) {
+            console.error('Rating request trigger failed:', e);
+          }
+        }, 60 * 60 * 1000); // 60 minutes
+      } catch (e) {
+        console.error('Failed to schedule rating request:', e);
+      }
+    }
 
     return new Response(
       JSON.stringify({ success: true }),

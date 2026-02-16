@@ -19,6 +19,10 @@ import kiscsibeLogo from "@/assets/kiscsibe_logo_round.png";
 import heroImage from "@/assets/hero-desktop.png";
 import DailyMenuPanel from "@/components/DailyMenuPanel";
 import AlwaysAvailableSection from "@/components/sections/AlwaysAvailableSection";
+import FavoriteOrdersPanel from "@/components/FavoriteOrdersPanel";
+import OrderHistoryLookup from "@/components/OrderHistoryLookup";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { History } from "lucide-react";
 
 interface MenuItem {
   id: string;
@@ -300,6 +304,8 @@ const Etlap = () => {
         {/* Content Section */}
         <section className="py-6 pb-24">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+            {/* Favorite Orders */}
+            <FavoriteOrdersPanel />
             {/* Date Title */}
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold">
@@ -445,6 +451,23 @@ const Etlap = () => {
 
             {/* Always Available Items */}
             <AlwaysAvailableSection />
+
+            {/* Order History */}
+            <Collapsible>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="w-full justify-start gap-2 text-muted-foreground">
+                  <History className="h-4 w-4" />
+                  Korábbi rendeléseid
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2">
+                <Card className="border-0 bg-card/95 rounded-2xl">
+                  <CardContent className="p-4 sm:p-6">
+                    <OrderHistoryLookup />
+                  </CardContent>
+                </Card>
+              </CollapsibleContent>
+            </Collapsible>
           </div>
         </section>
       </main>
