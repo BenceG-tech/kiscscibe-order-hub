@@ -14,8 +14,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Trash2, Lock } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import InfoTip from "@/components/admin/InfoTip";
-import InvoiceFileUpload from "./InvoiceFileUpload";
+import InvoiceFileUpload, { type ExtractedInvoiceData } from "./InvoiceFileUpload";
 import { useCreateInvoice, useUpdateInvoice, useDeleteInvoice, usePartnerSuggestions } from "@/hooks/useInvoices";
 import { supabase } from "@/integrations/supabase/client";
 import type { Invoice } from "@/hooks/useInvoices";
@@ -37,6 +39,16 @@ const CATEGORIES = [
   { value: "other", label: "Egyéb" },
 ];
 
+const CATEGORY_MAP: Record<string, string> = {
+  ingredients: "ingredient",
+  utility: "utility",
+  rent: "rent",
+  equipment: "equipment",
+  salary: "salary",
+  tax: "tax",
+  other: "other",
+};
+
 const defaultForm = {
   type: "incoming" as "incoming" | "outgoing",
   partner_name: "",
@@ -52,10 +64,13 @@ const defaultForm = {
   status: "draft" as string,
 };
 
+const aiHighlight = "bg-yellow-50 dark:bg-yellow-950/30 border-yellow-300";
+
 const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
   const [form, setForm] = useState(defaultForm);
   const [partnerFilter, setPartnerFilter] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [aiFilledFields, setAiFilledFields] = useState<Set<string>>(new Set());
 
   const create = useCreateInvoice();
   const update = useUpdateInvoice();
@@ -85,6 +100,7 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
     } else {
       setForm(defaultForm);
     }
+    setAiFilledFields(new Set());
   }, [invoice, open]);
 
   const grossNum = parseInt(form.gross_amount) || 0;
@@ -99,7 +115,70 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
     );
   }, [partners, partnerFilter]);
 
-  const set = (key: string, val: any) => setForm((f) => ({ ...f, [key]: val }));
+  const set = (key: string, val: any) => {
+    setForm((f) => ({ ...f, [key]: val }));
+    // Clear AI highlight when user edits a field
+    setAiFilledFields((prev) => {
+      if (!prev.has(key)) return prev;
+      const next = new Set(prev);
+      next.delete(key);
+      return next;
+    });
+  };
+
+  const handleExtracted = (data: ExtractedInvoiceData) => {
+    const filled = new Set<string>();
+
+    setForm((f) => {
+      const next = { ...f };
+
+      if (data.partner_name && !f.partner_name.trim()) {
+        next.partner_name = data.partner_name;
+        filled.add("partner_name");
+      }
+      if (data.partner_tax_id && !f.partner_tax_id.trim()) {
+        next.partner_tax_id = data.partner_tax_id;
+        filled.add("partner_tax_id");
+      }
+      if (data.invoice_number && !f.invoice_number.trim()) {
+        next.invoice_number = data.invoice_number;
+        filled.add("invoice_number");
+      }
+      if (data.issue_date) {
+        next.issue_date = data.issue_date;
+        filled.add("issue_date");
+      }
+      if (data.due_date && !f.due_date) {
+        next.due_date = data.due_date;
+        filled.add("due_date");
+      }
+      if (data.gross_amount && !f.gross_amount) {
+        next.gross_amount = String(data.gross_amount);
+        filled.add("gross_amount");
+      }
+      if (data.vat_rate !== undefined) {
+        next.vat_rate = String(data.vat_rate);
+        filled.add("vat_rate");
+      }
+      if (data.category) {
+        const mapped = CATEGORY_MAP[data.category] || data.category;
+        if (CATEGORIES.some((c) => c.value === mapped)) {
+          next.category = mapped;
+          filled.add("category");
+        }
+      }
+
+      return next;
+    });
+
+    setAiFilledFields(filled);
+
+    if (filled.size > 0) {
+      toast.success("AI kitöltötte a számla adatait — kérlek ellenőrizd!");
+    } else {
+      toast.info("Az AI nem talált új kitöltendő mezőt.");
+    }
+  };
 
   const handleSave = (status: "draft" | "pending" | "paid" | "overdue" | "cancelled") => {
     if (!form.partner_name.trim()) return;
@@ -147,6 +226,8 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
   };
 
   const isPending = create.isPending || update.isPending || del.isPending;
+
+  const aiCn = (field: string) => aiFilledFields.has(field) ? aiHighlight : "";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -197,6 +278,7 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
               onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
               placeholder="pl. Metro Kft."
               disabled={isReadonly}
+              className={aiCn("partner_name")}
             />
             {showSuggestions && filteredPartners.length > 0 && !isReadonly && (
               <div className="absolute z-10 top-full left-0 right-0 bg-popover border rounded-md shadow-md mt-1 max-h-32 overflow-y-auto">
@@ -223,11 +305,11 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1.5">
               <Label>Adószám</Label>
-              <Input value={form.partner_tax_id} onChange={(e) => set("partner_tax_id", e.target.value)} placeholder="12345678-2-42" disabled={isReadonly} />
+              <Input value={form.partner_tax_id} onChange={(e) => set("partner_tax_id", e.target.value)} placeholder="12345678-2-42" disabled={isReadonly} className={aiCn("partner_tax_id")} />
             </div>
             <div className="space-y-1.5">
               <Label>Számla szám</Label>
-              <Input value={form.invoice_number} onChange={(e) => set("invoice_number", e.target.value)} placeholder="M-2025/0234" disabled={isReadonly} />
+              <Input value={form.invoice_number} onChange={(e) => set("invoice_number", e.target.value)} placeholder="M-2025/0234" disabled={isReadonly} className={aiCn("invoice_number")} />
             </div>
           </div>
 
@@ -235,11 +317,11 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1.5">
               <Label>Kiállítás dátuma</Label>
-              <Input type="date" value={form.issue_date} onChange={(e) => set("issue_date", e.target.value)} disabled={isReadonly} />
+              <Input type="date" value={form.issue_date} onChange={(e) => set("issue_date", e.target.value)} disabled={isReadonly} className={aiCn("issue_date")} />
             </div>
             <div className="space-y-1.5">
               <Label>Fizetési határidő</Label>
-              <Input type="date" value={form.due_date} onChange={(e) => set("due_date", e.target.value)} disabled={isReadonly} />
+              <Input type="date" value={form.due_date} onChange={(e) => set("due_date", e.target.value)} disabled={isReadonly} className={aiCn("due_date")} />
             </div>
           </div>
 
@@ -247,7 +329,7 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
           <div className="space-y-1.5">
             <Label>Kategória</Label>
             <Select value={form.category} onValueChange={(v) => set("category", v)} disabled={isReadonly}>
-              <SelectTrigger>
+              <SelectTrigger className={aiCn("category")}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -262,12 +344,12 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1.5">
               <Label className="flex items-center gap-1">Bruttó összeg (Ft) <InfoTip text="A teljes összeg ÁFA-val együtt." side="right" /></Label>
-              <Input type="number" value={form.gross_amount} onChange={(e) => set("gross_amount", e.target.value)} placeholder="0" disabled={isReadonly} />
+              <Input type="number" value={form.gross_amount} onChange={(e) => set("gross_amount", e.target.value)} placeholder="0" disabled={isReadonly} className={aiCn("gross_amount")} />
             </div>
             <div className="space-y-1.5">
               <Label className="flex items-center gap-1">ÁFA kulcs <InfoTip text="A legtöbb számlára 27% vonatkozik." side="right" /></Label>
               <Select value={form.vat_rate} onValueChange={(v) => set("vat_rate", v)} disabled={isReadonly}>
-                <SelectTrigger>
+                <SelectTrigger className={aiCn("vat_rate")}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -289,7 +371,11 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
           {!isReadonly && (
             <div className="space-y-1.5">
               <Label>Csatolt fájlok</Label>
-              <InvoiceFileUpload fileUrls={form.file_urls} onChange={(urls) => set("file_urls", urls)} />
+              <InvoiceFileUpload
+                fileUrls={form.file_urls}
+                onChange={(urls) => set("file_urls", urls)}
+                onExtracted={handleExtracted}
+              />
             </div>
           )}
 
