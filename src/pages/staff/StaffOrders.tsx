@@ -42,6 +42,8 @@ interface Order {
   created_at: string;
   notes?: string;
   items?: OrderItem[];
+  coupon_code?: string | null;
+  discount_huf?: number;
 }
 
 type TabStatus = "new" | "preparing" | "ready";

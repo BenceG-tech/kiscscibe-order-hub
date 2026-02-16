@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Phone, CreditCard, Banknote, Clock, XCircle, AlertTriangle, Loader2 } from "lucide-react";
+import { Phone, CreditCard, Banknote, Clock, XCircle, AlertTriangle, Loader2, Tag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   AlertDialog,
@@ -46,6 +46,8 @@ interface Order {
   created_at: string;
   notes?: string;
   items?: OrderItem[];
+  coupon_code?: string | null;
+  discount_huf?: number;
 }
 
 interface KanbanOrderCardProps {
@@ -108,6 +110,12 @@ const KanbanOrderCard = ({ order, onStatusChange, updating, tick }: KanbanOrderC
             <span className="text-lg font-bold text-foreground">
               {order.total_huf.toLocaleString("hu-HU")} Ft
             </span>
+            {order.coupon_code && order.discount_huf && order.discount_huf > 0 && (
+              <div className="flex items-center justify-end gap-1 text-xs text-green-600 dark:text-green-400 mt-0.5">
+                <Tag className="h-3 w-3" />
+                <span>{order.coupon_code} (-{order.discount_huf.toLocaleString("hu-HU")} Ft)</span>
+              </div>
+            )}
             <div className="flex items-center justify-end gap-1 text-xs text-muted-foreground mt-0.5">
               {order.payment_method === "cash" ? (
                 <>
