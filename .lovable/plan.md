@@ -1,97 +1,66 @@
 
-# SEO es accessibility javitasok
+
+# OrderConfirmation javitasok + tisztitas
 
 ## Osszefoglalas
 
-Ot fejlesztes: FAQ JSON-LD markup, admin/staff lazy loading, Error Boundary, teljes EU allergen lista, es granularis cookie consent.
+Negy modositas: (1) koret/modosito megjelenites a visszaigazolason, (2) nyomtatas gomb + print CSS, (3) dark mode fix (mar megoldva), (4) Hero.tsx torles.
 
-## 1. FAQ JSON-LD strukturalt adat
+## 1. Koret/modosito megjelenites
 
-**Fajl:** `src/components/sections/FAQSection.tsx`
+**Fajl:** `src/pages/OrderConfirmation.tsx`
 
-- A `faqs` tombot felhasznalva generalunk egy `FAQPage` schema.org JSON-LD objektumot
-- `useEffect`-tel beszurjuk a `<head>`-be egy `<script type="application/ld+json">` elemkent
-- Cleanup: `useEffect` return-ben eltavolitjuk (SPA navigacio miatt)
-- A JSON-LD tartalom:
+- Uj interface: `OrderItemOption` (id, label_snapshot, option_type, price_delta_huf)
+- Az `OrderItem` interface bovitese: `options?: OrderItemOption[]`
+- A `fetchOrder` fuggvenyben az `order_items` lekerdezes bovitese: `.select('*, order_item_options(*)')` a kapcsolodo opciok lekeresere
+- Az itemsData feldolgozasanal az `order_item_options`-t hozzarendeljuk az `options` mezohoz
+- A rendelesi tetelek megjelenitesenel minden item ala: ha vannak opciok (es nem `daily_meta` tipusuak), megjelenitjuk oket a megfelelo stilussal
+
+A megjelenites kovetkezi mintaja (a staff/admin oldalakrol):
 ```text
-{
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [
-    { "@type": "Question", "name": "...", "acceptedAnswer": { "@type": "Answer", "text": "..." } },
-    ...
-  ]
-}
+Toltott kaposzta
+  480 Ft x 1 db
+  koret: Hasabburgonya (+200 Ft)
 ```
 
-## 2. React.lazy() admin es staff route-okra
+## 2. Nyomtatas gomb
 
-**Fajl:** `src/App.tsx`
+**Fajl:** `src/pages/OrderConfirmation.tsx`
 
-- A kovetkezo importokat lazy-re alakitjuk:
-  - `AdminDashboard`, `AdminOrders`, `AdminMenu`, `AdminMenuSchedule`, `AdminDailyMenu`, `AdminCapacity`, `AdminGallery`, `AdminLegalPages`, `AdminAboutPage`, `AdminAnalytics`, `AdminCoupons`, `AdminInvoices`, `StaffOrders`
-- Import: `React.lazy`, `Suspense` a React-bol
-- Import: `LoadingSpinner` a `@/components/ui/loading`-bol
-- Minden admin/staff `<Route>` element-jet `<Suspense fallback={<div className="flex items-center justify-center min-h-screen"><LoadingSpinner className="h-8 w-8" /></div>}>` -be csomagoljuk
-- Publikus oldalak (Index, Etlap, Menu, About, Contact, Auth, Checkout, OrderConfirmation, Gallery, legal pages) statikus import marad
+- Import: `Printer` a lucide-react-bol
+- Az akciogombok koze (Uj rendeles + Utvonalterv melle) egy harmadik gomb: "Nyomtatas"
+- `onClick={() => window.print()}`
+- `variant="outline"` stilussal
 
-## 3. Error Boundary
+**Fajl:** `src/index.css`
 
-**Uj fajl:** `src/components/ErrorBoundary.tsx`
+- `@media print` blokk hozzaadasa:
+  - Navigacio, footer, cookie consent, mobil bottom nav elrejtese (`display: none`)
+  - A `print-hide` class-t kapott elemek (gombok szekcio) elrejtese
+  - Feher hatter, fekete szoveg
+  - A nyomtatando tartalom szelességet 100%-ra allitjuk
 
-- React class component (`componentDidCatch`, `getDerivedStateFromError`)
-- Hiba eseten: kozepre igazitott kártya, figyelmeztetés ikon, "Valami hiba tortent" cim, "Kerjuk, frissitsd az oldalt, vagy probald ujra kesobb." szoveg
-- "Ujratöltes" gomb: `window.location.reload()`
-- Magyar szovegek
-- Stilus: a meglevo shadcn/ui Button + Card komponensekkel
+**Fajl:** `src/pages/OrderConfirmation.tsx` (tovabbiakban)
 
-**Fajl:** `src/App.tsx`
+- A gombok div-jere `print:hidden` class
+- A navigaciora `print:hidden` class (a ModernNavigation mar rendelkezik ilyennel, vagy a wrapper div-re tesszuk)
 
-- Az `ErrorBoundary` komponenst a `<BrowserRouter>` kore csomagoljuk (a provider-ek utan, de a Routes elott)
+## 3. Dark mode fix
 
-## 4. Allergen lista bovites 14 EU allergendre
+Az aktualis kodban (319-320. sor) mar megvan a `dark:bg-blue-950/20` es `dark:text-blue-300` — ez a korabbi javitasoknal mar megtortent. Nincs teendo.
 
-**Fajl:** `src/components/sections/AllergenSection.tsx`
+## 4. Hero.tsx torles
 
-- A jelenlegi 5 elemes lista helyett a teljes 14 EU kotelezo allergen:
-  1. Gluten (Wheat ikon)
-  2. Rakfelék (Shell ikon)
-  3. Tojas (Egg ikon)
-  4. Hal (Fish ikon)
-  5. Foldimogyoro (CircleDot ikon)
-  6. Szoja (Bean ikon)
-  7. Tej/laktoz (Milk ikon)
-  8. Diofelek (Nut ikon)
-  9. Zeller (Leaf ikon)
-  10. Mustar (Droplets ikon)
-  11. Szezammag (Grip ikon)
-  12. Ken-dioxid/szulfitok (FlaskConical ikon)
-  13. Csillagfurt/lupinus (Flower2 ikon)
-  14. Puhatestuek (Shell ikon)
-- Minden allergenhez EU szamozas: a label elott megjelenik a szam (pl. "1. Gluten")
-- A "Vegetarianus" sor torlodik (nem EU allergen)
-- Mobil grid: `grid-cols-3` helyett `grid-cols-2` a hosszabb nevek miatt (14 elem 2 oszlopban jol fer)
-- Desktop: `flex-wrap justify-center` marad
-- Szinek: minden allergenhez egyedi szin, hasonloan a jelenlegi mintahoz
+**Fajl:** `src/components/Hero.tsx` — **TORLES**
 
-## 5. Cookie consent granularis valasztas
-
-**Fajl:** `src/components/CookieConsent.tsx`
-
-- A jelenlegi egyetlen "Elfogadom" gomb helyett ket gomb:
-  - "Csak szukseges" — `localStorage.setItem("cookie-consent-level", "necessary")`
-  - "Osszes elfogadasa" — `localStorage.setItem("cookie-consent-level", "all")`
-- Mindket gomb beallitja a regi `cookie-consent` kulcsot is "accepted"-re (hogy a banner ne jelenjen meg ujra)
-- A `STORAGE_KEY` check-nel a `cookie-consent`-et nezzuk (visszafele kompatibilis)
-- UI: mobil — ket gomb egymas alatt (full width), desktop — egymas mellett
-- "Csak szukseges" gomb: `variant="outline"`, "Osszes elfogadasa": `variant="default"`
+- A komponens sehol nincs importalva (ellenorizve: az osszes `import.*Hero` talalat a `heroImage` asset importokra vagy a `HeroSection`-re vonatkozik)
+- Biztonsagosan torolheto
 
 ## Erintett fajlok
 
 | Fajl | Muvelet |
 |------|---------|
-| `src/components/sections/FAQSection.tsx` | Modositas — JSON-LD hozzaadasa |
-| `src/App.tsx` | Modositas — lazy imports + Suspense + ErrorBoundary |
-| `src/components/ErrorBoundary.tsx` | **UJ** — Error Boundary class component |
-| `src/components/sections/AllergenSection.tsx` | Modositas — 14 EU allergen |
-| `src/components/CookieConsent.tsx` | Modositas — granularis gombok |
+| `src/pages/OrderConfirmation.tsx` | Modositas — opciok lekerdezese + megjelenites, nyomtatas gomb, print class-ok |
+| `src/index.css` | Modositas — @media print blokk |
+| `src/components/Hero.tsx` | **TORLES** |
+
