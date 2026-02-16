@@ -953,6 +953,60 @@ export type Database = {
         }
         Relationships: []
       }
+      recurring_invoices: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          day_of_month: number
+          frequency: string
+          gross_amount: number
+          id: string
+          is_active: boolean
+          net_amount: number
+          next_due_date: string
+          notes: string | null
+          partner_name: string
+          partner_tax_id: string | null
+          vat_amount: number
+          vat_rate: number
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          day_of_month?: number
+          frequency?: string
+          gross_amount: number
+          id?: string
+          is_active?: boolean
+          net_amount: number
+          next_due_date: string
+          notes?: string | null
+          partner_name: string
+          partner_tax_id?: string | null
+          vat_amount: number
+          vat_rate?: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          day_of_month?: number
+          frequency?: string
+          gross_amount?: number
+          id?: string
+          is_active?: boolean
+          net_amount?: number
+          next_due_date?: string
+          notes?: string | null
+          partner_name?: string
+          partner_tax_id?: string | null
+          vat_amount?: number
+          vat_rate?: number
+        }
+        Relationships: []
+      }
       settings: {
         Row: {
           key: string

@@ -1,13 +1,15 @@
 import { useState, useMemo } from "react";
 import AdminLayout from "./AdminLayout";
 import { Button } from "@/components/ui/button";
-import { Plus, Download, AlertTriangle } from "lucide-react";
+import { Plus, Download, AlertTriangle, FileSpreadsheet } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import InvoiceSummaryCards from "@/components/admin/InvoiceSummaryCards";
 import InvoiceFilters from "@/components/admin/InvoiceFilters";
 import InvoiceListItem from "@/components/admin/InvoiceListItem";
 import InvoiceFormDialog from "@/components/admin/InvoiceFormDialog";
+import RecurringInvoices from "@/components/admin/RecurringInvoices";
 import { useInvoices, type InvoiceFilters as Filters, type Invoice } from "@/hooks/useInvoices";
-import { exportInvoicesToExcel } from "@/lib/invoiceExport";
+import { exportInvoicesToExcel, exportVatSummaryToExcel } from "@/lib/invoiceExport";
 import InfoTip from "@/components/admin/InfoTip";
 
 const Invoices = () => {
@@ -52,6 +54,26 @@ const Invoices = () => {
               <Download className="h-4 w-4 mr-1" />
               Export
             </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" disabled={invoices.length === 0}>
+                  <FileSpreadsheet className="h-4 w-4 mr-1" />
+                  ÁFA export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => {
+                  const now = new Date();
+                  const label = `${now.getFullYear()}_${String(now.getMonth() + 1).padStart(2, "0")}`;
+                  exportVatSummaryToExcel(invoices, label);
+                }}>Havi ÁFA export</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => {
+                  const now = new Date();
+                  const q = Math.ceil((now.getMonth() + 1) / 3);
+                  exportVatSummaryToExcel(invoices, `${now.getFullYear()}_Q${q}`);
+                }}>Negyedéves ÁFA export</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button onClick={openNew} size="sm">
               <Plus className="h-4 w-4 mr-1" />
               Új bizonylat
@@ -69,6 +91,9 @@ const Invoices = () => {
 
         {/* Filters */}
         <InvoiceFilters filters={filters} onChange={setFilters} />
+
+        {/* Recurring Invoices */}
+        <RecurringInvoices />
 
         {/* Summary */}
         <InvoiceSummaryCards invoices={invoices} />

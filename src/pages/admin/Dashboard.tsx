@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { ShoppingBag, Activity, Gauge, TrendingUp, Calendar, Package, Mail, Loader2, Wallet, TrendingDown, DollarSign } from "lucide-react";
 import AnnouncementEditor from "@/components/admin/AnnouncementEditor";
+import PaymentReminders from "@/components/admin/PaymentReminders";
 import { useOverdueInvoices } from "@/hooks/useOverdueInvoices";
 import InfoTip from "@/components/admin/InfoTip";
 
@@ -174,6 +175,9 @@ const Dashboard = () => {
           </div>
         )}
 
+        {/* Payment Reminders */}
+        <PaymentReminders />
+
         {/* Announcement Editor */}
         <AnnouncementEditor />
 
@@ -225,6 +229,22 @@ const Dashboard = () => {
           >
             {sendingReport ? <Loader2 className="h-5 w-5 animate-spin" /> : <Mail className="h-5 w-5" />}
             <span className="flex items-center gap-1">Teszt napi riport <InfoTip text="Elküld magadnak emailben a mai nap összesítését." side="bottom" /></span>
+          </Button>
+          <Button
+            variant="outline"
+            className="h-auto py-4 flex flex-col items-center gap-2"
+            onClick={async () => {
+              try {
+                const { data, error } = await supabase.functions.invoke("send-monthly-report");
+                if (error) throw error;
+                toast({ title: "Havi riport elküldve!", description: `Eredmény: ${data?.result?.toLocaleString() || 0} Ft` });
+              } catch (err: any) {
+                toast({ title: "Hiba", description: err.message, variant: "destructive" });
+              }
+            }}
+          >
+            <Wallet className="h-5 w-5" />
+            <span className="flex items-center gap-1">Havi riport <InfoTip text="Elküld emailben a havi pénzügyi összesítést." side="bottom" /></span>
           </Button>
         </div>
       </div>
