@@ -48,9 +48,7 @@ const PromoSection = () => {
   });
 
   const actualPrice = menuPrice ?? 2200;
-  const originalPrice = actualPrice + 500;
   const displayPrice = actualPrice.toLocaleString('hu-HU');
-  const displayOriginal = originalPrice.toLocaleString('hu-HU');
 
   return (
     <section className="py-8 md:py-10">
@@ -86,7 +84,6 @@ const PromoSection = () => {
                   <p className="text-sm text-muted-foreground">Napi menü helyben</p>
                   <div className="flex items-baseline gap-2">
                     <p className="text-3xl font-bold text-primary font-sofia">{displayPrice} Ft</p>
-                    <p className="text-lg text-muted-foreground line-through">{displayOriginal} Ft</p>
                   </div>
                 </div>
               </div>
@@ -133,7 +130,6 @@ const PromoSection = () => {
                   <p className="text-sm text-muted-foreground">Napi menü helyben</p>
                   <div className="flex items-baseline gap-2">
                     <p className="text-xl font-bold text-primary font-sofia">{displayPrice} Ft</p>
-                    <p className="text-sm text-muted-foreground line-through">{displayOriginal} Ft</p>
                   </div>
                 </div>
               </div>
