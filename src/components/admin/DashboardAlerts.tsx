@@ -29,11 +29,13 @@ const DashboardAlerts = () => {
       const nextDateStr = format(nextWorkDay, "yyyy-MM-dd");
       const todayStr = format(today, "yyyy-MM-dd");
 
-      const [offerRes, imgRes, todayOfferRes, overdueRes] = await Promise.all([
+      const in3Days = format(addDays(today, 3), "yyyy-MM-dd");
+      const [offerRes, imgRes, todayOfferRes, overdueRes, upcomingRes] = await Promise.all([
         supabase.from("daily_offers").select("id").eq("date", nextDateStr).limit(1),
         supabase.from("menu_items").select("id", { count: "exact", head: true }).eq("is_active", true).is("image_url", null),
         supabase.from("daily_offers").select("id, remaining_portions").eq("date", todayStr).limit(1),
         supabase.from("invoices" as any).select("gross_amount").eq("status", "pending").lt("due_date", todayStr),
+        supabase.from("invoices" as any).select("id", { count: "exact", head: true }).not("status", "in", '("paid","cancelled")').gte("due_date", todayStr).lte("due_date", in3Days),
       ]);
 
       // Tomorrow's menu
@@ -93,6 +95,16 @@ const DashboardAlerts = () => {
           icon: <Receipt className="h-4 w-4" />,
           message: `${overdueItems.length} lejárt fizetési határidejű számla, összesen ${fmt(total)}!`,
           variant: "destructive",
+        });
+      }
+
+      // Upcoming due invoices
+      if (upcomingRes.count && upcomingRes.count > 0) {
+        result.push({
+          key: "upcoming-invoices",
+          icon: <Receipt className="h-4 w-4" />,
+          message: `${upcomingRes.count} számla jár le 3 napon belül!`,
+          variant: "default",
         });
       }
 

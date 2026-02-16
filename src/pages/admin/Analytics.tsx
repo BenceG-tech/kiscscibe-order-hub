@@ -7,6 +7,7 @@ import RevenueTab from "@/components/admin/analytics/RevenueTab";
 import OrdersTab from "@/components/admin/analytics/OrdersTab";
 import MenuPerformanceTab from "@/components/admin/analytics/MenuPerformanceTab";
 import CustomersTab from "@/components/admin/analytics/CustomersTab";
+import YearlyComparisonTab from "@/components/admin/analytics/YearlyComparisonTab";
 import WasteTracking from "@/components/admin/WasteTracking";
 import { subDays } from "date-fns";
 import { Loader2 } from "lucide-react";
@@ -44,6 +45,7 @@ const Analytics = () => {
             <TabsTrigger value="menu" className="!h-9 !shadow-none !scale-100 text-sm">Menü teljesítmény</TabsTrigger>
             <TabsTrigger value="customers" className="!h-9 !shadow-none !scale-100 text-sm">Vásárlók</TabsTrigger>
             <TabsTrigger value="waste" className="!h-9 !shadow-none !scale-100 text-sm">Pazarlás</TabsTrigger>
+            <TabsTrigger value="yearly" className="!h-9 !shadow-none !scale-100 text-sm">Éves</TabsTrigger>
           </TabsList>
 
           {isLoading ? (
@@ -77,6 +79,10 @@ const Analytics = () => {
 
           <TabsContent value="waste" className="mt-4">
             <WasteTracking />
+          </TabsContent>
+
+          <TabsContent value="yearly" className="mt-4">
+            <YearlyComparisonTab />
           </TabsContent>
         </Tabs>
       </div>
