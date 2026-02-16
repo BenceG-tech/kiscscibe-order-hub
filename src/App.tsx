@@ -25,6 +25,7 @@ import TermsAndConditions from "./pages/legal/TermsAndConditions";
 import CookiePolicy from "./pages/legal/CookiePolicy";
 import CookieConsent from "./components/CookieConsent";
 import NotFound from "./pages/NotFound";
+import Rate from "./pages/Rate";
 
 // Lazy-loaded admin & staff pages
 const AdminDashboard = React.lazy(() => import("./pages/admin/Dashboard"));
@@ -69,6 +70,7 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/order-confirmation" element={<OrderConfirmation />} />
+              <Route path="/rate" element={<Rate />} />
               <Route path="/gallery" element={<Gallery />} />
               
               {/* Legal pages */}

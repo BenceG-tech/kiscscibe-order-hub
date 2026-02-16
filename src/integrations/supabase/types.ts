@@ -173,6 +173,39 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_loyalty: {
+        Row: {
+          created_at: string | null
+          current_tier: string
+          email: string | null
+          id: string
+          last_order_at: string | null
+          order_count: number
+          phone: string
+          total_spent_huf: number
+        }
+        Insert: {
+          created_at?: string | null
+          current_tier?: string
+          email?: string | null
+          id?: string
+          last_order_at?: string | null
+          order_count?: number
+          phone: string
+          total_spent_huf?: number
+        }
+        Update: {
+          created_at?: string | null
+          current_tier?: string
+          email?: string | null
+          id?: string
+          last_order_at?: string | null
+          order_count?: number
+          phone?: string
+          total_spent_huf?: number
+        }
+        Relationships: []
+      }
       daily_menu_items: {
         Row: {
           daily_menu_id: string | null
@@ -660,6 +693,39 @@ export type Database = {
           },
         ]
       }
+      loyalty_rewards: {
+        Row: {
+          coupon_code: string | null
+          created_at: string | null
+          id: string
+          is_claimed: boolean | null
+          phone: string
+          reward_type: string
+          reward_value: number
+          triggered_at_order_count: number
+        }
+        Insert: {
+          coupon_code?: string | null
+          created_at?: string | null
+          id?: string
+          is_claimed?: boolean | null
+          phone: string
+          reward_type: string
+          reward_value: number
+          triggered_at_order_count: number
+        }
+        Update: {
+          coupon_code?: string | null
+          created_at?: string | null
+          id?: string
+          is_claimed?: boolean | null
+          phone?: string
+          reward_type?: string
+          reward_value?: number
+          triggered_at_order_count?: number
+        }
+        Relationships: []
+      }
       menu_categories: {
         Row: {
           created_at: string | null
@@ -872,6 +938,30 @@ export type Database = {
           },
         ]
       }
+      order_ratings: {
+        Row: {
+          comment: string | null
+          created_at: string | null
+          id: string
+          order_id: string
+          rating: number
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string | null
+          id?: string
+          order_id: string
+          rating: number
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string | null
+          id?: string
+          order_id?: string
+          rating?: number
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           archived: boolean
@@ -950,6 +1040,30 @@ export type Database = {
           role?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          created_at: string | null
+          endpoint: string
+          id: string
+          keys_json: Json
+          phone: string
+        }
+        Insert: {
+          created_at?: string | null
+          endpoint: string
+          id?: string
+          keys_json: Json
+          phone: string
+        }
+        Update: {
+          created_at?: string | null
+          endpoint?: string
+          id?: string
+          keys_json?: Json
+          phone?: string
         }
         Relationships: []
       }
@@ -1093,6 +1207,17 @@ export type Database = {
           notes: string
           payment_method: string
           phone: string
+          pickup_time: string
+          status: string
+          total_huf: number
+        }[]
+      }
+      get_customer_orders: {
+        Args: { customer_phone: string }
+        Returns: {
+          code: string
+          created_at: string
+          id: string
           pickup_time: string
           status: string
           total_huf: number

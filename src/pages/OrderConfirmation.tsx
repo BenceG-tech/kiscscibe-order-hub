@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, MapPin, Clock, ShoppingCart, Printer } from "lucide-react";
 import { useRestaurantSettings, formatOpeningHoursOneLiner } from "@/hooks/useRestaurantSettings";
+import FavoriteOrderButton from "@/components/FavoriteOrderButton";
+import type { FavoriteOrderItem } from "@/hooks/useFavoriteOrders";
 
 interface OrderItemOption {
   id: string;
@@ -338,6 +340,17 @@ const OrderConfirmation = () => {
                 Új rendelés
               </Link>
             </Button>
+            <FavoriteOrderButton
+              orderName={order.name}
+              items={orderItems.map((item): FavoriteOrderItem => ({
+                item_id: item.id,
+                name: item.name_snapshot,
+                price_huf: item.unit_price_huf,
+                sides: [],
+                modifiers: (item.options || []).map(o => ({ id: o.id, label: o.label_snapshot, price_delta_huf: o.price_delta_huf })),
+              }))}
+              totalHuf={order.total_huf}
+            />
             <Button variant="outline" asChild className="flex-1">
               <a 
                 href={`https://maps.google.com/?q=${mapsQuery}`}

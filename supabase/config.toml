@@ -32,3 +32,9 @@ verify_jwt = false
 
 [functions.weather-forecast]
 verify_jwt = false
+
+[functions.send-rating-request]
+verify_jwt = false
+
+[functions.register-push]
+verify_jwt = false
