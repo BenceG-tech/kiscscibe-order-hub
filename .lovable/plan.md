@@ -1,193 +1,139 @@
 
 
-# Ugyfelelmenyt Novelo Funkciok — 5 uj fejlesztes
+# "Ami Meglepne a Tulajt" — 5 uj funkcio
 
 ## Osszefoglalas
 
-Ot uj funkcio az ugyfelek elmenynek javitasara es a visszatero vasarlok szamanak novelesere. Mivel a rendszer jelenleg anonim rendelest hasznal (nincs vevoi bejelentkezes), a megoldasok telefon + email alapu azonositasra epulnek.
+Ot kulonleges funkcio a Kiscsibe admin rendszerhez: (1) AI-alapu arazasi javaslat, (2) pazarlas-trend elemzes, (3) Facebook poszt szoveg generalo, (4) QR-kodos asztali rendeles, (5) digitalis nyugta emailben. A megoldasok a meglevo adatokat (orders, order_items, daily_waste_log, daily_offers) es a Lovable AI Gateway-t hasznalja.
 
 ---
 
-## 1. Torzsvasarloi rendszer
+## 1. AI-alapu arazasi javaslat
 
-**Cel:** X rendeles utan automatikus kedvezmeny/kupon generalas. A vendeg telefon + email paros alapjan van azonositva.
-
-**Adatbazis migracio:**
-- Uj tabla: `customer_loyalty`
-  - `id` uuid PK default gen_random_uuid()
-  - `phone` text NOT NULL (normalizalt, pl. +36...)
-  - `email` text
-  - `order_count` integer NOT NULL DEFAULT 0
-  - `total_spent_huf` integer NOT NULL DEFAULT 0
-  - `current_tier` text NOT NULL DEFAULT 'bronze' (bronze/silver/gold)
-  - `last_order_at` timestamptz
-  - `created_at` timestamptz DEFAULT now()
-  - UNIQUE(phone)
-  - RLS: service_role full access, public no access
-
-- Uj tabla: `loyalty_rewards`
-  - `id` uuid PK
-  - `phone` text NOT NULL
-  - `reward_type` text NOT NULL ('percentage_discount' | 'fixed_discount' | 'free_item')
-  - `reward_value` integer NOT NULL
-  - `coupon_code` text (ha kupon generalodott)
-  - `is_claimed` boolean DEFAULT false
-  - `triggered_at_order_count` integer NOT NULL
-  - `created_at` timestamptz DEFAULT now()
-  - RLS: service_role only
-
-**Modositott fajlok:**
-- `supabase/functions/submit-order/index.ts` — rendeles vegén:
-  1. Upsert `customer_loyalty` rekord (order_count + 1, total_spent + amount)
-  2. Ellenorzi milestoneokat (5., 10., 20. rendeles)
-  3. Ha milestone: general kupon kodot a `coupons` tablaba es `loyalty_rewards`-ba menti
-  4. A valasz tartalmazza ha van uj jutalom
-
-- `src/pages/OrderConfirmation.tsx` — ha a submit-order valaszban van `loyalty_reward`:
-  - Megjelenit egy szines kartya: "Koszonjuk a husegeted! 🎉 Uj kuponod: XXXXX (10% kedvezmeny)"
-
-**Tier logika (submit-order-ben):**
-- 5 rendeles: 5% kedvezmeny kupon
-- 10 rendeles: 10% kedvezmeny kupon
-- 20 rendeles: 500 Ft kedvezmeny kupon
-- Minden 10. rendeles utan: 5% kedvezmeny kupon
-
----
-
-## 2. "Kedvenc rendelesem" gomb
-
-**Cel:** Ugyfel elmentheti korabbi rendeleset es egy kattintassal ujrarendelheti. localStorage-alapu (nincs bejelentkezes).
+**Cel:** Korabbi eladasi adatok alapjan automatikus arazasi javaslatok, pl. "A gulyasleves 1800 Ft-ert 30%-kal tobbet adtal el mint 2200-ert."
 
 **Uj fajlok:**
-- `src/hooks/useFavoriteOrders.ts` — localStorage hook
-  - `saveFavorite(order)` — elmenti a rendelest: nev, tetelek (item_id, name, price, sides, modifiers), datum
-  - `getFavorites()` — visszaadja az elmentett rendleseket (max 5)
-  - `removeFavorite(id)` — torli az elmentettet
-  - `reorder(favorite)` — betolti a kosarba (CartContext addItem-mel)
-  - Kulcs: `kiscsibe-favorites`
-  - Validacio: ujrarendeles elott ellenorzi, hogy a menu item-ek meg aktívak-e (is_active check)
+- `supabase/functions/ai-pricing-suggestions/index.ts` — Edge function
+  - Lekerdezi az elmult 90 nap `order_items` adatait (item_id, name_snapshot, qty, unit_price_huf)
+  - Csoportositja tetelenkent es aronkent: hanyszor rendeltek es milyen aron
+  - Az aggregalt adatokat elkuldi a Lovable AI Gateway-nek (google/gemini-3-flash-preview)
+  - System prompt: "Te egy ettermi arazasi tanacsado vagy. Elemezd az eladasi adatokat es adj konkret arazasi javaslatokat magyarul."
+  - Visszaadja a strukturalt javaslatokat (tool calling: `suggest_pricing`)
 
-- `src/components/FavoriteOrderButton.tsx` — "Mentes kedvencnek" gomb
-  - Sziv ikon + felirat
-  - Az OrderConfirmation oldalon jelenik meg a rendelesi osszesito alatt
-  - Kattintasra menti az aktualis rendeles osszetevoit
-
-- `src/components/FavoriteOrdersPanel.tsx` — Kedvencek panel
-  - Az Etlap oldalon jelenik meg egy kicsi kartya: "Kedvenc rendelseid"
-  - Lista: rendeles nev, tetelek osszefoglalas, osszeg
-  - "Ujrarendeles" gomb: betolti a kosarba es atiranyit a checkout-ra
-  - "Torles" gomb: eltavolitja a kedvencek kozul
+- `src/components/admin/analytics/PricingSuggestions.tsx` — UI komponens az Analytics oldalon
+  - "AI javaslatok frissitese" gomb → meghivja az edge function-t
+  - Kartya lista: tetel neve, jelenlegi ar, javasolt ar, indoklas
+  - Szinkodolas: zold (arnoveles javasolt), sarga (csokkentes), szurke (megfelelo)
+  - Loading allapot animacioval
+  - Fontos: "Tapasztalati becsles — kizarolag tajekoztato jellegu" felirat
 
 **Modositott fajlok:**
-- `src/pages/OrderConfirmation.tsx` — FavoriteOrderButton beillesztese az akciogombok koze
-- `src/pages/Etlap.tsx` — FavoriteOrdersPanel megjelenitese a napi ajanlat felett (ha vannak mentett kedvencek)
-
----
-
-## 3. Rendelesi elozmynyek
-
-**Cel:** Email/telefon alapjan megtekinthetoek a korabbi rendelesek.
-
-**Adatbazis:**
-- Uj RPC fuggveny: `get_customer_orders(customer_phone text)`
-  - SECURITY DEFINER, stabil
-  - Visszaadja az utolso 20 rendelest: id, code, total_huf, status, created_at, pickup_time
-  - Csak a phone alapjan szur (nem igenyel auth-t)
-
-**Uj fajlok:**
-- `src/components/OrderHistoryLookup.tsx` — komponens
-  - Telefonszam mezo + "Kereses" gomb
-  - RPC hivassal lekerdezi a korabbi rendleseket
-  - Lista: datum, kod, osszeg, statusz badge
-  - Kattintasra megnyitja a reszleteket (uj lapon: /order-confirmation?code=X&phone=Y)
-  - Max 20 rendeles, rendezve datum szerint csokkenoen
-
-**Modositott fajlok:**
-- `src/pages/Etlap.tsx` — Uj szekci o az oldal aljan: "Korabbi rendelseid"
-  - Collapsible/Accordion, alapbol zarva
-  - Benne: OrderHistoryLookup komponens
-
----
-
-## 4. Ertekeles rendeles utan
-
-**Cel:** 1 oraval az atvétel után email: "Hogy izlett?" 1-5 csillag + szoveg.
-
-**Adatbazis migracio:**
-- Uj tabla: `order_ratings`
-  - `id` uuid PK
-  - `order_id` uuid NOT NULL UNIQUE
-  - `rating` integer NOT NULL (1-5)
-  - `comment` text
-  - `created_at` timestamptz DEFAULT now()
-  - RLS: insert barhonnan (anon), select admin-only
-
-**Uj fajlok:**
-- `supabase/functions/send-rating-request/index.ts` — Edge function
-  - Bemenet: `{ order_id }`
-  - Lekerdezi a rendelest
-  - General egy egyedi tokent (order_id hash-elve)
-  - Email: "Hogy izlett?" + 5 csillag link (1-5, mindegyik kulon URL)
-  - Link: `{SITE_URL}/rate?order={order_id}&token={token}&rating=5`
-  - A Google Review link is szerepel a levélben
-
-- `src/pages/Rate.tsx` — Ertekeles oldal
-  - URL param-bol kiolvassa az order_id-t, tokent, elozeteli ertékelést
-  - Megjeleníti a csillagokat (1-5, kattinthato)
-  - Opcionalis megjegyzes mezo
-  - "Kuldés" gomb — insert `order_ratings`-ba
-  - Sikeres kuldes utan: "Koszonjuk! 💛" + Google Review redirect link
-
-**Modositott fajlok:**
-- `supabase/functions/send-order-status-email/index.ts` — a `completed` status email-hez hozzaadja: "1 ora mulva kuldunk egy rovid kérdoivet"
-- `src/App.tsx` — uj Route: `/rate` => Rate komponens
+- `src/pages/admin/Analytics.tsx` — uj "AI Arazas" tab
 - `supabase/config.toml` — uj function szekci o
 
-**Automatizalas:** A `send-order-status-email` function-ben, ha a status `completed`, beallítunk egy 60 perces keseltetést: a `completed` email elkuldese utan meghivja a `send-rating-request` edge function-t (vagy pg_cron schedule-t hasznalunk a kozeljovoben esedékes ratingekre).
+---
+
+## 2. Pazarlas-trend elemzes
+
+**Cel:** A meglevo `daily_waste_log` adatokbol automatikus trendek es javaslatok, pl. "Az elmult 4 hetben minden penteken maradt rantott sajt."
+
+**Uj fajlok:**
+- `src/components/admin/analytics/WasteTrends.tsx` — UI komponens
+  - Lekerdezi az elmult 8 het `daily_waste_log` adatait
+  - Kliens oldali aggregacio:
+    - Nap szerinti bontas: melyik napokra marad a legtobb
+    - Tetel szerinti ismétlodés: hanyszor maradt egy adott etel (min 3x → trend)
+    - Heti osszehasonlitas: nott vagy csokkent a pazarlas
+  - Vizualizacio:
+    - Heti pazarlas vonaldiagram (recharts LineChart)
+    - "Ismetlodo pazarlas" lista: etel neve, hanyszor maradt, melyik napokon
+    - Szin-kodolas: piros ha egyre tobb marad, zold ha javulo trend
+  - Automatikus szoveges javaslatok (sablon-alapu, nem AI):
+    - "A [etel neve] az elmult [X] hetbol [Y]-szor maradt — fontold meg a mennyiseg csokkenteset"
+    - "[Nap neve] napra atlagosan [X]% tobot foztel mint amennyit eladtal"
+
+**Modositott fajlok:**
+- `src/components/admin/WasteTracking.tsx` — uj "Trendek" tab hozzaadasa a meglevo pazarlas UI-hoz
+  - Tabs: "Naplozas" (meglevo) | "Trendek" (uj)
 
 ---
 
-## 5. PWA push ertesites
+## 3. Facebook poszt szoveg generalo
 
-**Cel:** "A rendelesed elkeszult!" + napi menu ertesites — nem kell emailt nezni.
+**Cel:** A napi menubol automatikus Facebook poszt szoveg generalasa az AI segitsegevel, a meglevo kep-generatorral egyutt hasznalhato.
 
 **Uj fajlok:**
-- `public/manifest.json` — PWA manifest
-  - name: "Kiscsibe Rendelés"
-  - short_name: "Kiscsibe"
-  - start_url: "/etlap"
-  - display: "standalone"
-  - theme_color, background_color, icons (a meglevo logok)
+- `supabase/functions/generate-facebook-post/index.ts` — Edge function
+  - Bemenet: `{ date: "YYYY-MM-DD" }`
+  - Lekerdezi az adott nap `daily_offers` + `daily_offer_items` + `menu_items` adatait (get_daily_data RPC)
+  - A menu adatokat elkuldi a Lovable AI Gateway-nek
+  - System prompt: "Irj egy rovid, hangulatos Facebook posztot magyarul egy etterem napi ajanlatarol. Hasznalj emoji-kat mertekletesen. Max 280 karakter. A hangnem legyen kedves es invitalo."
+  - Visszaadja: poszt szoveg + hashtag javaslatok
 
-- `public/sw.js` — Service Worker (minimal, cache-first statikus fajlokra + push event handler)
-  - `push` event: notification megjelenitese
-  - `notificationclick` event: megnyitja az etlapot vagy rendelest
-
-- `src/hooks/usePushNotifications.ts` — hook
-  - `requestPermission()` — megkeri az engedelyt
-  - `subscribe()` — PushManager.subscribe(), elkuldi a subscription-t a szervernek
-  - `unsubscribe()` — leiratozas
-  - Megegyszer: a subscription endpoint-ot elkuldi egy Edge Function-nek
-
-- `supabase/functions/register-push/index.ts` — Edge function
-  - Fogadja a push subscription-t (endpoint, keys)
-  - Elmenti a `push_subscriptions` tablaba (phone-hoz kotve)
-
-**Adatbazis migracio:**
-- Uj tabla: `push_subscriptions`
-  - `id` uuid PK
-  - `phone` text NOT NULL
-  - `endpoint` text NOT NULL UNIQUE
-  - `keys_json` jsonb NOT NULL
-  - `created_at` timestamptz DEFAULT now()
-  - RLS: service_role only
+- `src/components/admin/FacebookPostGenerator.tsx` — UI komponens
+  - A meglevo DailyOfferImageGenerator melle integralva (vagy kulon kartya)
+  - "Poszt szoveg generalasa" gomb
+  - Szerkesztheto szovegmezo a generalt szoveggel
+  - "Masolás vágólapra" gomb
+  - A meglevo kep-generatorbol letoltheto keppel egyutt hasznalja
 
 **Modositott fajlok:**
-- `index.html` — manifest link + service worker regisztracio script
-- `src/pages/OrderConfirmation.tsx` — "Ertesitesek bekapcsolasa" gomb, ha a bongeszo tamogatja
+- `src/pages/admin/DailyMenuManagement.tsx` — A "Kep generator" tab-on belul, a kep generalas ala kerul a poszt szoveg szekci o
+  - Vagy: a DailyOfferImageGenerator.tsx-be agyazva
 - `supabase/config.toml` — uj function
 
-**Megjegyzes:** A push notification kuldese a `send-order-status-email` edge function-bol tortenik: a status valtozas utan nem csak emailt kuld, hanem push notification-t is (ha van subscription az adott telefonszamhoz). Ehhez VAPID kulcsok szuksegesek (uj secret-knt: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`).
+---
+
+## 4. QR-kodos asztali rendeles
+
+**Cel:** Vendeg beolvassa a QR kodot, megnyilik az Etlap oldal — nincs sorbanallas.
+
+**Uj fajlok:**
+- `src/pages/admin/QRGenerator.tsx` — Admin oldal QR kod generalasra
+  - Asztal szam mezo (1-20)
+  - Automatikusan generalja a QR kodot: `{SITE_URL}/etlap?table={asztal_szam}`
+  - A QR kodot SVG-kent generaja (kliens oldali qrcode konyvtar nelkul — Canvas API-val vagy egy egyszeru SVG generatorral)
+  - Letoltheto PNG formaban (egyenként vagy osszes asztal egyszerre)
+  - Nyomtathato A6-os kartya formatum: QR kod + "Rendelj a telefonodrol!" felirat + Kiscsibe logo + asztal szam
+
+- `src/components/admin/QRCodeCard.tsx` — QR kod kartya komponens
+  - QR kod megjelenitese
+  - Asztal szam
+  - Letoltes gomb
+
+**Megjegyzes:** A QR kod egyszeruen a meglevo Etlap oldalra mutat egy `?table=X` query parameterrel. Az Etlap oldal ezt az informaciot megjeleníti a kosar/rendeles feluleten mint "Asztal: X". Nem igenyel adatbazis valtoztatast.
+
+**Modositott fajlok:**
+- `src/pages/Etlap.tsx` — `table` query param kiolvasasa es megjelenitese badge-kent
+- `src/pages/Checkout.tsx` — `table` param atvitele a rendelesi megjegyzesbe (notes mezo)
+- `src/App.tsx` — uj Route: `/admin/qr` => QRGenerator (ProtectedRoute)
+- `src/pages/admin/AdminLayout.tsx` — uj menu pont: "QR Kodok"
+
+**QR kod generacios logika:** Canvas-alapu QR kod generalas (saját implementacio, nincs extra fuggoseg):
+- A QR kod generalashoz a meglevo Canvas API-t hasznaljuk (mint a kep-generatornal)
+- Alternativa: a `qrcode` npm csomag hasznalata (kicsi, fuggoseg nelkuli)
+
+---
+
+## 5. Digitalis nyugta emailben
+
+**Cel:** A vevo emailben kapja a nyugtat a rendeles utan — "zold es modern".
+
+**Modositott fajlok:**
+- `supabase/functions/submit-order/index.ts` — A meglevo visszaigazolo email bovitese nyugta formatummal
+  - Az email mar most tartalmazza a rendeles osszes reszletet (tetelek, arak, osszeg)
+  - Bovites: 
+    - ÁFA bontas (27% ÁFA): netto osszeg, ÁFA osszeg, brutto osszeg
+    - Rendeles szam (order code) mint szamlaszam
+    - Datum + idopont
+    - "Ez a dokumentum nem minösül adóügyi bizonylatnak" felirat
+    - Nyomtathato HTML stilus (`@media print` optimalizalt)
+  - Uj email sekci o: "Digitalis nyugta" blokk a visszaigazolas emailben
+
+- `src/pages/OrderConfirmation.tsx` — "Nyugta letoltese PDF-ben" gomb
+  - `window.print()` alapu — a visszaigazolo oldalt nyomtatobarat formatumban rendereli
+  - A `@media print` CSS elrejti a navigaciot es csak a nyugta tartalmat mutatja
+  - Alternativa: a jelenlegi oldalon egy "Nyomtatas" gombbal (mar van egy `Printer` ikon importalva)
 
 ---
 
@@ -195,42 +141,39 @@ Ot uj funkcio az ugyfelek elmenynek javitasara es a visszatero vasarlok szamanak
 
 | Fajl | Muvelet |
 |------|---------|
-| Migracio: `customer_loyalty` + `loyalty_rewards` | UJ |
-| Migracio: `order_ratings` | UJ |
-| Migracio: `push_subscriptions` | UJ |
-| DB RPC: `get_customer_orders` | UJ |
-| `supabase/functions/submit-order/index.ts` | Modositas (loyalty logika) |
-| `supabase/functions/send-order-status-email/index.ts` | Modositas (push + rating trigger) |
-| `supabase/functions/send-rating-request/index.ts` | UJ |
-| `supabase/functions/register-push/index.ts` | UJ |
+| `supabase/functions/ai-pricing-suggestions/index.ts` | UJ |
+| `supabase/functions/generate-facebook-post/index.ts` | UJ |
+| `src/components/admin/analytics/PricingSuggestions.tsx` | UJ |
+| `src/components/admin/analytics/WasteTrends.tsx` | UJ |
+| `src/components/admin/FacebookPostGenerator.tsx` | UJ |
+| `src/pages/admin/QRGenerator.tsx` | UJ |
+| `src/components/admin/QRCodeCard.tsx` | UJ |
 | `supabase/config.toml` | Modositas (2 uj function) |
-| `src/hooks/useFavoriteOrders.ts` | UJ |
-| `src/hooks/usePushNotifications.ts` | UJ |
-| `src/components/FavoriteOrderButton.tsx` | UJ |
-| `src/components/FavoriteOrdersPanel.tsx` | UJ |
-| `src/components/OrderHistoryLookup.tsx` | UJ |
-| `src/pages/Rate.tsx` | UJ |
-| `src/pages/OrderConfirmation.tsx` | Modositas (kedvenc + push + loyalty) |
-| `src/pages/Etlap.tsx` | Modositas (kedvencek panel + elozmynyek) |
-| `src/App.tsx` | Modositas (uj /rate route) |
-| `public/manifest.json` | UJ |
-| `public/sw.js` | UJ |
-| `index.html` | Modositas (manifest + SW) |
+| `src/pages/admin/Analytics.tsx` | Modositas (AI Arazas tab) |
+| `src/components/admin/WasteTracking.tsx` | Modositas (Trendek tab) |
+| `src/components/admin/DailyOfferImageGenerator.tsx` | Modositas (poszt szoveg szekci o) |
+| `src/pages/admin/DailyMenuManagement.tsx` | Modositas (ha kulon tab kell a posztnak) |
+| `supabase/functions/submit-order/index.ts` | Modositas (AFA bontas az emailben) |
+| `src/pages/OrderConfirmation.tsx` | Modositas (nyomtatas gomb) |
+| `src/pages/Etlap.tsx` | Modositas (table param) |
+| `src/pages/Checkout.tsx` | Modositas (table param atvitele) |
+| `src/App.tsx` | Modositas (uj route) |
+| `src/pages/admin/AdminLayout.tsx` | Modositas (uj menu pont) |
+
+---
 
 ## Implementacios sorrend
 
-1. **Adatbazis migraciok** — 3 uj tabla + 1 RPC fuggveny
-2. **Kedvenc rendelesem** — tisztan kliens oldali (localStorage), legkisebb kockazat
-3. **Rendelesi elozmynyek** — RPC + UI komponens
-4. **Torzsvasarloi rendszer** — submit-order bovites + OrderConfirmation UI
-5. **Ertekeles rendeles utan** — uj edge function + Rate oldal
-6. **PWA push ertesites** — manifest + SW + push subscription + VAPID
+1. **Digitalis nyugta** — a meglevo submit-order email bovitese, legkisebb kockazat
+2. **Pazarlas-trend elemzes** — kliens oldali aggregacio a meglevo adatokbol
+3. **Facebook poszt generalo** — uj edge function + UI a meglevo kep-generator melle
+4. **QR-kodos asztali rendeles** — uj admin oldal + Etlap/Checkout modositas
+5. **AI arazasi javaslat** — uj edge function + Analytics tab
 
-## Fontos megjegyzesek
+## Technikai megjegyzesek
 
-- A torzsvasarloi rendszer es az elozmynyek telefon alapjan azonositanak — nincs szukseg bejelentkezesre
-- A kedvencek localStorage-ban tarolodnak, igy eszkoz-fuggoek (de nincs szukseg auth-ra)
-- A push notification-hoz VAPID kulcsok szuksegesek — ezeket uj secretkent kell beallitani
-- Az ertekeles oldal publikusan elerheto (token-nel vedve), nem igenyel bejelentkezest
-- A `get_customer_orders` RPC SECURITY DEFINER, igy nem fedi fel mas vendegek adatait — csak a sajat telefonszammal lekerdezhetok
+- Az AI funkciok (arazas, poszt) a Lovable AI Gateway-t hasznaljak a `LOVABLE_API_KEY` secret-tel, ami mar konfiguralt
+- A QR kod generaciora ket opcio van: (a) sajat Canvas-alapu implementacio, vagy (b) `qrcode` npm csomag. Az utobbit javaslom egyszeruseg vegett
+- A digitalis nyugta nem adougyi bizonylat — ezt az emailben es az oldalon is jelezni kell
+- A pazarlas-trend elemzes nem hasznal AI-t, hanem sablon-alapu javaslatokat general — gyors es megbizhato
 
