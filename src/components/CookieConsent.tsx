@@ -24,6 +24,7 @@ const CookieConsent = () => {
       localStorage.setItem(STORAGE_KEY, "accepted");
       localStorage.setItem(LEVEL_KEY, level);
       setVisible(false);
+      window.dispatchEvent(new Event("cookie-consent-accepted"));
     }, 300);
   };
 

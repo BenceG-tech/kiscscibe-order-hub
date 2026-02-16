@@ -64,9 +64,24 @@ const AnnouncementPopup = () => {
     if (!announcement?.enabled || !announcement.title) return;
     const dismissKey = `announcement-dismissed-${announcement.updatedAt}`;
     if (localStorage.getItem(dismissKey)) return;
-    // Small delay for better UX
-    const timer = setTimeout(() => setOpen(true), 800);
-    return () => clearTimeout(timer);
+
+    const tryOpen = () => {
+      if (localStorage.getItem("cookie-consent")) {
+        setOpen(true);
+        return true;
+      }
+      return false;
+    };
+
+    // If cookie consent already accepted, open after small delay
+    if (tryOpen()) return;
+
+    // Otherwise wait for cookie consent
+    const onConsent = () => {
+      setTimeout(() => setOpen(true), 600);
+    };
+    window.addEventListener("cookie-consent-accepted", onConsent);
+    return () => window.removeEventListener("cookie-consent-accepted", onConsent);
   }, [announcement]);
 
   const handleDismiss = () => {
