@@ -1,23 +1,48 @@
 
+# Ket modositas: 5 csillagos ertekelesek + Hirlevel feliratkozo lista
 
-# Cookie Consent banner prioritasa az Announcement Popup felett
+## 1. Minden ertekeles 5 csillagos
 
-## Problema
+**Fajl:** `src/components/sections/ReviewsSection.tsx`
 
-A kepernyokepon lathato, hogy mobilon a Cookie Consent banner es az Announcement Popup (Drawer) egyszerre jelenik meg. A Drawer (vaul) portalkent renderelodik a DOM vegere, ezert vizualisan a cookie banner fole kerul, annak ellenere, hogy a cookie banner z-[60], a Drawer pedig z-50. Igy a felhasznalo nem tud eloszor a cookie bannerre kattintani.
+- A `reviews` tombben a ket 4 csillagos ertekeles (Szabo Peter es Toth Mark) `rating` ertekeit 4-rol 5-re allitjuk
+- Az `averageRating` erteket 4.7-rol 5.0-ra modositjuk
 
-## Megoldas
+## 2. Feliratkozo lista az admin hirlevel panelen
 
-Az AnnouncementPopup komponensben figyelni kell, hogy a cookie consent mar el van-e fogadva. Ha meg nincs, a popup NEM jelenik meg — megvarja, amig a felhasznalo elfogadja a sutiket. Igy a cookie banner mindig elsobbseget elvez.
+**Fajl:** `src/components/admin/WeeklyNewsletterPanel.tsx`
+
+A jelenlegi panel csak a feliratkozok szamat mutatja. Bovites:
+
+- A meglevo `subscribers-count` query helyett/mellett lekerdezzuk az osszes feliratkozo email cimet is (`supabase.from("subscribers").select("id, email, created_at")`)
+- Uj szekci o a "Heti menu elonezet" kartya felett: **"Feliratkozok"** kartya
+  - Tablazat: email cim, feliratkozas datuma, checkbox
+  - "Osszes kivalasztasa / Kivalasztas torlese" gomb
+  - Alapertelmezetten minden feliratkozo ki van valasztva
+  - A felhasznalo egyes feliratkozokat kijelolhet/kitorolhet a checkboxszal
+- A "Heti menu kikuldese" gomb logikaja modosul:
+  - A kivalasztott email cimeket a `send-weekly-menu` edge function-nek kuldi (`selected_emails` parameterben)
+  - A megerosito dialogusban a kivalasztott szam jelenik meg (pl. "12/15 feliratkozonak")
+
+**Fajl:** `supabase/functions/send-weekly-menu/index.ts`
+
+- Ha a request body tartalmaz `selected_emails` tombot, akkor csak azoknak kuld (a `subscribers` tablabol szurve)
+- Ha nincs `selected_emails`, az osszes feliratkozonak kuld (visszafele kompatibilis)
 
 ## Technikai reszletek
 
-**Modositott fajl:** `src/components/AnnouncementPopup.tsx`
+### ReviewsSection.tsx valtozasok
+- 31. sor: `rating: 4` → `rating: 5` (Szabo Peter)
+- 46. sor: `rating: 4` → `rating: 5` (Toth Mark)
+- 60. sor: `averageRating` 4.7 → 5.0
 
-- A `useEffect`-ben (ami az `open` allapotot allitja) ellenorizni kell a `localStorage.getItem("cookie-consent")` erteket
-- Ha nincs meg elfogadva, nem nyilik meg a popup
-- Egy `setInterval` vagy `storage` event figyeli, mikor fogadja el a felhasznalo — utana megjelenithetjuk a popupot
-- Alternativ: a `CookieConsent` komponensben egy `window.dispatchEvent(new Event("cookie-consent-accepted"))` esemeny, amit az AnnouncementPopup figyel
+### WeeklyNewsletterPanel.tsx valtozasok
+- Uj import: `Checkbox` komponens (`@/components/ui/checkbox`), `Table` komponensek
+- Uj state: `selectedEmails: Set<string>` (alapbol az osszes ki van valasztva)
+- Uj query: feliratkozo lista (email + created_at + id)
+- Uj UI szekci o: feliratkozo tablazat checkbox-okkal
+- A `handleSend` fuggveny modositasa: `selected_emails` parameter kuldese
 
-**Elony:** Nem kell z-index-eket bolygani, a logikai sorrend helyes: eloszor cookie consent, utana az ertesites.
-
+### send-weekly-menu/index.ts valtozasok
+- A `body` parseolasa utan: ha van `selected_emails`, szures a feliratkozok kozott
+- `subscribers` lekerdezeshez `.in("email", body.selected_emails)` filter hozzaadasa
