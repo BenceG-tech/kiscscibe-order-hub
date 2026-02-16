@@ -41,6 +41,7 @@ import {
   Search,
   Download,
   X,
+  Tag,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -79,6 +80,8 @@ interface Order {
   notes?: string;
   archived?: boolean;
   items?: OrderItem[];
+  coupon_code?: string | null;
+  discount_huf?: number;
 }
 
 /** Format date as Hungarian string */
@@ -548,8 +551,14 @@ const ActiveOrderCard = ({
           </div>
           <div className="text-right">
             <p className="text-2xl font-bold text-primary">
-              {order.total_huf} Ft
+              {order.total_huf.toLocaleString("hu-HU")} Ft
             </p>
+            {order.coupon_code && order.discount_huf && order.discount_huf > 0 && (
+              <p className="text-xs text-green-600 dark:text-green-400 flex items-center justify-end gap-1 mt-0.5">
+                <Tag className="h-3 w-3" />
+                {order.coupon_code} (-{order.discount_huf.toLocaleString("hu-HU")} Ft)
+              </p>
+            )}
             <p className="text-sm text-muted-foreground">
               <CreditCard className="h-4 w-4 inline mr-1" />
               {order.payment_method === "cash" ? "Készpénz" : "Kártya"}
