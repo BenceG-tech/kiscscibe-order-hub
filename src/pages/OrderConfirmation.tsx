@@ -5,8 +5,15 @@ import ModernNavigation from "@/components/ModernNavigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, MapPin, Clock, ShoppingCart } from "lucide-react";
+import { CheckCircle, MapPin, Clock, ShoppingCart, Printer } from "lucide-react";
 import { useRestaurantSettings, formatOpeningHoursOneLiner } from "@/hooks/useRestaurantSettings";
+
+interface OrderItemOption {
+  id: string;
+  label_snapshot: string;
+  option_type: string | null;
+  price_delta_huf: number;
+}
 
 interface Order {
   id: string;
@@ -26,6 +33,7 @@ interface OrderItem {
   unit_price_huf: number;
   qty: number;
   line_total_huf: number;
+  options?: OrderItemOption[];
 }
 
 const OrderConfirmation = () => {
@@ -73,7 +81,7 @@ const OrderConfirmation = () => {
       
       const { data: itemsData, error: itemsError } = await supabase
         .from('order_items')
-        .select('*')
+        .select('*, order_item_options(*)')
         .eq('order_id', order.id);
 
       if (itemsError) {
@@ -81,7 +89,18 @@ const OrderConfirmation = () => {
         return;
       }
 
-      setOrderItems(itemsData || []);
+      const mappedItems: OrderItem[] = (itemsData || []).map((item: any) => ({
+        id: item.id,
+        name_snapshot: item.name_snapshot,
+        unit_price_huf: item.unit_price_huf,
+        qty: item.qty,
+        line_total_huf: item.line_total_huf,
+        options: (item.order_item_options || []).filter(
+          (opt: any) => opt.option_type !== 'daily_meta'
+        ),
+      }));
+
+      setOrderItems(mappedItems);
     } catch (error) {
       console.error('Error fetching order:', error);
       setOrder(null);
@@ -256,16 +275,32 @@ const OrderConfirmation = () => {
               <h3 className="text-lg font-semibold mb-4">Rendelt tételek</h3>
               <div className="space-y-3">
                 {orderItems.map((item) => (
-                  <div key={item.id} className="flex justify-between items-center py-2 border-b border-muted last:border-0">
-                    <div className="flex-1">
-                      <p className="font-medium">{item.name_snapshot}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {item.unit_price_huf} Ft × {item.qty} db
+                  <div key={item.id} className="py-2 border-b border-muted last:border-0">
+                    <div className="flex justify-between items-center">
+                      <div className="flex-1">
+                        <p className="font-medium">{item.name_snapshot}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {item.unit_price_huf} Ft × {item.qty} db
+                        </p>
+                      </div>
+                      <p className="font-semibold">
+                        {item.line_total_huf} Ft
                       </p>
                     </div>
-                    <p className="font-semibold">
-                      {item.line_total_huf} Ft
-                    </p>
+                    {item.options && item.options.length > 0 && (
+                      <div className="mt-1 ml-4 space-y-0.5">
+                        {item.options.map((opt) => (
+                          <p key={opt.id} className="text-xs text-muted-foreground">
+                            ↳ {opt.label_snapshot}
+                            {opt.price_delta_huf > 0 && (
+                              <span className="ml-1 text-primary font-medium">
+                                (+{opt.price_delta_huf} Ft)
+                              </span>
+                            )}
+                          </p>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
                 <div className="border-t pt-3 mt-4">
@@ -296,7 +331,7 @@ const OrderConfirmation = () => {
           </Card>
 
           {/* Actions */}
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-4 print:hidden">
             <Button asChild className="flex-1">
               <Link to="/etlap">
                 <ShoppingCart className="mr-2 h-4 w-4" />
@@ -312,6 +347,10 @@ const OrderConfirmation = () => {
                 <MapPin className="mr-2 h-4 w-4" />
                 Útvonalterv
               </a>
+            </Button>
+            <Button variant="outline" className="flex-1" onClick={() => window.print()}>
+              <Printer className="mr-2 h-4 w-4" />
+              Nyomtatás
             </Button>
           </div>
 

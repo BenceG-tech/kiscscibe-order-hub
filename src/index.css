@@ -286,3 +286,21 @@
     border-color: hsl(var(--primary));
   }
 }
+
+/* Print styles */
+@media print {
+  nav, footer, .cookie-consent, .mobile-bottom-nav, .print\\:hidden {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .max-w-2xl {
+    max-width: 100% !important;
+  }
+}
