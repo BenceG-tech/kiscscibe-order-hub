@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -63,21 +64,39 @@ interface DayPreview {
   }>;
 }
 
+interface Subscriber {
+  id: string;
+  email: string;
+  created_at: string | null;
+}
+
 const WeeklyNewsletterPanel = () => {
   const [isSending, setIsSending] = useState(false);
+  const [selectedEmails, setSelectedEmails] = useState<Set<string>>(new Set());
   const { monday, dates, label: weekLabel } = getWeekDates();
 
-  // Fetch subscriber count
-  const { data: subscriberCount = 0 } = useQuery({
-    queryKey: ["subscribers-count"],
+  // Fetch subscribers list
+  const { data: subscribers = [] } = useQuery({
+    queryKey: ["subscribers-list"],
     queryFn: async () => {
-      const { count, error } = await supabase
+      const { data, error } = await supabase
         .from("subscribers")
-        .select("*", { count: "exact", head: true });
+        .select("id, email, created_at")
+        .order("created_at", { ascending: false });
       if (error) throw error;
-      return count || 0;
+      return (data || []) as Subscriber[];
     },
   });
+
+  // Select all subscribers by default when data loads
+  useEffect(() => {
+    if (subscribers.length > 0 && selectedEmails.size === 0) {
+      setSelectedEmails(new Set(subscribers.map((s) => s.email)));
+    }
+  }, [subscribers]);
+
+  const subscriberCount = subscribers.length;
+  const selectedCount = selectedEmails.size;
 
   // Fetch last sent info
   const { data: lastSent, refetch: refetchLastSent } = useQuery({
@@ -152,12 +171,37 @@ const WeeklyNewsletterPanel = () => {
     },
   });
 
+  const handleToggleEmail = (email: string) => {
+    setSelectedEmails((prev) => {
+      const next = new Set(prev);
+      if (next.has(email)) {
+        next.delete(email);
+      } else {
+        next.add(email);
+      }
+      return next;
+    });
+  };
+
+  const handleToggleAll = () => {
+    if (selectedCount === subscriberCount) {
+      setSelectedEmails(new Set());
+    } else {
+      setSelectedEmails(new Set(subscribers.map((s) => s.email)));
+    }
+  };
+
   const handleSend = async () => {
     setIsSending(true);
     try {
-      const { data, error } = await supabase.functions.invoke("send-weekly-menu", {
-        body: { week_start: monday },
-      });
+      const body: { week_start: string; selected_emails?: string[] } = { week_start: monday };
+      
+      // Only send selected_emails if not all are selected
+      if (selectedCount < subscriberCount) {
+        body.selected_emails = Array.from(selectedEmails);
+      }
+
+      const { data, error } = await supabase.functions.invoke("send-weekly-menu", { body });
 
       if (error) throw error;
 
@@ -246,6 +290,59 @@ const WeeklyNewsletterPanel = () => {
         </div>
       )}
 
+      {/* Subscribers List */}
+      {subscriberCount > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Feliratkozók ({selectedCount}/{subscriberCount} kiválasztva)
+              </CardTitle>
+              <Button variant="outline" size="sm" onClick={handleToggleAll}>
+                {selectedCount === subscriberCount ? "Összes törlése" : "Összes kiválasztása"}
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="max-h-64 overflow-y-auto border rounded-lg">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-muted">
+                  <tr>
+                    <th className="w-10 p-2 text-left">
+                      <Checkbox
+                        checked={selectedCount === subscriberCount && subscriberCount > 0}
+                        onCheckedChange={handleToggleAll}
+                      />
+                    </th>
+                    <th className="p-2 text-left font-medium">Email</th>
+                    <th className="p-2 text-left font-medium hidden sm:table-cell">Feliratkozás</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {subscribers.map((sub) => (
+                    <tr key={sub.id} className="border-t hover:bg-muted/50 transition-colors">
+                      <td className="p-2">
+                        <Checkbox
+                          checked={selectedEmails.has(sub.email)}
+                          onCheckedChange={() => handleToggleEmail(sub.email)}
+                        />
+                      </td>
+                      <td className="p-2 truncate max-w-[200px]">{sub.email}</td>
+                      <td className="p-2 text-muted-foreground hidden sm:table-cell">
+                        {sub.created_at
+                          ? new Date(sub.created_at).toLocaleDateString("hu-HU")
+                          : "–"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Weekly Menu Preview */}
       <Card>
         <CardHeader className="pb-3">
@@ -314,7 +411,7 @@ const WeeklyNewsletterPanel = () => {
           <AlertDialogTrigger asChild>
             <Button
               size="lg"
-              disabled={isSending || subscriberCount === 0 || !hasMenuData}
+              disabled={isSending || selectedCount === 0 || !hasMenuData}
               className="gap-2"
             >
               {isSending ? (
@@ -325,7 +422,7 @@ const WeeklyNewsletterPanel = () => {
               ) : (
                 <>
                   <Send className="h-4 w-4" />
-                  Heti menü kiküldése
+                  Heti menü kiküldése ({selectedCount} fő)
                 </>
               )}
             </Button>
@@ -334,7 +431,7 @@ const WeeklyNewsletterPanel = () => {
             <AlertDialogHeader>
               <AlertDialogTitle>Heti menü kiküldése</AlertDialogTitle>
               <AlertDialogDescription>
-                Biztosan ki akarod küldeni a heti menüt <strong>{subscriberCount} feliratkozónak</strong>?
+                Biztosan ki akarod küldeni a heti menüt <strong>{selectedCount}/{subscriberCount} feliratkozónak</strong>?
                 {isCurrentWeekSent && (
                   <span className="block mt-2 text-destructive font-medium">
                     ⚠️ Erre a hétre már küldtél hírlevelet. Biztos újra ki akarod küldeni?
@@ -349,10 +446,10 @@ const WeeklyNewsletterPanel = () => {
           </AlertDialogContent>
         </AlertDialog>
 
-        {subscriberCount === 0 && (
-          <p className="text-sm text-muted-foreground">Nincs feliratkozó a rendszerben.</p>
+        {selectedCount === 0 && (
+          <p className="text-sm text-muted-foreground">Válassz ki legalább egy feliratkozót.</p>
         )}
-        {!hasMenuData && subscriberCount > 0 && (
+        {!hasMenuData && selectedCount > 0 && (
           <p className="text-sm text-muted-foreground">Állítsd be a heti menüt a kiküldés előtt.</p>
         )}
       </div>
