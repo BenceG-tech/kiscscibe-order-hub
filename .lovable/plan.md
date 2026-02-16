@@ -1,66 +1,55 @@
 
-
-# OrderConfirmation javitasok + tisztitas
+# Kosar es rendeles javitasok
 
 ## Osszefoglalas
 
-Negy modositas: (1) koret/modosito megjelenites a visszaigazolason, (2) nyomtatas gomb + print CSS, (3) dark mode fix (mar megoldva), (4) Hero.tsx torles.
+Harom hiba javitasa: (1) kosar dialog gorgethetoseg, (2) napi menu duplikacio megakadalyozasa, (3) CORS konfiguracio bovitese a rendeles leadashoz.
 
-## 1. Koret/modosito megjelenites
+## 1. Kosar dialog gorgethetoseg
 
-**Fajl:** `src/pages/OrderConfirmation.tsx`
+**Fajl:** `src/components/CartDialog.tsx`
 
-- Uj interface: `OrderItemOption` (id, label_snapshot, option_type, price_delta_huf)
-- Az `OrderItem` interface bovitese: `options?: OrderItemOption[]`
-- A `fetchOrder` fuggvenyben az `order_items` lekerdezes bovitese: `.select('*, order_item_options(*)')` a kapcsolodo opciok lekeresere
-- Az itemsData feldolgozasanal az `order_item_options`-t hozzarendeljuk az `options` mezohoz
-- A rendelesi tetelek megjelenitesenel minden item ala: ha vannak opciok (es nem `daily_meta` tipusuak), megjelenitjuk oket a megfelelo stilussal
+- A kosar tetelek listaja (`space-y-4` div) nem gorgethet, igy sok tetelnel a "Tovabb a fizeteshez" gomb kilog a kepernyorol
+- Megoldas: a tetelek listajat `overflow-y-auto` es `max-h-[50vh]` stilussal latjuk el, hogy goergetheto legyen
+- Az osszesito/gomb resz (`border-t pt-4`) a lista alatt marad, mindig lathato
 
-A megjelenites kovetkezi mintaja (a staff/admin oldalakrol):
-```text
-Toltott kaposzta
-  480 Ft x 1 db
-  koret: Hasabburgonya (+200 Ft)
-```
+## 2. Napi menu duplikacio javitasa
 
-## 2. Nyomtatas gomb
+**Fajl:** `src/contexts/CartContext.tsx`
 
-**Fajl:** `src/pages/OrderConfirmation.tsx`
+- Az `addCompleteMenu` fuggvenyben az ID jelenleg: `complete_menu_${menu.id}_${Date.now()}`
+- A `Date.now()` miatt minden kattintas egyedi ID-t general, igy a reducer `findIndex`-e soha nem talalja meg a meglevo tetelt
+- Megoldas: az ID-bol eltavolitjuk a `Date.now()` reszt: `complete_menu_${menu.id}_${menu.soup.id}_${menu.main.id}`
+- Igy ugyanazt a menut tobbszor megnyomva a darabszam no, nem jon letre uj sor
 
-- Import: `Printer` a lucide-react-bol
-- Az akciogombok koze (Uj rendeles + Utvonalterv melle) egy harmadik gomb: "Nyomtatas"
-- `onClick={() => window.print()}`
-- `variant="outline"` stilussal
+## 3. CORS konfiguracio bovitese
 
-**Fajl:** `src/index.css`
+**Fajl:** `supabase/functions/_shared/cors.ts`
 
-- `@media print` blokk hozzaadasa:
-  - Navigacio, footer, cookie consent, mobil bottom nav elrejtese (`display: none`)
-  - A `print-hide` class-t kapott elemek (gombok szekcio) elrejtese
-  - Feher hatter, fekete szoveg
-  - A nyomtatando tartalom szelességet 100%-ra allitjuk
-
-**Fajl:** `src/pages/OrderConfirmation.tsx` (tovabbiakban)
-
-- A gombok div-jere `print:hidden` class
-- A navigaciora `print:hidden` class (a ModernNavigation mar rendelkezik ilyennel, vagy a wrapper div-re tesszuk)
-
-## 3. Dark mode fix
-
-Az aktualis kodban (319-320. sor) mar megvan a `dark:bg-blue-950/20` es `dark:text-blue-300` — ez a korabbi javitasoknal mar megtortent. Nincs teendo.
-
-## 4. Hero.tsx torles
-
-**Fajl:** `src/components/Hero.tsx` — **TORLES**
-
-- A komponens sehol nincs importalva (ellenorizve: az osszes `import.*Hero` talalat a `heroImage` asset importokra vagy a `HeroSection`-re vonatkozik)
-- Biztonsagosan torolheto
+- A jelenlegi CORS ellenorzes: `origin.endsWith(".lovable.app")`
+- A preview kornyezet viszont `.lovableproject.com` domainrol fut (lasd console logokban: `98ed56c3-...lovableproject.com`)
+- Emiatt a `submit-order` edge function elutasitja a kerest es "Failed to fetch" hibauzenet jelenik meg
+- Megoldas: a CORS `isAllowed` feltetelben hozzaadjuk: `|| origin.endsWith(".lovableproject.com")`
+- Az edge function ujratelepitese is szukseges a valtozas utan
 
 ## Erintett fajlok
 
 | Fajl | Muvelet |
 |------|---------|
-| `src/pages/OrderConfirmation.tsx` | Modositas — opciok lekerdezese + megjelenites, nyomtatas gomb, print class-ok |
-| `src/index.css` | Modositas — @media print blokk |
-| `src/components/Hero.tsx` | **TORLES** |
+| `src/components/CartDialog.tsx` | Modositas — gorgethetoseg + fix gomb |
+| `src/contexts/CartContext.tsx` | Modositas — `Date.now()` torles az ID-bol |
+| `supabase/functions/_shared/cors.ts` | Modositas — `.lovableproject.com` hozzaadasa |
 
+## Technikai reszletek
+
+**CartDialog.tsx valtozas:**
+- A tetelek `div`-je: `className="space-y-4 overflow-y-auto max-h-[50vh] pr-1"` (pr-1 a scrollbar hely)
+- Az osszesito `div` kint marad a gorgetett teruletbol
+
+**CartContext.tsx valtozas (283. sor):**
+- Regi: `id: \`complete_menu_\${menu.id}_\${Date.now()}\``
+- Uj: `id: \`complete_menu_\${menu.id}_\${menu.soup.id}_\${menu.main.id}\``
+
+**CORS valtozas (16. sor):**
+- Regi: `origin.endsWith(".lovable.app")`
+- Uj: `origin.endsWith(".lovable.app") || origin.endsWith(".lovableproject.com")`
