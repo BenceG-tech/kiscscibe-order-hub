@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useReducer, useEffect, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface CartModifier {
@@ -163,6 +163,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 
 interface CartContextType {
   state: CartState;
+  isCartLoaded: boolean;
   addItem: (item: Omit<CartItem, "quantity">) => void;
   addItemWithSides: (item: Omit<CartItem, "quantity" | "sides">, sides: CartSide[]) => void;
   updateQuantity: (id: string, quantity: number) => void;
@@ -222,6 +223,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(cartReducer, initialState);
+  const [isCartLoaded, setIsCartLoaded] = useState(false);
   
   const STORAGE_KEY = "kiscsibe-cart";
   
@@ -236,6 +238,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error("Error loading cart from localStorage:", error);
     }
+    setIsCartLoaded(true);
   }, []);
   
   // Save cart to localStorage whenever it changes
@@ -393,6 +396,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   return (
     <CartContext.Provider value={{
       state,
+      isCartLoaded,
       addItem,
       addItemWithSides,
       updateQuantity,

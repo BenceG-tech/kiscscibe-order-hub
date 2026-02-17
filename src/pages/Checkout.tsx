@@ -98,7 +98,7 @@ const validateEmail = (v: string): string | undefined => {
 };
 
 const Checkout = () => {
-  const { state: cart, clearCart, applyCoupon, removeCoupon } = useCart();
+  const { state: cart, clearCart, applyCoupon, removeCoupon, isCartLoaded } = useCart();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const tableNumber = searchParams.get('table');
@@ -320,7 +320,8 @@ const Checkout = () => {
           slotDate.setHours(hours, minutes, 0, 0);
           
           const now = new Date();
-          if (slotDate <= now) return false;
+          const minFutureTime = new Date(now.getTime() + 30 * 60 * 1000);
+          if (slotDate <= minFutureTime) return false;
           
           return true;
         })
@@ -362,7 +363,7 @@ const Checkout = () => {
   }, [dailyDates, toast, formData.pickup_time]);
 
   useEffect(() => {
-    if (cart.items.length === 0) {
+    if (isCartLoaded && cart.items.length === 0) {
       navigate("/etlap");
       return;
     }
@@ -372,7 +373,7 @@ const Checkout = () => {
     }
     
     fetchTimeSlots();
-  }, [cart.items.length, navigate, dailyDates, fetchTimeSlots, formData.pickup_type]);
+  }, [isCartLoaded, cart.items.length, navigate, dailyDates, fetchTimeSlots, formData.pickup_type]);
 
   const getDailyItemDates = () => dailyDates;
 
@@ -386,8 +387,8 @@ const Checkout = () => {
     if (dailyDates.length === 0) return null;
     
     if (dailyDates.length === 1) {
-      const date = new Date(dailyDates[0]);
-      return `Napi ajánlat/menü miatt csak ${date.toLocaleDateString("hu-HU", { 
+      const date = makeDate(dailyDates[0]);
+      return `Napi ajánlat/menü miatt csak ${date.toLocaleDateString("hu-HU", {
         year: "numeric", 
         month: "long", 
         day: "numeric" 
@@ -414,7 +415,7 @@ const Checkout = () => {
   };
   
   const formatTimeSlot = (date: string, time: string) => {
-    const dateObj = new Date(date);
+    const dateObj = makeDate(date);
     const timeObj = new Date(`2000-01-01T${time}`);
     
     return `${dateObj.toLocaleDateString("hu-HU", { 
@@ -608,7 +609,7 @@ const Checkout = () => {
                       )}
                       {item.daily_date && (
                         <p className="text-xs text-muted-foreground">
-                          📅 {new Date(item.daily_date).toLocaleDateString("hu-HU", { month: "short", day: "numeric" })}
+                          📅 {makeDate(item.daily_date).toLocaleDateString("hu-HU", { month: "short", day: "numeric" })}
                         </p>
                       )}
                       <p className="text-sm">Mennyiség: {item.quantity}</p>
