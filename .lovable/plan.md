@@ -1,69 +1,59 @@
 
-# Checkout rendelesi problema javitasa
 
-## Talalt problemak
+# Nyomtatasi meret javitasa es ertesitesi rendszer megbizhatosaga
 
-A tesztelés során három különálló hibát azonosítottam:
+## 1. problema: Tul hosszu nyomtatas
 
-### 1. Idozóna hiba a dátumok megjelenítésében
-A checkout oldalon a "Napi ajánlat/menü miatt csak **február 16**.-án lehet átvenni" üzenet jelenik meg, holott a napi ajánlat **február 17**-re (ma) szól. Ez azért van, mert a `getPickupConstraint()` függvény `new Date(dailyDates[0])` hívást használ, ami a "2026-02-17" stringet UTC éjfélként értelmezi, ami CET időzónában február 16. 23:00-nak felel meg.
+A jelenlegi `handlePrint` fuggveny egy teljes A4-es oldalt nyit meg `max-width: 300px`-szel, de a bongeszok alapertelmezetten A4 meretben nyomtatnak. Igy a kis tartalom egy hatalmas feher lapon jelenik meg.
 
-Ugyanez a hiba érinti:
-- A `formatTimeSlot()` függvényt (a dátum kijelzőben "febr. 16." jelenik meg "febr. 17." helyett)
-- A rendelés összesítőben az item dátum megjelenítését (`new Date(item.daily_date)`)
+### Megoldas
+A nyomtatasi HTML-be `@page` CSS szabalyt adunk, ami 80mm szeles (standard POS/blokknyomtato meret) es automatikus magassagu papirt allit be. Igy a nyomtatas pont akkora lesz, amekkora a tartalom.
 
-### 2. Múltbeli időpont kiválasztása
-A `fetchTimeSlots` függvény szűrője nem megfelelően működik, és múltbeli időpontokat (pl. 08:00, amikor már 15:43 van) is felajánl. Ennek eredményeként a szerveren "Cannot place orders for past dates or times" hibaüzenet keletkezik.
+**Fajl: `src/components/staff/KanbanOrderCard.tsx`**
+- `@page { size: 80mm auto; margin: 2mm; }` hozzaadasa a print CSS-hez
+- `@media print` blokk, ami eltunteti a felesleges margokat
+- `body` meretet `width: 76mm`-re allitjuk a `max-width: 300px` helyett
+- `window.print()` idas elorelathato kesleltetese (`setTimeout 300ms`), hogy a DOM renderelodjon
 
-### 3. Kosár betöltési versenyhelyzet (race condition)
-Amikor a felhasználó közvetlenül a `/checkout` URL-re navigál, a CartContext a `useReducer` inicializálásánál üres kosárral indul, és a localStorage-ból való betöltés csak az első `useEffect` lefutása után történik meg. A Checkout komponens viszont az első rendereléskor `cart.items.length === 0` feltételt ellenőrzi és átirányít az étlapra.
+### Eredmeny
+A blokk pontosan akkora lesz, amekkora a rendelesi adatok -- termikus/blokknyomtatoval is hasznalhato.
 
 ---
 
-## Megoldási terv
+## 2. problema: Hang es popup ertesites nem mukodik mas keszuleken
 
-### Fájl: `src/pages/Checkout.tsx`
+Tobb okot azonositottam:
 
-**A) Dátum megjelenítés javítása** - A `getPickupConstraint()` (sor 389), `formatTimeSlot()` (sor 417) és a dátum kijelzés (sor 611) mind a `makeDate()` helper-t fogja használni `new Date()` helyett:
+### A) AudioContext feloldas nem megbizhato mobilon
+Az `{ once: true }` listener egyszer fut le, de ha a felhasznalo eloszor olyan oldalon kattint ahol az `enabled` meg `false` (pl. betoltes kozben), az audio soha nem oldodik fel. Emellett iOS Safari kulonosen szigoru: a `resume()` hivast kozvetlenul a user gesture-ben kell megtenni.
 
-```typescript
-// getPickupConstraint - sor 389
-const date = makeDate(dailyDates[0]); // new Date(dailyDates[0]) helyett
+**Megoldas:**
+- `{ once: true }` eltavolitasa -- helyette a handler ellenorzi `audioUnlocked`-ot es maga all le
+- A `playNotificationSound`-ban ellenorizzuk es probaljuk `resume()`-olni a contextet, de ha nem sikerul, fallback `new Audio()` hasznalata (egyes bongeszokon jobban mukodik)
 
-// formatTimeSlot - sor 417
-const dateObj = makeDate(date); // new Date(date) helyett
+### B) Realtime subscription megszakad hatterben
+Mobilon a bongeszo felfuggeszti a WebSocket kapcsolatot ha a tab hatterbe kerul. Amikor visszater a felhasznalo, a csatorna lehet hogy mar nem aktiv.
 
-// item.daily_date megjelenítés - sor 611
-{makeDate(item.daily_date).toLocaleDateString(...)} // new Date(item.daily_date) helyett
-```
+**Megoldas:**
+- `visibilitychange` event figyelese: ha a tab ujra lathatova valik, ellenorizzuk a csatorna allapotat es ujra feliratkozunk ha szukseges
+- Ez biztositja hogy a felhasznalo mindig megkapja az ertesiteseket visszaterve
 
-**B) Múltbeli időpontok jobb szűrése** - A `fetchTimeSlots` szűrőjében biztosítjuk, hogy a mai napra vonatkozó időpontoknál legalább 30 perc ráhagyás legyen:
+### C) initializedRef soha nem resetelodik
+Ha `enabled` `false`-rol `true`-ra valt (pl. a roles loading befejezodik), az `initializedRef.current` mar `true`, igy a kezdeti rendelesek nem toltodnek be.
 
-```typescript
-const now = new Date();
-const minFutureTime = new Date(now.getTime() + 30 * 60 * 1000); // 30 perc buffer
-if (slotDate <= minFutureTime) return false;
-```
+**Megoldas:**
+- `enabled` valtozasakor reseteljuk az `initializedRef`-et ha `false`-ra valt
 
-### Fájl: `src/contexts/CartContext.tsx`
+---
 
-**C) Kosár betöltési állapot** - Új `isLoaded` állapot hozzáadása, ami jelzi, hogy a localStorage-ból már betöltődött a kosár:
+## Technikai reszletek
 
-```typescript
-const [isLoaded, setIsLoaded] = useState(false);
+### Erintett fajlok
 
-useEffect(() => {
-  // ... load from localStorage
-  setIsLoaded(true);
-}, []);
-```
+1. **`src/components/staff/KanbanOrderCard.tsx`** - `handlePrint` fuggveny: @page CSS es meretezesi javitasok
 
-A `CartContextType`-hoz hozzáadjuk az `isLoaded` mezőt. A Checkout.tsx-ben a redirect feltételt módosítjuk:
+2. **`src/hooks/useGlobalOrderNotifications.tsx`** - Harom javitas:
+   - Audio unlock listener megbizhatosaga (once eltavolitasa)
+   - `visibilitychange` esemeny figyelese a subscription ujracsatlakozasahoz
+   - `initializedRef` reset logika
 
-```typescript
-// Checkout.tsx - csak akkor irányítunk át, ha a kosár már betöltődött
-if (isLoaded && cart.items.length === 0) {
-  navigate("/etlap");
-  return;
-}
-```
