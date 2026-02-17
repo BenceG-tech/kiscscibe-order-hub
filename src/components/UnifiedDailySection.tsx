@@ -57,7 +57,8 @@ const UnifiedDailySection = () => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
   // Get extra items (not part of menu)
-  const extraItems = dailyData?.items.filter(item => !item.is_menu_part) || [];
+  // Show all items individually (including menu-part items) so they can be ordered separately
+  const extraItems = dailyData?.items || [];
 
   const handleAddItemToCart = (item: MenuItem) => {
     addItem({
