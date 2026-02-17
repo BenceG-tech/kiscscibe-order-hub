@@ -92,16 +92,17 @@ const KanbanOrderCard = ({ order, onStatusChange, updating, tick }: KanbanOrderC
       <head>
         <title>Rendelés #${order.code}</title>
         <style>
-          body { font-family: sans-serif; padding: 20px; max-width: 300px; margin: 0 auto; }
-          h1 { font-size: 24px; text-align: center; margin-bottom: 4px; }
-          .meta { text-align: center; color: #666; font-size: 12px; margin-bottom: 16px; }
-          hr { border: 1px dashed #ccc; margin: 12px 0; }
-          .item { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 14px; }
-          .option { margin-left: 16px; font-size: 12px; color: #666; }
-          .total { font-size: 18px; font-weight: bold; display: flex; justify-content: space-between; margin-top: 8px; }
-          .notes { background: #f5f5f5; padding: 8px; border-radius: 4px; font-size: 12px; margin-top: 8px; }
-          .customer { margin-top: 12px; font-size: 13px; }
-          .discount { color: green; font-size: 13px; }
+          @page { size: 80mm auto; margin: 2mm; }
+          body { font-family: sans-serif; padding: 4px; width: 76mm; margin: 0; font-size: 13px; }
+          h1 { font-size: 22px; text-align: center; margin: 0 0 2px; }
+          .meta { text-align: center; color: #666; font-size: 11px; margin-bottom: 10px; }
+          hr { border: 1px dashed #ccc; margin: 8px 0; }
+          .item { display: flex; justify-content: space-between; margin-bottom: 3px; font-size: 13px; }
+          .option { margin-left: 12px; font-size: 11px; color: #666; }
+          .total { font-size: 16px; font-weight: bold; display: flex; justify-content: space-between; margin-top: 6px; }
+          .notes { background: #f5f5f5; padding: 6px; border-radius: 4px; font-size: 11px; margin-top: 6px; }
+          .customer { margin-top: 8px; font-size: 12px; }
+          .discount { color: green; font-size: 12px; }
         </style>
       </head>
       <body>
@@ -135,8 +136,10 @@ const KanbanOrderCard = ({ order, onStatusChange, updating, tick }: KanbanOrderC
       printWindow.document.write(printContent);
       printWindow.document.close();
       printWindow.focus();
-      printWindow.print();
-      printWindow.close();
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 300);
     }
   };
 

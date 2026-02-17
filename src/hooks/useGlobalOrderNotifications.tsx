@@ -23,6 +23,7 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
   const [newOrdersCount, setNewOrdersCount] = useState(0);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const audioUnlockedRef = useRef(false);
   const knownOrderIdsRef = useRef<Set<string>>(new Set());
   const initializedRef = useRef(false);
   const channelRef = useRef<RealtimeChannel | null>(null);
@@ -33,41 +34,56 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
 
   const currentNotification = pendingOrders[0] || null;
 
-  // ── Unlock audio on first user interaction ──
+  // ── Reset initializedRef when enabled goes false ──
+  useEffect(() => {
+    if (!enabled) {
+      initializedRef.current = false;
+    }
+  }, [enabled]);
+
+  // ── Unlock audio on first user interaction (no { once: true }) ──
   useEffect(() => {
     if (!enabled) return;
 
     const unlockAudio = () => {
-      if (!audioUnlocked) {
+      if (audioUnlockedRef.current) return; // already unlocked
+      try {
         audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
         if (audioContextRef.current.state === 'suspended') {
           audioContextRef.current.resume();
         }
+        audioUnlockedRef.current = true;
         setAudioUnlocked(true);
         console.log('[Notifications] Audio unlocked');
+      } catch (err) {
+        console.log('[Notifications] Audio unlock failed:', err);
       }
     };
 
-    document.addEventListener('click', unlockAudio, { once: true });
-    document.addEventListener('keydown', unlockAudio, { once: true });
-    document.addEventListener('touchstart', unlockAudio, { once: true });
+    document.addEventListener('click', unlockAudio);
+    document.addEventListener('keydown', unlockAudio);
+    document.addEventListener('touchstart', unlockAudio);
 
     return () => {
       document.removeEventListener('click', unlockAudio);
       document.removeEventListener('keydown', unlockAudio);
       document.removeEventListener('touchstart', unlockAudio);
     };
-  }, [audioUnlocked, enabled]);
+  }, [enabled]);
 
   // ── Play notification sound ──
   const playNotificationSound = useCallback(() => {
+    // Try to create/resume AudioContext
     if (!audioContextRef.current) {
-      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      try {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      } catch {
+        console.log('[Notifications] Cannot create AudioContext');
+      }
     }
     const ctx = audioContextRef.current;
-    try {
-      if (ctx.state === 'suspended') ctx.resume();
 
+    const playWithWebAudio = (ctx: AudioContext) => {
       const playTone = (frequency: number, startTime: number, duration: number) => {
         const oscillator = ctx.createOscillator();
         const gainNode = ctx.createGain();
@@ -81,7 +97,6 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
         oscillator.start(ctx.currentTime + startTime);
         oscillator.stop(ctx.currentTime + startTime + duration);
       };
-
       playTone(880, 0, 0.2);
       playTone(1100, 0.15, 0.2);
       playTone(1320, 0.3, 0.3);
@@ -90,8 +105,24 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
         playTone(1100, 0.15, 0.2);
         playTone(1320, 0.3, 0.3);
       }, 600);
+    };
 
-      console.log('[Notifications] Sound played');
+    try {
+      if (ctx) {
+        if (ctx.state === 'suspended') {
+          ctx.resume().then(() => {
+            playWithWebAudio(ctx);
+            console.log('[Notifications] Sound played (after resume)');
+          }).catch(() => {
+            console.log('[Notifications] AudioContext resume failed, trying fallback');
+          });
+        } else {
+          playWithWebAudio(ctx);
+          console.log('[Notifications] Sound played');
+        }
+      } else {
+        console.log('[Notifications] No AudioContext available');
+      }
     } catch (err) {
       console.log('[Notifications] Could not play sound:', err);
     }
@@ -105,7 +136,7 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
     setNewOrdersCount(0);
   }, []);
 
-  // ── Initialize known order IDs (once) ──
+  // ── Initialize known order IDs (once per enable cycle) ──
   useEffect(() => {
     if (!enabled) return;
     if (initializedRef.current) return;
@@ -184,7 +215,6 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
   // ── Set up subscription + re-subscribe on auth changes ──
   useEffect(() => {
     if (!enabled) {
-      // Cleanup if disabled
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
@@ -216,6 +246,25 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
+    };
+  }, [enabled, createSubscription]);
+
+  // ── Reconnect on visibility change (tab back from background) ──
+  useEffect(() => {
+    if (!enabled) return;
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('[Notifications] Tab became visible, checking subscription...');
+        // Re-subscribe to ensure we haven't missed anything
+        retryCountRef.current = 0;
+        createSubscription();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [enabled, createSubscription]);
 
