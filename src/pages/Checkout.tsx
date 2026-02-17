@@ -894,8 +894,14 @@ const Checkout = () => {
                   
                   {/* Submit Button with Helpful Feedback */}
                   <div className="space-y-2">
-                    {(hasMultipleDailyDates() || (formData.pickup_type === "scheduled" && (!formData.pickup_date || !formData.pickup_time))) && (
-                      <div className="text-sm text-muted-foreground bg-muted p-3 rounded-lg">
+                    {(hasMultipleDailyDates() || requiredFieldsMissing || hasValidationErrors || (formData.pickup_type === "scheduled" && (!formData.pickup_date || !formData.pickup_time))) && (
+                      <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg space-y-1">
+                        {requiredFieldsMissing && (
+                          <p>• Kérjük töltse ki az összes kötelező mezőt (név, telefon, email)</p>
+                        )}
+                        {hasValidationErrors && !requiredFieldsMissing && (
+                          <p>• Kérjük javítsa a hibás mezőket</p>
+                        )}
                         {hasMultipleDailyDates() && (
                           <p>• Távolítsa el a különböző dátumú napi ajánlatokat</p>
                         )}
@@ -907,7 +913,7 @@ const Checkout = () => {
                     
                     <Button
                       type="submit"
-                      className="w-full bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm"
+                      className="w-full bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm disabled:opacity-40 disabled:cursor-not-allowed"
                       disabled={
                         isSubmitting || 
                         hasMultipleDailyDates() ||
