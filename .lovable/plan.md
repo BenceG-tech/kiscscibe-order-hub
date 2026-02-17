@@ -1,66 +1,69 @@
 
-# Facebook poszt szoveg generator javitasa
+# Checkout rendelesi problema javitasa
 
-## Problema
+## Talalt problemak
 
-Az edge function kozvetlenul meghivva mukodik (teszteltem, 200-as valaszt ad helyes poszt szoveggel). A problema valoszinuleg a kliens oldali hibakezeles:
+A tesztelés során három különálló hibát azonosítottam:
 
-1. Amikor a `supabase.functions.invoke()` nem-2xx valaszt kap (pl. 404 - nincs napi ajanlat), `error`-kent adja vissza, nem `data.error`-kent. Igy a felhasznalo csak egy generikus "Hiba a poszt generalasa" uzenetet lat a konkret hibauzenet helyett.
-2. A `supabase.functions.invoke` a valasz `body`-t nem mindig JSON-kent parse-olja ha hiba van - a reszletes hibauzenet elveszhet.
+### 1. Idozóna hiba a dátumok megjelenítésében
+A checkout oldalon a "Napi ajánlat/menü miatt csak **február 16**.-án lehet átvenni" üzenet jelenik meg, holott a napi ajánlat **február 17**-re (ma) szól. Ez azért van, mert a `getPickupConstraint()` függvény `new Date(dailyDates[0])` hívást használ, ami a "2026-02-17" stringet UTC éjfélként értelmezi, ami CET időzónában február 16. 23:00-nak felel meg.
 
-## Megoldas
+Ugyanez a hiba érinti:
+- A `formatTimeSlot()` függvényt (a dátum kijelzőben "febr. 16." jelenik meg "febr. 17." helyett)
+- A rendelés összesítőben az item dátum megjelenítését (`new Date(item.daily_date)`)
 
-**Fajl:** `src/components/admin/FacebookPostGenerator.tsx`
+### 2. Múltbeli időpont kiválasztása
+A `fetchTimeSlots` függvény szűrője nem megfelelően működik, és múltbeli időpontokat (pl. 08:00, amikor már 15:43 van) is felajánl. Ennek eredményeként a szerveren "Cannot place orders for past dates or times" hibaüzenet keletkezik.
 
-- A `generatePost` fuggvenyben javitjuk a hibakezelest:
-  - A `supabase.functions.invoke` altal visszaadott `error` objektumbol probaljuk kinyerni a reszletes hibauzenet (JSON body parse)
-  - A `FunctionsHttpError` tipusu hibaknal a `error.context` vagy `error.message` tartalmazza a szerver valaszat
-  - A 404-es es 429-es hibakat kulon kezeljuk ertelmesebb hibauzenetekkel
-  - Hozzaadunk egy `console.log`-ot a `data` es `error` valtozokra a jobb debugolashoz
+### 3. Kosár betöltési versenyhelyzet (race condition)
+Amikor a felhasználó közvetlenül a `/checkout` URL-re navigál, a CartContext a `useReducer` inicializálásánál üres kosárral indul, és a localStorage-ból való betöltés csak az első `useEffect` lefutása után történik meg. A Checkout komponens viszont az első rendereléskor `cart.items.length === 0` feltételt ellenőrzi és átirányít az étlapra.
 
-### Konkret valtozasok
+---
+
+## Megoldási terv
+
+### Fájl: `src/pages/Checkout.tsx`
+
+**A) Dátum megjelenítés javítása** - A `getPickupConstraint()` (sor 389), `formatTimeSlot()` (sor 417) és a dátum kijelzés (sor 611) mind a `makeDate()` helper-t fogja használni `new Date()` helyett:
 
 ```typescript
-const generatePost = async () => {
-  setLoading(true);
-  try {
-    const { data, error } = await supabase.functions.invoke("generate-facebook-post", {
-      body: { date: selectedDate },
-    });
+// getPickupConstraint - sor 389
+const date = makeDate(dailyDates[0]); // new Date(dailyDates[0]) helyett
 
-    if (error) {
-      // Try to extract the actual error message from the response
-      let errorMessage = "Hiba a poszt generalásakor";
-      try {
-        const errorBody = await error.context?.json?.();
-        if (errorBody?.error) {
-          errorMessage = errorBody.error;
-        }
-      } catch {}
-      toast.error(errorMessage);
-      console.error("Facebook post gen error:", error);
-      return;
-    }
+// formatTimeSlot - sor 417
+const dateObj = makeDate(date); // new Date(date) helyett
 
-    if (data?.error) {
-      toast.error(data.error);
-      return;
-    }
-
-    setPostText(data.post_text || "");
-    setHashtags(data.hashtags || []);
-    toast.success("Poszt szöveg generálva!");
-  } catch (err: any) {
-    console.error("Facebook post gen error:", err);
-    toast.error(err?.message || "Hiba a poszt generálásakor");
-  } finally {
-    setLoading(false);
-  }
-};
+// item.daily_date megjelenítés - sor 611
+{makeDate(item.daily_date).toLocaleDateString(...)} // new Date(item.daily_date) helyett
 ```
 
-Ez biztositja, hogy:
-- A 404-es "Nincs napi ajanlat" uzenet megjelenjen a felhasznalonak
-- A 429-es rate limit uzenet is lathato legyen
-- A 402-es "AI szolgaltatas korlat" is ertelmesen jelenjen meg
-- A generikus hiba uzenet csak akkor jelenik meg ha tenyleg ismeretlen a hiba
+**B) Múltbeli időpontok jobb szűrése** - A `fetchTimeSlots` szűrőjében biztosítjuk, hogy a mai napra vonatkozó időpontoknál legalább 30 perc ráhagyás legyen:
+
+```typescript
+const now = new Date();
+const minFutureTime = new Date(now.getTime() + 30 * 60 * 1000); // 30 perc buffer
+if (slotDate <= minFutureTime) return false;
+```
+
+### Fájl: `src/contexts/CartContext.tsx`
+
+**C) Kosár betöltési állapot** - Új `isLoaded` állapot hozzáadása, ami jelzi, hogy a localStorage-ból már betöltődött a kosár:
+
+```typescript
+const [isLoaded, setIsLoaded] = useState(false);
+
+useEffect(() => {
+  // ... load from localStorage
+  setIsLoaded(true);
+}, []);
+```
+
+A `CartContextType`-hoz hozzáadjuk az `isLoaded` mezőt. A Checkout.tsx-ben a redirect feltételt módosítjuk:
+
+```typescript
+// Checkout.tsx - csak akkor irányítunk át, ha a kosár már betöltődött
+if (isLoaded && cart.items.length === 0) {
+  navigate("/etlap");
+  return;
+}
+```
