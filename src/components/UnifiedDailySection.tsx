@@ -13,6 +13,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/components/ui/use-toast";
 import kiscsibeLogo from "@/assets/kiscsibe_logo_round.png";
 import StickyMenuCTA from "@/components/StickyMenuCTA";
+import { SidePickerModal } from "@/components/SidePickerModal";
 
 interface MenuItem {
   id: string;
@@ -55,25 +56,38 @@ const UnifiedDailySection = () => {
   const [availableDates, setAvailableDates] = useState<Date[]>([]);
   const [facebookImageUrl, setFacebookImageUrl] = useState<string | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [sidePickerOpen, setSidePickerOpen] = useState(false);
+  const [pendingItem, setPendingItem] = useState<MenuItem | null>(null);
 
-  // Get extra items (not part of menu)
   // Show all items individually (including menu-part items) so they can be ordered separately
   const extraItems = dailyData?.items || [];
 
   const handleAddItemToCart = (item: MenuItem) => {
+    // Open side picker modal so user can choose a side dish
+    setPendingItem(item);
+    setSidePickerOpen(true);
+  };
+
+  const handleSideSelected = (selectedSides: { id: string; name: string; price_huf: number }[]) => {
+    if (!pendingItem) return;
     addItem({
-      id: item.item_id,
-      name: item.item_name,
-      price_huf: item.item_price_huf,
+      id: pendingItem.item_id,
+      name: pendingItem.item_name,
+      price_huf: pendingItem.item_price_huf,
       modifiers: [],
-      sides: [],
-      image_url: item.item_image_url
+      sides: selectedSides.map(s => ({
+        id: s.id,
+        name: s.name,
+        price_huf: s.price_huf
+      })),
+      image_url: pendingItem.item_image_url
     });
     
     toast({
       title: "Kosárba tetve",
-      description: `${item.item_name} hozzáadva a kosárhoz`
+      description: `${pendingItem.item_name} hozzáadva a kosárhoz`
     });
+    setPendingItem(null);
   };
 
   const handleAddMenuToCart = () => {
@@ -351,6 +365,21 @@ const UnifiedDailySection = () => {
             onClick={(e) => e.stopPropagation()}
           />
         </div>
+      )}
+
+      {/* Side Picker Modal */}
+      {pendingItem && (
+        <SidePickerModal
+          open={sidePickerOpen}
+          onOpenChange={(open) => {
+            setSidePickerOpen(open);
+            if (!open) setPendingItem(null);
+          }}
+          mainItemId={pendingItem.item_id}
+          mainItemName={pendingItem.item_name}
+          onSideSelected={handleSideSelected}
+          dailyOfferId={dailyData?.offer_id}
+        />
       )}
     </>
   );
