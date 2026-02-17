@@ -24,9 +24,20 @@ const FacebookPostGenerator = ({ selectedDate }: FacebookPostGeneratorProps) => 
         body: { date: selectedDate },
       });
 
-      if (error) throw error;
+      if (error) {
+        let errorMessage = "Hiba a poszt generálásakor";
+        try {
+          const errorBody = await error.context?.json?.();
+          if (errorBody?.error) {
+            errorMessage = errorBody.error;
+          }
+        } catch {}
+        toast.error(errorMessage);
+        console.error("Facebook post gen error:", error);
+        return;
+      }
 
-      if (data.error) {
+      if (data?.error) {
         toast.error(data.error);
         return;
       }
@@ -36,7 +47,7 @@ const FacebookPostGenerator = ({ selectedDate }: FacebookPostGeneratorProps) => 
       toast.success("Poszt szöveg generálva!");
     } catch (err: any) {
       console.error("Facebook post gen error:", err);
-      toast.error("Hiba a poszt generálásakor");
+      toast.error(err?.message || "Hiba a poszt generálásakor");
     } finally {
       setLoading(false);
     }
