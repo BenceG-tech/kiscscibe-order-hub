@@ -541,7 +541,7 @@ const Checkout = () => {
       if (error) throw error;
       
       clearCart();
-      navigate(`/order-confirmation?code=${data.order_code}&phone=${encodeURIComponent(formData.phone)}&email=${encodeURIComponent(formData.email)}`);
+      navigate(`/order-confirmation?code=${data.order_code}&phone=${encodeURIComponent(`+36${formData.phone.replace(/\s/g, '')}`)}&email=${encodeURIComponent(formData.email)}`);
       
     } catch (error: any) {
       console.error("Order submission error:", error);
