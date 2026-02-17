@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Phone, CreditCard, Banknote, Clock, XCircle, AlertTriangle, Loader2, Tag } from "lucide-react";
+import { Phone, CreditCard, Banknote, Clock, XCircle, AlertTriangle, Loader2, Tag, Printer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   AlertDialog,
@@ -85,6 +85,60 @@ const KanbanOrderCard = ({ order, onStatusChange, updating, tick }: KanbanOrderC
   const urgency = getOrderUrgency(order.pickup_time, order.status);
   const pickupInfo = formatPickupCountdown(order.pickup_time);
   const relativeTime = formatRelativeTime(order.created_at);
+
+  const handlePrint = () => {
+    const printContent = `
+      <html>
+      <head>
+        <title>Rendelés #${order.code}</title>
+        <style>
+          body { font-family: sans-serif; padding: 20px; max-width: 300px; margin: 0 auto; }
+          h1 { font-size: 24px; text-align: center; margin-bottom: 4px; }
+          .meta { text-align: center; color: #666; font-size: 12px; margin-bottom: 16px; }
+          hr { border: 1px dashed #ccc; margin: 12px 0; }
+          .item { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 14px; }
+          .option { margin-left: 16px; font-size: 12px; color: #666; }
+          .total { font-size: 18px; font-weight: bold; display: flex; justify-content: space-between; margin-top: 8px; }
+          .notes { background: #f5f5f5; padding: 8px; border-radius: 4px; font-size: 12px; margin-top: 8px; }
+          .customer { margin-top: 12px; font-size: 13px; }
+          .discount { color: green; font-size: 13px; }
+        </style>
+      </head>
+      <body>
+        <h1>#${order.code}</h1>
+        <div class="meta">${new Date(order.created_at).toLocaleString("hu-HU")}${order.pickup_time ? '<br>Átvétel: ' + new Date(order.pickup_time).toLocaleString("hu-HU", { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}</div>
+        <hr>
+        <div class="customer">
+          <strong>${order.name}</strong><br>
+          ${order.phone}<br>
+          ${order.payment_method === 'cash' ? '💵 Készpénz' : '💳 Kártya'}
+        </div>
+        <hr>
+        ${(order.items || []).map(item => `
+          <div class="item">
+            <span>${item.qty}× ${item.name_snapshot}</span>
+            <span>${item.line_total_huf.toLocaleString("hu-HU")} Ft</span>
+          </div>
+          ${(item.options || []).filter(o => o.option_type !== 'daily_meta').map(opt => `
+            <div class="option">↳ ${opt.label_snapshot}${opt.price_delta_huf !== 0 ? ` (${opt.price_delta_huf > 0 ? '+' : ''}${opt.price_delta_huf} Ft)` : ''}</div>
+          `).join('')}
+        `).join('')}
+        <hr>
+        ${order.coupon_code && order.discount_huf ? `<div class="discount">Kupon: ${order.coupon_code} (-${order.discount_huf.toLocaleString("hu-HU")} Ft)</div>` : ''}
+        <div class="total"><span>Összesen:</span><span>${order.total_huf.toLocaleString("hu-HU")} Ft</span></div>
+        ${order.notes ? `<div class="notes">📝 ${order.notes}</div>` : ''}
+      </body>
+      </html>
+    `;
+    const printWindow = window.open('', '_blank', 'width=400,height=600');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+      printWindow.close();
+    }
+  };
 
   return (
     <div
@@ -220,6 +274,16 @@ const KanbanOrderCard = ({ order, onStatusChange, updating, tick }: KanbanOrderC
             ) : (
               config.actionLabel
             )}
+          </Button>
+
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-11 w-11 p-0"
+            onClick={() => handlePrint()}
+            aria-label="Nyomtatás"
+          >
+            <Printer className="h-4 w-4" />
           </Button>
 
           <Button

@@ -70,6 +70,7 @@ const UnifiedDailySection = () => {
 
   const handleSideSelected = (selectedSides: { id: string; name: string; price_huf: number }[]) => {
     if (!pendingItem) return;
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
     addItem({
       id: pendingItem.item_id,
       name: pendingItem.item_name,
@@ -80,7 +81,8 @@ const UnifiedDailySection = () => {
         name: s.name,
         price_huf: s.price_huf
       })),
-      image_url: pendingItem.item_image_url
+      image_url: pendingItem.item_image_url,
+      daily_date: dateStr,
     });
     
     toast({
