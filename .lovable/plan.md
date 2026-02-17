@@ -1,48 +1,66 @@
 
-# Ket modositas: 5 csillagos ertekelesek + Hirlevel feliratkozo lista
+# Facebook poszt szoveg generator javitasa
 
-## 1. Minden ertekeles 5 csillagos
+## Problema
 
-**Fajl:** `src/components/sections/ReviewsSection.tsx`
+Az edge function kozvetlenul meghivva mukodik (teszteltem, 200-as valaszt ad helyes poszt szoveggel). A problema valoszinuleg a kliens oldali hibakezeles:
 
-- A `reviews` tombben a ket 4 csillagos ertekeles (Szabo Peter es Toth Mark) `rating` ertekeit 4-rol 5-re allitjuk
-- Az `averageRating` erteket 4.7-rol 5.0-ra modositjuk
+1. Amikor a `supabase.functions.invoke()` nem-2xx valaszt kap (pl. 404 - nincs napi ajanlat), `error`-kent adja vissza, nem `data.error`-kent. Igy a felhasznalo csak egy generikus "Hiba a poszt generalasa" uzenetet lat a konkret hibauzenet helyett.
+2. A `supabase.functions.invoke` a valasz `body`-t nem mindig JSON-kent parse-olja ha hiba van - a reszletes hibauzenet elveszhet.
 
-## 2. Feliratkozo lista az admin hirlevel panelen
+## Megoldas
 
-**Fajl:** `src/components/admin/WeeklyNewsletterPanel.tsx`
+**Fajl:** `src/components/admin/FacebookPostGenerator.tsx`
 
-A jelenlegi panel csak a feliratkozok szamat mutatja. Bovites:
+- A `generatePost` fuggvenyben javitjuk a hibakezelest:
+  - A `supabase.functions.invoke` altal visszaadott `error` objektumbol probaljuk kinyerni a reszletes hibauzenet (JSON body parse)
+  - A `FunctionsHttpError` tipusu hibaknal a `error.context` vagy `error.message` tartalmazza a szerver valaszat
+  - A 404-es es 429-es hibakat kulon kezeljuk ertelmesebb hibauzenetekkel
+  - Hozzaadunk egy `console.log`-ot a `data` es `error` valtozokra a jobb debugolashoz
 
-- A meglevo `subscribers-count` query helyett/mellett lekerdezzuk az osszes feliratkozo email cimet is (`supabase.from("subscribers").select("id, email, created_at")`)
-- Uj szekci o a "Heti menu elonezet" kartya felett: **"Feliratkozok"** kartya
-  - Tablazat: email cim, feliratkozas datuma, checkbox
-  - "Osszes kivalasztasa / Kivalasztas torlese" gomb
-  - Alapertelmezetten minden feliratkozo ki van valasztva
-  - A felhasznalo egyes feliratkozokat kijelolhet/kitorolhet a checkboxszal
-- A "Heti menu kikuldese" gomb logikaja modosul:
-  - A kivalasztott email cimeket a `send-weekly-menu` edge function-nek kuldi (`selected_emails` parameterben)
-  - A megerosito dialogusban a kivalasztott szam jelenik meg (pl. "12/15 feliratkozonak")
+### Konkret valtozasok
 
-**Fajl:** `supabase/functions/send-weekly-menu/index.ts`
+```typescript
+const generatePost = async () => {
+  setLoading(true);
+  try {
+    const { data, error } = await supabase.functions.invoke("generate-facebook-post", {
+      body: { date: selectedDate },
+    });
 
-- Ha a request body tartalmaz `selected_emails` tombot, akkor csak azoknak kuld (a `subscribers` tablabol szurve)
-- Ha nincs `selected_emails`, az osszes feliratkozonak kuld (visszafele kompatibilis)
+    if (error) {
+      // Try to extract the actual error message from the response
+      let errorMessage = "Hiba a poszt generalásakor";
+      try {
+        const errorBody = await error.context?.json?.();
+        if (errorBody?.error) {
+          errorMessage = errorBody.error;
+        }
+      } catch {}
+      toast.error(errorMessage);
+      console.error("Facebook post gen error:", error);
+      return;
+    }
 
-## Technikai reszletek
+    if (data?.error) {
+      toast.error(data.error);
+      return;
+    }
 
-### ReviewsSection.tsx valtozasok
-- 31. sor: `rating: 4` → `rating: 5` (Szabo Peter)
-- 46. sor: `rating: 4` → `rating: 5` (Toth Mark)
-- 60. sor: `averageRating` 4.7 → 5.0
+    setPostText(data.post_text || "");
+    setHashtags(data.hashtags || []);
+    toast.success("Poszt szöveg generálva!");
+  } catch (err: any) {
+    console.error("Facebook post gen error:", err);
+    toast.error(err?.message || "Hiba a poszt generálásakor");
+  } finally {
+    setLoading(false);
+  }
+};
+```
 
-### WeeklyNewsletterPanel.tsx valtozasok
-- Uj import: `Checkbox` komponens (`@/components/ui/checkbox`), `Table` komponensek
-- Uj state: `selectedEmails: Set<string>` (alapbol az osszes ki van valasztva)
-- Uj query: feliratkozo lista (email + created_at + id)
-- Uj UI szekci o: feliratkozo tablazat checkbox-okkal
-- A `handleSend` fuggveny modositasa: `selected_emails` parameter kuldese
-
-### send-weekly-menu/index.ts valtozasok
-- A `body` parseolasa utan: ha van `selected_emails`, szures a feliratkozok kozott
-- `subscribers` lekerdezeshez `.in("email", body.selected_emails)` filter hozzaadasa
+Ez biztositja, hogy:
+- A 404-es "Nincs napi ajanlat" uzenet megjelenjen a felhasznalonak
+- A 429-es rate limit uzenet is lathato legyen
+- A 402-es "AI szolgaltatas korlat" is ertelmesen jelenjen meg
+- A generikus hiba uzenet csak akkor jelenik meg ha tenyleg ismeretlen a hiba
