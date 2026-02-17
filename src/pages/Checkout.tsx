@@ -145,6 +145,26 @@ const Checkout = () => {
   const hasValidationErrors = Object.values(fieldErrors).some(Boolean);
   const requiredFieldsMissing = !formData.name || !formData.phone || !formData.email;
   
+  // Debug: log which condition blocks the submit button
+  useEffect(() => {
+    const isDisabled = isSubmitting || hasMultipleDailyDates() || hasValidationErrors || requiredFieldsMissing || (formData.pickup_type === "scheduled" && (!formData.pickup_date || !formData.pickup_time));
+    if (isDisabled) {
+      console.log('[Checkout] Submit blocked:', {
+        isSubmitting,
+        hasMultipleDailyDates: hasMultipleDailyDates(),
+        hasValidationErrors,
+        fieldErrors,
+        requiredFieldsMissing,
+        formName: formData.name,
+        formPhone: formData.phone,
+        formEmail: formData.email,
+        pickupType: formData.pickup_type,
+        pickupDate: formData.pickup_date,
+        pickupTime: formData.pickup_time,
+      });
+    }
+  }, [isSubmitting, hasValidationErrors, requiredFieldsMissing, formData]);
+  
   // Extract daily item dates from cart with useMemo for efficiency
   const dailyDates = useMemo(() => {
     const dailyItems = cart.items.filter(item => item.daily_date);
