@@ -560,6 +560,7 @@ export type Database = {
           net_amount: number
           notes: string | null
           order_id: string | null
+          partner_id: string | null
           partner_name: string
           partner_tax_id: string | null
           payment_date: string | null
@@ -582,6 +583,7 @@ export type Database = {
           net_amount?: number
           notes?: string | null
           order_id?: string | null
+          partner_id?: string | null
           partner_name: string
           partner_tax_id?: string | null
           payment_date?: string | null
@@ -604,6 +606,7 @@ export type Database = {
           net_amount?: number
           notes?: string | null
           order_id?: string | null
+          partner_id?: string | null
           partner_name?: string
           partner_tax_id?: string | null
           payment_date?: string | null
@@ -619,6 +622,13 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
             referencedColumns: ["id"]
           },
         ]
@@ -1010,6 +1020,72 @@ export type Database = {
           pickup_time?: string | null
           status?: string
           total_huf?: number
+        }
+        Relationships: []
+      }
+      partners: {
+        Row: {
+          address: string | null
+          bank_iban: string | null
+          bank_name: string | null
+          category: string | null
+          city: string | null
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string | null
+          eu_vat_number: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          notes: string | null
+          payment_terms: string | null
+          postal_code: string | null
+          short_name: string | null
+          tax_number: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          bank_iban?: string | null
+          bank_name?: string | null
+          category?: string | null
+          city?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          eu_vat_number?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          notes?: string | null
+          payment_terms?: string | null
+          postal_code?: string | null
+          short_name?: string | null
+          tax_number?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          bank_iban?: string | null
+          bank_name?: string | null
+          category?: string | null
+          city?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          eu_vat_number?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          notes?: string | null
+          payment_terms?: string | null
+          postal_code?: string | null
+          short_name?: string | null
+          tax_number?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
