@@ -29,6 +29,8 @@ import {
 } from "@/hooks/useInvoices";
 import { supabase } from "@/integrations/supabase/client";
 import type { Invoice, InvoiceItem } from "@/hooks/useInvoices";
+import PartnerSelector from "./PartnerSelector";
+import type { Partner } from "@/hooks/usePartners";
 
 interface Props {
   open: boolean;
@@ -102,6 +104,7 @@ const newTempId = () => `tmp_${++tempCounter}`;
 
 const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
   const [form, setForm] = useState(defaultForm);
+  const [selectedPartnerId, setSelectedPartnerId] = useState<string | null>(null);
   const [partnerFilter, setPartnerFilter] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [aiFilledFields, setAiFilledFields] = useState<Set<string>>(new Set());
@@ -156,10 +159,12 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
         status: invoice.status,
       });
       setSpecialVat(null);
+      setSelectedPartnerId((invoice as any).partner_id || null);
     } else {
       setForm(defaultForm);
       setSpecialVat(null);
       setLineItems([]);
+      setSelectedPartnerId(null);
     }
     setAiFilledFields(new Set());
     setPaymentDate(new Date());
@@ -325,6 +330,7 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
       status,
       partner_name: form.partner_name.trim(),
       partner_tax_id: form.partner_tax_id || null,
+      partner_id: selectedPartnerId || null,
       invoice_number: form.invoice_number || null,
       issue_date: form.issue_date,
       due_date: form.due_date || null,
@@ -436,7 +442,21 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
             </Select>
           </div>
 
-          {/* Partner */}
+          {/* Partner selector */}
+          {!isReadonly && (
+            <PartnerSelector
+              value={selectedPartnerId}
+              onSelect={(partner: Partner | null) => {
+                setSelectedPartnerId(partner?.id || null);
+                if (partner) {
+                  set("partner_name", partner.name);
+                  set("partner_tax_id", partner.tax_number || "");
+                }
+              }}
+            />
+          )}
+
+          {/* Partner name (manual fallback) */}
           <div className="space-y-1.5 relative">
             <Label>Partner neve *</Label>
             <Input
@@ -445,6 +465,8 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
                 set("partner_name", e.target.value);
                 setPartnerFilter(e.target.value);
                 setShowSuggestions(true);
+                // Clear partner link if user types manually
+                if (selectedPartnerId) setSelectedPartnerId(null);
               }}
               onFocus={() => setShowSuggestions(true)}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
