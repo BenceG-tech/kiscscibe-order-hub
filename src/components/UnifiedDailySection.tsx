@@ -279,48 +279,50 @@ const UnifiedDailySection = () => {
               {format(selectedDate, "MMMM d.", { locale: hu })}
             </Badge>
           </div>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {extraItems.map((item) => (
-              <Card 
-                key={item.id} 
-                className="group border-0 bg-card/95 backdrop-blur-sm shadow-lg rounded-3xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+              <div
+                key={item.id}
+                className="flex items-center gap-3 p-4 bg-card/95 backdrop-blur-sm shadow-lg rounded-3xl overflow-hidden"
               >
-                <CardContent className="p-0">
-                  <div className="aspect-video overflow-hidden">
-                    {item.item_image_url ? (
-                      <img 
-                        src={item.item_image_url} 
-                        alt={item.item_name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center">
-                        <img src={kiscsibeLogo} alt="Kiscsibe" className="h-[70%] w-auto object-contain opacity-80 drop-shadow-lg" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-4 space-y-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <h4 className="font-semibold">{capitalizeFirst(item.item_name)}</h4>
-                      <Badge variant="secondary" className="shrink-0 bg-primary/10 text-primary font-semibold">
-                        {item.item_price_huf} Ft
-                      </Badge>
+                {/* Bal: szöveg + ár + gomb */}
+                <div className="flex-1 min-w-0 space-y-2">
+                  <h4 className="text-base md:text-lg font-bold font-sofia leading-tight">
+                    {capitalizeFirst(item.item_name)}
+                  </h4>
+                  {item.item_description && (
+                    <p className="text-xs text-muted-foreground line-clamp-2">
+                      {item.item_description}
+                    </p>
+                  )}
+                  <p className="text-lg md:text-xl font-bold text-primary">
+                    {item.item_price_huf.toLocaleString('hu-HU')} Ft
+                  </p>
+                  <Button
+                    size="sm"
+                    className="rounded-full text-sm"
+                    onClick={() => handleAddItemToCart(item)}
+                  >
+                    🛒 Kosárba
+                  </Button>
+                </div>
+
+                {/* Jobb: kép */}
+                <div className="w-28 h-28 md:w-36 md:h-36 shrink-0 rounded-2xl overflow-hidden bg-muted">
+                  {item.item_image_url ? (
+                    <img
+                      src={item.item_image_url}
+                      alt={item.item_name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <img src={kiscsibeLogo} alt="Kiscsibe" className="h-2/3 w-auto object-contain opacity-60" />
                     </div>
-                    {item.item_description && (
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {item.item_description}
-                      </p>
-                    )}
-                    <Button
-                      onClick={() => handleAddItemToCart(item)}
-                      className="w-full"
-                    >
-                      Kosárba
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                  )}
+                </div>
+              </div>
             ))}
           </div>
         </div>
