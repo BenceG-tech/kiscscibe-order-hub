@@ -1,155 +1,308 @@
 
-# Kiscsibe Számla Rendszer Fejlesztési Terv
+# Partner Kezelő Modul — Fejlesztési Terv
 
-## Áttekintés
+## Összefoglalás
 
-3 önálló fejlesztés az `InvoiceFormDialog.tsx`-ben és `InvoiceListItem.tsx`-ben, plusz egy új hook az `invoice_items` kezeléséhez.
-
----
-
-## 1. ÁFA Kulcs Szabadság
-
-### Jelenlegi állapot
-A Select dropdown csak 3 fix értéket kínál: 27%, 5%, 0%.
-
-### Új megoldás
-
-Az ÁFA mezőt lecseréljük egy kombinált vezérlőre a form „ÁFA kulcs" sorában:
-
-**Gyorsgombok + szabad bevitel egy sorban:**
-```
-[27%]  [5%]  [0%]    [____ %]
-```
-- A 3 gomb `Button variant="outline"` stílusban, kattintásra beírja az értéket
-- Az `Input type="number" min="0" max="100"` bármilyen értéket elfogad
-- Ha egy gyorsgomb értéke megegyezik a mezővel, aktív stílusú (`variant="default"`)
-
-**Speciális checkbox szekció** (collapsible, alapból csukva):
-```
-☐ Fordított adózás
-☐ ÁFA-mentes  
-☐ Tárgyi adómentes
-```
-- Ha bármelyik be van pipálva → `vat_rate` = 0 és az ÁFA mező `disabled`
-- A megjegyzés mezőbe automatikusan beírja a speciális típus szövegét
-- Ha kipipeálják → visszaállítja a megjegyzést és feloldja a mezőt
-- `specialVatType` state: `null | "fordított" | "mentes" | "tárgyi"`
+Egy teljes partner-adatbázis modul kerül bevezetésre, amely:
+- Egy új `partners` Supabase táblát hoz létre a szükséges migrációval
+- Egy új admin oldalt (`/admin/partners`) és menüpontot épít
+- Az `InvoiceFormDialog`-ot partner-választóval bővíti
+- Az `invoices` táblát `partner_id` opcionális FK-val bővíti
 
 ---
 
-## 2. Fizetési Dátum Szerkesztése
+## 1. Adatbázis migráció
 
-### InvoiceFormDialog – „Fizetve" gomb
+### 1.1 `partners` tábla létrehozása
 
-A `DialogFooter`-ben a „Fizetve" gomb helyett egy kétlépéses folyamat:
+```sql
+CREATE TABLE public.partners (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  short_name text,
+  tax_number text,
+  eu_vat_number text,
+  address text,
+  postal_code text,
+  city text,
+  contact_name text,
+  contact_email text,
+  contact_phone text,
+  payment_terms text DEFAULT 'net_15',
+  bank_name text,
+  bank_iban text,
+  category text DEFAULT 'other',
+  is_active boolean DEFAULT true,
+  notes text,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
 
-1. Kattintásra egy kis Popover nyílik a gomb mellett
-2. A Popover tartalmaz egy `Calendar` komponenst (Shadcn DatePicker)
-3. Alapértelmezett dátum: mai nap
-4. „Mentés fizetve" gombbal lezárja és hívja a `handleSave("paid", selectedDate)`
-5. A `handleSave` szignatúrája kiegészül egy opcionális `paymentDate?: string` paraméterrel
-
-```
-[Piszkozat] [Fizetésre vár]  [Fizetve ▾]
-                                └─ Popover: Calendar + Mentés gomb
-```
-
-### InvoiceListItem – gyors státuszváltás
-
-A `handleStatusChange` függvényben:
-- Ha `newStatus === "paid"` → **ne azonnal mutáljon**
-- Helyette egy kis inline Popover nyílik egy `Calendar`-ral
-- A `paid` Popover megjelenik a lista item-en belül (stop propagation)
-- Kiválasztott dátummal hívja az `update.mutate()`-t
-
-**Implementáció:** `pendingPaymentDate` state + `showPaymentPicker` boolean a komponensben.
-
----
-
-## 3. Számla Tételsorok (invoice_items)
-
-### DB: Meglévő tábla felhasználása
-
-A `invoice_items` tábla már létezik a sémában:
-- `id`, `invoice_id`, `description`, `quantity`, `unit`, `unit_price`, `line_total`
-
-Hiányzik: `vat_rate` per tétel. Ezt a meglévő `unit` mezőn kívül nem kell DB migrációval kezelni — az egységár-alapú számítást a globális ÁFA %-al végezzük soronként. Így **nincs szükség DB migrációra**.
-
-### Új hook: `useInvoiceItems`
-
-A `useInvoices.ts`-be kerül:
-- `useInvoiceItems(invoiceId?)` — lekéri az `invoice_items` tábla sorait egy adott `invoice_id`-ra
-- `useUpsertInvoiceItems()` — delete + insert stratégiával frissít (régi sorok törlése, újak insertje)
-
-### Új lokális state: `lineItems`
-
-```typescript
-interface LineItem {
-  id?: string;          // undefined = új sor
-  description: string;
-  quantity: number;
-  unit: "db" | "kg" | "l" | "adag" | "óra" | "hónap";
-  unit_price: number;
-  vat_rate: number;     // globális ÁFA % örökli, de soronként módosítható
-  line_total: number;   // auto: unit_price * qty * (1 + vat_rate/100)
-}
+ALTER TABLE public.partners ENABLE ROW LEVEL SECURITY;
 ```
 
-### UI elrendezés a formban
+### 1.2 RLS policy-k (admin-only CRUD)
 
-A tételek szekció a „Bruttó összeg / ÁFA kulcs" blokk FELETT jelenik meg:
+```sql
+CREATE POLICY "Admin can view partners"
+  ON public.partners FOR SELECT USING (is_admin(auth.uid()));
 
-```
-── Tételek ──────────────────────────────────────── [+ Új tétel]
+CREATE POLICY "Admin can insert partners"
+  ON public.partners FOR INSERT WITH CHECK (is_admin(auth.uid()));
 
-  Leírás            | Menny. | Egys. | Egységár | ÁFA% | Összeg | [X]
-  ─────────────────────────────────────────────────────────────────
-  Metro szállítás   |   3    |  db   |  5 000   |  27  | 19 050 | [X]
-  ─────────────────────────────────────────────────────────────────
-                         Nettó összesen:          45 000 Ft
-                         ÁFA összesen:            12 150 Ft
-                         Bruttó összesen:         57 150 Ft
+CREATE POLICY "Admin can update partners"
+  ON public.partners FOR UPDATE USING (is_admin(auth.uid()));
 
-── Összeg (tételekből) ──────────────────────────────────────────
-  Bruttó: [57 150]  ← readonly, ha van tétel
-  ÁFA:    [27%   ]
+CREATE POLICY "Admin can delete partners"
+  ON public.partners FOR DELETE USING (is_admin(auth.uid()));
 ```
 
-**Mobilon** (narrow dialog): a tétel sorok egymás alatt jelennek meg kártyaszerűen.
+### 1.3 `invoices` tábla bővítése
 
-### Mentési logika
-
-```
-handleSave("paid") →
-  1. invoice mentése (create/update) → visszakapjuk az invoice.id-t
-  2. ha lineItems.length > 0:
-     a. DELETE invoice_items WHERE invoice_id = id
-     b. INSERT invoice_items (tömb)
+```sql
+ALTER TABLE public.invoices
+  ADD COLUMN IF NOT EXISTS partner_id uuid REFERENCES public.partners(id) ON DELETE SET NULL;
 ```
 
-### Betöltési logika szerkesztésnél
+### 1.4 `updated_at` trigger
 
-```
-useEffect([invoice]) →
-  if (invoice?.id) → loadLineItems(invoice.id) → setLineItems(result)
+```sql
+CREATE TRIGGER partners_updated_at
+  BEFORE UPDATE ON public.partners
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 ```
 
 ---
 
-## Érintett fájlok
+## 2. Érintett fájlok
 
 | Fájl | Változás |
 |---|---|
-| `src/components/admin/InvoiceFormDialog.tsx` | Teljes refactor: ÁFA panel, payment datepicker, tételsorok |
-| `src/components/admin/InvoiceListItem.tsx` | `handleStatusChange` + inline payment datepicker popover |
-| `src/hooks/useInvoices.ts` | `useInvoiceItems` + `useUpsertInvoiceItems` hook hozzáadása |
-
-**Nincs DB migráció** — a `invoice_items` tábla már létezik a megfelelő oszlopokkal.
+| **MIGRÁCIÓ** (SQL) | `partners` tábla + RLS + `invoices.partner_id` FK |
+| `src/hooks/usePartners.ts` | **ÚJ** — CRUD hook-ok a `partners` táblához |
+| `src/pages/admin/Partners.tsx` | **ÚJ** — partner lista oldal, keresés, szűrés, kártya dialog |
+| `src/pages/admin/AdminLayout.tsx` | "Partnerek" menüpont hozzáadása (Users ikon, Számlák előtt) |
+| `src/App.tsx` | `/admin/partners` route hozzáadása lazy-load-dal |
+| `src/components/admin/PartnerFormDialog.tsx` | **ÚJ** — partner létrehozás/szerkesztés dialog |
+| `src/components/admin/PartnerDetailDialog.tsx` | **ÚJ** — partner adatok + kapcsolt számlák + forgalom |
+| `src/components/admin/PartnerSelector.tsx` | **ÚJ** — combobox a `InvoiceFormDialog`-ban |
+| `src/components/admin/InvoiceFormDialog.tsx` | Partner-választó hozzáadása a "Partner neve" mező fölé |
+| `src/hooks/useInvoices.ts` | `Invoice` interface: `partner_id?: string` |
 
 ---
 
-## Kockázatok és megjegyzések
+## 3. Részletes implementáció
 
-- Az `invoice_items` táblán nincs `vat_rate` oszlop soronként — ezért a sor összegzés a globális ÁFA %-ot használja. Ha soronkénti ÁFA kell a jövőben, egy migrációval bővíthető.
-- A `line_total` az adatbázisban bruttó értéket tárol (unit_price × qty × (1 + vat%)).
-- A dialog max-height korlátozott → a tételek szekció scrollozható marad a `flex-1 overflow-y-auto` wrapper miatt.
+### 3.1 `usePartners.ts` hook
+
+```typescript
+export interface Partner {
+  id: string;
+  name: string;
+  short_name: string | null;
+  tax_number: string | null;
+  eu_vat_number: string | null;
+  address: string | null;
+  postal_code: string | null;
+  city: string | null;
+  contact_name: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  payment_terms: string;
+  bank_name: string | null;
+  bank_iban: string | null;
+  category: string;
+  is_active: boolean;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+```
+
+Hook-ok:
+- `usePartners(filters?)` — lista lekérés (szűrés: category, is_active, search)
+- `usePartner(id)` — egyedi partner
+- `useCreatePartner()` — insert mutáció
+- `useUpdatePartner()` — update mutáció
+- `useDeletePartner()` — törlés (csak ha nincs hozzátartozó számla)
+- `useActivePartners()` — csak aktív partnerek (partner-választóhoz)
+
+### 3.2 `/admin/partners` oldal felépítése
+
+**Fejléc:**
+```
+Partnerek kezelése          [+ Új partner]
+```
+
+**Keresés + szűrők sáv:**
+```
+[🔍 Keresés név/adószám...]   [Kategória ▾]   [Státusz: Mind / Aktív / Archivált]
+```
+
+**Partner lista kártya-sor (desktop):**
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ ● Metro Kft.          | Élelmiszerbeszerzés | net_30 | Takács Péter │
+│   12345678-2-42       |                     |        | 06-20-xxx    │
+│                                                     [Aktív toggle]  │
+└─────────────────────────────────────────────────────────────────────┘
+```
+- Kattintásra megnyílik a `PartnerDetailDialog`
+- Archivált partner szürke háttérrel és `opacity-50`-vel jelenik meg
+
+**Kategória értékek:**
+- `food_supplier` → Élelmiszer szállító
+- `beverage` → Ital szállító
+- `cleaning` → Takarítószer
+- `equipment` → Felszerelés
+- `utility` → Rezsi/közüzemi
+- `service` → Szolgáltatás
+- `other` → Egyéb
+
+**Fizetési feltételek:**
+- `immediate` → Azonnal
+- `net_8` → 8 nap
+- `net_15` → 15 nap
+- `net_30` → 30 nap
+
+### 3.3 `PartnerFormDialog` — Létrehozás/Szerkesztés
+
+Tabokba szervezett form dialog (max-h scrollable):
+
+**Tab 1: Alapadatok**
+- Név* + Rövid név
+- Adószám (12345678-2-42 formátum) + EU adószám
+- Kategória (Select)
+- Fizetési feltétel (Select)
+
+**Tab 2: Cím & Kapcsolat**
+- Irányítószám + Város + Teljes cím
+- Kapcsolattartó neve + email + telefon
+
+**Tab 3: Pénzügyi**
+- Bank neve + IBAN
+- Megjegyzés (Textarea)
+
+Footer: `[Mégse]` `[Törlés]` `[Mentés]`
+
+### 3.4 `PartnerDetailDialog` — Részletek + Számlák
+
+A listából kattintva nyílik meg, 2 szekció:
+
+**Felső rész:** Partner összes adata szerkeszthetően (beágyazott form = ugyanaz mint a `PartnerFormDialog` tartalma, `Dialog` keretben).
+
+**Alsó rész: Kapcsolt számlák**
+```
+── Kapcsolt számlák ─────────────────────────────────
+  Összesített forgalom:  ████████  1 234 500 Ft
+  
+  [Bizonylat lista — az invoices táblából partner_name ILIKE '%Metro%']
+```
+
+Mivel a partner-számla kapcsolat opcionális FK (`partner_id`) és sok régi számla csak `partner_name`-el van rögzítve, a lekérés **dupla feltétellel** dolgozik:
+```sql
+WHERE partner_id = $id
+   OR LOWER(partner_name) = LOWER($name)
+```
+
+**Törlés logika:**
+- Ha vannak kapcsolt számlák → `[🗑 Archiválás]` gomb jelenik meg, törlés nem lehetséges
+- Ha nincsenek → `[🗑 Törlés]` gomb is megjelenik, confirm AlertDialog-gal
+- A `useDeletePartner` hook először ellenőrzi a számla-kapcsolatokat
+
+### 3.5 `PartnerSelector` — Combobox az InvoiceFormDialog-ban
+
+Az `InvoiceFormDialog.tsx`-ben a "Partner neve" `Input` mező fölé kerül egy combobox:
+
+```
+Partner kiválasztása (opcionális)
+┌──────────────────────────────────────────────────┐
+│ 🔍 Keresés...                              [▾]  │
+└──────────────────────────────────────────────────┘
+  ● Metro Kft.              (Élelmiszer szállító)
+  ● Coca-Cola HBC           (Ital szállító)
+  ─────────────────────────────────────────────────
+  [+ Új partner létrehozása]
+```
+
+**Működési logika:**
+1. A `Command` / Popover-alapú combobox az `useActivePartners()` hook adatait használja
+2. Partner kiválasztásakor:
+   - `form.partner_name` ← `partner.name`
+   - `form.partner_tax_id` ← `partner.tax_number`
+   - `selectedPartnerId` state ← `partner.id`
+3. Ha a felhasználó a "Név" mezőbe kézzel ír → `selectedPartnerId` törlődik (szabad kitöltés megmarad)
+4. "Új partner" opció → megnyit egy beágyazott `PartnerFormDialog`-ot, sikeres mentés után automatikusan kiválasztja
+5. Mentéskor a `payload`-ba bekerül: `partner_id: selectedPartnerId || null`
+
+---
+
+## 4. AdminLayout menüpont és route
+
+### AdminLayout bővítés
+
+A `Receipt` (Számlák) előtt új elem:
+```typescript
+{ href: "/admin/partners", label: "Partnerek", mobileLabel: "Partnerek", icon: Users, badgeCount: 0 }
+```
+Import: `Users` from `lucide-react`
+
+### App.tsx route
+
+```typescript
+const AdminPartners = React.lazy(() => import("./pages/admin/Partners"));
+
+<Route path="/admin/partners" element={
+  <ProtectedRoute requireAdmin>
+    <Suspense fallback={<LazyFallback />}><AdminPartners /></Suspense>
+  </ProtectedRoute>
+} />
+```
+
+---
+
+## 5. InvoiceFormDialog bővítés
+
+**Csak** a partner-választó blokk kerül be, a meglévő logika érintetlen marad:
+
+```
+[Partner kiválasztása]  ← PartnerSelector combobox (ÚJ)
+[Partner neve *]        ← meglévő Input (megmarad, kézzel is kitölthető)
+[Adószám]  [Számla szám]
+...
+```
+
+A `handleExtracted` (AI számlafelismerés) továbbra is felülírhatja a partner mezőket.
+
+---
+
+## 6. Adatfolyam összefoglalója
+
+```text
+partners tábla
+      │
+      ├─── PartnerSelector (InvoiceFormDialog)
+      │         └── kitölti partner_name, partner_tax_id, partner_id
+      │
+      ├─── Partners oldal (/admin/partners)
+      │         ├── PartnerFormDialog (create/edit)
+      │         └── PartnerDetailDialog
+      │                   └── kapcsolt invoices lekérés
+      │
+      └─── invoices.partner_id (FK, NULL = régi számla)
+```
+
+---
+
+## Megvalósítási sorrend
+
+1. **Migráció** futtatása (partners tábla + invoices.partner_id)
+2. `src/hooks/usePartners.ts` létrehozása
+3. `src/components/admin/PartnerFormDialog.tsx` létrehozása
+4. `src/components/admin/PartnerDetailDialog.tsx` létrehozása
+5. `src/components/admin/PartnerSelector.tsx` létrehozása
+6. `src/pages/admin/Partners.tsx` létrehozása
+7. `src/pages/admin/AdminLayout.tsx` bővítése
+8. `src/App.tsx` route hozzáadása
+9. `src/hooks/useInvoices.ts` interface bővítése (`partner_id`)
+10. `src/components/admin/InvoiceFormDialog.tsx` PartnerSelector beágyazása
