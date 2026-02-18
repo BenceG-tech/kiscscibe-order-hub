@@ -25,6 +25,16 @@ export interface Invoice {
   created_by: string | null;
 }
 
+export interface InvoiceItem {
+  id?: string;
+  invoice_id?: string;
+  description: string;
+  quantity: number;
+  unit: string;
+  unit_price: number;
+  line_total: number;
+}
+
 export type InvoiceInsert = Omit<Invoice, "id" | "created_at" | "updated_at">;
 
 export interface InvoiceFilters {
@@ -67,6 +77,59 @@ export const useInvoices = (filters?: InvoiceFilters) => {
       const { data, error } = await query;
       if (error) throw error;
       return (data || []) as unknown as Invoice[];
+    },
+  });
+};
+
+export const useInvoiceItems = (invoiceId?: string) => {
+  return useQuery({
+    queryKey: ["invoice-items", invoiceId],
+    queryFn: async () => {
+      if (!invoiceId) return [];
+      const { data, error } = await supabase
+        .from("invoice_items" as any)
+        .select("*")
+        .eq("invoice_id", invoiceId)
+        .order("id");
+      if (error) throw error;
+      return (data || []) as unknown as InvoiceItem[];
+    },
+    enabled: !!invoiceId,
+  });
+};
+
+export const useUpsertInvoiceItems = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ invoiceId, items }: { invoiceId: string; items: InvoiceItem[] }) => {
+      // Delete existing items
+      const { error: delError } = await supabase
+        .from("invoice_items" as any)
+        .delete()
+        .eq("invoice_id", invoiceId);
+      if (delError) throw delError;
+
+      // Insert new items if any
+      if (items.length > 0) {
+        const rows = items.map((item) => ({
+          invoice_id: invoiceId,
+          description: item.description,
+          quantity: item.quantity,
+          unit: item.unit,
+          unit_price: item.unit_price,
+          line_total: item.line_total,
+        }));
+        const { error: insError } = await supabase
+          .from("invoice_items" as any)
+          .insert(rows as any);
+        if (insError) throw insError;
+      }
+    },
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ["invoice-items", variables.invoiceId] });
+    },
+    onError: (err: Error) => {
+      toast.error("Hiba a tételek mentése során: " + err.message);
     },
   });
 };

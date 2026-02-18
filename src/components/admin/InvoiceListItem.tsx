@@ -1,8 +1,14 @@
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Paperclip, Bot, FileText, Image as ImageIcon, ExternalLink, AlertTriangle } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Button } from "@/components/ui/button";
+import { Paperclip, Bot, FileText, Image as ImageIcon, ExternalLink, AlertTriangle, CalendarIcon } from "lucide-react";
 import { useUpdateInvoice, type Invoice } from "@/hooks/useInvoices";
 import { differenceInDays } from "date-fns";
+import { format } from "date-fns";
+import { hu } from "date-fns/locale";
 
 interface Props {
   invoice: Invoice;
@@ -39,12 +45,28 @@ const InvoiceListItem = ({ invoice, onClick }: Props) => {
   const status = STATUS_MAP[invoice.status] || STATUS_MAP.draft;
   const update = useUpdateInvoice();
 
+  const [showPaymentPicker, setShowPaymentPicker] = useState(false);
+  const [paymentDate, setPaymentDate] = useState<Date>(new Date());
+
   const handleStatusChange = (newStatus: string) => {
+    if (newStatus === "paid") {
+      setPaymentDate(new Date());
+      setShowPaymentPicker(true);
+      return;
+    }
     update.mutate({
       id: invoice.id,
       status: newStatus as any,
-      ...(newStatus === "paid" ? { payment_date: new Date().toISOString().split("T")[0] } : {}),
     } as any);
+  };
+
+  const confirmPaid = () => {
+    update.mutate({
+      id: invoice.id,
+      status: "paid",
+      payment_date: paymentDate.toISOString().split("T")[0],
+    } as any);
+    setShowPaymentPicker(false);
   };
 
   // Get first image thumbnail
@@ -123,8 +145,8 @@ const InvoiceListItem = ({ invoice, onClick }: Props) => {
       </div>
 
       <div className="flex items-center gap-3">
-        {/* Quick status dropdown */}
-        <div onClick={(e) => e.stopPropagation()}>
+        {/* Quick status dropdown + payment date picker */}
+        <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1">
           <Select value={invoice.status} onValueChange={handleStatusChange}>
             <SelectTrigger className="h-7 w-auto border-0 p-0 shadow-none focus:ring-0">
               <Badge variant={status.variant} className="text-xs whitespace-nowrap cursor-pointer">
@@ -139,7 +161,37 @@ const InvoiceListItem = ({ invoice, onClick }: Props) => {
               <SelectItem value="cancelled">Sztornó</SelectItem>
             </SelectContent>
           </Select>
+
+          {/* Payment date popover */}
+          <Popover open={showPaymentPicker} onOpenChange={setShowPaymentPicker}>
+            <PopoverTrigger asChild>
+              <span />
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-auto p-3 space-y-2" onClick={(e) => e.stopPropagation()}>
+              <p className="text-xs font-medium text-muted-foreground">Fizetés dátuma</p>
+              <Calendar
+                mode="single"
+                selected={paymentDate}
+                onSelect={(d) => d && setPaymentDate(d)}
+                initialFocus
+                className="pointer-events-auto p-0"
+              />
+              <p className="text-xs text-center text-muted-foreground">
+                {format(paymentDate, "yyyy. MMMM d.", { locale: hu })}
+              </p>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="flex-1" onClick={() => setShowPaymentPicker(false)}>
+                  Mégse
+                </Button>
+                <Button size="sm" className="flex-1" onClick={confirmPaid} disabled={update.isPending}>
+                  <CalendarIcon className="h-3 w-3 mr-1" />
+                  Mentés
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
+
         <span className={`text-sm font-bold whitespace-nowrap ${isIncoming ? "text-destructive" : "text-green-600"}`}>
           {isIncoming ? "-" : "+"}{fmt(invoice.gross_amount)}
         </span>
