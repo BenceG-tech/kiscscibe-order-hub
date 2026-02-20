@@ -1,12 +1,15 @@
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Paperclip, Bot, FileText, Image as ImageIcon, ExternalLink, AlertTriangle } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Bot, FileText, Image as ImageIcon, ExternalLink, AlertTriangle, Trash2 } from "lucide-react";
 import { useUpdateInvoice, type Invoice } from "@/hooks/useInvoices";
 import { differenceInDays } from "date-fns";
 
 interface Props {
   invoice: Invoice;
   onClick: () => void;
+  onDelete?: () => void;
 }
 
 const STATUS_MAP: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -33,7 +36,7 @@ const fmt = (n: number) =>
 
 const isImageUrl = (url: string) => /\.(jpg|jpeg|png|gif|webp|heic|heif)/i.test(url);
 
-const InvoiceListItem = ({ invoice, onClick }: Props) => {
+const InvoiceListItem = ({ invoice, onClick, onDelete }: Props) => {
   const isIncoming = invoice.type === "incoming";
   const isOrderReceipt = invoice.type === "order_receipt";
   const status = STATUS_MAP[invoice.status] || STATUS_MAP.draft;
@@ -143,6 +146,26 @@ const InvoiceListItem = ({ invoice, onClick }: Props) => {
         <span className={`text-sm font-bold whitespace-nowrap ${isIncoming ? "text-destructive" : "text-green-600"}`}>
           {isIncoming ? "-" : "+"}{fmt(invoice.gross_amount)}
         </span>
+        {onDelete && !isOrderReceipt && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (window.confirm(`Biztosan törlöd? ${invoice.partner_name} — ${fmt(invoice.gross_amount)}`)) {
+                    onDelete();
+                  }
+                }}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Törlés</TooltipContent>
+          </Tooltip>
+        )}
       </div>
     </div>
   );

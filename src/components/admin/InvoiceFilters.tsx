@@ -80,7 +80,7 @@ const InvoiceFilters = ({ filters, onChange }: Props) => {
 
         <Input
           className="w-[180px]"
-          placeholder="🔍 Partner keresés..."
+          placeholder="Partner neve vagy számlaszám..."
           value={filters.search || ""}
           onChange={(e) => set("search", e.target.value)}
         />

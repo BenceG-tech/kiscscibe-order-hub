@@ -30,13 +30,18 @@ export function exportInvoicesToExcel(invoices: Invoice[]) {
   const rows = invoices.map((inv) => ({
     "Dátum": inv.issue_date,
     "Partner": inv.partner_name,
+    "Adószám": inv.partner_tax_id || "",
     "Számla szám": inv.invoice_number || "",
     "Típus": TYPE_LABELS[inv.type] || inv.type,
     "Kategória": CATEGORY_LABELS[inv.category] || inv.category,
+    "ÁFA kulcs": `${inv.vat_rate}%`,
     "Nettó (Ft)": inv.net_amount,
     "ÁFA (Ft)": inv.vat_amount,
     "Bruttó (Ft)": inv.gross_amount,
+    "Fizetési határidő": inv.due_date || "",
+    "Fizetés dátuma": inv.payment_date || "",
     "Státusz": STATUS_LABELS[inv.status] || inv.status,
+    "Megjegyzés": inv.notes || "",
   }));
 
   const ws1 = XLSX.utils.json_to_sheet(rows);
@@ -72,8 +77,9 @@ export function exportInvoicesToExcel(invoices: Invoice[]) {
   XLSX.utils.book_append_sheet(wb, ws1, "Bizonylatok");
   XLSX.utils.book_append_sheet(wb, ws2, "Összesítő");
 
-  const now = new Date().toISOString().slice(0, 7);
-  XLSX.writeFile(wb, `bizonylatok_${now}.xlsx`);
+  const now = new Date();
+  const ts = `${now.toISOString().slice(0, 10)}_${String(now.getHours()).padStart(2, "0")}${String(now.getMinutes()).padStart(2, "0")}`;
+  XLSX.writeFile(wb, `bizonylatok_${ts}.xlsx`);
 }
 
 const VAT_RATES = [27, 5, 0];

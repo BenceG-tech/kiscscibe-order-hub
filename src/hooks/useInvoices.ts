@@ -61,7 +61,7 @@ export const useInvoices = (filters?: InvoiceFilters) => {
         query = query.lte("issue_date", filters.dateTo);
       }
       if (filters?.search) {
-        query = query.ilike("partner_name", `%${filters.search}%`);
+        query = query.or(`partner_name.ilike.%${filters.search}%,invoice_number.ilike.%${filters.search}%`);
       }
 
       const { data, error } = await query;

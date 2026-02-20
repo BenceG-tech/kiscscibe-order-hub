@@ -5,9 +5,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useOrderNotifications } from "@/contexts/OrderNotificationsContext";
 import { useOverdueInvoices } from "@/hooks/useOverdueInvoices";
 import { 
-  Package, 
-  Calendar, 
-  ShoppingBag, 
+  Package,
+  Calendar,
+  ShoppingBag,
   ArrowLeft,
   LogOut,
   User,
@@ -17,7 +17,8 @@ import {
   LayoutDashboard,
   BarChart3,
   Tag,
-  Receipt
+  Receipt,
+  Users
 } from "lucide-react";
 
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
@@ -45,6 +46,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     { href: "/admin/about", label: "Rólunk", mobileLabel: "Rólunk", icon: Info, badgeCount: 0 },
     { href: "/admin/analytics", label: "Statisztika", mobileLabel: "Stat.", icon: BarChart3, badgeCount: 0 },
     { href: "/admin/coupons", label: "Kuponok", mobileLabel: "Kupon", icon: Tag, badgeCount: 0 },
+    { href: "/admin/partners", label: "Partnerek", mobileLabel: "Partner", icon: Users, badgeCount: 0 },
     { href: "/admin/invoices", label: "Számlák", mobileLabel: "Számla", icon: Receipt, badgeCount: overdueCount },
   ];
 
