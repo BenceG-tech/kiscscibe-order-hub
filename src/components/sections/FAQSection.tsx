@@ -7,34 +7,14 @@ import {
 } from "@/components/ui/accordion";
 import { useScrollFadeIn } from "@/hooks/useScrollFadeIn";
 import { cn } from "@/lib/utils";
+import { useFaqItems } from "@/hooks/useFaqItems";
 
 const FAQSection = () => {
   const { ref, isVisible } = useScrollFadeIn();
-
-  const faqs = [
-    {
-      question: "Meddig lehet rendelni?",
-      answer: "Aznap 14:30-ig adható le rendelés."
-    },
-    {
-      question: "Mennyi a várható átfutás?",
-      answer: "Átlagosan 15–25 perc."
-    },
-    {
-      question: "Van kártyás fizetés?",
-      answer: "Igen, a helyszínen és online is (hamarosan)."
-    },
-    {
-      question: "Számla kérhető?",
-      answer: "Igen, kérlek jelezd rendeléskor."
-    },
-    {
-      question: "Tudok időpontra kérni átvételt?",
-      answer: "Igen, választhatsz idősávot."
-    }
-  ];
+  const { faqs, isLoading } = useFaqItems();
 
   useEffect(() => {
+    if (!faqs.length) return;
     const jsonLd = {
       "@context": "https://schema.org",
       "@type": "FAQPage",
@@ -56,7 +36,9 @@ const FAQSection = () => {
     return () => {
       document.head.removeChild(script);
     };
-  }, []);
+  }, [faqs]);
+
+  if (isLoading || !faqs.length) return null;
 
   return (
     <section className="py-8 md:py-16" ref={ref}>
@@ -71,7 +53,7 @@ const FAQSection = () => {
         )}>
           <Accordion type="single" collapsible className="w-full">
             {faqs.map((faq, index) => (
-              <AccordionItem key={index} value={`item-${index}`} className="border-border/50">
+              <AccordionItem key={faq.id || index} value={`item-${faq.id || index}`} className="border-border/50">
                 <AccordionTrigger className="text-left font-semibold text-foreground hover:text-primary story-link transition-colors duration-200">
                   {faq.question}
                 </AccordionTrigger>
