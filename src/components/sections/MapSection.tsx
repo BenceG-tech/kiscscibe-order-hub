@@ -46,7 +46,7 @@ const MapSection = () => {
               
               <div className="mb-5 md:mb-6">
                 <p className="text-foreground text-sm md:text-base leading-relaxed">
-                  XIV. kerület szíve – könnyű parkolás a környező utcákban, 7-es busz megállója 2 percre.
+                  Könnyű megközelítés és ingyenes parkolás.
                 </p>
               </div>
               
