@@ -18,7 +18,8 @@ import {
   BarChart3,
   Tag,
   Receipt,
-  Users
+  Users,
+  HelpCircle
 } from "lucide-react";
 
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
@@ -44,6 +45,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     { href: "/admin/gallery", label: "Galéria", mobileLabel: "Galéria", icon: Image, badgeCount: 0 },
     { href: "/admin/legal", label: "Jogi oldalak", mobileLabel: "Jogi", icon: FileText, badgeCount: 0 },
     { href: "/admin/about", label: "Rólunk", mobileLabel: "Rólunk", icon: Info, badgeCount: 0 },
+    { href: "/admin/faq", label: "GYIK", mobileLabel: "GYIK", icon: HelpCircle, badgeCount: 0 },
     { href: "/admin/analytics", label: "Statisztika", mobileLabel: "Stat.", icon: BarChart3, badgeCount: 0 },
     { href: "/admin/coupons", label: "Kuponok", mobileLabel: "Kupon", icon: Tag, badgeCount: 0 },
     { href: "/admin/partners", label: "Partnerek", mobileLabel: "Partner", icon: Users, badgeCount: 0 },
