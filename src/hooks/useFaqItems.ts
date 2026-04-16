@@ -36,9 +36,10 @@ export const useFaqItems = () => {
 
   const saveMutation = useMutation({
     mutationFn: async (items: FaqItem[]) => {
+      const payload = { key: "faq_items", value_json: items as unknown as Record<string, unknown> };
       const { error } = await supabase
         .from("settings")
-        .upsert({ key: "faq_items", value_json: items as unknown as Record<string, unknown> }, { onConflict: "key" });
+        .upsert(payload as any, { onConflict: "key" });
       if (error) throw error;
     },
     onSuccess: () => {
