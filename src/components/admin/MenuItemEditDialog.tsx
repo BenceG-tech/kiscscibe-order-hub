@@ -182,13 +182,31 @@ import { capitalizeFirst } from "@/lib/utils";
      );
    };
  
-   const handleSave = () => {
-     if (!name.trim()) {
-       toast.error("A név megadása kötelező");
-       return;
-     }
-     saveMutation.mutate();
-   };
+  const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
+
+  const handleSave = async () => {
+    if (!name.trim()) {
+      toast.error("A név megadása kötelező");
+      return;
+    }
+
+    // Check for duplicate names
+    const { data: existing } = await supabase
+      .from("menu_items")
+      .select("id, name")
+      .neq("id", itemId || "")
+      .ilike("name", name.trim());
+
+    if (existing && existing.length > 0) {
+      if (!duplicateWarning) {
+        setDuplicateWarning(`Már létezik ilyen nevű étel: "${existing[0].name}". Kattints újra a mentésre ha mégis folytatnád.`);
+        return;
+      }
+    }
+
+    setDuplicateWarning(null);
+    saveMutation.mutate();
+  };
  
    return (
      <Dialog open={open} onOpenChange={onOpenChange}>
@@ -206,12 +224,12 @@ import { capitalizeFirst } from "@/lib/utils";
              {/* Name */}
              <div className="space-y-2">
                <Label htmlFor="name">Név *</Label>
-               <Input
-                 id="name"
-                 value={name}
-                 onChange={(e) => setName(e.target.value)}
-                 placeholder="Étel neve"
-               />
+                <Input
+                  id="name"
+                  value={name}
+                  onChange={(e) => { setName(e.target.value); setDuplicateWarning(null); }}
+                  placeholder="Étel neve"
+                />
              </div>
  
              {/* Description */}
@@ -354,25 +372,33 @@ import { capitalizeFirst } from "@/lib/utils";
            </div>
          )}
 
-        {/* Save Button - Always visible */}
-        {!itemLoading && (
-          <div className="flex-shrink-0 pt-4 border-t">
-            <Button
-              onClick={handleSave}
-              disabled={saveMutation.isPending}
-              className="w-full"
-            >
-              {saveMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Mentés...
-                </>
-              ) : (
-                "Mentés"
-              )}
-            </Button>
-          </div>
-        )}
+         {/* Save Button - Always visible */}
+         {!itemLoading && (
+           <div className="flex-shrink-0 pt-4 border-t space-y-2">
+             {duplicateWarning && (
+               <div className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-2 rounded-lg">
+                 ⚠️ {duplicateWarning}
+               </div>
+             )}
+             <Button
+               onClick={handleSave}
+               disabled={saveMutation.isPending}
+               className="w-full"
+               variant={duplicateWarning ? "destructive" : "default"}
+             >
+               {saveMutation.isPending ? (
+                 <>
+                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                   Mentés...
+                 </>
+               ) : duplicateWarning ? (
+                 "Mentés mindenképp"
+               ) : (
+                 "Mentés"
+               )}
+             </Button>
+           </div>
+         )}
        </DialogContent>
      </Dialog>
    );
