@@ -224,12 +224,12 @@ import { capitalizeFirst } from "@/lib/utils";
              {/* Name */}
              <div className="space-y-2">
                <Label htmlFor="name">Név *</Label>
-               <Input
-                 id="name"
-                 value={name}
-                 onChange={(e) => setName(e.target.value)}
-                 placeholder="Étel neve"
-               />
+                <Input
+                  id="name"
+                  value={name}
+                  onChange={(e) => { setName(e.target.value); setDuplicateWarning(null); }}
+                  placeholder="Étel neve"
+                />
              </div>
  
              {/* Description */}
