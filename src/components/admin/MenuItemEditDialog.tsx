@@ -182,13 +182,31 @@ import { capitalizeFirst } from "@/lib/utils";
      );
    };
  
-   const handleSave = () => {
-     if (!name.trim()) {
-       toast.error("A név megadása kötelező");
-       return;
-     }
-     saveMutation.mutate();
-   };
+  const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
+
+  const handleSave = async () => {
+    if (!name.trim()) {
+      toast.error("A név megadása kötelező");
+      return;
+    }
+
+    // Check for duplicate names
+    const { data: existing } = await supabase
+      .from("menu_items")
+      .select("id, name")
+      .neq("id", itemId || "")
+      .ilike("name", name.trim());
+
+    if (existing && existing.length > 0) {
+      if (!duplicateWarning) {
+        setDuplicateWarning(`Már létezik ilyen nevű étel: "${existing[0].name}". Kattints újra a mentésre ha mégis folytatnád.`);
+        return;
+      }
+    }
+
+    setDuplicateWarning(null);
+    saveMutation.mutate();
+  };
  
    return (
      <Dialog open={open} onOpenChange={onOpenChange}>

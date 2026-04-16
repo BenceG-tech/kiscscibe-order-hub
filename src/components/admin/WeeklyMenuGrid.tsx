@@ -713,14 +713,44 @@ export default function WeeklyMenuGrid() {
                 <th className="sticky left-0 z-30 bg-muted border-b border-r p-3 text-left font-medium text-sm w-48">
                   Kategória
                 </th>
-                {weekDates.map((date, idx) => (
-                  <th key={idx} className="border-b border-l p-3 text-center font-medium text-sm min-w-[140px]">
-                    <div>{WEEKDAYS[idx]}</div>
-                    <div className="text-xs text-muted-foreground font-normal">
-                      {format(date, "MM.dd.")}
-                    </div>
-                  </th>
-                ))}
+                {weekDates.map((date, idx) => {
+                  const dateStr = format(date, "yyyy-MM-dd");
+                  const dayItems = gridData[dateStr] || {};
+                  const itemCount = Object.values(dayItems).reduce((acc, items) => acc + items.length, 0);
+                  
+                  return (
+                    <th key={idx} className="border-b border-l p-3 text-center font-medium text-sm min-w-[140px]">
+                      <div>{WEEKDAYS[idx]}</div>
+                      <div className="text-xs text-muted-foreground font-normal">
+                        {format(date, "MM.dd.")}
+                      </div>
+                      {itemCount > 0 && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm" className="mt-1 h-6 text-xs text-destructive hover:text-destructive hover:bg-destructive/10">
+                              <Trash2 className="h-3 w-3 mr-1" />
+                              Ürítés
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Nap ürítése</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Biztosan törlöd a(z) {WEEKDAYS[idx]} ({format(date, "MM.dd.")}) összes tételét? Ez nem vonható vissza.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Mégsem</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => clearDayMutation.mutate(dateStr)}>
+                                Ürítés
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
