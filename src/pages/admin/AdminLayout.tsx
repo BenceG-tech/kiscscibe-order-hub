@@ -57,7 +57,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   ];
 
   // SECONDARY items — less frequently used, behind "Több" on desktop, inline on mobile
-  const secondaryNavItems = [
+  const secondaryNavItems: typeof primaryNavItems = [
     { href: "/admin/coupons", label: "Kuponok", mobileLabel: "Kupon", icon: Tag, badgeCount: 0 },
     { href: "/admin/partners", label: "Partnerek", mobileLabel: "Partner", icon: Users, badgeCount: 0 },
     { href: "/admin/documents", label: "Dokumentumok", mobileLabel: "Doksi", icon: FolderOpen, badgeCount: 0 },
