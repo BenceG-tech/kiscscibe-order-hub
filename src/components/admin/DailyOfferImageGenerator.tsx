@@ -821,7 +821,7 @@ const DailyOfferImageGenerator = () => {
 
                   <div className="flex flex-wrap gap-2">
                     <Button onClick={copyPostText} variant="outline" size="sm" className="gap-2">
-                      {postCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                      {postCopied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
                       {postCopied ? "Másolva!" : "Szöveg másolása"}
                     </Button>
                   </div>
