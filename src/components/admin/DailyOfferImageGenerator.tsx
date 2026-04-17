@@ -7,10 +7,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, addDays, getDay } from "date-fns";
 import { getSmartWeekStart, getSmartInitialDate } from "@/lib/dateUtils";
 import { hu } from "date-fns/locale";
-import { Download, Image as ImageIcon, Upload, Trash2, Loader2, Calendar, ChevronLeft, ChevronRight, RotateCcw, ZoomIn } from "lucide-react";
+import { Download, Image as ImageIcon, Upload, Trash2, Loader2, Calendar, ChevronLeft, ChevronRight, RotateCcw, ZoomIn, Sparkles, Copy, Check, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import FacebookPostGenerator from "@/components/admin/FacebookPostGenerator";
+import { Textarea } from "@/components/ui/textarea";
 
 interface MenuItem {
   id: string;
