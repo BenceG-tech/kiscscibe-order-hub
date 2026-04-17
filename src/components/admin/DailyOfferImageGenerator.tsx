@@ -313,6 +313,14 @@ const DailyOfferImageGenerator = () => {
   const [previewDataUrl, setPreviewDataUrl] = useState<string>("");
   const [dataUrls, setDataUrls] = useState<Record<string, string>>({});
   const [menuPrice, setMenuPrice] = useState<number>(2200);
+
+  // FB post text generator state
+  const [postText, setPostText] = useState<string>("");
+  const [postHashtags, setPostHashtags] = useState<string[]>([]);
+  const [postLoading, setPostLoading] = useState(false);
+  const [postCopied, setPostCopied] = useState(false);
+  const [postTone, setPostTone] = useState<"vidám" | "profi" | "étvágygerjesztő">("étvágygerjesztő");
+
   const weekDates = getWeekDates(weekOffset);
 
   const weekStart = new Date(weekDates[0] + "T00:00:00");
