@@ -24,8 +24,9 @@ interface CartDialogProps {
 
 export const CartDialog = ({ open, onOpenChange }: CartDialogProps) => {
   const navigate = useNavigate();
-  const { state: cart, updateQuantity, removeItem, validateCartSides } = useCart();
+  const { state: cart, updateQuantity, removeItem, clearCart, validateCartSides } = useCart();
   const { toast } = useToast();
+  const [confirmClearOpen, setConfirmClearOpen] = useState(false);
 
   const handleUpdateCartQuantity = (id: string, change: number) => {
     const item = cart.items.find(item => item.id === id);
