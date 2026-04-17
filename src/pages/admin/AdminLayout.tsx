@@ -1,6 +1,12 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrderNotifications } from "@/contexts/OrderNotificationsContext";
 import { useOverdueInvoices } from "@/hooks/useOverdueInvoices";
@@ -20,7 +26,9 @@ import {
   Receipt,
   Users,
   HelpCircle,
-  FolderOpen
+  FolderOpen,
+  MoreHorizontal,
+  ChevronDown
 } from "lucide-react";
 
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
@@ -38,21 +46,31 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     clearNewOrdersCount();
   };
 
-  const adminNavItems = [
+  // PRIMARY items — daily/operational work, always visible on desktop
+  const primaryNavItems = [
     { href: "/admin", label: "Irányítópult", mobileLabel: "Kezdő", icon: LayoutDashboard, badgeCount: 0 },
     { href: "/admin/orders", label: "Rendelések", mobileLabel: "Rendelés", icon: ShoppingBag, badgeCount: newOrdersCount, onClickOverride: handleOrdersClick },
-    { href: "/admin/menu", label: "Étlap kezelés", mobileLabel: "Étlap", icon: Package, badgeCount: 0 },
     { href: "/admin/daily-menu", label: "Napi ajánlat", mobileLabel: "Napi", icon: Calendar, badgeCount: 0 },
-    { href: "/admin/gallery", label: "Galéria", mobileLabel: "Galéria", icon: Image, badgeCount: 0 },
-    { href: "/admin/legal", label: "Jogi oldalak", mobileLabel: "Jogi", icon: FileText, badgeCount: 0 },
-    { href: "/admin/about", label: "Rólunk", mobileLabel: "Rólunk", icon: Info, badgeCount: 0 },
-    { href: "/admin/faq", label: "GYIK", mobileLabel: "GYIK", icon: HelpCircle, badgeCount: 0 },
+    { href: "/admin/menu", label: "Étlap", mobileLabel: "Étlap", icon: Package, badgeCount: 0 },
+    { href: "/admin/invoices", label: "Számlák", mobileLabel: "Számla", icon: Receipt, badgeCount: overdueCount },
     { href: "/admin/analytics", label: "Statisztika", mobileLabel: "Stat.", icon: BarChart3, badgeCount: 0 },
+  ];
+
+  // SECONDARY items — less frequently used, behind "Több" on desktop, inline on mobile
+  const secondaryNavItems: typeof primaryNavItems = [
     { href: "/admin/coupons", label: "Kuponok", mobileLabel: "Kupon", icon: Tag, badgeCount: 0 },
     { href: "/admin/partners", label: "Partnerek", mobileLabel: "Partner", icon: Users, badgeCount: 0 },
-    { href: "/admin/invoices", label: "Számlák", mobileLabel: "Számla", icon: Receipt, badgeCount: overdueCount },
     { href: "/admin/documents", label: "Dokumentumok", mobileLabel: "Doksi", icon: FolderOpen, badgeCount: 0 },
+    { href: "/admin/gallery", label: "Galéria", mobileLabel: "Galéria", icon: Image, badgeCount: 0 },
+    { href: "/admin/about", label: "Rólunk oldal", mobileLabel: "Rólunk", icon: Info, badgeCount: 0 },
+    { href: "/admin/faq", label: "GYIK", mobileLabel: "GYIK", icon: HelpCircle, badgeCount: 0 },
+    { href: "/admin/legal", label: "Jogi oldalak", mobileLabel: "Jogi", icon: FileText, badgeCount: 0 },
   ];
+
+  const allNavItems = [...primaryNavItems, ...secondaryNavItems];
+
+  const isSecondaryActive = secondaryNavItems.some((it) => location.pathname === it.href);
+  const secondaryBadgeTotal = secondaryNavItems.reduce((s, it) => s + (it.badgeCount || 0), 0);
 
   const renderBadge = (count: number, size: "sm" | "lg") => {
     if (count <= 0) return null;
@@ -119,17 +137,18 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
 
       {/* Sticky Navigation Tabs */}
       <nav className="sticky top-14 z-40 bg-card/95 backdrop-blur border-b">
-        <div className="hidden md:block overflow-x-auto no-scrollbar">
-          <ul className="flex min-w-full items-center px-3 py-2">
-            {adminNavItems.map((item, index) => (
-              <li key={item.href} className={index < adminNavItems.length - 1 ? "mr-6" : ""}>
+        {/* DESKTOP: primary items + "Több" dropdown */}
+        <div className="hidden md:block">
+          <ul className="flex items-center gap-1 px-3 py-2 max-w-screen-xl mx-auto">
+            {primaryNavItems.map((item) => (
+              <li key={item.href}>
                 <Link
                   to={item.href}
                   onClick={item.onClickOverride}
-                  className={`relative flex items-center gap-2 px-3 py-2 rounded-md font-medium transition-all duration-200 whitespace-nowrap min-h-[36px] border-b-2 ${
+                  className={`relative flex items-center gap-2 px-3 py-2 rounded-md font-medium transition-all duration-200 whitespace-nowrap min-h-[36px] text-sm ${
                     location.pathname === item.href 
-                      ? "bg-primary text-primary-foreground border-primary" 
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted border-transparent"
+                      ? "bg-primary text-primary-foreground shadow-sm" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
                   }`}
                 >
                   <item.icon className="h-4 w-4" />
@@ -138,11 +157,53 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
                 </Link>
               </li>
             ))}
+
+            {/* "Több" dropdown for secondary items */}
+            <li className="ml-1">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className={`relative flex items-center gap-2 px-3 py-2 rounded-md font-medium transition-all duration-200 whitespace-nowrap min-h-[36px] text-sm ${
+                      isSecondaryActive
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    }`}
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                    <span>Több</span>
+                    <ChevronDown className="h-3 w-3 opacity-60" />
+                    {renderBadge(secondaryBadgeTotal, "lg")}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56 bg-popover">
+                  {secondaryNavItems.map((item) => (
+                    <DropdownMenuItem key={item.href} asChild>
+                      <Link
+                        to={item.href}
+                        className={`flex items-center gap-2 cursor-pointer ${
+                          location.pathname === item.href ? "bg-accent text-accent-foreground" : ""
+                        }`}
+                      >
+                        <item.icon className="h-4 w-4 text-muted-foreground" />
+                        <span className="flex-1">{item.label}</span>
+                        {item.badgeCount > 0 && (
+                          <Badge variant="destructive" className="h-5 min-w-5 text-[10px] px-1.5">
+                            {item.badgeCount > 9 ? '9+' : item.badgeCount}
+                          </Badge>
+                        )}
+                      </Link>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </li>
           </ul>
         </div>
+
+        {/* MOBILE: horizontal scroll, all items, primary first */}
         <div className="md:hidden overflow-x-auto no-scrollbar">
           <ul className="flex items-center gap-1 px-2 py-1.5 min-w-max">
-            {adminNavItems.map((item) => (
+            {allNavItems.map((item) => (
               <li key={item.href}>
                 <Link
                   to={item.href}

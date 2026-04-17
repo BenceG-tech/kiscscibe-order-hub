@@ -8,8 +8,9 @@ serve(async (req) => {
   if (preflight) return preflight;
 
   try {
-    const { date } = await req.json();
+    const { date, tone } = await req.json();
     if (!date) throw new Error("date is required");
+    const toneLabel = tone || "étvágygerjesztő";
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -64,7 +65,7 @@ serve(async (req) => {
             content: `Írj egy rövid, hangulatos Facebook posztot magyarul egy étterem napi ajánlatáról. Szabályok:
 - Maximum 300 karakter a poszt szöveg
 - Használj emoji-kat mértékletesen (2-4 db)
-- A hangnem legyen kedves, invitáló és barátságos
+- A hangnem legyen "${toneLabel}" — ennek megfelelően fogalmazz
 - Említsd meg az étterem nevét: Kiscsibe
 - Az ételneveket ne fordítsd le, írd helyesen
 - Tegyél hashtag-eket a végére (max 4)

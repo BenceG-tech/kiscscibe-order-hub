@@ -7,10 +7,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, addDays, getDay } from "date-fns";
 import { getSmartWeekStart, getSmartInitialDate } from "@/lib/dateUtils";
 import { hu } from "date-fns/locale";
-import { Download, Image as ImageIcon, Upload, Trash2, Loader2, Calendar, ChevronLeft, ChevronRight, RotateCcw, ZoomIn } from "lucide-react";
+import { Download, Image as ImageIcon, Upload, Trash2, Loader2, Calendar, ChevronLeft, ChevronRight, RotateCcw, ZoomIn, Sparkles, Copy, Check, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import FacebookPostGenerator from "@/components/admin/FacebookPostGenerator";
+import { Textarea } from "@/components/ui/textarea";
 
 interface MenuItem {
   id: string;
@@ -313,6 +313,14 @@ const DailyOfferImageGenerator = () => {
   const [previewDataUrl, setPreviewDataUrl] = useState<string>("");
   const [dataUrls, setDataUrls] = useState<Record<string, string>>({});
   const [menuPrice, setMenuPrice] = useState<number>(2200);
+
+  // FB post text generator state
+  const [postText, setPostText] = useState<string>("");
+  const [postHashtags, setPostHashtags] = useState<string[]>([]);
+  const [postLoading, setPostLoading] = useState(false);
+  const [postCopied, setPostCopied] = useState(false);
+  const [postTone, setPostTone] = useState<"vidám" | "profi" | "étvágygerjesztő">("étvágygerjesztő");
+
   const weekDates = getWeekDates(weekOffset);
 
   const weekStart = new Date(weekDates[0] + "T00:00:00");
@@ -509,6 +517,48 @@ const DailyOfferImageGenerator = () => {
     } finally {
       setUploading(false);
     }
+  };
+
+  // Reset post text when date changes
+  useEffect(() => {
+    setPostText("");
+    setPostHashtags([]);
+  }, [selectedDate]);
+
+  const generatePostText = async () => {
+    setPostLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-facebook-post", {
+        body: { date: selectedDate, tone: postTone },
+      });
+      if (error) {
+        toast.error("Hiba a poszt generálásakor");
+        console.error("FB post gen error:", error);
+        return;
+      }
+      if (data?.error) {
+        toast.error(data.error);
+        return;
+      }
+      setPostText(data.post_text || "");
+      setPostHashtags(data.hashtags || []);
+      toast.success("Poszt szöveg generálva!");
+    } catch (err: any) {
+      console.error("FB post gen error:", err);
+      toast.error(err?.message || "Hiba a poszt generálásakor");
+    } finally {
+      setPostLoading(false);
+    }
+  };
+
+  const copyPostText = async () => {
+    const tags = postHashtags.length > 0
+      ? "\n\n" + postHashtags.map((h) => (h.startsWith("#") ? h : `#${h}`)).join(" ")
+      : "";
+    await navigator.clipboard.writeText(postText + tags);
+    setPostCopied(true);
+    toast.success("Vágólapra másolva!");
+    setTimeout(() => setPostCopied(false), 2000);
   };
 
   const dateObj = new Date(selectedDate + "T00:00:00");
@@ -717,8 +767,68 @@ const DailyOfferImageGenerator = () => {
             </CardContent>
           </Card>
 
-          {/* Facebook Post Text Generator */}
-          <FacebookPostGenerator selectedDate={selectedDate} />
+          {/* Facebook Post Text Generator — inline */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <MessageSquare className="h-5 w-5 text-primary" />
+                Facebook poszt szöveg
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Generálj AI-alapú poszt szöveget a fenti képhez. Másold ki egy kattintással és tedd be a Facebookra a kép alá.
+              </p>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-medium text-muted-foreground">Hangnem:</span>
+                {(["étvágygerjesztő", "vidám", "profi"] as const).map((t) => (
+                  <Button
+                    key={t}
+                    size="sm"
+                    variant={postTone === t ? "default" : "outline"}
+                    onClick={() => setPostTone(t)}
+                    className="h-7 text-xs capitalize"
+                  >
+                    {t}
+                  </Button>
+                ))}
+              </div>
+
+              <Button onClick={generatePostText} disabled={postLoading} className="gap-2">
+                {postLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                {postLoading ? "Generálás..." : postText ? "Újragenerálás" : "Szöveg generálása"}
+              </Button>
+
+              {postText && (
+                <div className="space-y-3">
+                  <Textarea
+                    value={postText}
+                    onChange={(e) => setPostText(e.target.value)}
+                    rows={6}
+                    className="resize-y text-sm"
+                  />
+
+                  {postHashtags.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {postHashtags.map((tag, i) => (
+                        <Badge key={i} variant="secondary" className="text-xs">
+                          {tag.startsWith("#") ? tag : `#${tag}`}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap gap-2">
+                    <Button onClick={copyPostText} variant="outline" size="sm" className="gap-2">
+                      {postCopied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
+                      {postCopied ? "Másolva!" : "Szöveg másolása"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </>
       )}
     </div>
