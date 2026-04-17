@@ -30,6 +30,7 @@ import {
   MoreHorizontal,
   ChevronDown
 } from "lucide-react";
+import { HelpFloatingButton } from "@/components/admin/HelpFloatingButton";
 
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
