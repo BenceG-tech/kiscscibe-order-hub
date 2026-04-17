@@ -246,6 +246,7 @@ const MenuManagement = () => {
   return (
     <AdminLayout>
       <div className="space-y-6">
+        <AllergenAutoAssign />
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold flex items-center gap-2">
             Étlap kezelés
