@@ -6,6 +6,7 @@ import MasterMenuImport from "@/components/admin/MasterMenuImport";
 import WeeklyNewsletterPanel from "@/components/admin/WeeklyNewsletterPanel";
 import DailyOfferImageGenerator from "@/components/admin/DailyOfferImageGenerator";
 import IngredientEstimate from "@/components/admin/IngredientEstimate";
+import CapacityHelpPanel from "@/components/admin/CapacityHelpPanel";
 import { useIsMobile } from "@/hooks/use-mobile";
 import InfoTip from "@/components/admin/InfoTip";
 
@@ -31,12 +32,30 @@ const DailyMenuManagement = () => {
       <div className="pb-6">
         <Tabs defaultValue="daily" className="w-full">
           <div className="mb-6">
-            <TabsList className="!h-10 md:!h-10 !rounded-lg !p-1 !shadow-none !border-0 inline-flex items-center justify-start bg-muted w-auto gap-0">
+            <TabsList className="!h-10 md:!h-10 !rounded-lg !p-1 !shadow-none !border-0 inline-flex items-center justify-start bg-muted w-auto gap-0 overflow-x-auto max-w-full">
               <TabsTrigger 
                 value="daily" 
                 className="!h-8 !px-3 !text-xs sm:!text-sm !whitespace-nowrap !rounded-md data-[state=active]:!bg-background data-[state=active]:!text-foreground data-[state=active]:!shadow-sm data-[state=active]:!scale-100"
               >
                 {isMobile ? "Ajánlatok" : "Napi ajánlatok"}
+              </TabsTrigger>
+              <TabsTrigger 
+                value="facebook" 
+                className="!h-8 !px-3 !text-xs sm:!text-sm !whitespace-nowrap !rounded-md data-[state=active]:!bg-background data-[state=active]:!text-foreground data-[state=active]:!shadow-sm data-[state=active]:!scale-100"
+              >
+                {isMobile ? "Kép+Poszt" : "Kép és poszt"}
+              </TabsTrigger>
+              <TabsTrigger 
+                value="newsletter" 
+                className="!h-8 !px-3 !text-xs sm:!text-sm !whitespace-nowrap !rounded-md data-[state=active]:!bg-background data-[state=active]:!text-foreground data-[state=active]:!shadow-sm data-[state=active]:!scale-100"
+              >
+                Hírlevél
+              </TabsTrigger>
+              <TabsTrigger 
+                value="estimate" 
+                className="!h-8 !px-3 !text-xs sm:!text-sm !whitespace-nowrap !rounded-md data-[state=active]:!bg-background data-[state=active]:!text-foreground data-[state=active]:!shadow-sm data-[state=active]:!scale-100"
+              >
+                Becslés
               </TabsTrigger>
               <TabsTrigger 
                 value="capacity" 
@@ -50,49 +69,32 @@ const DailyMenuManagement = () => {
               >
                 {isMobile ? "Import" : "Excel Import"}
               </TabsTrigger>
-              <TabsTrigger 
-                value="newsletter" 
-                className="!h-8 !px-3 !text-xs sm:!text-sm !whitespace-nowrap !rounded-md data-[state=active]:!bg-background data-[state=active]:!text-foreground data-[state=active]:!shadow-sm data-[state=active]:!scale-100"
-              >
-                Hírlevél
-              </TabsTrigger>
-              <TabsTrigger 
-                value="facebook" 
-                className="!h-8 !px-3 !text-xs sm:!text-sm !whitespace-nowrap !rounded-md data-[state=active]:!bg-background data-[state=active]:!text-foreground data-[state=active]:!shadow-sm data-[state=active]:!scale-100"
-              >
-                {isMobile ? "Kép" : "Kép generátor"}
-              </TabsTrigger>
-              <TabsTrigger 
-                value="estimate" 
-                className="!h-8 !px-3 !text-xs sm:!text-sm !whitespace-nowrap !rounded-md data-[state=active]:!bg-background data-[state=active]:!text-foreground data-[state=active]:!shadow-sm data-[state=active]:!scale-100"
-              >
-                Becslés
-              </TabsTrigger>
             </TabsList>
           </div>
           
           <TabsContent value="daily" className="mt-0">
             <WeeklyMenuGrid />
           </TabsContent>
-          
-          <TabsContent value="capacity" className="mt-0">
-            <CapacityManagement />
-          </TabsContent>
-          
-          <TabsContent value="import" className="mt-0">
-            <MasterMenuImport />
+
+          <TabsContent value="facebook" className="mt-0">
+            <DailyOfferImageGenerator />
           </TabsContent>
 
           <TabsContent value="newsletter" className="mt-0">
             <WeeklyNewsletterPanel />
           </TabsContent>
 
-          <TabsContent value="facebook" className="mt-0">
-            <DailyOfferImageGenerator />
-          </TabsContent>
-
           <TabsContent value="estimate" className="mt-0">
             <IngredientEstimate />
+          </TabsContent>
+          
+          <TabsContent value="capacity" className="mt-0 space-y-4">
+            <CapacityHelpPanel />
+            <CapacityManagement />
+          </TabsContent>
+          
+          <TabsContent value="import" className="mt-0">
+            <MasterMenuImport />
           </TabsContent>
         </Tabs>
       </div>
