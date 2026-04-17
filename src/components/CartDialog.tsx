@@ -1,8 +1,19 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Minus } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Plus, Minus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { capitalizeFirst } from "@/lib/utils";
 
@@ -13,8 +24,9 @@ interface CartDialogProps {
 
 export const CartDialog = ({ open, onOpenChange }: CartDialogProps) => {
   const navigate = useNavigate();
-  const { state: cart, updateQuantity, removeItem, validateCartSides } = useCart();
+  const { state: cart, updateQuantity, removeItem, clearCart, validateCartSides } = useCart();
   const { toast } = useToast();
+  const [confirmClearOpen, setConfirmClearOpen] = useState(false);
 
   const handleUpdateCartQuantity = (id: string, change: number) => {
     const item = cart.items.find(item => item.id === id);
@@ -102,11 +114,44 @@ export const CartDialog = ({ open, onOpenChange }: CartDialogProps) => {
                 >
                   Tovább a fizetéshez
                 </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full mt-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                  onClick={() => setConfirmClearOpen(true)}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Kosár ürítése
+                </Button>
               </div>
             </>
           )}
         </div>
       </DialogContent>
+
+      <AlertDialog open={confirmClearOpen} onOpenChange={setConfirmClearOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Biztosan kiüríted a kosarat?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Az összes tétel eltávolításra kerül a kosárból. Ez a művelet nem vonható vissza.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Mégse</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                clearCart();
+                setConfirmClearOpen(false);
+                toast({ title: "Kosár kiürítve" });
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Igen, kiürítem
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };
