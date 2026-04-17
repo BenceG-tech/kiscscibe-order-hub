@@ -114,11 +114,44 @@ export const CartDialog = ({ open, onOpenChange }: CartDialogProps) => {
                 >
                   Tovább a fizetéshez
                 </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full mt-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                  onClick={() => setConfirmClearOpen(true)}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Kosár ürítése
+                </Button>
               </div>
             </>
           )}
         </div>
       </DialogContent>
+
+      <AlertDialog open={confirmClearOpen} onOpenChange={setConfirmClearOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Biztosan kiüríted a kosarat?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Az összes tétel eltávolításra kerül a kosárból. Ez a művelet nem vonható vissza.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Mégse</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                clearCart();
+                setConfirmClearOpen(false);
+                toast({ title: "Kosár kiürítve" });
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Igen, kiürítem
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };
