@@ -1,115 +1,134 @@
 
 
-A user kérése 4 részből áll:
+Több külön feladat, nézzük meg pár fájlt először, aztán tervet adok.
 
-1. **FB poszt AI szöveg generátor** → integrálni a meglévő Kép generátor (DailyOfferImageGenerator) tabba, hogy a kép alatt egyből megjelenjen a generált szöveg is
-2. **Tab sorrend a Napi ajánlat oldalon**: Excel Import legyen az utolsó, Kapacitás kerüljön előrébb + magyarázat hogy hogy működik
-3. **Duplikáció ellenőrzés**: van-e most? jelez-e? felajánlja-e a törlést? — ezt először meg kell vizsgálni a kódban
-4. **Fő admin tab sor (AdminLayout)** átláthatóbbá tétele relevancia szerint
+Megnézem: AdminLayout (Dokumentumok visszahelyezés), ReviewsSection (publikus review-k forrása), CartDialog (törlés gomb), allergének tárolása a menu_items táblában, és van-e már bármi „kézikönyv" jellegű komponens.
 
-Először nézzük meg a releváns fájlokat: DailyOfferImageGenerator (van-e már FB szöveg gen valahol — generate-facebook-post edge function létezik!), DailyMenu admin oldal tab sorrendje, AdminLayout fő nav, és duplikáció logika.
+Párhuzamosan olvasom be őket:
+- src/components/sections/ReviewsSection.tsx
+- src/components/CartDialog.tsx  
+- src/pages/admin/AdminLayout.tsx (csak a dropdown rész)
+- supabase types (allergens mező)
 
-Ezután kérdezek a tab-sorrendről + duplikáció kezeléséről, majd tervet adok.
-
-Megnézem párhuzamosan: DailyMenu page, AdminLayout, DailyOfferImageGenerator, generate-facebook-post function, és a duplikáció logika a useDocuments hookban (verziókezeléssel kapcsolatos) ill. menu_items / daily_offers oldalakon.
+Nincs szükség kérdésre — a kérések egyértelműek. Csak a kézikönyv struktúrájáról adok pár kreatív javaslatot.
 
 ---
 
-# Terv — 4 fejlesztés a Napi ajánlat + Admin felületen
+# Terv — 5 fejlesztés
 
-## 1. FB poszt AI szöveg generátor a Kép generátor tab-ba
+## 1. Dokumentumok tab vissza a fő nav-ba (dropdown-on kívül)
 
-A `generate-facebook-post` edge function már létezik a projektben, de jelenleg külön komponens (`FacebookPostGenerator`) használja. Integrálom a `DailyOfferImageGenerator` komponensbe:
+`AdminLayout.tsx`-ben átmozgatom a **Dokumentumok** menüpontot a „Több" dropdown-ból a fő látható tabok közé (a Számlák után). Logikus, mert dokumentumokat gyakran kell megnyitni.
 
-- **Kép generálás után** (vagy mellette egy „Szöveg generálása" gombbal) a kép alatt megjelenik egy szövegdoboz a generált FB poszt szöveggel
-- **Funkciók**: 
-  - Hangnem választó (Vidám / Profi / Étvágygerjesztő)
-  - „Újragenerálás" gomb
-  - „Szöveg másolása" gomb (vágólapra)
-  - „Kép + szöveg együtt másolása" — egy kattintással megy minden FB-re
-  - Szerkeszthető textarea (kézi finomítás)
-- **Auto-generálás**: amikor az admin generál egy képet, a háttérben automatikusan generálódik a szöveg is (párhuzamosan), így mire kész a kép, a szöveg is ott van alatta
+## 2. Főoldali review-k: csak 4-5 csillagos + automatikus, friss
 
-## 2. Tab sorrend a Napi ajánlat oldalon (`/admin/daily-menu`)
+A `ReviewsSection` jelenleg vagy fix tartalom, vagy DB-ből húzza. A megoldás:
 
-**Jelenlegi sorrend**: Napi ajánlatok | Kapacitás | Excel Import | Hírlevél | Kép generátor | Becslés
+- Megvizsgálom van-e már `reviews` tábla. Ha van → query: `rating >= 4 ORDER BY created_at DESC LIMIT 6`
+- Ha nincs DB review (csak hardcoded), akkor most átállítom DB-alapra: új tábla `reviews` (id, name, rating, comment, created_at, is_approved) + RLS (publikus read csak `is_approved=true AND rating>=4`)
+- Admin oldalon új minimál szekció: review-k jóváhagyása/elrejtése (a fő céloknak: Google Reviews API integráció későbbre)
+- **Fontos**: a memóriában van „minden publikus review forced 5 stars" szabály — ezt felülírjuk, mert most a user explicit kéri a 4-5 csillagosokat. Frissítem a memóriát is.
 
-**Új sorrend (relevancia szerint)**:
-1. **Napi ajánlatok** (napi munka)
-2. **Kép generátor** (napi/heti munka — előrébb hozzuk)
-3. **Hírlevél** (heti munka)
-4. **Becslés** (heti munka)
-5. **Kapacitás** (ritka, de fontos — magyarázattal)
-6. **Excel Import** (csak fejlesztői/admin használat — utolsó)
+## 3. Kosár — „Összes törlése" gomb
 
-## 3. Kapacitás tab — magyarázó panel hozzáadása
+`CartDialog.tsx`-ben a fejlécbe (X gomb mellé vagy az „Összesen" sor fölé) hozzáadok egy **„Kosár ürítése"** gombot (kuka ikon + szöveg, `variant="ghost"`, piros hover). Confirm dialoggal kérdezi meg: „Biztosan kiüríted az egész kosarat?"
 
-A Kapacitás tab tetejére hozzáadok egy összecsukható **„Hogyan működik?"** kártyát:
+## 4. Allergének automatikus hozzárendelése
 
-- Mire való a kapacitás
-- Mit jelent a napi limit / kifizetési cutoff
-- Mikor érdemes „Blackout napot" hozzáadni (pl. ünnepek)
-- Mit lát a vásárló, ha betelt egy nap
-- Konkrét példa lépésről lépésre
+Megvizsgálom hány étel van és milyen allergén-mező létezik. Aztán **egy migration script + admin gomb**:
 
-## 4. Duplikáció kezelés — vizsgálat + javaslat
-
-**Először meg kell vizsgálnom**, mi a jelenlegi állapot — több helyen lehet duplikáció:
-
-| Hely | Kockázat |
+**Biztos hozzárendelések (egyértelmű név → allergén):**
+| Étel név tartalma | Allergén |
 |---|---|
-| `menu_items` (master étel-könyvtár) | Ugyanaz a név kétszer |
-| `daily_offers` egy adott napon | Ugyanaz a leves/főétel kétszer |
-| `documents` (Kiscsibe Drive) | Már megoldva — verziózás |
-| Ügyfél rendelései | Nem releváns |
+| rántott, panírozott, palacsinta, tészta, gnocchi, galuska, nokedli, kifli, zsemle, kenyér | **1 (glutén)** |
+| tejszín, tej, sajt, túró, tejföl, vaj, csokoládé | **7 (tej)** |
+| tojás, rántott (panírozás miatt), majonéz, palacsinta | **3 (tojás)** |
+| hal, lazac, tonhal, ponty, harcsa | **4 (hal)** |
+| garnéla, rák, kagyló | **2 (rákfélék)** |
+| dió, mogyoró, mandula, pisztácia | **8 (diófélék)** |
+| szezám, szezámmag | **11** |
+| szója, szójaszósz, tofu | **6 (szója)** |
+| mustár | **10** |
+| zeller | **9** |
 
-**Javasolt megoldás (a vizsgálat után pontosítom)**:
-- Master étel-könyvtárban: feltöltés/létrehozás előtt ékezetfüggetlen név-egyezés ellenőrzés → ha van: dialog „Már létezik 'Sült csirke' — Mit szeretnél?" [Megnyitás] [Új létrehozása mégis] [Mégse]
-- Napi ajánlatoknál: ugyanaz a tétel ne kerülhessen kétszer ugyanarra a napra (UI szinten szürkítés a már kiválasztott tételeknél)
-- Egy új admin eszköz: **„Duplikáció ellenőrző"** a beállításokban, ami felsorolja a hasonló nevű tételeket és felajánlja az egyesítést
+**Megvalósítás**: egy új admin-csak gomb a Beállítások vagy Étlap kezelés tab-ban: **„Allergének automatikus hozzárendelése"** → futtat egy script-et ami a fenti szabályokkal végigmegy az összes `menu_items`-en és **csak hozzáad** allergéneket (nem ír felül semmit, csak ha üres vagy hiányzik). Visszajelez: „X tételhez Y allergént adtam hozzá. Kérlek ellenőrizd!" Az admin egyenként szerkeszthet utána.
 
-## 5. Fő admin navigáció (`AdminLayout`) átláthatóbbá tétele
+Ezt **nem futtatom le automatikusan** — gombnyomásra fut, hogy a tulaj eldönthesse mikor.
 
-**Jelenlegi tab sor (10+ elem)**: Irányítópult, Rendelések, Étlap kezelés, Napi ajánlat, Galéria, Jogi oldalak, Rólunk, GYIK, Számlák, Partnerek, Dokumentumok, ...
+## 5. Admin kézikönyv — innovatív megoldás
 
-**Új struktúra — relevancia + csoportosítás szerint**:
+**A koncepció**: nem egy különálló oldal, hanem egy **úszó, oldalt nyitható panel** (jobb oldali drawer/sheet) ami **bármelyik admin oldalon elérhető** és **közben tudja használni a felületet** (nem blokkolja).
 
-**Mindig látható (top nav, napi munka)**:
-1. Irányítópult
-2. Rendelések
-3. Napi ajánlat
-4. Étlap kezelés
-5. Számlák
+### Felépítés
 
-**„Több" dropdown menüben (ritka használat)**:
-- Galéria
-- Dokumentumok
-- Partnerek
-- Rólunk
-- GYIK
-- Jogi oldalak
-- Beállítások
+**Lebegő gomb** (jobb alsó sarok, minden admin oldalon):
+- Kis kerek arany gomb `?` ikonnal (mint egy intercom widget)
+- Tooltip: „Súgó és kézikönyv"
 
-A „Több" gomb dropdown menüvel nyílik, csoportosított ikonokkal. Mobilon ez már most is így van (horizontális scroll), desktop-on új a dropdown.
+**Kattintásra megnyílik egy `Sheet` oldalsó panel** (jobb oldal, kb. 420px széles):
+- A főtartalom (admin felület) marad balra, használható közben
+- A panel scrollozható, kereshető
+- Bezárható X-szel
+
+### Struktúra a panelen
+
+1. **Felül kereső**: „Mit keresel? (pl. kupon, allergén, kapacitás)"
+2. **Kontextus-érzékeny súgó**: az aktuális oldalra vonatkozó témák jelennek meg ELŐSZÖR
+   - Pl. ha `/admin/daily-menu`-n vagy → „Napi ajánlat", „Kép generátor", „Hírlevél" témák kiemelten
+3. **Kategorizált témák** (összecsukható accordion):
+   - 🚀 **Első lépések** (mit csinálj minden reggel, mit hetente)
+   - 🍽️ **Étlap és menü kezelés**
+   - 📸 **Képek és Facebook posztok**
+   - 📊 **Rendelések és KDS**
+   - 💰 **Számlák és pénzügy**
+   - 📈 **Statisztika értelmezése**
+   - 🎟️ **Kuponok és kedvezmények**
+   - 📅 **Kapacitás és nyitvatartás**
+   - 📁 **Dokumentumok**
+   - ⚙️ **Beállítások**
+   - 🆘 **Mit tegyek ha…** (tipikus problémák)
+
+4. **Minden téma alatt**:
+   - **Mire való?** — 1-2 mondat
+   - **Hogyan használd?** — lépésről lépésre
+   - **Miért hasznos?** — üzleti előny
+   - **Tipikus hiba** — amit el kell kerülni
+   - Opcionálisan: kis videó vagy GIF placeholder a jövőre
+
+5. **Alul**: „Nem találtad? Írj nekünk → bence@…" link
+
+### Technikai megvalósítás
+
+- Új komponens: `src/components/admin/AdminHelpPanel.tsx` (Sheet alapú)
+- Új komponens: `src/components/admin/HelpFloatingButton.tsx` (a lebegő gomb)
+- Új fájl: `src/data/adminHelpContent.ts` (a teljes kézikönyv struktúrált JSON-ban — ezt később admin szerkeszthetővé tesszük, most kódban)
+- Mindkettő beillesztve `AdminLayout.tsx`-be (egyszer, alul, hogy minden admin oldalon megjelenjen)
+- Kontextus-felismerés `useLocation()` hook-kal
+
+### Kreatív bónusz ötletek (megemlítem, döntsd el)
+- **„Mit változott az utolsó frissítés óta?"** — a kézikönyv tetején egy ÚJ badge azokra a funkciókra amik az elmúlt 7 napban kerültek be
+- **„Kávé melletti olvasnivaló"** mód — egy hosszabb, sztori-szerű útmutató, amit hétvégén el lehet olvasni
+- **Onboarding tour** — új admin user (pl. asszisztens) első bejelentkezésekor automatikusan végigvezeti a felületen 8-10 buborékkal („Itt látod a mai rendeléseket", „Itt vannak a heti menük"…)
+
+---
 
 ## Érintett fájlok
 
-| Fájl | Változás |
+| Fájl | Művelet |
 |---|---|
-| `src/components/admin/DailyOfferImageGenerator.tsx` | FB szöveg gen integrálás kép alá |
-| `src/pages/admin/DailyMenu.tsx` | Tab sorrend változtatás |
-| Új: `src/components/admin/CapacityHelpPanel.tsx` | Magyarázó kártya |
-| `src/components/admin/CapacityManagement.tsx` | Help panel beillesztése a tetejére |
-| `src/pages/admin/AdminLayout.tsx` | Fő nav átszervezés + „Több" dropdown |
-| Új: `src/components/admin/DuplicateChecker.tsx` | (Vizsgálat után) duplikáció eszköz |
-| `src/components/admin/MenuItemManagement.tsx` (vagy hasonló) | Duplikáció figyelmeztetés létrehozáskor |
+| `src/pages/admin/AdminLayout.tsx` | Dokumentumok átmozgatása + HelpFloatingButton beillesztése |
+| `src/components/sections/ReviewsSection.tsx` | DB-alapú, csak 4-5 csillag, friss |
+| Új migration | `reviews` tábla (ha nincs) + RLS + 4-5 csillag szűrő |
+| `src/components/CartDialog.tsx` | „Kosár ürítése" gomb + confirm |
+| Új: `src/components/admin/AllergenAutoAssign.tsx` | Allergén auto-hozzárendelés gomb (Étlap kezelés tab-ba) |
+| Új: `src/components/admin/AdminHelpPanel.tsx` | Súgó panel (Sheet) |
+| Új: `src/components/admin/HelpFloatingButton.tsx` | Lebegő ? gomb |
+| Új: `src/data/adminHelpContent.ts` | Kézikönyv tartalom |
+| `mem://business/reputation-management` | Frissítés: 4-5 csillag, nem csak 5 |
 
 ## Megvalósítási sorrend
-
-1. Megvizsgálom a duplikáció logikát (jelenlegi állapot)
-2. AdminLayout fő nav átszervezés (legnagyobb UX javítás)
-3. DailyMenu tab sorrend
-4. CapacityHelpPanel hozzáadása
-5. FB szöveg gen integrálás a Kép generátorba
-6. Duplikáció figyelmeztetés (ha kell, a vizsgálat alapján)
+1. Dokumentumok tab + Kosár ürítése (gyors)
+2. Allergén auto-hozzárendelés (gomb + script)
+3. Review-k 4-5 csillag + friss (DB ellenőrzés után)
+4. Admin kézikönyv (legnagyobb meló)
 
