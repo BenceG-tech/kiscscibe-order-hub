@@ -24,6 +24,7 @@ import {
   Search
 } from "lucide-react";
 import InfoTip from "@/components/admin/InfoTip";
+import { AllergenAutoAssign } from "@/components/admin/AllergenAutoAssign";
 
 interface MenuCategory {
   id: string;
