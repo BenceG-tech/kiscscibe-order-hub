@@ -230,6 +230,9 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
           {children}
         </div>
       </main>
+
+      {/* Floating help button — available on every admin page */}
+      <HelpFloatingButton />
     </div>
   );
 };
