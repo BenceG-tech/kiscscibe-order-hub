@@ -472,6 +472,156 @@ export type Database = {
         }
         Relationships: []
       }
+      document_activity: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          document_id: string | null
+          id: string
+          user_id: string | null
+          user_name: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          document_id?: string | null
+          id?: string
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          document_id?: string | null
+          id?: string
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Relationships: []
+      }
+      document_folders: {
+        Row: {
+          color: string
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      document_tags: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      documents: {
+        Row: {
+          created_at: string
+          description: string | null
+          file_path: string
+          file_size: number
+          folder_id: string | null
+          id: string
+          is_latest_version: boolean
+          is_starred: boolean
+          mime_type: string | null
+          name: string
+          original_filename: string
+          parent_document_id: string | null
+          tags: string[]
+          updated_at: string
+          uploaded_by: string | null
+          uploaded_by_name: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          file_path: string
+          file_size?: number
+          folder_id?: string | null
+          id?: string
+          is_latest_version?: boolean
+          is_starred?: boolean
+          mime_type?: string | null
+          name: string
+          original_filename: string
+          parent_document_id?: string | null
+          tags?: string[]
+          updated_at?: string
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          file_path?: string
+          file_size?: number
+          folder_id?: string | null
+          id?: string
+          is_latest_version?: boolean
+          is_starred?: boolean
+          mime_type?: string | null
+          name?: string
+          original_filename?: string
+          parent_document_id?: string | null
+          tags?: string[]
+          updated_at?: string
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "document_folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_parent_document_id_fkey"
+            columns: ["parent_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gallery_images: {
         Row: {
           alt_text: string
