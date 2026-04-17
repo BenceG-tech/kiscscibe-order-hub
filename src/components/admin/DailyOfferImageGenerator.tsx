@@ -561,6 +561,7 @@ const DailyOfferImageGenerator = () => {
     setTimeout(() => setPostCopied(false), 2000);
   };
 
+  const dateObj = new Date(selectedDate + "T00:00:00");
   const dayOfWeek = getDay(dateObj);
   const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
