@@ -1,134 +1,141 @@
 
 
-Több külön feladat, nézzük meg pár fájlt először, aztán tervet adok.
+Megnézem az adminHelpContent-et hogy lássam mi van benne és mi hiányzik, valamint az AdminLayout-ot az admin oldalak listájához.
+<lov-tool-use id="toolu_vrtx_0174XUg4gNvvKcVVwfSsmRY9" name="code--view" integration-id="code" data="{\"file_path\": \"src/data/adminHelpContent.ts\"}">
+</lov-tool-use>
 
-Megnézem: AdminLayout (Dokumentumok visszahelyezés), ReviewsSection (publikus review-k forrása), CartDialog (törlés gomb), allergének tárolása a menu_items táblában, és van-e már bármi „kézikönyv" jellegű komponens.
+<lov-tool-use id="toolu_vrtx_01JLHCfyujHnBudNnT4Q53uo" name="code--view" integration-id="code" data="{\"file_path\": \"src/pages/admin/AdminLayout.tsx\"}">
+</lov-tool-use>
 
-Párhuzamosan olvasom be őket:
-- src/components/sections/ReviewsSection.tsx
-- src/components/CartDialog.tsx  
-- src/pages/admin/AdminLayout.tsx (csak a dropdown rész)
-- supabase types (allergens mező)
+<lov-tool-use id="toolu_vrtx_01DwfswKXAHXFduxYbwm2dgn" name="code--view" integration-id="code" data="{\"file_path\": \"src/data/adminHelpContent.ts\"}">
+</lov-tool-use>
 
-Nincs szükség kérdésre — a kérések egyértelműek. Csak a kézikönyv struktúrájáról adok pár kreatív javaslatot.
+<lov-tool-use id="toolu_vrtx_01Cvcf8nLqhd6HeM3izbVYg5" name="code--view" integration-id="code" data="{\"file_path\": \"src/pages/admin/AdminLayout.tsx\"}">
+</lov-tool-use>
+<lov-plan>
 
----
+# Terv — Admin kézikönyv újratervezés
 
-# Terv — 5 fejlesztés
+## Hiányzó témák (audit eredménye)
 
-## 1. Dokumentumok tab vissza a fő nav-ba (dropdown-on kívül)
+A jelenlegi `adminHelpContent.ts` **nem** tartalmazza:
+- **Partnerek** kezelése (beszállítók) — `/admin/partners`
+- **Kuponok** részletes magyarázat (csak létrehozás van, használat/követés nincs)
+- **Galéria** kezelése — `/admin/gallery`
+- **Rólunk oldal** szerkesztése — `/admin/about`
+- **GYIK** szerkesztése — `/admin/faq`
+- **Jogi oldalak** szerkesztése — `/admin/legal`
+- **Hirdetmény popup** szerkesztése (Announcement)
+- **Hírlevél** részletes (heti menü email küldés)
+- **Pazarlás követés** (waste tracking)
+- **Forecasting / becslés** (időjárás-alapú adagbecslés)
+- **AI ár-javaslatok** (Statisztika fülön)
+- **PWA / push értesítések** beállítása
 
-`AdminLayout.tsx`-ben átmozgatom a **Dokumentumok** menüpontot a „Több" dropdown-ból a fő látható tabok közé (a Számlák után). Logikus, mert dokumentumokat gyakran kell megnyitni.
+→ Mindet hozzáadom megfelelő kategóriákba.
 
-## 2. Főoldali review-k: csak 4-5 csillagos + automatikus, friss
+## 1. Click-outside bezárás javítása
 
-A `ReviewsSection` jelenleg vagy fix tartalom, vagy DB-ből húzza. A megoldás:
+`AdminHelpPanel.tsx`-ben jelenleg `onInteractOutside={(e) => e.preventDefault()}` blokkolja a bezárást amikor az overlay-re kattintasz. **Eltávolítom** ezt a sort, és helyette:
+- A `SheetOverlay`-t **átlátszóvá** teszem (vagy nagyon enyhén sötétre, `bg-black/20` a `bg-black/80` helyett) — egyedi className-mel a `SheetContent`-en keresztül, hogy a felület továbbra is **látható és olvasható** legyen
+- Az overlay-re kattintás **bezárja** a panelt (alapértelmezett Radix viselkedés)
+- Így megmarad a „közben tudom használni a felületet" érzés (az overlay áttetsző), de egy kattintással kiléphetsz
 
-- Megvizsgálom van-e már `reviews` tábla. Ha van → query: `rating >= 4 ORDER BY created_at DESC LIMIT 6`
-- Ha nincs DB review (csak hardcoded), akkor most átállítom DB-alapra: új tábla `reviews` (id, name, rating, comment, created_at, is_approved) + RLS (publikus read csak `is_approved=true AND rating>=4`)
-- Admin oldalon új minimál szekció: review-k jóváhagyása/elrejtése (a fő céloknak: Google Reviews API integráció későbbre)
-- **Fontos**: a memóriában van „minden publikus review forced 5 stars" szabály — ezt felülírjuk, mert most a user explicit kéri a 4-5 csillagosokat. Frissítem a memóriát is.
+## 2. Olvashatóság — nagyobb betűk, levegősebb
 
-## 3. Kosár — „Összes törlése" gomb
+A jelenlegi panel **túl apró szövegekkel** dolgozik (`text-xs`, `text-sm`). Frissítések:
 
-`CartDialog.tsx`-ben a fejlécbe (X gomb mellé vagy az „Összesen" sor fölé) hozzáadok egy **„Kosár ürítése"** gombot (kuka ikon + szöveg, `variant="ghost"`, piros hover). Confirm dialoggal kérdezi meg: „Biztosan kiüríted az egész kosarat?"
+| Elem | Régi | Új |
+|---|---|---|
+| Téma cím (accordion trigger) | `text-sm` | `text-base font-semibold` |
+| Tartalom blokkok | `text-xs` | `text-sm leading-relaxed` |
+| Szekció címek (kategória) | `text-sm` | `text-base font-bold` |
+| Belső labelek („Mire való?") | `text-xs` | `text-sm font-semibold` |
+| Padding az accordion-en belül | `pb-3` | `pb-4 pt-2` |
+| Térköz a témák között | `space-y-1` | `space-y-2` |
+| Panel szélessége | `sm:max-w-md` (~448px) | `sm:max-w-lg` (~512px) — több hely a szövegnek |
 
-## 4. Allergének automatikus hozzárendelése
+## 3. Struktúra letisztítása — „Első lépések" átdolgozás
 
-Megvizsgálom hány étel van és milyen allergén-mező létezik. Aztán **egy migration script + admin gomb**:
+Jelenleg az „Első lépések" zavaró, mert a **napi rutin** keveredik a **funkció-magyarázattal**. Megoldás:
 
-**Biztos hozzárendelések (egyértelmű név → allergén):**
-| Étel név tartalma | Allergén |
-|---|---|
-| rántott, panírozott, palacsinta, tészta, gnocchi, galuska, nokedli, kifli, zsemle, kenyér | **1 (glutén)** |
-| tejszín, tej, sajt, túró, tejföl, vaj, csokoládé | **7 (tej)** |
-| tojás, rántott (panírozás miatt), majonéz, palacsinta | **3 (tojás)** |
-| hal, lazac, tonhal, ponty, harcsa | **4 (hal)** |
-| garnéla, rák, kagyló | **2 (rákfélék)** |
-| dió, mogyoró, mandula, pisztácia | **8 (diófélék)** |
-| szezám, szezámmag | **11** |
-| szója, szójaszósz, tofu | **6 (szója)** |
-| mustár | **10** |
-| zeller | **9** |
+**Új struktúra**:
 
-**Megvalósítás**: egy új admin-csak gomb a Beállítások vagy Étlap kezelés tab-ban: **„Allergének automatikus hozzárendelése"** → futtat egy script-et ami a fenti szabályokkal végigmegy az összes `menu_items`-en és **csak hozzáad** allergéneket (nem ír felül semmit, csak ha üres vagy hiányzik). Visszajelez: „X tételhez Y allergént adtam hozzá. Kérlek ellenőrizd!" Az admin egyenként szerkeszthet utána.
+1. **🎯 Mit hol találsz?** (új, legfelül) — gyors „térkép": minden fő admin oldal 1 mondatban, közvetlen linkkel az oldalra. Pl. „📊 Rendelések — itt látod a beérkező rendeléseket élőben → [Megnyitás]". Ez a leggyorsabb tájékozódás új felhasználónak.
 
-Ezt **nem futtatom le automatikusan** — gombnyomásra fut, hogy a tulaj eldönthesse mikor.
+2. **📅 Napi és heti rutin** (átnevezve „Első lépések"-ről) — csak a tennivaló-listák, nem funkció-magyarázat. 2 kártya: „Reggeli rutin (5 perc)" + „Heti rutin (vasárnap, 20 perc)". Checkbox-stílusú lista (vizuálisan teendő-listának néz ki).
 
-## 5. Admin kézikönyv — innovatív megoldás
+3. Utána a **funkció-kategóriák** (Étlap, Képek, Rendelések, stb.) — változatlan, csak nagyobb betűkkel.
 
-**A koncepció**: nem egy különálló oldal, hanem egy **úszó, oldalt nyitható panel** (jobb oldali drawer/sheet) ami **bármelyik admin oldalon elérhető** és **közben tudja használni a felületet** (nem blokkolja).
+## 4. „Erre az oldalra vonatkozik" szekció kiemelése
 
-### Felépítés
+A kontextus-érzékeny rész jó, de jelenleg szöveg nélkül van. Frissítések:
+- Nagyobb cím: „📍 Most ezen az oldalon vagy"
+- Az aktuális route-hoz tartozó kategória **automatikusan kinyílik** alatta (nem csak felül lebeg külön)
+- Ha nincs kontextus-egyezés, üzenet: „Ezen az oldalon nincs külön súgó — keress a kategóriákban lent."
 
-**Lebegő gomb** (jobb alsó sarok, minden admin oldalon):
-- Kis kerek arany gomb `?` ikonnal (mint egy intercom widget)
-- Tooltip: „Súgó és kézikönyv"
+## 5. Hozzáadandó témák (részletes lista)
 
-**Kattintásra megnyílik egy `Sheet` oldalsó panel** (jobb oldal, kb. 420px széles):
-- A főtartalom (admin felület) marad balra, használható közben
-- A panel scrollozható, kereshető
-- Bezárható X-szel
+Új vagy bővített kategóriák:
 
-### Struktúra a panelen
+**🏢 Partnerek és beszállítók** (új kategória) — `/admin/partners`
+- Mire való: beszállítók, telefon, email, jegyzetek, kapcsolódó számlák
+- Miért hasznos: nem külön Excelben kell vezetni, számlák automatikusan kapcsolódnak
 
-1. **Felül kereső**: „Mit keresel? (pl. kupon, allergén, kapacitás)"
-2. **Kontextus-érzékeny súgó**: az aktuális oldalra vonatkozó témák jelennek meg ELŐSZÖR
-   - Pl. ha `/admin/daily-menu`-n vagy → „Napi ajánlat", „Kép generátor", „Hírlevél" témák kiemelten
-3. **Kategorizált témák** (összecsukható accordion):
-   - 🚀 **Első lépések** (mit csinálj minden reggel, mit hetente)
-   - 🍽️ **Étlap és menü kezelés**
-   - 📸 **Képek és Facebook posztok**
-   - 📊 **Rendelések és KDS**
-   - 💰 **Számlák és pénzügy**
-   - 📈 **Statisztika értelmezése**
-   - 🎟️ **Kuponok és kedvezmények**
-   - 📅 **Kapacitás és nyitvatartás**
-   - 📁 **Dokumentumok**
-   - ⚙️ **Beállítások**
-   - 🆘 **Mit tegyek ha…** (tipikus problémák)
+**🎟️ Kuponok** (bővítés)
+- Kupon felhasználás követése (ki, mikor, mennyit)
+- Mit lát a vásárló a checkout-ban
+- Tipikus stratégiák (új vásárló, törzsvendég, csendes nap)
 
-4. **Minden téma alatt**:
-   - **Mire való?** — 1-2 mondat
-   - **Hogyan használd?** — lépésről lépésre
-   - **Miért hasznos?** — üzleti előny
-   - **Tipikus hiba** — amit el kell kerülni
-   - Opcionálisan: kis videó vagy GIF placeholder a jövőre
+**📸 Galéria** (új) — `/admin/gallery`
+- Ételek és Éttermünk kategóriák
+- Képek feltöltése, sorrendezés
+- Mit lát a vásárló (fooldali galéria szekció + dedikált oldal)
 
-5. **Alul**: „Nem találtad? Írj nekünk → bence@…" link
+**ℹ️ Rólunk / GYIK / Jogi / Hirdetmény** (új közös kategória „Tartalom kezelés")
+- Markdown szerkesztő használata
+- Mikor érdemes módosítani
+- Hirdetmény popup beállítása (mikor jelenjen meg, milyen képpel)
 
-### Technikai megvalósítás
+**📧 Hírlevél** (bővítés)
+- Heti menü email küldés
+- Feliratkozók kezelése
+- Resend integráció státusz
 
-- Új komponens: `src/components/admin/AdminHelpPanel.tsx` (Sheet alapú)
-- Új komponens: `src/components/admin/HelpFloatingButton.tsx` (a lebegő gomb)
-- Új fájl: `src/data/adminHelpContent.ts` (a teljes kézikönyv struktúrált JSON-ban — ezt később admin szerkeszthetővé tesszük, most kódban)
-- Mindkettő beillesztve `AdminLayout.tsx`-be (egyszer, alul, hogy minden admin oldalon megjelenjen)
-- Kontextus-felismerés `useLocation()` hook-kal
+**♻️ Pazarlás követés** (új) — `/admin/daily-menu`
+- Napi pazarlás rögzítése
+- Trendek értelmezése
+- Költségmegtakarítási potenciál
 
-### Kreatív bónusz ötletek (megemlítem, döntsd el)
-- **„Mit változott az utolsó frissítés óta?"** — a kézikönyv tetején egy ÚJ badge azokra a funkciókra amik az elmúlt 7 napban kerültek be
-- **„Kávé melletti olvasnivaló"** mód — egy hosszabb, sztori-szerű útmutató, amit hétvégén el lehet olvasni
-- **Onboarding tour** — új admin user (pl. asszisztens) első bejelentkezésekor automatikusan végigvezeti a felületen 8-10 buborékkal („Itt látod a mai rendeléseket", „Itt vannak a heti menük"…)
+**🌤️ Forecasting** (új) — `/admin/daily-menu`
+- Időjárás-alapú adagbecslés
+- 4 hetes átlag számítás
+- Mikor érdemes többet/kevesebbet főzni
 
----
+**💡 AI ár-javaslatok** (új) — `/admin/analytics`
+- 90 napos adat alapján
+- Mikor fogadd el, mikor utasítsd el
+
+**📱 PWA / Push értesítések** (új)
+- Telefonra telepítés
+- Push engedélyezés a böngészőben
+- Mikor jönnek értesítések
+
+## 6. Bónusz: „Új vagy itt?" üdvözlő gomb
+
+A kézikönyv tetejére egy nagy banner (csak első megnyitáskor látható, localStorage-ban tárolt):
+- „👋 Új admin? Indíts a 🎯 'Mit hol találsz?' szekcióval — 2 perc alatt átlátod a rendszert."
 
 ## Érintett fájlok
 
 | Fájl | Művelet |
 |---|---|
-| `src/pages/admin/AdminLayout.tsx` | Dokumentumok átmozgatása + HelpFloatingButton beillesztése |
-| `src/components/sections/ReviewsSection.tsx` | DB-alapú, csak 4-5 csillag, friss |
-| Új migration | `reviews` tábla (ha nincs) + RLS + 4-5 csillag szűrő |
-| `src/components/CartDialog.tsx` | „Kosár ürítése" gomb + confirm |
-| Új: `src/components/admin/AllergenAutoAssign.tsx` | Allergén auto-hozzárendelés gomb (Étlap kezelés tab-ba) |
-| Új: `src/components/admin/AdminHelpPanel.tsx` | Súgó panel (Sheet) |
-| Új: `src/components/admin/HelpFloatingButton.tsx` | Lebegő ? gomb |
-| Új: `src/data/adminHelpContent.ts` | Kézikönyv tartalom |
-| `mem://business/reputation-management` | Frissítés: 4-5 csillag, nem csak 5 |
+| `src/data/adminHelpContent.ts` | Bővítés ~12 új témával, „Mit hol találsz?" szekció hozzáadás, „Első lépések" átalakítás teendő-listára |
+| `src/components/admin/AdminHelpPanel.tsx` | Click-outside engedélyezés, áttetsző overlay, nagyobb betűk, szélesebb panel, kontextus szekció kiemelés, „Új vagy itt?" banner |
 
 ## Megvalósítási sorrend
-1. Dokumentumok tab + Kosár ürítése (gyors)
-2. Allergén auto-hozzárendelés (gomb + script)
-3. Review-k 4-5 csillag + friss (DB ellenőrzés után)
-4. Admin kézikönyv (legnagyobb meló)
+1. Help content bővítés (legnagyobb meló — minden hiányzó téma)
+2. Panel UX átdolgozás (overlay, méretek, struktúra)
+3. „Mit hol találsz?" gyors-térkép szekció
+4. „Új vagy itt?" üdvözlő banner
 
