@@ -519,7 +519,48 @@ const DailyOfferImageGenerator = () => {
     }
   };
 
-  const dateObj = new Date(selectedDate + "T00:00:00");
+  // Reset post text when date changes
+  useEffect(() => {
+    setPostText("");
+    setPostHashtags([]);
+  }, [selectedDate]);
+
+  const generatePostText = async () => {
+    setPostLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-facebook-post", {
+        body: { date: selectedDate, tone: postTone },
+      });
+      if (error) {
+        toast.error("Hiba a poszt generálásakor");
+        console.error("FB post gen error:", error);
+        return;
+      }
+      if (data?.error) {
+        toast.error(data.error);
+        return;
+      }
+      setPostText(data.post_text || "");
+      setPostHashtags(data.hashtags || []);
+      toast.success("Poszt szöveg generálva!");
+    } catch (err: any) {
+      console.error("FB post gen error:", err);
+      toast.error(err?.message || "Hiba a poszt generálásakor");
+    } finally {
+      setPostLoading(false);
+    }
+  };
+
+  const copyPostText = async () => {
+    const tags = postHashtags.length > 0
+      ? "\n\n" + postHashtags.map((h) => (h.startsWith("#") ? h : `#${h}`)).join(" ")
+      : "";
+    await navigator.clipboard.writeText(postText + tags);
+    setPostCopied(true);
+    toast.success("Vágólapra másolva!");
+    setTimeout(() => setPostCopied(false), 2000);
+  };
+
   const dayOfWeek = getDay(dateObj);
   const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
