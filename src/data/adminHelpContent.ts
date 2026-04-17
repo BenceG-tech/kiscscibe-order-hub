@@ -1,7 +1,7 @@
 export interface HelpTopic {
   id: string;
   title: string;
-  routes?: string[]; // routes where this topic is contextually relevant
+  routes?: string[];
   whatItDoes: string;
   howToUse: string[];
   whyItHelps: string;
@@ -10,43 +10,77 @@ export interface HelpTopic {
 
 export interface HelpCategory {
   id: string;
-  icon: string; // emoji
+  icon: string;
   title: string;
   topics: HelpTopic[];
 }
 
-export const HELP_CATEGORIES: HelpCategory[] = [
+export interface QuickMapEntry {
+  icon: string;
+  title: string;
+  route: string;
+  description: string;
+}
+
+export interface RoutineStep {
+  text: string;
+}
+
+export interface Routine {
+  id: string;
+  title: string;
+  duration: string;
+  when: string;
+  steps: RoutineStep[];
+}
+
+// Quick map — every admin page in 1 sentence
+export const QUICK_MAP: QuickMapEntry[] = [
+  { icon: "📊", title: "Irányítópult", route: "/admin", description: "A nap áttekintése — mai rendelések, riasztások, gyors statisztikák." },
+  { icon: "📦", title: "Rendelések", route: "/admin/orders", description: "Élő Kanban — beérkező rendelések kezelése (Új → Készül → Kész → Átadva)." },
+  { icon: "🍽️", title: "Étlap kezelés", route: "/admin/menu", description: "A 600+ tételes mester étel-könyvtár. Itt szerkeszted az ételeket, árakat, allergéneket." },
+  { icon: "📅", title: "Napi ajánlat", route: "/admin/daily-menu", description: "Heti menü összeállítása, kapacitás, kép- és poszt generátor, hírlevél, pazarlás követés." },
+  { icon: "📈", title: "Statisztika", route: "/admin/analytics", description: "Bevétel, rendelések, menü teljesítmény, AI árajánlatok." },
+  { icon: "🎟️", title: "Kuponok", route: "/admin/coupons", description: "Kedvezménykódok létrehozása és követése." },
+  { icon: "💰", title: "Számlák", route: "/admin/invoices", description: "Beszállítói számlák AI felismeréssel, ismétlődő számlák, fizetési emlékeztetők." },
+  { icon: "🏢", title: "Partnerek", route: "/admin/partners", description: "Beszállítók adatai — automatikusan kapcsolódnak a számlákhoz." },
+  { icon: "📁", title: "Dokumentumok", route: "/admin/documents", description: "Drive-szerű dokumentumtár — szerződések, NAV iratok, verziózva." },
+  { icon: "📸", title: "Galéria", route: "/admin/gallery", description: "Ételek és Éttermünk képek a publikus galériához." },
+  { icon: "ℹ️", title: "Rólunk", route: "/admin/about", description: "A Rólunk oldal tartalma — szöveg, számok, képek." },
+  { icon: "❓", title: "GYIK", route: "/admin/faq", description: "Gyakori kérdések szerkesztése a publikus oldalon." },
+  { icon: "📜", title: "Jogi oldalak", route: "/admin/legal", description: "Impresszum, ÁSZF, Adatvédelem, Süti — Markdown szerkesztővel." },
+];
+
+// Daily / weekly routines (todo-style)
+export const ROUTINES: Routine[] = [
   {
-    id: "first-steps",
-    icon: "🚀",
-    title: "Első lépések",
-    topics: [
-      {
-        id: "morning-routine",
-        title: "Reggeli rutin (7:00 körül)",
-        whatItDoes: "A nap kezdetén ellenőrzöd a mai napot, megnyitod a KDS-t, és átnézed a rendeléseket.",
-        howToUse: [
-          "Nyisd meg az Irányítópultot — láthatod a mai rendeléseket, várható forgalmat, riasztásokat.",
-          "Lépj a Rendelések fülre — itt kanban-szerűen mozognak a rendelések (Új → Készül → Kész → Átadva).",
-          "Ha új rendelés érkezik, hangjelzés és piros badge jelez.",
-          "Ellenőrizd a Napi ajánlatot — megfelelő-e a leves/főétel páros, van-e elég adag.",
-        ],
-        whyItHelps: "Egy 5 perces reggeli ellenőrzés megelőzi a délutáni káoszt — minden a helyén van, mire jönnek a vendégek.",
-      },
-      {
-        id: "weekly-routine",
-        title: "Heti rutin (vasárnap este vagy hétfő reggel)",
-        whatItDoes: "A heti menü összeállítása és a kapacitás beállítása az egész következő hétre.",
-        howToUse: [
-          "Napi ajánlat → válaszd ki a hétfőt és állítsd be az 5 napot.",
-          "Hírlevél fülön küldj heti menü emailt a feliratkozóknak.",
-          "Számlák → ellenőrizd a lejárt és közelgő határidejű számlákat.",
-          "Statisztika → nézd át a múlt hetet (legjobb tételek, bevétel).",
-        ],
-        whyItHelps: "Egy jól előkészített hét = nyugodt napok és elégedett vendégek.",
-      },
+    id: "morning",
+    title: "Reggeli rutin",
+    duration: "5 perc",
+    when: "Minden nap, ~7:00 körül",
+    steps: [
+      { text: "Nyisd meg az Irányítópultot — nézd meg a mai rendeléseket és riasztásokat." },
+      { text: "Lépj a Rendelések fülre — ellenőrizd hogy a Realtime kapcsolat működik (nincs piros jelzés)." },
+      { text: "Napi ajánlat → ellenőrizd hogy a mai menü helyes (leves + főétel páros, adagszám)." },
+      { text: "Ha új rendelés érkezik, hangjelzés és piros badge jelez." },
     ],
   },
+  {
+    id: "weekly",
+    title: "Heti rutin",
+    duration: "20 perc",
+    when: "Vasárnap este vagy hétfő reggel",
+    steps: [
+      { text: "Napi ajánlat → állítsd be a teljes hét menüjét (5 nap)." },
+      { text: "Hírlevél fülön küldj heti menü emailt a feliratkozóknak." },
+      { text: "Számlák → ellenőrizd a lejárt és közelgő határidejű számlákat." },
+      { text: "Statisztika → nézd át a múlt hetet (TOP tételek, bevétel, gyenge napok)." },
+      { text: "Kapacitás → ha ünnep van, vegyél fel zárolt napot." },
+    ],
+  },
+];
+
+export const HELP_CATEGORIES: HelpCategory[] = [
   {
     id: "menu",
     icon: "🍽️",
@@ -61,7 +95,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
           "Étlap kezelés fülön láthatod az összes tételt kategóriák szerint.",
           "Új tétel: 'Új étel' gomb. Add meg a nevet, kategóriát, árat, opcionálisan képet és allergéneket.",
           "Excel import: tömegesen tölthetsz fel új tételeket — utolsó tab a Napi ajánlat oldalon.",
-          "Allergének automatikus hozzárendelése: a Beállítások-ban a gombbal javaslatot kapsz a hiányzó allergénekre.",
+          "Allergének automatikus hozzárendelése: az oldal tetején lévő gombbal javaslatot kapsz a hiányzó allergénekre.",
         ],
         whyItHelps: "Nem kell minden héten újraírni az ételeket — egyszer felvitt, többször használt.",
         commonMistake: "Ne hozz létre duplikált neveket (pl. 'Sült csirke' és 'Sült Csirke'). A kereső ékezet- és kisbetű-független.",
@@ -78,18 +112,41 @@ export const HELP_CATEGORIES: HelpCategory[] = [
         ],
         whyItHelps: "Egy kattintással kínálsz vásárlóknak ár-érték arányosabb csomagot — több bevétel, kevesebb kosárba-pakolgatás.",
       },
+      {
+        id: "fix-items",
+        title: "Fix tételek (italok, savanyúság)",
+        routes: ["/admin/menu"],
+        whatItDoes: "Mindig elérhető tételek (pl. üdítők, savanyúság), amik nem függenek a napi ajánlattól.",
+        howToUse: [
+          "Étlap kezelés → tétel szerkesztésénél kapcsold be a 'Mindig elérhető' kapcsolót.",
+          "Ezek a tételek a publikus felületen külön szekcióban jelennek meg.",
+        ],
+        whyItHelps: "A vásárló bármikor hozzá tudja venni a kosárhoz, függetlenül attól mi a napi főétel.",
+      },
+      {
+        id: "sold-out",
+        title: "Készlet kifogyás (sold out)",
+        routes: ["/admin/daily-menu", "/admin/orders"],
+        whatItDoes: "Ha egy tételből elfogyott, manuálisan jelölheted, hogy ne lehessen rendelni belőle.",
+        howToUse: [
+          "Napi ajánlat → tételnél kattints a 'Elfogyott' kapcsolóra.",
+          "A vásárló oldalán azonnal megjelenik a 'Elfogyott' badge és nem rendelhető.",
+          "Ha újra van készleten, kapcsold ki — visszakerül.",
+        ],
+        whyItHelps: "Megelőzi a csalódott vendégeket — nem rendelnek olyat amit nem tudsz teljesíteni.",
+      },
     ],
   },
   {
     id: "images",
     icon: "📸",
-    title: "Képek és Facebook posztok",
+    title: "Képek, posztok és galéria",
     topics: [
       {
         id: "image-generator",
-        title: "AI kép és poszt generátor",
+        title: "AI kép és poszt generátor (Facebook/Instagram)",
         routes: ["/admin/daily-menu"],
-        whatItDoes: "Egy kattintással készít professzionális AI ételképet és Facebook poszt szöveget a napi ajánlathoz.",
+        whatItDoes: "Egy kattintással készít professzionális AI ételképet és Facebook/Instagram poszt szöveget a napi ajánlathoz.",
         howToUse: [
           "Napi ajánlat → 'Kép és poszt' fül.",
           "Válaszd ki a napot, a formátumot (FB / IG poszt / IG story) és a hangnemet.",
@@ -110,11 +167,26 @@ export const HELP_CATEGORIES: HelpCategory[] = [
         ],
         whyItHelps: "Egy étkép +30% konverzió a kosárba helyezésnél — a vásárló a szemével eszik először.",
       },
+      {
+        id: "gallery-management",
+        title: "Galéria (Ételek és Éttermünk)",
+        routes: ["/admin/gallery"],
+        whatItDoes: "A publikus oldalon megjelenő képgaléria kezelése — két kategóriában: Ételek és Éttermünk (belső terek).",
+        howToUse: [
+          "Galéria → válaszd ki a kategóriát (Ételek vagy Éttermünk).",
+          "'Új kép feltöltése' gomb. Húzd be a fájlt vagy válaszd ki.",
+          "Add meg az alt-szöveget (SEO és akadálymentesítés miatt fontos).",
+          "Sorrendet a sorszám mezővel állítod — kisebb szám = előrébb.",
+          "Aktív/inaktív kapcsolóval rejtheted vagy visszahozhatod a képet.",
+        ],
+        whyItHelps: "A galéria a fooldal és a dedikált Galéria oldal egyik fő bizalmi elem — friss, étvágygerjesztő képek = több rendelés.",
+        commonMistake: "Ne tölts fel kis felbontású (mobil) képet — törekedj minimum 1200px szélességre.",
+      },
     ],
   },
   {
     id: "orders",
-    icon: "📊",
+    icon: "📦",
     title: "Rendelések és KDS",
     topics: [
       {
@@ -173,12 +245,54 @@ export const HELP_CATEGORIES: HelpCategory[] = [
         ],
         whyItHelps: "Soha többé nem felejtesz el bevinni rezsit — ami automatikus, az nem hibázik.",
       },
+      {
+        id: "payment-reminders",
+        title: "Fizetési emlékeztetők",
+        routes: ["/admin/invoices"],
+        whatItDoes: "A rendszer figyel a határidőkre és előre szól ha fizetni kell.",
+        howToUse: [
+          "Számlák oldal tetején látható a 'Lejárt' és 'Közelgő' szekció.",
+          "Kattints a számlára → 'Fizetve' jelölés a fizetés napjával.",
+        ],
+        whyItHelps: "Nincs késedelmi kamat, és a beszállítóval is jó marad a viszony.",
+      },
+    ],
+  },
+  {
+    id: "partners",
+    icon: "🏢",
+    title: "Partnerek és beszállítók",
+    topics: [
+      {
+        id: "partner-management",
+        title: "Partner adatok kezelése",
+        routes: ["/admin/partners"],
+        whatItDoes: "A beszállítók (Metro, Auchan, helyi termelő, stb.) adatait egy helyen tárolja: kapcsolat, adószám, bankszámla, jegyzetek.",
+        howToUse: [
+          "Partnerek → 'Új partner' gomb.",
+          "Add meg a nevet, rövid nevet, kategóriát (élelmiszer, szolgáltatás, stb.).",
+          "Tölts fel kapcsolati adatokat (telefon, email, kontakt személy).",
+          "Pénzügyi adatok: adószám, EU adószám, bankszámla — ezek automatikusan átkerülnek számla felvételkor.",
+        ],
+        whyItHelps: "Nem kell külön Excelben vezetni a beszállítókat. Számla felvételnél kiválasztod a partnert és minden adat automatikusan kitöltődik.",
+      },
+      {
+        id: "partner-invoices",
+        title: "Partner számláinak nyomon követése",
+        routes: ["/admin/partners"],
+        whatItDoes: "Minden partnernél láthatod, hogy mennyi számlát adtál ki, mi a havi/éves költés.",
+        howToUse: [
+          "Partnerek → kattints egy partnerre.",
+          "A részletek dialógusban látod a kapcsolódó számlákat és összköltést.",
+        ],
+        whyItHelps: "Eldöntheted melyik beszállító éri meg leginkább, hol érdemes árat egyeztetni.",
+      },
     ],
   },
   {
     id: "analytics",
     icon: "📈",
-    title: "Statisztika értelmezése",
+    title: "Statisztika és AI elemzések",
     topics: [
       {
         id: "revenue-tab",
@@ -204,6 +318,30 @@ export const HELP_CATEGORIES: HelpCategory[] = [
         ],
         whyItHelps: "A 80/20 szabály: a tételeid 20%-a hozza a bevétel 80%-át. Ezeket meg kell ismerni.",
       },
+      {
+        id: "ai-pricing",
+        title: "AI ár-javaslatok",
+        routes: ["/admin/analytics"],
+        whatItDoes: "A rendszer 90 napos rendelési adatok alapján AI-val (Gemini) javaslatot tesz, hogy melyik tételnél emelhetnél árat vagy hol kéne csökkenteni.",
+        howToUse: [
+          "Statisztika → Menü teljesítmény → 'AI árajánlatok' kártya.",
+          "Olvasd el az indoklást — miért javasolja az AI az emelést/csökkentést.",
+          "Te döntesz: elfogadod, módosítod, vagy elutasítod.",
+        ],
+        whyItHelps: "Nem kell hetente számolgatnod — az AI észreveszi a mintázatokat amiket te talán nem.",
+        commonMistake: "Ne fogadj el vakon minden javaslatot — a vendégkör hűsége is számít, néha érdemes lassabban emelni.",
+      },
+      {
+        id: "customers-tab",
+        title: "Vásárlók",
+        routes: ["/admin/analytics"],
+        whatItDoes: "Visszatérő vendégek aránya, törzsvendégek, új vendégek számának változása.",
+        howToUse: [
+          "Statisztika → Vásárlók fül.",
+          "TOP törzsvendégek listája — érdemes őket megjutalmazni (kuponnal).",
+        ],
+        whyItHelps: "Egy törzsvendég 5x annyit ér mint egy egyszeri — az ő megtartásuk a legfontosabb.",
+      },
     ],
   },
   {
@@ -222,6 +360,29 @@ export const HELP_CATEGORIES: HelpCategory[] = [
           "Megosztható social-on, emailben, vagy törzsvendégeknek.",
         ],
         whyItHelps: "Célzott akciók — pl. csendes napokra: 'KEDD15' → 15% kedvezmény keddenként.",
+      },
+      {
+        id: "coupon-usage",
+        title: "Kupon felhasználás követése",
+        routes: ["/admin/coupons"],
+        whatItDoes: "Látod hogy melyik kupont hányszor használták és összesen mekkora kedvezmény ment ki.",
+        howToUse: [
+          "Kuponok listájában minden kupon mellett látszik a felhasználások száma.",
+          "A KDS rendelés kártyán is zöld badge jelzi, ha a vendég kupont használt.",
+        ],
+        whyItHelps: "Eldöntheted melyik kampány működik, melyik nem — adatalapú marketing.",
+      },
+      {
+        id: "coupon-strategies",
+        title: "Mikor és milyen kupont adj?",
+        whatItDoes: "Stratégiai tippek a kuponhasználathoz.",
+        howToUse: [
+          "Új vásárló: 10% első rendelésre (pl. ELSO10) — alacsony belépési küszöb.",
+          "Csendes nap: keddre/szerdára 15% — kapacitás kihasználás.",
+          "Törzsvendég: névre szóló kupon emailben — lojalitás építés.",
+          "Ünnep: rövid ideig 20% (pl. húsvét) — sürgető üzenet.",
+        ],
+        whyItHelps: "A kupon nem veszteség, hanem befektetés a forgalomba és lojalitásba.",
       },
     ],
   },
@@ -257,6 +418,120 @@ export const HELP_CATEGORIES: HelpCategory[] = [
     ],
   },
   {
+    id: "operations",
+    icon: "♻️",
+    title: "Pazarlás és előrejelzés",
+    topics: [
+      {
+        id: "waste-tracking",
+        title: "Pazarlás követés",
+        routes: ["/admin/daily-menu"],
+        whatItDoes: "A nap végén rögzítheted, hány adag maradt el (pazarlás), és a rendszer trendet épít belőle.",
+        howToUse: [
+          "Napi ajánlat → Pazarlás fül.",
+          "Tétel név, tervezett adag, eladott adag, pazarolt adag — kitöltés.",
+          "Mentés után a Statisztikában grafikon mutatja a havi pazarlási trendet.",
+        ],
+        whyItHelps: "Egy 10% pazarlás csökkentés = több 10 ezer Ft havi megtakarítás. A trend mutatja melyik ételből főzz kevesebbet.",
+      },
+      {
+        id: "weather-forecast",
+        title: "Időjárás-alapú adagbecslés",
+        routes: ["/admin/daily-menu"],
+        whatItDoes: "A rendszer a következő napok időjárását (Open-Meteo) és az elmúlt 4 hét rendelési átlagát kombinálva javaslatot ad, hány adagot főzz.",
+        howToUse: [
+          "Napi ajánlat → Időjárás kártya a fő nézetben.",
+          "Esős napon kevesebb rendelés várható — ennek megfelelően csökkents az adagot.",
+          "Hideg napon a leves többet fogy — emelj rajta.",
+        ],
+        whyItHelps: "Kevesebb pazarlás + biztos hogy nem fogy ki — egyszerre két előny.",
+      },
+    ],
+  },
+  {
+    id: "content",
+    icon: "✍️",
+    title: "Tartalom kezelés (Rólunk, GYIK, Jogi, Hirdetmény)",
+    topics: [
+      {
+        id: "about-editor",
+        title: "Rólunk oldal szerkesztése",
+        routes: ["/admin/about"],
+        whatItDoes: "A publikus 'Rólunk' oldal teljes tartalma szerkeszthető — szöveg, statisztikák (pl. 'Évek száma: 5'), képek.",
+        howToUse: [
+          "Rólunk admin oldal → szakaszok szerint szerkeszted.",
+          "Mentés után azonnal megjelenik a publikus oldalon.",
+        ],
+        whyItHelps: "Nem kell fejlesztőt hívni minden szöveg-változtatáshoz.",
+      },
+      {
+        id: "faq-editor",
+        title: "GYIK kezelése",
+        routes: ["/admin/faq"],
+        whatItDoes: "A publikus oldalon megjelenő gyakori kérdések és válaszok szerkesztése.",
+        howToUse: [
+          "GYIK admin → 'Új kérdés'.",
+          "Sorrend a sorszám mezővel. Aktív/inaktív kapcsolóval rejtheted.",
+        ],
+        whyItHelps: "A vendégek maguk megtalálják a választ — kevesebb telefonhívás, több rendelés.",
+      },
+      {
+        id: "legal-pages",
+        title: "Jogi oldalak (Impresszum, ÁSZF, Adatvédelem, Süti)",
+        routes: ["/admin/legal"],
+        whatItDoes: "A 4 kötelező jogi oldal Markdown szerkesztővel kezelhető.",
+        howToUse: [
+          "Jogi oldalak → válaszd ki melyiket szerkeszted.",
+          "Markdown: # cím, ## alcím, **félkövér**, [link](url) — egyszerű formázás.",
+          "Mentés → azonnal frissül a publikus oldal.",
+        ],
+        whyItHelps: "Jogi változás (pl. új ÁSZF) esetén perceken belül frissíthető — nem kell fejlesztő.",
+        commonMistake: "Ne töröld a teljes oldalt — ha nem vagy biztos, kérj jogi tanácsot a változtatás előtt.",
+      },
+      {
+        id: "announcement",
+        title: "Hirdetmény popup",
+        routes: ["/admin/about"],
+        whatItDoes: "A főoldalra belépő vendégeknek megjelenő popup (pl. 'Ünnepi nyitvatartás', 'Új menü').",
+        howToUse: [
+          "Hirdetmény szerkesztő → cím, leírás, opcionális kép és CTA gomb (link).",
+          "Aktív/inaktív kapcsoló — kikapcsoláskor nem jelenik meg.",
+          "A popup csak a süti elfogadás után jelenik meg, és csak egyszer/munkamenet.",
+        ],
+        whyItHelps: "Direkt üzenet a vendégeknek — ünnepek, változások, új ajánlatok kommunikálása.",
+      },
+    ],
+  },
+  {
+    id: "marketing",
+    icon: "📧",
+    title: "Hírlevél és marketing",
+    topics: [
+      {
+        id: "weekly-newsletter",
+        title: "Heti menü hírlevél",
+        routes: ["/admin/daily-menu"],
+        whatItDoes: "A feliratkozóknak kiküldhető a heti menü email formájában — szépen formázva, képekkel.",
+        howToUse: [
+          "Napi ajánlat → Hírlevél fül.",
+          "Ellenőrizd a heti menüt (előnézet).",
+          "'Küldés' gomb → minden feliratkozónak kimegy emailben (Resend integráció).",
+        ],
+        whyItHelps: "Emlékezteted a vendégeket hogy nyitva vagytok — közvetlen csatorna a postaládájukba.",
+        commonMistake: "Hetente egyszer küldj — ne többször, mert leiratkoznak.",
+      },
+      {
+        id: "subscribers",
+        title: "Feliratkozók kezelése",
+        whatItDoes: "A feliratkozók a checkout-ban vagy a fooldalon iratkoznak fel — listájuk megtekinthető.",
+        howToUse: [
+          "Hírlevél fülön látható a feliratkozók száma és emailcímek.",
+        ],
+        whyItHelps: "GDPR-kompatibilis — csak az iratkozik fel aki valóban szeretné.",
+      },
+    ],
+  },
+  {
     id: "documents",
     icon: "📁",
     title: "Dokumentumok (Kiscsibe Drive)",
@@ -272,6 +547,34 @@ export const HELP_CATEGORIES: HelpCategory[] = [
           "Új verzió feltöltésekor a régi megmarad — bármikor visszaállítható.",
         ],
         whyItHelps: "Egy helyen minden papír — sose vesz el szerződés vagy számla.",
+      },
+    ],
+  },
+  {
+    id: "pwa",
+    icon: "📱",
+    title: "Mobil alkalmazás (PWA) és értesítések",
+    topics: [
+      {
+        id: "pwa-install",
+        title: "Telefonra telepítés",
+        whatItDoes: "Az admin felület telepíthető a telefonra mint egy app (PWA).",
+        howToUse: [
+          "iPhone (Safari): Megosztás → 'Hozzáadás a kezdőképernyőhöz'.",
+          "Android (Chrome): menü → 'App telepítése' vagy 'Hozzáadás a kezdőképernyőhöz'.",
+          "Megnyitás után úgy működik mint egy natív alkalmazás (offline cache, ikon).",
+        ],
+        whyItHelps: "Gyorsabb hozzáférés — egy érintés és bent vagy az admin felületen.",
+      },
+      {
+        id: "push-notifications",
+        title: "Push értesítések",
+        whatItDoes: "Új rendelés érkezésekor a telefonod is értesít, akár ha be sincs nyitva a böngésző.",
+        howToUse: [
+          "Első bejelentkezéskor a böngésző kérdez: 'Engedélyezed az értesítéseket?' → Igen.",
+          "Ha véletlen elutasítottad, böngésző beállításokban újra engedélyezheted.",
+        ],
+        whyItHelps: "Nem kell folyamatosan figyelned a felületet — szól ha történik valami.",
       },
     ],
   },
@@ -310,6 +613,16 @@ export const HELP_CATEGORIES: HelpCategory[] = [
           "Vagy tölts fel saját képet — bármikor felülírja az AI-t.",
         ],
         whyItHelps: "A vásárló a képet látja először — érdemes a legjobbat választani.",
+      },
+      {
+        id: "no-notifications",
+        title: "…nem kapok push értesítést",
+        whatItDoes: "Lehet hogy a böngésző blokkolja vagy nem engedélyezted.",
+        howToUse: [
+          "Böngésző címsor mellett kattints a lakat ikonra → Értesítések → Engedélyezés.",
+          "Frissítsd az oldalt.",
+        ],
+        whyItHelps: "Beállítás után minden új rendelésről azonnal tudsz.",
       },
     ],
   },
