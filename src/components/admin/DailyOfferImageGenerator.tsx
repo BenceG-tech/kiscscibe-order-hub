@@ -725,8 +725,68 @@ const DailyOfferImageGenerator = () => {
             </CardContent>
           </Card>
 
-          {/* Facebook Post Text Generator */}
-          <FacebookPostGenerator selectedDate={selectedDate} />
+          {/* Facebook Post Text Generator — inline */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <MessageSquare className="h-5 w-5 text-primary" />
+                Facebook poszt szöveg
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Generálj AI-alapú poszt szöveget a fenti képhez. Másold ki egy kattintással és tedd be a Facebookra a kép alá.
+              </p>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-medium text-muted-foreground">Hangnem:</span>
+                {(["étvágygerjesztő", "vidám", "profi"] as const).map((t) => (
+                  <Button
+                    key={t}
+                    size="sm"
+                    variant={postTone === t ? "default" : "outline"}
+                    onClick={() => setPostTone(t)}
+                    className="h-7 text-xs capitalize"
+                  >
+                    {t}
+                  </Button>
+                ))}
+              </div>
+
+              <Button onClick={generatePostText} disabled={postLoading} className="gap-2">
+                {postLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                {postLoading ? "Generálás..." : postText ? "Újragenerálás" : "Szöveg generálása"}
+              </Button>
+
+              {postText && (
+                <div className="space-y-3">
+                  <Textarea
+                    value={postText}
+                    onChange={(e) => setPostText(e.target.value)}
+                    rows={6}
+                    className="resize-y text-sm"
+                  />
+
+                  {postHashtags.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {postHashtags.map((tag, i) => (
+                        <Badge key={i} variant="secondary" className="text-xs">
+                          {tag.startsWith("#") ? tag : `#${tag}`}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap gap-2">
+                    <Button onClick={copyPostText} variant="outline" size="sm" className="gap-2">
+                      {postCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                      {postCopied ? "Másolva!" : "Szöveg másolása"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </>
       )}
     </div>
