@@ -42,6 +42,7 @@ const AdminCoupons = React.lazy(() => import("./pages/admin/Coupons"));
 const AdminInvoices = React.lazy(() => import("./pages/admin/Invoices"));
 const AdminPartners = React.lazy(() => import("./pages/admin/Partners"));
 const AdminFaq = React.lazy(() => import("./pages/admin/Faq"));
+const AdminDocuments = React.lazy(() => import("./pages/admin/Documents"));
 
 const StaffOrders = React.lazy(() => import("./pages/staff/StaffOrders"));
 
@@ -158,6 +159,11 @@ const App = () => (
               <Route path="/admin/faq" element={
                 <ProtectedRoute requireAdmin>
                   <Suspense fallback={<LazyFallback />}><AdminFaq /></Suspense>
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/documents" element={
+                <ProtectedRoute requireAdmin>
+                  <Suspense fallback={<LazyFallback />}><AdminDocuments /></Suspense>
                 </ProtectedRoute>
               } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -19,7 +19,8 @@ import {
   Tag,
   Receipt,
   Users,
-  HelpCircle
+  HelpCircle,
+  FolderOpen
 } from "lucide-react";
 
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
@@ -50,6 +51,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     { href: "/admin/coupons", label: "Kuponok", mobileLabel: "Kupon", icon: Tag, badgeCount: 0 },
     { href: "/admin/partners", label: "Partnerek", mobileLabel: "Partner", icon: Users, badgeCount: 0 },
     { href: "/admin/invoices", label: "Számlák", mobileLabel: "Számla", icon: Receipt, badgeCount: overdueCount },
+    { href: "/admin/documents", label: "Dokumentumok", mobileLabel: "Doksi", icon: FolderOpen, badgeCount: 0 },
   ];
 
   const renderBadge = (count: number, size: "sm" | "lg") => {
