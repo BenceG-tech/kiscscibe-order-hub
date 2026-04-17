@@ -53,6 +53,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     { href: "/admin/daily-menu", label: "Napi ajánlat", mobileLabel: "Napi", icon: Calendar, badgeCount: 0 },
     { href: "/admin/menu", label: "Étlap", mobileLabel: "Étlap", icon: Package, badgeCount: 0 },
     { href: "/admin/invoices", label: "Számlák", mobileLabel: "Számla", icon: Receipt, badgeCount: overdueCount },
+    { href: "/admin/documents", label: "Dokumentumok", mobileLabel: "Doksi", icon: FolderOpen, badgeCount: 0 },
     { href: "/admin/analytics", label: "Statisztika", mobileLabel: "Stat.", icon: BarChart3, badgeCount: 0 },
   ];
 
@@ -60,7 +61,6 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   const secondaryNavItems: typeof primaryNavItems = [
     { href: "/admin/coupons", label: "Kuponok", mobileLabel: "Kupon", icon: Tag, badgeCount: 0 },
     { href: "/admin/partners", label: "Partnerek", mobileLabel: "Partner", icon: Users, badgeCount: 0 },
-    { href: "/admin/documents", label: "Dokumentumok", mobileLabel: "Doksi", icon: FolderOpen, badgeCount: 0 },
     { href: "/admin/gallery", label: "Galéria", mobileLabel: "Galéria", icon: Image, badgeCount: 0 },
     { href: "/admin/about", label: "Rólunk oldal", mobileLabel: "Rólunk", icon: Info, badgeCount: 0 },
     { href: "/admin/faq", label: "GYIK", mobileLabel: "GYIK", icon: HelpCircle, badgeCount: 0 },
