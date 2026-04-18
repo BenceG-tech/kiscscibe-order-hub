@@ -10,7 +10,17 @@ import {
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import {
+  Sparkles as SparklesIcon,
+  Map as MapIcon,
+  UtensilsCrossed,
+  Activity,
+  Wallet,
+  Megaphone,
+  Settings as SettingsIcon,
+  ChevronLeft,
+} from "lucide-react";
 import {
   Accordion,
   AccordionContent,
