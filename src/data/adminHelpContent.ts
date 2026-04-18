@@ -8,12 +8,37 @@ export interface HelpTopic {
   commonMistake?: string;
 }
 
+export type HelpTabGroup =
+  | "overview"
+  | "menu"
+  | "operations"
+  | "finance"
+  | "marketing"
+  | "content";
+
 export interface HelpCategory {
   id: string;
   icon: string;
   title: string;
+  tabGroup: HelpTabGroup;
   topics: HelpTopic[];
 }
+
+export interface HelpTab {
+  id: HelpTabGroup;
+  icon: string;
+  label: string;
+  shortLabel: string;
+}
+
+export const HELP_TABS: HelpTab[] = [
+  { id: "overview", icon: "🎯", label: "Áttekintés", shortLabel: "Áttek." },
+  { id: "menu", icon: "🍽️", label: "Étlap & Menü", shortLabel: "Étlap" },
+  { id: "operations", icon: "📊", label: "Működés", shortLabel: "Műk." },
+  { id: "finance", icon: "💰", label: "Pénzügy", shortLabel: "Pénz" },
+  { id: "marketing", icon: "📣", label: "Marketing", shortLabel: "Mark." },
+  { id: "content", icon: "⚙️", label: "Tartalom & Egyéb", shortLabel: "Tart." },
+];
 
 export interface QuickMapEntry {
   icon: string;
