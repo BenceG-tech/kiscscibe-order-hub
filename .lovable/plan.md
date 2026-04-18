@@ -1,141 +1,95 @@
 
 
-Megnézem az adminHelpContent-et hogy lássam mi van benne és mi hiányzik, valamint az AdminLayout-ot az admin oldalak listájához.
-<lov-tool-use id="toolu_vrtx_0174XUg4gNvvKcVVwfSsmRY9" name="code--view" integration-id="code" data="{\"file_path\": \"src/data/adminHelpContent.ts\"}">
-</lov-tool-use>
+# Terv — Admin kézikönyv: Tab-ok + „Mi változott?" szekció
 
-<lov-tool-use id="toolu_vrtx_01JLHCfyujHnBudNnT4Q53uo" name="code--view" integration-id="code" data="{\"file_path\": \"src/pages/admin/AdminLayout.tsx\"}">
-</lov-tool-use>
+## 1. Tab navigáció a kézikönyv tetején
 
-<lov-tool-use id="toolu_vrtx_01DwfswKXAHXFduxYbwm2dgn" name="code--view" integration-id="code" data="{\"file_path\": \"src/data/adminHelpContent.ts\"}">
-</lov-tool-use>
+Jelenleg az `AdminHelpPanel` egy hosszú, görgetett accordion lista. Az új struktúra **tab-okkal** lesz tagolva a panel tetején, hogy egy kattintással ugorhass a kívánt fő témára.
 
-<lov-tool-use id="toolu_vrtx_01Cvcf8nLqhd6HeM3izbVYg5" name="code--view" integration-id="code" data="{\"file_path\": \"src/pages/admin/AdminLayout.tsx\"}">
-</lov-tool-use>
-<lov-plan>
+### Tab struktúra (top-level)
 
-# Terv — Admin kézikönyv újratervezés
+A jelenlegi `adminHelpContent.ts` kategóriák alapján **6-7 fő tab**:
 
-## Hiányzó témák (audit eredménye)
+1. **🆕 Mi változott?** (új — alapértelmezett, ha van új tartalom)
+2. **🎯 Áttekintés** — „Mit hol találsz?" gyors-térkép + napi/heti rutin
+3. **🍽️ Étlap & Menü** — Étlap kezelés, Napi ajánlat, Allergének
+4. **📊 Működés** — Rendelések, KDS, Kapacitás, Pazarlás, Forecasting
+5. **💰 Pénzügy** — Számlák, Partnerek, Statisztika, AI ár-javaslatok
+6. **📣 Marketing** — Képek, FB poszt, Hírlevél, Kuponok, Galéria
+7. **⚙️ Tartalom & Egyéb** — Rólunk/GYIK/Jogi/Hirdetmény, PWA, Beállítások
 
-A jelenlegi `adminHelpContent.ts` **nem** tartalmazza:
-- **Partnerek** kezelése (beszállítók) — `/admin/partners`
-- **Kuponok** részletes magyarázat (csak létrehozás van, használat/követés nincs)
-- **Galéria** kezelése — `/admin/gallery`
-- **Rólunk oldal** szerkesztése — `/admin/about`
-- **GYIK** szerkesztése — `/admin/faq`
-- **Jogi oldalak** szerkesztése — `/admin/legal`
-- **Hirdetmény popup** szerkesztése (Announcement)
-- **Hírlevél** részletes (heti menü email küldés)
-- **Pazarlás követés** (waste tracking)
-- **Forecasting / becslés** (időjárás-alapú adagbecslés)
-- **AI ár-javaslatok** (Statisztika fülön)
-- **PWA / push értesítések** beállítása
+### Layout
 
-→ Mindet hozzáadom megfelelő kategóriákba.
+- **Felül**: kereső (megmarad) + horizontálisan görgethető tab-sor (sticky a panel tetején)
+- **Alatta**: az aktív tab tartalma (accordion-ok az adott kategóriához tartozó témákkal)
+- **Kontextus jelzés**: az aktuális oldalhoz tartozó tab automatikusan ki van jelölve és nyitva, plusz egy kis sárga pötty jelöli a tab-on hogy „itt vagy most"
+- **Mobil**: a tab-sor görgethető (`overflow-x-auto`), kompakt szöveg + ikon
 
-## 1. Click-outside bezárás javítása
+### Technikai megvalósítás
 
-`AdminHelpPanel.tsx`-ben jelenleg `onInteractOutside={(e) => e.preventDefault()}` blokkolja a bezárást amikor az overlay-re kattintasz. **Eltávolítom** ezt a sort, és helyette:
-- A `SheetOverlay`-t **átlátszóvá** teszem (vagy nagyon enyhén sötétre, `bg-black/20` a `bg-black/80` helyett) — egyedi className-mel a `SheetContent`-en keresztül, hogy a felület továbbra is **látható és olvasható** legyen
-- Az overlay-re kattintás **bezárja** a panelt (alapértelmezett Radix viselkedés)
-- Így megmarad a „közben tudom használni a felületet" érzés (az overlay áttetsző), de egy kattintással kiléphetsz
+- Shadcn `Tabs` komponens használata (`tabs.tsx` már létezik)
+- A `HELP_CONTENT` kategóriák egy új `tabGroup` mezőt kapnak (pl. `'menu' | 'operations' | 'finance' | ...`), amivel csoportosítva jelennek meg
+- Kereséskor a tab-ok mögé esik a kereső (cross-tab találatok mind láthatók)
 
-## 2. Olvashatóság — nagyobb betűk, levegősebb
+## 2. „Mi változott?" szekció
 
-A jelenlegi panel **túl apró szövegekkel** dolgozik (`text-xs`, `text-sm`). Frissítések:
+Új első tab a kézikönyvben, ami **az utolsó 7 napban hozzáadott funkciókat** mutatja **ÚJ** badge-dzsel.
 
-| Elem | Régi | Új |
-|---|---|---|
-| Téma cím (accordion trigger) | `text-sm` | `text-base font-semibold` |
-| Tartalom blokkok | `text-xs` | `text-sm leading-relaxed` |
-| Szekció címek (kategória) | `text-sm` | `text-base font-bold` |
-| Belső labelek („Mire való?") | `text-xs` | `text-sm font-semibold` |
-| Padding az accordion-en belül | `pb-3` | `pb-4 pt-2` |
-| Térköz a témák között | `space-y-1` | `space-y-2` |
-| Panel szélessége | `sm:max-w-md` (~448px) | `sm:max-w-lg` (~512px) — több hely a szövegnek |
+### Adatmodell
 
-## 3. Struktúra letisztítása — „Első lépések" átdolgozás
+Új fájl: `src/data/adminChangelog.ts` — strukturált lista:
 
-Jelenleg az „Első lépések" zavaró, mert a **napi rutin** keveredik a **funkció-magyarázattal**. Megoldás:
+```ts
+type ChangelogEntry = {
+  date: string;           // ISO date — pl. "2026-04-17"
+  title: string;          // pl. "FB poszt AI szöveg generátor"
+  description: string;    // 1-2 mondat
+  category: string;       // melyik tab-on található a részletes súgó
+  helpTopicId?: string;   // direkt link az érintett súgó-témára
+  type: 'new' | 'improved' | 'fixed';  // típus badge
+};
+```
 
-**Új struktúra**:
+Kezdeti tartalom (az elmúlt napok valódi változásai):
+- FB poszt AI szöveg generátor (új) — Kép és poszt tab
+- Tab sorrend a Napi ajánlat oldalon (javítás)
+- Kapacitás magyarázó panel (új)
+- Admin nav „Több" dropdown (javítás)
+- Kosár ürítése egy gombbal (új)
+- Allergének automatikus hozzárendelése (új)
+- Admin kézikönyv (új)
+- Kézikönyv tab-os struktúra + Mi változott? (új)
 
-1. **🎯 Mit hol találsz?** (új, legfelül) — gyors „térkép": minden fő admin oldal 1 mondatban, közvetlen linkkel az oldalra. Pl. „📊 Rendelések — itt látod a beérkező rendeléseket élőben → [Megnyitás]". Ez a leggyorsabb tájékozódás új felhasználónak.
+### Megjelenítés a tab-on
 
-2. **📅 Napi és heti rutin** (átnevezve „Első lépések"-ről) — csak a tennivaló-listák, nem funkció-magyarázat. 2 kártya: „Reggeli rutin (5 perc)" + „Heti rutin (vasárnap, 20 perc)". Checkbox-stílusú lista (vizuálisan teendő-listának néz ki).
+- **Időrendi sorrendben** (legfrissebb fent), dátum szerint csoportosítva
+- Minden tétel: **🆕/✨/🔧 ikon + cím + dátum + leírás + „Tovább a súgóhoz →" link**
+- **„ÚJ" badge** azokon, amik az **utolsó 7 napban** kerültek be (sárga `bg-primary` badge)
+- A tételek `<7 napos` időbélyeggel egy „Friss változások" szekcióba, a régebbiek egy „Korábbi frissítések" összecsukható szekcióba (max 30 napra visszamenőleg jelenik meg)
 
-3. Utána a **funkció-kategóriák** (Étlap, Képek, Rendelések, stb.) — változatlan, csak nagyobb betűkkel.
+### Bónusz: badge a fő tab-on is
 
-## 4. „Erre az oldalra vonatkozik" szekció kiemelése
+Ha vannak az utolsó 7 napban változások:
+- A „🆕 Mi változott?" tab-on egy kis piros pötty + szám (pl. „3"), mint értesítés
+- Eltűnik, ha a felhasználó megnyitotta egyszer (localStorage-ban tároljuk a `lastViewedChangelog` timestamp-et)
 
-A kontextus-érzékeny rész jó, de jelenleg szöveg nélkül van. Frissítések:
-- Nagyobb cím: „📍 Most ezen az oldalon vagy"
-- Az aktuális route-hoz tartozó kategória **automatikusan kinyílik** alatta (nem csak felül lebeg külön)
-- Ha nincs kontextus-egyezés, üzenet: „Ezen az oldalon nincs külön súgó — keress a kategóriákban lent."
+## 3. Apró fejlesztések a panel tetején
 
-## 5. Hozzáadandó témák (részletes lista)
-
-Új vagy bővített kategóriák:
-
-**🏢 Partnerek és beszállítók** (új kategória) — `/admin/partners`
-- Mire való: beszállítók, telefon, email, jegyzetek, kapcsolódó számlák
-- Miért hasznos: nem külön Excelben kell vezetni, számlák automatikusan kapcsolódnak
-
-**🎟️ Kuponok** (bővítés)
-- Kupon felhasználás követése (ki, mikor, mennyit)
-- Mit lát a vásárló a checkout-ban
-- Tipikus stratégiák (új vásárló, törzsvendég, csendes nap)
-
-**📸 Galéria** (új) — `/admin/gallery`
-- Ételek és Éttermünk kategóriák
-- Képek feltöltése, sorrendezés
-- Mit lát a vásárló (fooldali galéria szekció + dedikált oldal)
-
-**ℹ️ Rólunk / GYIK / Jogi / Hirdetmény** (új közös kategória „Tartalom kezelés")
-- Markdown szerkesztő használata
-- Mikor érdemes módosítani
-- Hirdetmény popup beállítása (mikor jelenjen meg, milyen képpel)
-
-**📧 Hírlevél** (bővítés)
-- Heti menü email küldés
-- Feliratkozók kezelése
-- Resend integráció státusz
-
-**♻️ Pazarlás követés** (új) — `/admin/daily-menu`
-- Napi pazarlás rögzítése
-- Trendek értelmezése
-- Költségmegtakarítási potenciál
-
-**🌤️ Forecasting** (új) — `/admin/daily-menu`
-- Időjárás-alapú adagbecslés
-- 4 hetes átlag számítás
-- Mikor érdemes többet/kevesebbet főzni
-
-**💡 AI ár-javaslatok** (új) — `/admin/analytics`
-- 90 napos adat alapján
-- Mikor fogadd el, mikor utasítsd el
-
-**📱 PWA / Push értesítések** (új)
-- Telefonra telepítés
-- Push engedélyezés a böngészőben
-- Mikor jönnek értesítések
-
-## 6. Bónusz: „Új vagy itt?" üdvözlő gomb
-
-A kézikönyv tetejére egy nagy banner (csak első megnyitáskor látható, localStorage-ban tárolt):
-- „👋 Új admin? Indíts a 🎯 'Mit hol találsz?' szekcióval — 2 perc alatt átlátod a rendszert."
+A jelenlegi „Új vagy itt?" banner és „Most ezen az oldalon vagy" szekció megmarad, de:
+- **Tömörebb formában** kerülnek a tab-sor **fölé** (nem lent külön, hogy a tab-sor maradjon a fő navigáció)
+- A welcome banner-ben az „Indíts a 🎯 'Mit hol találsz?' szekcióval" link most már a **🎯 Áttekintés tab-ra** vált (nem csak görget)
 
 ## Érintett fájlok
 
 | Fájl | Művelet |
 |---|---|
-| `src/data/adminHelpContent.ts` | Bővítés ~12 új témával, „Mit hol találsz?" szekció hozzáadás, „Első lépések" átalakítás teendő-listára |
-| `src/components/admin/AdminHelpPanel.tsx` | Click-outside engedélyezés, áttetsző overlay, nagyobb betűk, szélesebb panel, kontextus szekció kiemelés, „Új vagy itt?" banner |
+| `src/data/adminHelpContent.ts` | `tabGroup` mező hozzáadása minden kategóriához + tab metaadatok export |
+| Új: `src/data/adminChangelog.ts` | Changelog tételek + `isWithinDays` segéd |
+| `src/components/admin/AdminHelpPanel.tsx` | `Tabs` komponens beépítése, tab szűrés, „Mi változott?" tab tartalom, kontextus → aktív tab váltás, „új változás" badge |
 
 ## Megvalósítási sorrend
-1. Help content bővítés (legnagyobb meló — minden hiányzó téma)
-2. Panel UX átdolgozás (overlay, méretek, struktúra)
-3. „Mit hol találsz?" gyors-térkép szekció
-4. „Új vagy itt?" üdvözlő banner
+
+1. `adminChangelog.ts` létrehozása az aktuális változásokkal
+2. `adminHelpContent.ts` kategóriák `tabGroup` mezővel ellátása + tab definíciók
+3. `AdminHelpPanel.tsx` átalakítása: Tabs komponens, „Mi változott?" tab tartalom render, kontextus alapján aktív tab kiválasztás, badge logika
 
