@@ -2,6 +2,7 @@ export interface HelpTopic {
   id: string;
   title: string;
   routes?: string[];
+  pageGroup?: string; // SZINT 2 — melyik admin oldal/funkció alá tartozik
   whatItDoes: string;
   howToUse: string[];
   whyItHelps: string;
@@ -9,7 +10,6 @@ export interface HelpTopic {
 }
 
 export type HelpTabGroup =
-  | "overview"
   | "menu"
   | "operations"
   | "finance"
@@ -32,12 +32,47 @@ export interface HelpTab {
 }
 
 export const HELP_TABS: HelpTab[] = [
-  { id: "overview", icon: "🎯", label: "Áttekintés", shortLabel: "Áttek." },
   { id: "menu", icon: "🍽️", label: "Étlap & Menü", shortLabel: "Étlap" },
   { id: "operations", icon: "📊", label: "Működés", shortLabel: "Műk." },
   { id: "finance", icon: "💰", label: "Pénzügy", shortLabel: "Pénz" },
   { id: "marketing", icon: "📣", label: "Marketing", shortLabel: "Mark." },
   { id: "content", icon: "⚙️", label: "Tartalom & Egyéb", shortLabel: "Tart." },
+];
+
+// SZINT 2 — Oldal-csoportok meta-adatai
+export interface HelpPageGroup {
+  id: string;
+  tabGroup: HelpTabGroup;
+  title: string;
+  icon: string;
+  route?: string;
+  description: string;
+}
+
+export const HELP_PAGE_GROUPS: HelpPageGroup[] = [
+  // Étlap & Menü
+  { id: "menu-library", tabGroup: "menu", title: "Étlap kezelés", icon: "🍽️", route: "/admin/menu", description: "Mester étel-könyvtár, fix tételek, AI képek" },
+  { id: "daily-offer", tabGroup: "menu", title: "Napi ajánlat", icon: "📅", route: "/admin/daily-menu", description: "Heti menü, kombinációk, készlet" },
+  { id: "allergens", tabGroup: "menu", title: "Allergének", icon: "⚠️", route: "/admin/menu", description: "Auto-hozzárendelés, kézi szerk." },
+  // Működés
+  { id: "orders-kds", tabGroup: "operations", title: "Rendelések / KDS", icon: "📦", route: "/admin/orders", description: "Kanban folyamat, manuális rendelés" },
+  { id: "capacity", tabGroup: "operations", title: "Kapacitás", icon: "📅", route: "/admin/daily-menu", description: "Slotok, zárolt napok" },
+  { id: "waste-forecast", tabGroup: "operations", title: "Pazarlás & előrejelzés", icon: "♻️", route: "/admin/daily-menu", description: "Pazarlás napló, időjárás-becslés" },
+  // Pénzügy
+  { id: "invoices", tabGroup: "finance", title: "Számlák", icon: "💰", route: "/admin/invoices", description: "AI OCR, ismétlődő, emlékeztető" },
+  { id: "partners", tabGroup: "finance", title: "Partnerek", icon: "🏢", route: "/admin/partners", description: "Beszállítók, számlatörténet" },
+  { id: "analytics", tabGroup: "finance", title: "Statisztika", icon: "📈", route: "/admin/analytics", description: "Bevétel, menü, AI ár-javaslatok" },
+  // Marketing
+  { id: "images-posts", tabGroup: "marketing", title: "Képek és posztok", icon: "📸", route: "/admin/daily-menu", description: "AI képek, FB/IG poszt szöveg" },
+  { id: "gallery", tabGroup: "marketing", title: "Galéria", icon: "🖼️", route: "/admin/gallery", description: "Ételek és Éttermünk képek" },
+  { id: "newsletter", tabGroup: "marketing", title: "Hírlevél", icon: "📧", route: "/admin/daily-menu", description: "Heti menü email, feliratkozók" },
+  { id: "coupons", tabGroup: "marketing", title: "Kuponok", icon: "🎟️", route: "/admin/coupons", description: "Kódok, statisztika, stratégia" },
+  // Tartalom & Egyéb
+  { id: "about-faq", tabGroup: "content", title: "Rólunk & GYIK", icon: "ℹ️", route: "/admin/about", description: "Rólunk oldal, GYIK, hirdetmény" },
+  { id: "legal", tabGroup: "content", title: "Jogi oldalak", icon: "📜", route: "/admin/legal", description: "Impresszum, ÁSZF, Adatvédelem" },
+  { id: "documents", tabGroup: "content", title: "Dokumentumok", icon: "📁", route: "/admin/documents", description: "Drive — szerződések, NAV iratok" },
+  { id: "pwa-push", tabGroup: "content", title: "Mobil app & értesítések", icon: "📱", description: "PWA telepítés, push értesítések" },
+  { id: "troubleshoot", tabGroup: "content", title: "Mit tegyek ha…", icon: "🆘", description: "Hibakeresés, gyakori problémák" },
 ];
 
 export interface QuickMapEntry {
