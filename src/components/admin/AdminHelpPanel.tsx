@@ -434,25 +434,23 @@ export const AdminHelpPanel = ({ open, onOpenChange }: AdminHelpPanelProps) => {
                     )}
 
                     {/* Other tabs */}
-                    {activeTab !== "changelog" &&
-                      activeTab !== "overview" &&
-                      activeTab !== "grid" && (
-                        <div className="space-y-5">
-                          {categoriesForTab(activeTab as HelpTabGroup).length === 0 ? (
-                            <p className="text-sm text-muted-foreground italic">
-                              Ehhez a témához még nincs súgó tartalom.
-                            </p>
-                          ) : (
-                            categoriesForTab(activeTab as HelpTabGroup).map((cat) => (
-                              <CategoryBlock
-                                key={cat.id}
-                                cat={cat}
-                                highlightRoute={location.pathname}
-                              />
-                            ))
-                          )}
-                        </div>
-                      )}
+                    {activeTab !== "changelog" && activeTab !== "overview" && (
+                      <div className="space-y-5">
+                        {categoriesForTab(activeTab as HelpTabGroup).length === 0 ? (
+                          <p className="text-sm text-muted-foreground italic">
+                            Ehhez a témához még nincs súgó tartalom.
+                          </p>
+                        ) : (
+                          categoriesForTab(activeTab as HelpTabGroup).map((cat) => (
+                            <CategoryBlock
+                              key={cat.id}
+                              cat={cat}
+                              highlightRoute={location.pathname}
+                            />
+                          ))
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
