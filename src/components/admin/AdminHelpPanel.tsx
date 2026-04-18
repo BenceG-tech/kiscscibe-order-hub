@@ -96,12 +96,30 @@ export const AdminHelpPanel = ({ open, onOpenChange }: AdminHelpPanelProps) => {
     setShowWelcome(false);
   };
 
-  const handleTabChange = (val: string) => {
-    setActiveTab(val as HelpTabGroup | "changelog");
+  const handleTabChange = (val: HelpTabGroup | "changelog" | "grid") => {
+    setActiveTab(val);
     if (val === "changelog") {
       markChangelogViewed();
       setUnseenCount(0);
     }
+  };
+
+  const TAB_ICON_MAP: Record<HelpTabGroup, typeof SettingsIcon> = {
+    overview: MapIcon,
+    menu: UtensilsCrossed,
+    operations: Activity,
+    finance: Wallet,
+    marketing: Megaphone,
+    content: SettingsIcon,
+  };
+
+  const TAB_DESC_MAP: Record<HelpTabGroup, string> = {
+    overview: "Mit hol találsz, napi rutin",
+    menu: "Étlap, allergének, napi ajánlat",
+    operations: "Rendelések, KDS, kapacitás",
+    finance: "Számlák, partnerek, statisztika",
+    marketing: "Képek, FB poszt, hírlevél, kuponok",
+    content: "Rólunk, GYIK, jogi, beállítások",
   };
 
   const nq = norm(query.trim());
