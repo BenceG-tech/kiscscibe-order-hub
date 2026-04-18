@@ -8,12 +8,37 @@ export interface HelpTopic {
   commonMistake?: string;
 }
 
+export type HelpTabGroup =
+  | "overview"
+  | "menu"
+  | "operations"
+  | "finance"
+  | "marketing"
+  | "content";
+
 export interface HelpCategory {
   id: string;
   icon: string;
   title: string;
+  tabGroup: HelpTabGroup;
   topics: HelpTopic[];
 }
+
+export interface HelpTab {
+  id: HelpTabGroup;
+  icon: string;
+  label: string;
+  shortLabel: string;
+}
+
+export const HELP_TABS: HelpTab[] = [
+  { id: "overview", icon: "🎯", label: "Áttekintés", shortLabel: "Áttek." },
+  { id: "menu", icon: "🍽️", label: "Étlap & Menü", shortLabel: "Étlap" },
+  { id: "operations", icon: "📊", label: "Működés", shortLabel: "Műk." },
+  { id: "finance", icon: "💰", label: "Pénzügy", shortLabel: "Pénz" },
+  { id: "marketing", icon: "📣", label: "Marketing", shortLabel: "Mark." },
+  { id: "content", icon: "⚙️", label: "Tartalom & Egyéb", shortLabel: "Tart." },
+];
 
 export interface QuickMapEntry {
   icon: string;
@@ -83,6 +108,7 @@ export const ROUTINES: Routine[] = [
 export const HELP_CATEGORIES: HelpCategory[] = [
   {
     id: "menu",
+    tabGroup: "menu",
     icon: "🍽️",
     title: "Étlap és menü",
     topics: [
@@ -139,6 +165,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
   },
   {
     id: "images",
+    tabGroup: "marketing",
     icon: "📸",
     title: "Képek, posztok és galéria",
     topics: [
@@ -186,6 +213,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
   },
   {
     id: "orders",
+    tabGroup: "operations",
     icon: "📦",
     title: "Rendelések és KDS",
     topics: [
@@ -218,6 +246,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
   },
   {
     id: "invoices",
+    tabGroup: "finance",
     icon: "💰",
     title: "Számlák és pénzügy",
     topics: [
@@ -260,6 +289,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
   },
   {
     id: "partners",
+    tabGroup: "finance",
     icon: "🏢",
     title: "Partnerek és beszállítók",
     topics: [
@@ -291,6 +321,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
   },
   {
     id: "analytics",
+    tabGroup: "finance",
     icon: "📈",
     title: "Statisztika és AI elemzések",
     topics: [
@@ -346,6 +377,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
   },
   {
     id: "coupons",
+    tabGroup: "marketing",
     icon: "🎟️",
     title: "Kuponok és kedvezmények",
     topics: [
@@ -388,6 +420,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
   },
   {
     id: "capacity",
+    tabGroup: "operations",
     icon: "📅",
     title: "Kapacitás és nyitvatartás",
     topics: [
@@ -419,6 +452,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
   },
   {
     id: "operations",
+    tabGroup: "operations",
     icon: "♻️",
     title: "Pazarlás és előrejelzés",
     topics: [
@@ -450,6 +484,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
   },
   {
     id: "content",
+    tabGroup: "content",
     icon: "✍️",
     title: "Tartalom kezelés (Rólunk, GYIK, Jogi, Hirdetmény)",
     topics: [
@@ -504,6 +539,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
   },
   {
     id: "marketing",
+    tabGroup: "marketing",
     icon: "📧",
     title: "Hírlevél és marketing",
     topics: [
@@ -533,6 +569,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
   },
   {
     id: "documents",
+    tabGroup: "content",
     icon: "📁",
     title: "Dokumentumok (Kiscsibe Drive)",
     topics: [
@@ -552,6 +589,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
   },
   {
     id: "pwa",
+    tabGroup: "content",
     icon: "📱",
     title: "Mobil alkalmazás (PWA) és értesítések",
     topics: [
@@ -580,6 +618,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
   },
   {
     id: "troubleshoot",
+    tabGroup: "overview",
     icon: "🆘",
     title: "Mit tegyek ha…",
     topics: [
