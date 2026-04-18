@@ -240,183 +240,213 @@ export const AdminHelpPanel = ({ open, onOpenChange }: AdminHelpPanelProps) => {
             </div>
           </ScrollArea>
         ) : (
-          <Tabs
-            value={activeTab}
-            onValueChange={handleTabChange}
-            className="flex-1 flex flex-col overflow-hidden"
-          >
-            <div className="px-5 pt-3 shrink-0">
-              <TabsList className="w-full h-auto !justify-start overflow-x-auto scrollbar-hide flex-nowrap">
-                <TabsTrigger
-                  value="changelog"
-                  className="relative text-xs md:text-sm px-3 py-2 shrink-0"
-                >
-                  🆕 Mi változott?
-                  {unseenCount > 0 && (
-                    <span className="absolute -top-1 -right-1 h-5 min-w-5 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
-                      {unseenCount}
-                    </span>
-                  )}
-                </TabsTrigger>
-                {HELP_TABS.map((tab) => (
-                  <TabsTrigger
-                    key={tab.id}
-                    value={tab.id}
-                    className="relative text-xs md:text-sm px-3 py-2 shrink-0"
-                  >
-                    <span className="mr-1">{tab.icon}</span>
-                    {tab.label}
-                    {contextualTab === tab.id && (
-                      <span
-                        className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-primary"
-                        title="Itt vagy most"
-                      />
-                    )}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </div>
-
-            <ScrollArea className="flex-1 mt-2">
-              <div className="px-5 pb-8 pt-3">
-                {/* Changelog tab */}
-                <TabsContent value="changelog" className="m-0 space-y-4">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Bell className="h-5 w-5 text-primary" />
-                    <h3 className="text-base font-bold">Mi változott a rendszerben?</h3>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Az utolsó frissítések — kattints egy bejegyzésre a részletes súgóhoz.
-                  </p>
-
-                  {recentEntries.length > 0 && (
-                    <div>
-                      <h4 className="text-sm font-bold text-foreground mb-2 mt-3">
-                        🌟 Friss változások (utolsó 7 nap)
-                      </h4>
-                      <div className="space-y-2">
-                        {recentEntries.map((e, i) => (
-                          <ChangelogCard
-                            key={i}
-                            entry={e}
-                            isNew
-                            onJump={(tab) => {
-                              if (tab) setActiveTab(tab as HelpTabGroup);
-                            }}
-                          />
-                        ))}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <ScrollArea className="flex-1">
+              <div className="px-5 pt-3 pb-8">
+                {activeTab === "grid" ? (
+                  /* Card grid navigator */
+                  <div className="grid grid-cols-2 md:grid-cols-2 gap-2.5">
+                    {/* Mi változott? card */}
+                    <button
+                      onClick={() => handleTabChange("changelog")}
+                      className="relative bg-card hover:bg-accent border-2 border-border hover:border-primary/40 rounded-xl p-3 text-left transition-all group"
+                    >
+                      {unseenCount > 0 && (
+                        <span className="absolute -top-1.5 -right-1.5 h-5 min-w-5 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center shadow">
+                          {unseenCount}
+                        </span>
+                      )}
+                      <SparklesIcon className="h-6 w-6 text-primary mb-1.5" />
+                      <div className="text-sm font-bold leading-tight">Mi változott?</div>
+                      <div className="text-[11px] text-muted-foreground leading-snug mt-0.5">
+                        Friss frissítések, új funkciók
                       </div>
-                    </div>
-                  )}
+                    </button>
 
-                  {olderEntries.length > 0 && (
-                    <div>
-                      <h4 className="text-sm font-bold text-muted-foreground mb-2 mt-4">
-                        Korábbi frissítések
-                      </h4>
-                      <div className="space-y-2">
-                        {olderEntries.map((e, i) => (
-                          <ChangelogCard
-                            key={i}
-                            entry={e}
-                            onJump={(tab) => {
-                              if (tab) setActiveTab(tab as HelpTabGroup);
-                            }}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </TabsContent>
-
-                {/* Overview tab */}
-                <TabsContent value="overview" className="m-0 space-y-6">
-                  <section>
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-xl">🎯</span>
-                      <h3 className="text-base font-bold">Mit hol találsz?</h3>
-                    </div>
-                    <div className="space-y-2">
-                      {QUICK_MAP.map((entry) => (
+                    {HELP_TABS.map((tab) => {
+                      const TabIcon = TAB_ICON_MAP[tab.id] ?? SettingsIcon;
+                      const isHere = contextualTab === tab.id;
+                      return (
                         <button
-                          key={entry.route}
-                          onClick={() => goTo(entry.route)}
-                          className="w-full text-left bg-card hover:bg-accent border rounded-lg p-3 transition-colors group"
+                          key={tab.id}
+                          onClick={() => handleTabChange(tab.id)}
+                          className={`relative bg-card hover:bg-accent border-2 rounded-xl p-3 text-left transition-all group ${
+                            isHere ? "border-primary/60 shadow-sm" : "border-border hover:border-primary/40"
+                          }`}
                         >
-                          <div className="flex items-start gap-3">
-                            <span className="text-2xl shrink-0">{entry.icon}</span>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between gap-2 mb-1">
-                                <span className="text-sm font-semibold">{entry.title}</span>
-                                <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
-                              </div>
-                              <p className="text-xs text-muted-foreground leading-relaxed">
-                                {entry.description}
-                              </p>
-                            </div>
+                          {isHere && (
+                            <span
+                              className="absolute top-2 right-2 h-2 w-2 rounded-full bg-primary animate-pulse"
+                              title="Itt vagy most"
+                            />
+                          )}
+                          <TabIcon className={`h-6 w-6 mb-1.5 ${isHere ? "text-primary" : "text-foreground"}`} />
+                          <div className="text-sm font-bold leading-tight">{tab.label}</div>
+                          <div className="text-[11px] text-muted-foreground leading-snug mt-0.5">
+                            {TAB_DESC_MAP[tab.id]}
                           </div>
                         </button>
-                      ))}
-                    </div>
-                  </section>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Back to grid */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setActiveTab("grid")}
+                      className="gap-1.5 -ml-2 h-8 text-xs"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Vissza a menübe
+                    </Button>
 
-                  <section>
-                    <div className="flex items-center gap-2 mb-3">
-                      <Clock className="h-5 w-5 text-primary" />
-                      <h3 className="text-base font-bold">Napi és heti rutin</h3>
-                    </div>
-                    <div className="space-y-3">
-                      {ROUTINES.map((routine) => (
-                        <div key={routine.id} className="bg-card border rounded-lg p-4">
-                          <div className="flex items-center justify-between mb-2">
-                            <h4 className="text-base font-bold">{routine.title}</h4>
-                            <Badge variant="secondary" className="text-xs">
-                              {routine.duration}
-                            </Badge>
-                          </div>
-                          <p className="text-xs text-muted-foreground mb-3 italic">
-                            🕐 {routine.when}
-                          </p>
-                          <ul className="space-y-2">
-                            {routine.steps.map((step, i) => (
-                              <li key={i} className="flex items-start gap-2 text-sm">
-                                <div className="mt-0.5 h-4 w-4 shrink-0 rounded border-2 border-primary/40" />
-                                <span className="leading-relaxed">{step.text}</span>
-                              </li>
-                            ))}
-                          </ul>
+                    {/* Changelog */}
+                    {activeTab === "changelog" && (
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Bell className="h-5 w-5 text-primary" />
+                          <h3 className="text-base font-bold">Mi változott a rendszerben?</h3>
                         </div>
-                      ))}
-                    </div>
-                  </section>
+                        <p className="text-sm text-muted-foreground">
+                          Az utolsó frissítések — kattints egy bejegyzésre a részletes súgóhoz.
+                        </p>
 
-                  {/* Troubleshooting + any overview-tagged categories */}
-                  {categoriesForTab("overview").map((cat) => (
-                    <CategoryBlock key={cat.id} cat={cat} />
-                  ))}
-                </TabsContent>
+                        {recentEntries.length > 0 && (
+                          <div>
+                            <h4 className="text-sm font-bold text-foreground mb-2 mt-3">
+                              🌟 Friss változások (utolsó 7 nap)
+                            </h4>
+                            <div className="space-y-2">
+                              {recentEntries.map((e, i) => (
+                                <ChangelogCard
+                                  key={i}
+                                  entry={e}
+                                  isNew
+                                  onJump={(tab) => {
+                                    if (tab) setActiveTab(tab as HelpTabGroup);
+                                  }}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        )}
 
-                {/* Other tabs */}
-                {HELP_TABS.filter((t) => t.id !== "overview").map((tab) => (
-                  <TabsContent key={tab.id} value={tab.id} className="m-0 space-y-5">
-                    {categoriesForTab(tab.id).length === 0 ? (
-                      <p className="text-sm text-muted-foreground italic">
-                        Ehhez a témához még nincs súgó tartalom.
-                      </p>
-                    ) : (
-                      categoriesForTab(tab.id).map((cat) => (
-                        <CategoryBlock
-                          key={cat.id}
-                          cat={cat}
-                          highlightRoute={location.pathname}
-                        />
-                      ))
+                        {olderEntries.length > 0 && (
+                          <div>
+                            <h4 className="text-sm font-bold text-muted-foreground mb-2 mt-4">
+                              Korábbi frissítések
+                            </h4>
+                            <div className="space-y-2">
+                              {olderEntries.map((e, i) => (
+                                <ChangelogCard
+                                  key={i}
+                                  entry={e}
+                                  onJump={(tab) => {
+                                    if (tab) setActiveTab(tab as HelpTabGroup);
+                                  }}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     )}
-                  </TabsContent>
-                ))}
+
+                    {/* Overview */}
+                    {activeTab === "overview" && (
+                      <div className="space-y-6">
+                        <section>
+                          <div className="flex items-center gap-2 mb-3">
+                            <MapIcon className="h-5 w-5 text-primary" />
+                            <h3 className="text-base font-bold">Mit hol találsz?</h3>
+                          </div>
+                          <div className="space-y-2">
+                            {QUICK_MAP.map((entry) => (
+                              <button
+                                key={entry.route}
+                                onClick={() => goTo(entry.route)}
+                                className="w-full text-left bg-card hover:bg-accent border rounded-lg p-3 transition-colors group"
+                              >
+                                <div className="flex items-start gap-3">
+                                  <span className="text-2xl shrink-0">{entry.icon}</span>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between gap-2 mb-1">
+                                      <span className="text-sm font-semibold">{entry.title}</span>
+                                      <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                                    </div>
+                                    <p className="text-xs text-muted-foreground leading-relaxed">
+                                      {entry.description}
+                                    </p>
+                                  </div>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </section>
+
+                        <section>
+                          <div className="flex items-center gap-2 mb-3">
+                            <Clock className="h-5 w-5 text-primary" />
+                            <h3 className="text-base font-bold">Napi és heti rutin</h3>
+                          </div>
+                          <div className="space-y-3">
+                            {ROUTINES.map((routine) => (
+                              <div key={routine.id} className="bg-card border rounded-lg p-4">
+                                <div className="flex items-center justify-between mb-2">
+                                  <h4 className="text-base font-bold">{routine.title}</h4>
+                                  <Badge variant="secondary" className="text-xs">
+                                    {routine.duration}
+                                  </Badge>
+                                </div>
+                                <p className="text-xs text-muted-foreground mb-3 italic">
+                                  🕐 {routine.when}
+                                </p>
+                                <ul className="space-y-2">
+                                  {routine.steps.map((step, i) => (
+                                    <li key={i} className="flex items-start gap-2 text-sm">
+                                      <div className="mt-0.5 h-4 w-4 shrink-0 rounded border-2 border-primary/40" />
+                                      <span className="leading-relaxed">{step.text}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            ))}
+                          </div>
+                        </section>
+
+                        {categoriesForTab("overview").map((cat) => (
+                          <CategoryBlock key={cat.id} cat={cat} />
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Other tabs */}
+                    {activeTab !== "changelog" &&
+                      activeTab !== "overview" &&
+                      activeTab !== "grid" && (
+                        <div className="space-y-5">
+                          {categoriesForTab(activeTab as HelpTabGroup).length === 0 ? (
+                            <p className="text-sm text-muted-foreground italic">
+                              Ehhez a témához még nincs súgó tartalom.
+                            </p>
+                          ) : (
+                            categoriesForTab(activeTab as HelpTabGroup).map((cat) => (
+                              <CategoryBlock
+                                key={cat.id}
+                                cat={cat}
+                                highlightRoute={location.pathname}
+                              />
+                            ))
+                          )}
+                        </div>
+                      )}
+                  </div>
+                )}
               </div>
             </ScrollArea>
-          </Tabs>
+          </div>
         )}
       </SheetContent>
     </Sheet>
