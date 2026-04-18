@@ -69,7 +69,7 @@ export const AdminHelpPanel = ({ open, onOpenChange }: AdminHelpPanelProps) => {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [showWelcome, setShowWelcome] = useState(false);
-  const [activeTab, setActiveTab] = useState<HelpTabGroup | "changelog">("overview");
+  const [activeTab, setActiveTab] = useState<HelpTabGroup | "changelog" | "grid">("grid");
   const [unseenCount, setUnseenCount] = useState(0);
 
   // Determine contextual tab from current route
@@ -86,17 +86,10 @@ export const AdminHelpPanel = ({ open, onOpenChange }: AdminHelpPanelProps) => {
     if (open) {
       if (!localStorage.getItem(NEW_USER_KEY)) setShowWelcome(true);
       setUnseenCount(getUnseenCount(7));
-      // Default tab: changelog if unseen, else contextual, else overview
-      const unseen = getUnseenCount(7);
-      if (unseen > 0) {
-        setActiveTab("changelog");
-      } else if (contextualTab) {
-        setActiveTab(contextualTab);
-      } else {
-        setActiveTab("overview");
-      }
+      // Always start at the grid menu so user can see all options at a glance
+      setActiveTab("grid");
     }
-  }, [open, contextualTab]);
+  }, [open]);
 
   const dismissWelcome = () => {
     localStorage.setItem(NEW_USER_KEY, "1");
