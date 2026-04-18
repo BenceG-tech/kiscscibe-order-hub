@@ -499,8 +499,8 @@ const ChangelogCard = ({
 }) => {
   const typeConfig = {
     new: { icon: Sparkles, label: "ÚJ", className: "bg-primary text-primary-foreground" },
-    improved: { icon: Bell, label: "FEJLESZTÉS", className: "bg-blue-500 text-white" },
-    fixed: { icon: Wrench, label: "JAVÍTÁS", className: "bg-green-600 text-white" },
+    improved: { icon: Bell, label: "FEJLESZTÉS", className: "bg-secondary text-secondary-foreground" },
+    fixed: { icon: Wrench, label: "JAVÍTÁS", className: "bg-accent text-accent-foreground" },
   }[entry.type];
   const Icon = typeConfig.icon;
 
