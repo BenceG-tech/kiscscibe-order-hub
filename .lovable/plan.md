@@ -1,71 +1,117 @@
 
 
-# Terv — Kézikönyv tab-ok átláthatóbbá + FB poszt szöveg generátor
+# Terv — Kézikönyv hierarchikus újrarendezése
 
-## 1. Kézikönyv tab-ok: szöveges sor → ikonos kártya-grid
+## Probléma
 
-Jelenleg 7 tab egymás mellett szövegként, nehéz egyből rátalálni. Új megoldás: **2x4 (vagy 2x3+1) ikonos kártya-grid** a panel tetején.
+Jelenleg a kézikönyv **lapos struktúrájú**: a kártya-grid → accordion lista. Nincs vizuális hierarchia az oldal → al-szekciók → al-al-szekciók között. A „Napi rutin" beletúrva az „Áttekintés" tab-ba, nehéz megtalálni.
 
-### Kártya-grid layout
+## Új struktúra: 3-szintű hierarchia
 
-Minden tab egy kattintható kártya:
-- **Nagy lucide-react ikon** felül (Sparkles, Map, UtensilsCrossed, Activity, Wallet, Megaphone, Settings)
-- **Cím** alatta (text-sm font-semibold)
-- **1 mondatos leírás** (text-xs muted) — pl. „Étlap, allergének, napi ajánlat"
-- **Aktív kártya**: arany keret + enyhe glow + scale-105
-- **Aktuális oldalhoz tartozó tab**: kis sárga „itt vagy" pötty a jobb felső sarokban
-- **„Mi változott?"** kártya: piros pötty + szám badge ha van új
+```
+SZINT 1: Fő kategória (kártya-grid)         pl. "Étlap & Menü"
+   ↓
+SZINT 2: Oldal / al-tab (lista bal oldalon)  pl. "Napi ajánlat"
+   ↓
+SZINT 3: Funkció / al-al-tab (accordion)     pl. "Tab-ok: Tételek / Áttekintés / Kép és poszt"
+```
 
-### Kiválasztás után
+## 1. Új layout: bal oldali navigáció + jobb oldali tartalom
 
-Amikor rákattintasz egy kártyára:
-- A grid **összecsukódik** egy vékony „← Vissza a menübe" sávra (kompakt, ~40px magas)
-- Alatta jelenik meg a kiválasztott tab tartalma (accordion-ok / „Mi változott?" lista)
-- A „← Vissza" gombbal visszatérsz a kártya-grid-hez
+Kategória kiválasztása után (pl. „Étlap & Menü"):
 
-### Reszponzivitás
+```
+┌─────────────────────────────────────────────────────┐
+│ ← Vissza   |  🍽️ Étlap & Menü                       │
+├─────────────┬───────────────────────────────────────┤
+│ OLDALAK     │  📍 Napi ajánlat oldal                │
+│             │                                        │
+│ • Étlap     │  ▸ Áttekintés (mit lát itt)           │
+│ ▸ Napi      │  ▸ Tételek tab                        │
+│   ajánlat ✓ │  ▸ Kép és poszt tab                   │
+│ • Hetirács  │  ▸ Pazarlás tab                       │
+│ • Allergén  │  ▸ Forecasting tab                    │
+│             │                                        │
+└─────────────┴───────────────────────────────────────┘
+```
 
-- **Mobil**: 2 oszlop (`grid-cols-2`)
-- **Desktop**: 4 oszlop (`grid-cols-4`) — mind a 7 tab egyszerre látszik 2 sorban
+- **Bal oldal (~30%)**: az adott kategóriához tartozó **oldalak listája** (sticky)
+- **Jobb oldal (~70%)**: a kiválasztott oldal **al-szekciói accordion-ban**
+- Kontextus jelölés: az aktuálisan nézett oldal sárga „● itt vagy" pötty + automatikusan kinyitva
+- Mobilon: bal oldali lista helyett **dropdown** a tetején
 
-### Kereső
+## 2. „Napi rutin" külön kiemelt blokk az elején
 
-A kereső a kártya-grid **felett** marad. Ha a kereső aktív (van szöveg), a kártya-grid eltűnik és minden tab tartalma egyszerre szűrve jelenik meg (cross-tab keresés).
+A főképernyőn (kártya-grid) **a kártya-grid felett** egy kiemelt sáv:
 
-## 2. FB poszt szöveg generátor a Facebook kép alá
+```
+┌─────────────────────────────────────────────────────┐
+│  📅 Napi rutin (5 perc)    📆 Heti rutin (20 perc)  │
+│  ▸ Megnyitás                ▸ Megnyitás              │
+└─────────────────────────────────────────────────────┘
+```
 
-### Helyzet
+- **2 nagy gomb-kártya** felül, vizuálisan elkülönítve a többi kategóriától (más színű border, gradient háttér)
+- Kattintásra **dialog/expanded view**: a checklist-szerű teendők
+- Így a napi rutin **mindig egy kattintásra van**, nincs eltemetve
 
-A `DailyOfferImageGenerator.tsx`-ben jelenleg generálódik a Facebook post kép (1200×675). A FB poszt szöveg generátor (`generate-facebook-post` edge function) létezik, de valószínűleg külön helyen / külön komponensben van.
+Alatta: **„🆕 Mi változott?"** kártya (eddigi piros pötty + szám badge megmarad, de külön sorban a rutin alatt)
 
-### Megvalósítás
+Alatta: a **6 fő kategória kártya-grid** (Áttekintés nélkül, mert annak külön lett a rutin)
 
-A `DailyOfferImageGenerator.tsx`-ben megkeresem a Facebook post kép Card-ját (`Facebook post 1200×675`), és **közvetlenül alá** beillesztek egy új szekciót:
+## 3. Tartalmi újraszervezés (`adminHelpContent.ts`)
 
-**„📝 Facebook poszt szöveg" kártya:**
-- **Hangnem-választó** (Select): barátságos / lelkes / rövid / informatív
-- **„Szöveg generálása" gomb** → `generate-facebook-post` edge function hívása (a napi ajánlat tartalmával)
-- **Generált szöveg**: `Textarea`-ban szerkeszthető
-- **„Másolás" gomb** → clipboard-ra
-- Loading state generálás közben
+Új típus-mező: `pageGroup` minden témán belül, ami megmondja melyik **oldal**-hoz tartozik (nem csak melyik tab-csoporthoz):
 
-Az IG post / IG story képek alá NEM kerül szöveg generátor (egyszerűsítés okán — FB-t használják leginkább).
+```ts
+type HelpTopic = {
+  id: string;
+  title: string;
+  tabGroup: 'menu' | 'operations' | ...;  // SZINT 1 — kategória
+  pageGroup: string;                       // SZINT 2 — oldal (új!)
+  pageRoute?: string;                      // pl. '/admin/daily-menu'
+  sections: HelpSection[];                 // SZINT 3 — al-szekciók
+};
+```
 
-### Régi hely tisztítása
+Példa hierarchia az „Étlap & Menü" kategóriához:
 
-Ha létezik külön `FacebookPostGenerator` komponens vagy önálló tab/szekció, **eltávolítom** hogy ne legyen duplikátum. Ha bizonytalan, megjelölöm a kódban hol találtam meg az eredetit.
+| Oldal (pageGroup) | Témák (sections) |
+|---|---|
+| Étlap kezelés | Mire jó, kategóriák, képek, ár |
+| **Napi ajánlat** | Áttekintés, Tételek tab, Kép és poszt tab, Pazarlás tab, Forecasting tab |
+| Heti rács | Mire jó, drag&drop, kiosztás |
+| Allergének | Auto-hozzárendelés, kézi szerk. |
+
+Hasonlóan minden kategóriához újrarendezem.
+
+## 4. „Áttekintés" tab átalakul
+
+A jelenlegi „Áttekintés" tab tartalma szétoszlik:
+- **Napi/heti rutin** → kiemelt felső blokk (lásd 2.)
+- **„Mit hol találsz?"** quick-map → minden kategória kártyán a hover-tooltip / leírás bővebb lesz, plusz egy „Teljes áttekintés" link a fő kép alatt ami egy modal-ban mutatja a teljes oldal-térképet
+
+Tehát az „Áttekintés" mint külön tab **eltűnik**, helyette a felépítése maga az áttekintés.
+
+## 5. Breadcrumb navigáció
+
+Minden mélyebb szinten breadcrumb jelzi hol vagy:
+```
+🏠 Kézikönyv  ›  🍽️ Étlap & Menü  ›  📍 Napi ajánlat
+```
+A breadcrumb minden eleme kattintható (vissza ugrik az adott szintre).
 
 ## Érintett fájlok
 
 | Fájl | Művelet |
 |---|---|
-| `src/components/admin/AdminHelpPanel.tsx` | `Tabs` komponens lecserélése grid-alapú kártya-navigátorra + state a kiválasztott tab-hoz + „vissza" gomb |
-| `src/components/admin/DailyOfferImageGenerator.tsx` | FB szöveg generátor szekció hozzáadása a FB kép Card alá |
-| (Esetleg) Régi FB szöveg generátor komponens | Eltávolítás ha duplikátum |
+| `src/data/adminHelpContent.ts` | `pageGroup` mező hozzáadása minden témához, témák újra-csoportosítása oldalanként, `HELP_PAGE_GROUPS` export (kategória → oldalak térkép) |
+| `src/components/admin/AdminHelpPanel.tsx` | 3-szintű navigáció (grid → oldal-lista → accordion), kiemelt napi/heti rutin sáv, breadcrumb, mobil dropdown a bal oldali lista helyett |
 
 ## Megvalósítási sorrend
 
-1. AdminHelpPanel kártya-grid átalakítás
-2. FB poszt szöveg generátor integrálás a Kép generátorba
-3. Régi FB szöveg gen hely takarítása (ha kell)
+1. `adminHelpContent.ts` átstrukturálása `pageGroup` mezővel
+2. `AdminHelpPanel.tsx` 3-szintű navigáció + breadcrumb
+3. Napi/heti rutin kiemelt felső blokk + dialog
+4. Mobil reszponzív (bal lista → dropdown)
 
