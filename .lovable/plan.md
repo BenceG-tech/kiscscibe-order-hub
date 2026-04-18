@@ -1,95 +1,71 @@
 
 
-# Terv — Admin kézikönyv: Tab-ok + „Mi változott?" szekció
+# Terv — Kézikönyv tab-ok átláthatóbbá + FB poszt szöveg generátor
 
-## 1. Tab navigáció a kézikönyv tetején
+## 1. Kézikönyv tab-ok: szöveges sor → ikonos kártya-grid
 
-Jelenleg az `AdminHelpPanel` egy hosszú, görgetett accordion lista. Az új struktúra **tab-okkal** lesz tagolva a panel tetején, hogy egy kattintással ugorhass a kívánt fő témára.
+Jelenleg 7 tab egymás mellett szövegként, nehéz egyből rátalálni. Új megoldás: **2x4 (vagy 2x3+1) ikonos kártya-grid** a panel tetején.
 
-### Tab struktúra (top-level)
+### Kártya-grid layout
 
-A jelenlegi `adminHelpContent.ts` kategóriák alapján **6-7 fő tab**:
+Minden tab egy kattintható kártya:
+- **Nagy lucide-react ikon** felül (Sparkles, Map, UtensilsCrossed, Activity, Wallet, Megaphone, Settings)
+- **Cím** alatta (text-sm font-semibold)
+- **1 mondatos leírás** (text-xs muted) — pl. „Étlap, allergének, napi ajánlat"
+- **Aktív kártya**: arany keret + enyhe glow + scale-105
+- **Aktuális oldalhoz tartozó tab**: kis sárga „itt vagy" pötty a jobb felső sarokban
+- **„Mi változott?"** kártya: piros pötty + szám badge ha van új
 
-1. **🆕 Mi változott?** (új — alapértelmezett, ha van új tartalom)
-2. **🎯 Áttekintés** — „Mit hol találsz?" gyors-térkép + napi/heti rutin
-3. **🍽️ Étlap & Menü** — Étlap kezelés, Napi ajánlat, Allergének
-4. **📊 Működés** — Rendelések, KDS, Kapacitás, Pazarlás, Forecasting
-5. **💰 Pénzügy** — Számlák, Partnerek, Statisztika, AI ár-javaslatok
-6. **📣 Marketing** — Képek, FB poszt, Hírlevél, Kuponok, Galéria
-7. **⚙️ Tartalom & Egyéb** — Rólunk/GYIK/Jogi/Hirdetmény, PWA, Beállítások
+### Kiválasztás után
 
-### Layout
+Amikor rákattintasz egy kártyára:
+- A grid **összecsukódik** egy vékony „← Vissza a menübe" sávra (kompakt, ~40px magas)
+- Alatta jelenik meg a kiválasztott tab tartalma (accordion-ok / „Mi változott?" lista)
+- A „← Vissza" gombbal visszatérsz a kártya-grid-hez
 
-- **Felül**: kereső (megmarad) + horizontálisan görgethető tab-sor (sticky a panel tetején)
-- **Alatta**: az aktív tab tartalma (accordion-ok az adott kategóriához tartozó témákkal)
-- **Kontextus jelzés**: az aktuális oldalhoz tartozó tab automatikusan ki van jelölve és nyitva, plusz egy kis sárga pötty jelöli a tab-on hogy „itt vagy most"
-- **Mobil**: a tab-sor görgethető (`overflow-x-auto`), kompakt szöveg + ikon
+### Reszponzivitás
 
-### Technikai megvalósítás
+- **Mobil**: 2 oszlop (`grid-cols-2`)
+- **Desktop**: 4 oszlop (`grid-cols-4`) — mind a 7 tab egyszerre látszik 2 sorban
 
-- Shadcn `Tabs` komponens használata (`tabs.tsx` már létezik)
-- A `HELP_CONTENT` kategóriák egy új `tabGroup` mezőt kapnak (pl. `'menu' | 'operations' | 'finance' | ...`), amivel csoportosítva jelennek meg
-- Kereséskor a tab-ok mögé esik a kereső (cross-tab találatok mind láthatók)
+### Kereső
 
-## 2. „Mi változott?" szekció
+A kereső a kártya-grid **felett** marad. Ha a kereső aktív (van szöveg), a kártya-grid eltűnik és minden tab tartalma egyszerre szűrve jelenik meg (cross-tab keresés).
 
-Új első tab a kézikönyvben, ami **az utolsó 7 napban hozzáadott funkciókat** mutatja **ÚJ** badge-dzsel.
+## 2. FB poszt szöveg generátor a Facebook kép alá
 
-### Adatmodell
+### Helyzet
 
-Új fájl: `src/data/adminChangelog.ts` — strukturált lista:
+A `DailyOfferImageGenerator.tsx`-ben jelenleg generálódik a Facebook post kép (1200×675). A FB poszt szöveg generátor (`generate-facebook-post` edge function) létezik, de valószínűleg külön helyen / külön komponensben van.
 
-```ts
-type ChangelogEntry = {
-  date: string;           // ISO date — pl. "2026-04-17"
-  title: string;          // pl. "FB poszt AI szöveg generátor"
-  description: string;    // 1-2 mondat
-  category: string;       // melyik tab-on található a részletes súgó
-  helpTopicId?: string;   // direkt link az érintett súgó-témára
-  type: 'new' | 'improved' | 'fixed';  // típus badge
-};
-```
+### Megvalósítás
 
-Kezdeti tartalom (az elmúlt napok valódi változásai):
-- FB poszt AI szöveg generátor (új) — Kép és poszt tab
-- Tab sorrend a Napi ajánlat oldalon (javítás)
-- Kapacitás magyarázó panel (új)
-- Admin nav „Több" dropdown (javítás)
-- Kosár ürítése egy gombbal (új)
-- Allergének automatikus hozzárendelése (új)
-- Admin kézikönyv (új)
-- Kézikönyv tab-os struktúra + Mi változott? (új)
+A `DailyOfferImageGenerator.tsx`-ben megkeresem a Facebook post kép Card-ját (`Facebook post 1200×675`), és **közvetlenül alá** beillesztek egy új szekciót:
 
-### Megjelenítés a tab-on
+**„📝 Facebook poszt szöveg" kártya:**
+- **Hangnem-választó** (Select): barátságos / lelkes / rövid / informatív
+- **„Szöveg generálása" gomb** → `generate-facebook-post` edge function hívása (a napi ajánlat tartalmával)
+- **Generált szöveg**: `Textarea`-ban szerkeszthető
+- **„Másolás" gomb** → clipboard-ra
+- Loading state generálás közben
 
-- **Időrendi sorrendben** (legfrissebb fent), dátum szerint csoportosítva
-- Minden tétel: **🆕/✨/🔧 ikon + cím + dátum + leírás + „Tovább a súgóhoz →" link**
-- **„ÚJ" badge** azokon, amik az **utolsó 7 napban** kerültek be (sárga `bg-primary` badge)
-- A tételek `<7 napos` időbélyeggel egy „Friss változások" szekcióba, a régebbiek egy „Korábbi frissítések" összecsukható szekcióba (max 30 napra visszamenőleg jelenik meg)
+Az IG post / IG story képek alá NEM kerül szöveg generátor (egyszerűsítés okán — FB-t használják leginkább).
 
-### Bónusz: badge a fő tab-on is
+### Régi hely tisztítása
 
-Ha vannak az utolsó 7 napban változások:
-- A „🆕 Mi változott?" tab-on egy kis piros pötty + szám (pl. „3"), mint értesítés
-- Eltűnik, ha a felhasználó megnyitotta egyszer (localStorage-ban tároljuk a `lastViewedChangelog` timestamp-et)
-
-## 3. Apró fejlesztések a panel tetején
-
-A jelenlegi „Új vagy itt?" banner és „Most ezen az oldalon vagy" szekció megmarad, de:
-- **Tömörebb formában** kerülnek a tab-sor **fölé** (nem lent külön, hogy a tab-sor maradjon a fő navigáció)
-- A welcome banner-ben az „Indíts a 🎯 'Mit hol találsz?' szekcióval" link most már a **🎯 Áttekintés tab-ra** vált (nem csak görget)
+Ha létezik külön `FacebookPostGenerator` komponens vagy önálló tab/szekció, **eltávolítom** hogy ne legyen duplikátum. Ha bizonytalan, megjelölöm a kódban hol találtam meg az eredetit.
 
 ## Érintett fájlok
 
 | Fájl | Művelet |
 |---|---|
-| `src/data/adminHelpContent.ts` | `tabGroup` mező hozzáadása minden kategóriához + tab metaadatok export |
-| Új: `src/data/adminChangelog.ts` | Changelog tételek + `isWithinDays` segéd |
-| `src/components/admin/AdminHelpPanel.tsx` | `Tabs` komponens beépítése, tab szűrés, „Mi változott?" tab tartalom, kontextus → aktív tab váltás, „új változás" badge |
+| `src/components/admin/AdminHelpPanel.tsx` | `Tabs` komponens lecserélése grid-alapú kártya-navigátorra + state a kiválasztott tab-hoz + „vissza" gomb |
+| `src/components/admin/DailyOfferImageGenerator.tsx` | FB szöveg generátor szekció hozzáadása a FB kép Card alá |
+| (Esetleg) Régi FB szöveg generátor komponens | Eltávolítás ha duplikátum |
 
 ## Megvalósítási sorrend
 
-1. `adminChangelog.ts` létrehozása az aktuális változásokkal
-2. `adminHelpContent.ts` kategóriák `tabGroup` mezővel ellátása + tab definíciók
-3. `AdminHelpPanel.tsx` átalakítása: Tabs komponens, „Mi változott?" tab tartalom render, kontextus alapján aktív tab kiválasztás, badge logika
+1. AdminHelpPanel kártya-grid átalakítás
+2. FB poszt szöveg generátor integrálás a Kép generátorba
+3. Régi FB szöveg gen hely takarítása (ha kell)
 
