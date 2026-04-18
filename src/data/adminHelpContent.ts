@@ -149,6 +149,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
     topics: [
       {
         id: "master-library",
+        pageGroup: "menu-library",
         title: "Mester étel-könyvtár",
         routes: ["/admin/menu"],
         whatItDoes: "A 600+ ételt tartalmazó központi könyvtár, amiből bármikor választhatsz a napi ajánlatokhoz.",
@@ -163,6 +164,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
       },
       {
         id: "daily-menu-combo",
+        pageGroup: "daily-offer",
         title: "Napi menü kombináció (leves + főétel)",
         routes: ["/admin/daily-menu"],
         whatItDoes: "Ha egy napra pontosan 1 levest és 1 főételt jelölsz 'menü részeként', a rendszer automatikusan létrehoz egy kombinált menü ajánlatot.",
@@ -175,6 +177,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
       },
       {
         id: "fix-items",
+        pageGroup: "menu-library",
         title: "Fix tételek (italok, savanyúság)",
         routes: ["/admin/menu"],
         whatItDoes: "Mindig elérhető tételek (pl. üdítők, savanyúság), amik nem függenek a napi ajánlattól.",
@@ -186,6 +189,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
       },
       {
         id: "sold-out",
+        pageGroup: "daily-offer",
         title: "Készlet kifogyás (sold out)",
         routes: ["/admin/daily-menu", "/admin/orders"],
         whatItDoes: "Ha egy tételből elfogyott, manuálisan jelölheted, hogy ne lehessen rendelni belőle.",
@@ -206,6 +210,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
     topics: [
       {
         id: "image-generator",
+        pageGroup: "images-posts",
         title: "AI kép és poszt generátor (Facebook/Instagram)",
         routes: ["/admin/daily-menu"],
         whatItDoes: "Egy kattintással készít professzionális AI ételképet és Facebook/Instagram poszt szöveget a napi ajánlathoz.",
@@ -220,6 +225,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
       },
       {
         id: "ai-food-images",
+        pageGroup: "images-posts",
         title: "AI ételképek a master könyvtárba",
         routes: ["/admin/menu"],
         whatItDoes: "Az ételekhez szép AI képeket generálhatsz tömegesen, amik a vásárlói felületen megjelennek.",
@@ -231,6 +237,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
       },
       {
         id: "gallery-management",
+        pageGroup: "gallery",
         title: "Galéria (Ételek és Éttermünk)",
         routes: ["/admin/gallery"],
         whatItDoes: "A publikus oldalon megjelenő képgaléria kezelése — két kategóriában: Ételek és Éttermünk (belső terek).",
@@ -254,6 +261,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
     topics: [
       {
         id: "kds-flow",
+        pageGroup: "orders-kds",
         title: "Kanban rendelési folyamat",
         routes: ["/admin/orders", "/staff/orders"],
         whatItDoes: "A rendelések 4 oszlopban mozognak: Új → Készül → Kész → Átadva.",
@@ -267,6 +275,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
       },
       {
         id: "manual-orders",
+        pageGroup: "orders-kds",
         title: "Manuális rendelés felvétele",
         routes: ["/admin/orders"],
         whatItDoes: "Ha telefonon vagy személyesen rendelnek, te is fel tudod venni a rendelést a felületen.",
@@ -287,6 +296,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
     topics: [
       {
         id: "invoice-ocr",
+        pageGroup: "invoices",
         title: "Számla feltöltés AI felismeréssel",
         routes: ["/admin/invoices"],
         whatItDoes: "Beszállítói számlák PDF/kép feltöltésekor az AI (Gemini) automatikusan kiolvassa az összegeket, dátumot, ÁFA-t.",
@@ -299,6 +309,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
       },
       {
         id: "recurring-invoices",
+        pageGroup: "invoices",
         title: "Ismétlődő számlák (rezsi, bérleti díj)",
         routes: ["/admin/invoices"],
         whatItDoes: "Havonta automatikusan létrehozódnak a rendszeres kiadások (bérleti díj, internet, stb.).",
@@ -311,6 +322,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
       },
       {
         id: "payment-reminders",
+        pageGroup: "invoices",
         title: "Fizetési emlékeztetők",
         routes: ["/admin/invoices"],
         whatItDoes: "A rendszer figyel a határidőkre és előre szól ha fizetni kell.",
@@ -330,6 +342,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
     topics: [
       {
         id: "partner-management",
+        pageGroup: "partners",
         title: "Partner adatok kezelése",
         routes: ["/admin/partners"],
         whatItDoes: "A beszállítók (Metro, Auchan, helyi termelő, stb.) adatait egy helyen tárolja: kapcsolat, adószám, bankszámla, jegyzetek.",
@@ -343,6 +356,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
       },
       {
         id: "partner-invoices",
+        pageGroup: "partners",
         title: "Partner számláinak nyomon követése",
         routes: ["/admin/partners"],
         whatItDoes: "Minden partnernél láthatod, hogy mennyi számlát adtál ki, mi a havi/éves költés.",
@@ -362,6 +376,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
     topics: [
       {
         id: "revenue-tab",
+        pageGroup: "analytics",
         title: "Bevétel fül",
         routes: ["/admin/analytics"],
         whatItDoes: "Napi/heti/havi bevétel grafikon, összehasonlítva az előző időszakkal.",
@@ -374,6 +389,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
       },
       {
         id: "menu-performance",
+        pageGroup: "analytics",
         title: "Menü teljesítmény",
         routes: ["/admin/analytics"],
         whatItDoes: "Megmutatja melyik tétel a TOP 10 és melyik a 'gyenge' (kevesen rendelik).",
@@ -386,6 +402,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
       },
       {
         id: "ai-pricing",
+        pageGroup: "analytics",
         title: "AI ár-javaslatok",
         routes: ["/admin/analytics"],
         whatItDoes: "A rendszer 90 napos rendelési adatok alapján AI-val (Gemini) javaslatot tesz, hogy melyik tételnél emelhetnél árat vagy hol kéne csökkenteni.",
@@ -399,6 +416,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
       },
       {
         id: "customers-tab",
+        pageGroup: "analytics",
         title: "Vásárlók",
         routes: ["/admin/analytics"],
         whatItDoes: "Visszatérő vendégek aránya, törzsvendégek, új vendégek számának változása.",
@@ -418,6 +436,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
     topics: [
       {
         id: "create-coupon",
+        pageGroup: "coupons",
         title: "Új kupon létrehozása",
         routes: ["/admin/coupons"],
         whatItDoes: "Egyedi kuponkód, ami a checkout-ban használható (pl. 'NYAR10' = 10% kedvezmény).",
@@ -430,6 +449,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
       },
       {
         id: "coupon-usage",
+        pageGroup: "coupons",
         title: "Kupon felhasználás követése",
         routes: ["/admin/coupons"],
         whatItDoes: "Látod hogy melyik kupont hányszor használták és összesen mekkora kedvezmény ment ki.",
@@ -441,6 +461,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
       },
       {
         id: "coupon-strategies",
+        pageGroup: "coupons",
         title: "Mikor és milyen kupont adj?",
         whatItDoes: "Stratégiai tippek a kuponhasználathoz.",
         howToUse: [
@@ -461,6 +482,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
     topics: [
       {
         id: "capacity-slots",
+        pageGroup: "capacity",
         title: "Kapacitás slotok",
         routes: ["/admin/daily-menu"],
         whatItDoes: "Beállíthatod, hogy egy nap egy adott időpontban hány rendelést fogadtok el.",
@@ -474,6 +496,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
       },
       {
         id: "blackout-dates",
+        pageGroup: "capacity",
         title: "Zárolt napok (ünnepek, leltár)",
         routes: ["/admin/daily-menu"],
         whatItDoes: "Zárt napokon a vásárló nem tud rendelést leadni.",
@@ -493,6 +516,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
     topics: [
       {
         id: "waste-tracking",
+        pageGroup: "waste-forecast",
         title: "Pazarlás követés",
         routes: ["/admin/daily-menu"],
         whatItDoes: "A nap végén rögzítheted, hány adag maradt el (pazarlás), és a rendszer trendet épít belőle.",
@@ -505,6 +529,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
       },
       {
         id: "weather-forecast",
+        pageGroup: "waste-forecast",
         title: "Időjárás-alapú adagbecslés",
         routes: ["/admin/daily-menu"],
         whatItDoes: "A rendszer a következő napok időjárását (Open-Meteo) és az elmúlt 4 hét rendelési átlagát kombinálva javaslatot ad, hány adagot főzz.",
@@ -525,6 +550,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
     topics: [
       {
         id: "about-editor",
+        pageGroup: "about-faq",
         title: "Rólunk oldal szerkesztése",
         routes: ["/admin/about"],
         whatItDoes: "A publikus 'Rólunk' oldal teljes tartalma szerkeszthető — szöveg, statisztikák (pl. 'Évek száma: 5'), képek.",
@@ -536,6 +562,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
       },
       {
         id: "faq-editor",
+        pageGroup: "about-faq",
         title: "GYIK kezelése",
         routes: ["/admin/faq"],
         whatItDoes: "A publikus oldalon megjelenő gyakori kérdések és válaszok szerkesztése.",
@@ -547,6 +574,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
       },
       {
         id: "legal-pages",
+        pageGroup: "legal",
         title: "Jogi oldalak (Impresszum, ÁSZF, Adatvédelem, Süti)",
         routes: ["/admin/legal"],
         whatItDoes: "A 4 kötelező jogi oldal Markdown szerkesztővel kezelhető.",
@@ -560,6 +588,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
       },
       {
         id: "announcement",
+        pageGroup: "about-faq",
         title: "Hirdetmény popup",
         routes: ["/admin/about"],
         whatItDoes: "A főoldalra belépő vendégeknek megjelenő popup (pl. 'Ünnepi nyitvatartás', 'Új menü').",
@@ -580,6 +609,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
     topics: [
       {
         id: "weekly-newsletter",
+        pageGroup: "newsletter",
         title: "Heti menü hírlevél",
         routes: ["/admin/daily-menu"],
         whatItDoes: "A feliratkozóknak kiküldhető a heti menü email formájában — szépen formázva, képekkel.",
@@ -593,6 +623,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
       },
       {
         id: "subscribers",
+        pageGroup: "newsletter",
         title: "Feliratkozók kezelése",
         whatItDoes: "A feliratkozók a checkout-ban vagy a fooldalon iratkoznak fel — listájuk megtekinthető.",
         howToUse: [
@@ -610,6 +641,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
     topics: [
       {
         id: "doc-vault",
+        pageGroup: "documents",
         title: "Dokumentum tár",
         routes: ["/admin/documents"],
         whatItDoes: "A Drive-szerű felület — szerződések, NAV iratok, képek, bármi tárolható, verziózva.",
@@ -630,6 +662,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
     topics: [
       {
         id: "pwa-install",
+        pageGroup: "pwa-push",
         title: "Telefonra telepítés",
         whatItDoes: "Az admin felület telepíthető a telefonra mint egy app (PWA).",
         howToUse: [
@@ -641,6 +674,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
       },
       {
         id: "push-notifications",
+        pageGroup: "pwa-push",
         title: "Push értesítések",
         whatItDoes: "Új rendelés érkezésekor a telefonod is értesít, akár ha be sincs nyitva a böngésző.",
         howToUse: [
@@ -653,12 +687,13 @@ export const HELP_CATEGORIES: HelpCategory[] = [
   },
   {
     id: "troubleshoot",
-    tabGroup: "overview",
+    tabGroup: "content",
     icon: "🆘",
     title: "Mit tegyek ha…",
     topics: [
       {
         id: "missing-order",
+        pageGroup: "troubleshoot",
         title: "…nem érkezett meg egy rendelés a KDS-be",
         whatItDoes: "Néha hálózati hiba miatt nem frissül a Realtime kapcsolat.",
         howToUse: [
@@ -669,6 +704,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
       },
       {
         id: "wrong-allergen",
+        pageGroup: "troubleshoot",
         title: "…egy ételhez rossz allergén jelent meg",
         whatItDoes: "Az AI vagy az auto-hozzárendelés tévedhet.",
         howToUse: [
@@ -680,6 +716,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
       },
       {
         id: "wrong-image",
+        pageGroup: "troubleshoot",
         title: "…az AI generált kép nem tetszik",
         whatItDoes: "Nem minden kép sikerül elsőre — generálható újra.",
         howToUse: [
@@ -690,6 +727,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
       },
       {
         id: "no-notifications",
+        pageGroup: "troubleshoot",
         title: "…nem kapok push értesítést",
         whatItDoes: "Lehet hogy a böngésző blokkolja vagy nem engedélyezted.",
         howToUse: [
