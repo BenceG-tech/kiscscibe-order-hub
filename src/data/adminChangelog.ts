@@ -12,6 +12,15 @@ export interface ChangelogEntry {
 // Newest first
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: "2026-04-21",
+    title: "Kiscsibe-stílusú FB poszt AI generátor",
+    description:
+      "Új, gazdag FB poszt generátor — pont olyan posztokat ír, mint amit a tulaj szokott (🔥 nagybetűs címsor, ételhez illő egyedi emoji-k, kacsintós hook, záró csattanó, hashtag blokk). 3 poszt típus: holnapi előzetes / mai elkészült / heti indító. Auto-detect a dátum alapján.",
+    type: "new",
+    tabGroup: "marketing",
+    helpTopicId: "image-generator",
+  },
+  {
     date: "2026-04-18",
     title: "Kézikönyv tab-okkal és „Mi változott?\" szekció",
     description:
