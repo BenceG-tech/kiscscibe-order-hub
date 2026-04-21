@@ -320,6 +320,8 @@ const DailyOfferImageGenerator = () => {
   const [postLoading, setPostLoading] = useState(false);
   const [postCopied, setPostCopied] = useState(false);
   const [postTone, setPostTone] = useState<"vidám" | "profi" | "étvágygerjesztő">("étvágygerjesztő");
+  const [postType, setPostType] = useState<"holnapi" | "mai_elkeszult" | "heti_indito">("holnapi");
+  const [postStyle, setPostStyle] = useState<"kiscsibe" | "egyszeru">("kiscsibe");
 
   const weekDates = getWeekDates(weekOffset);
 
