@@ -521,17 +521,61 @@ const DailyOfferImageGenerator = () => {
     }
   };
 
-  // Reset post text when date changes
+  // Reset post text + auto-detect post type when date changes
   useEffect(() => {
     setPostText("");
     setPostHashtags([]);
+
+    // Auto-detect post type based on selected date
+    const today = format(new Date(), "yyyy-MM-dd");
+    const tomorrow = format(addDays(new Date(), 1), "yyyy-MM-dd");
+    const sel = new Date(selectedDate + "T00:00:00");
+    const selDay = sel.getDay(); // 0=Sun .. 6=Sat
+
+    if (selectedDate === today) {
+      setPostType("mai_elkeszult");
+    } else if (selectedDate === tomorrow && selDay === 1) {
+      // tomorrow is Monday → heti indító
+      setPostType("heti_indito");
+    } else if (selDay === 1) {
+      setPostType("heti_indito");
+    } else {
+      setPostType("holnapi");
+    }
   }, [selectedDate]);
+
+  const buildFullPostText = (parts: {
+    title?: string;
+    hook?: string;
+    items?: { emoji: string; text: string }[];
+    closing?: string;
+    schedule?: string;
+    punchline?: string;
+    hashtags?: string[];
+  }): string => {
+    const lines: string[] = [];
+    if (parts.title) lines.push(parts.title, "");
+    if (parts.hook) lines.push(parts.hook, "");
+    if (parts.items && parts.items.length > 0) {
+      for (const it of parts.items) {
+        lines.push(`${it.emoji} ${it.text}`);
+      }
+      lines.push("");
+    }
+    if (parts.closing) lines.push(parts.closing, "");
+    if (parts.schedule) lines.push(parts.schedule, "");
+    if (parts.punchline) lines.push(parts.punchline, "");
+    if (parts.hashtags && parts.hashtags.length > 0) {
+      lines.push(parts.hashtags.map((h) => (h.startsWith("#") ? h : `#${h}`)).join(" "));
+    }
+    return lines.join("\n").trim();
+  };
 
   const generatePostText = async () => {
     setPostLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("generate-facebook-post", {
-        body: { date: selectedDate, tone: postTone },
+        body: { date: selectedDate, tone: postTone, postType, style: postStyle },
       });
       if (error) {
         toast.error("Hiba a poszt generálásakor");
@@ -542,8 +586,23 @@ const DailyOfferImageGenerator = () => {
         toast.error(data.error);
         return;
       }
-      setPostText(data.post_text || "");
-      setPostHashtags(data.hashtags || []);
+
+      if (data?.style === "kiscsibe") {
+        const full = buildFullPostText({
+          title: data.title,
+          hook: data.hook,
+          items: data.items,
+          closing: data.closing,
+          schedule: data.schedule,
+          punchline: data.punchline,
+          hashtags: data.hashtags,
+        });
+        setPostText(full);
+        setPostHashtags(data.hashtags || []);
+      } else {
+        setPostText(data.post_text || "");
+        setPostHashtags(data.hashtags || []);
+      }
       toast.success("Poszt szöveg generálva!");
     } catch (err: any) {
       console.error("FB post gen error:", err);
@@ -554,7 +613,10 @@ const DailyOfferImageGenerator = () => {
   };
 
   const copyPostText = async () => {
-    const tags = postHashtags.length > 0
+    // Kiscsibe stílusnál a hashtag-ek már benne vannak — egyszerűen másoljuk
+    // Egyszerű stílusnál még hozzáfűzzük
+    const isKiscsibeStyle = postStyle === "kiscsibe";
+    const tags = !isKiscsibeStyle && postHashtags.length > 0
       ? "\n\n" + postHashtags.map((h) => (h.startsWith("#") ? h : `#${h}`)).join(" ")
       : "";
     await navigator.clipboard.writeText(postText + tags);
