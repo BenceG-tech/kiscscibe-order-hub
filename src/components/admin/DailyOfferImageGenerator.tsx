@@ -776,25 +776,74 @@ const DailyOfferImageGenerator = () => {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <p className="text-sm text-muted-foreground">
-                      Generálj AI-alapú poszt szöveget a fenti képhez. Másold ki egy kattintással és tedd be a Facebookra a kép alá.
+                      AI-alapú, <span className="font-semibold text-foreground">Kiscsibe stílusú</span> Facebook poszt — pont olyan, mint amit a tulaj írna. Másold ki egy kattintással és tedd be FB-ra.
                     </p>
 
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-xs font-medium text-muted-foreground">Hangnem:</span>
-                      {(["étvágygerjesztő", "vidám", "profi"] as const).map((t) => (
-                        <Button
-                          key={t}
-                          size="sm"
-                          variant={postTone === t ? "default" : "outline"}
-                          onClick={() => setPostTone(t)}
-                          className="h-7 text-xs capitalize"
-                        >
-                          {t}
-                        </Button>
-                      ))}
+                    {/* Poszt típusa */}
+                    <div className="space-y-2">
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Poszt típusa</span>
+                      <div className="flex flex-wrap gap-2">
+                        {([
+                          { v: "holnapi", label: "🔥 Holnapi előzetes" },
+                          { v: "mai_elkeszult", label: "🍽️ Mai elkészült" },
+                          { v: "heti_indito", label: "🚀 Heti indító" },
+                        ] as const).map((opt) => (
+                          <Button
+                            key={opt.v}
+                            size="sm"
+                            variant={postType === opt.v ? "default" : "outline"}
+                            onClick={() => setPostType(opt.v)}
+                            className="h-8 text-xs"
+                          >
+                            {opt.label}
+                          </Button>
+                        ))}
+                      </div>
                     </div>
 
-                    <Button onClick={generatePostText} disabled={postLoading} className="gap-2">
+                    {/* Stílus */}
+                    <div className="space-y-2">
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Stílus</span>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          size="sm"
+                          variant={postStyle === "kiscsibe" ? "default" : "outline"}
+                          onClick={() => setPostStyle("kiscsibe")}
+                          className="h-8 text-xs gap-1"
+                        >
+                          <Sparkles className="h-3 w-3" />
+                          Kiscsibe stílus (gazdag)
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={postStyle === "egyszeru" ? "default" : "outline"}
+                          onClick={() => setPostStyle("egyszeru")}
+                          className="h-8 text-xs"
+                        >
+                          Rövid (régi)
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Hangnem */}
+                    <div className="space-y-2">
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Hangnem</span>
+                      <div className="flex flex-wrap gap-2">
+                        {(["étvágygerjesztő", "vidám", "profi"] as const).map((t) => (
+                          <Button
+                            key={t}
+                            size="sm"
+                            variant={postTone === t ? "default" : "outline"}
+                            onClick={() => setPostTone(t)}
+                            className="h-8 text-xs capitalize"
+                          >
+                            {t}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <Button onClick={generatePostText} disabled={postLoading} className="gap-2 w-full sm:w-auto">
                       {postLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                       {postLoading ? "Generálás..." : postText ? "Újragenerálás" : "Szöveg generálása"}
                     </Button>
@@ -804,11 +853,11 @@ const DailyOfferImageGenerator = () => {
                         <Textarea
                           value={postText}
                           onChange={(e) => setPostText(e.target.value)}
-                          rows={6}
-                          className="resize-y text-sm"
+                          rows={postStyle === "kiscsibe" ? 18 : 6}
+                          className="resize-y text-sm leading-relaxed"
                         />
 
-                        {postHashtags.length > 0 && (
+                        {postStyle === "egyszeru" && postHashtags.length > 0 && (
                           <div className="flex flex-wrap gap-1">
                             {postHashtags.map((tag, i) => (
                               <Badge key={i} variant="secondary" className="text-xs">
@@ -819,9 +868,9 @@ const DailyOfferImageGenerator = () => {
                         )}
 
                         <div className="flex flex-wrap gap-2">
-                          <Button onClick={copyPostText} variant="outline" size="sm" className="gap-2">
-                            {postCopied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
-                            {postCopied ? "Másolva!" : "Szöveg másolása"}
+                          <Button onClick={copyPostText} variant="default" size="sm" className="gap-2">
+                            {postCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                            {postCopied ? "Másolva!" : "Teljes poszt másolása"}
                           </Button>
                         </div>
                       </div>
