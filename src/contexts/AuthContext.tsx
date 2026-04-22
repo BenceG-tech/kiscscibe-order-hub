@@ -18,6 +18,7 @@ interface AuthContextType {
   profile: Profile | null;
   loading: boolean;
   rolesLoading: boolean;
+  isOwner: boolean;
   isAdmin: boolean;
   isStaff: boolean;
   canViewOrders: boolean;
@@ -42,6 +43,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [rolesLoading, setRolesLoading] = useState(false);
+  const [isOwnerState, setIsOwnerState] = useState(false);
   const [isAdminState, setIsAdminState] = useState(false);
   const [isStaffState, setIsStaffState] = useState(false);
   const isFetchingRef = useRef(false);
@@ -69,10 +71,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (data) {
         try {
           await supabase.rpc('bootstrap_first_admin');
+          await (supabase as any).rpc('claim_admin_access');
         } catch (e) {
-          console.error('[Auth] bootstrap_first_admin error:', e);
+          console.error('[Auth] admin access sync error:', e);
         }
       }
+
+      // Check owner status from secure user_roles table via RPC
+      const { data: isOwnerResult, error: ownerError } = await (supabase as any).rpc('is_owner');
+      if (ownerError) console.error('[Auth] is_owner RPC error:', ownerError);
+      setIsOwnerState(isOwnerResult === true);
       
       // Check admin status from secure user_roles table via RPC
       const { data: isAdminResult, error: adminError } = await supabase.rpc('is_admin');
@@ -84,7 +92,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (staffError) console.error('[Auth] is_staff RPC error:', staffError);
       setIsStaffState(isStaffResult === true);
 
-      console.log(`[Auth] Roles determined: admin=${isAdminResult === true}, staff=${isStaffResult === true}`);
+      console.log(`[Auth] Roles determined: owner=${isOwnerResult === true}, admin=${isAdminResult === true}, staff=${isStaffResult === true}`);
     } catch (error) {
       console.error('[Auth] Error in fetchProfile:', error);
     } finally {
@@ -109,6 +117,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }, 0);
         } else {
           setProfile(null);
+          setIsOwnerState(false);
           setIsAdminState(false);
           setIsStaffState(false);
           setRolesLoading(false);
@@ -165,6 +174,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Role flags from secure user_roles table (no client-side fallbacks)
+  const isOwner = isOwnerState;
   const isAdmin = isAdminState;
   const isStaff = isStaffState;
   const canViewOrders = isAdminState || isStaffState;
@@ -175,6 +185,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     profile,
     loading,
     rolesLoading,
+    isOwner,
     signUp,
     signIn,
     signOut,
