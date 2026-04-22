@@ -13,6 +13,15 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-04-22",
+    title: "Pénzügyi modul gyorsabb és átláthatóbb lett",
+    description:
+      "A számlák tesztként jelölhetők és kizárhatók a riportokból, új gyors szűrők és 3 pontos műveletek kerültek a listába, az AI számlafelismerés tételsorokat is betölt, a partnereknél pedig pénzügyi összefoglaló látszik.",
+    type: "improved",
+    tabGroup: "finance",
+    helpTopicId: "invoice-ocr",
+  },
+  {
+    date: "2026-04-22",
     title: "Dokumentumtár gyors műveletek",
     description:
       "A Dokumentumok rész összetettebb és felhasználóbarátabb lett: mappázás, címkézés, csillagozás közvetlenül a 3 pontos menüből, feltöltés előtti mappa/címke választás, tömeges címke műveletek és rendezés.",
