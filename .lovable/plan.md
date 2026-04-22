@@ -1,401 +1,165 @@
 
-# Terv — Számla fájlfeltöltés után automatikus adatkinyerés képből és digitális PDF-ből
+# Terv — Kiscsibe ár-érték dokumentáció elkészítése a feltöltött minta alapján
 
-## Mi a gond most?
+## Cél
 
-Jelenleg a számla csatolásnál a fájl feltöltése megtörténik, de az adatkinyerés nem indul el automatikusan.
+Készítek egy **Kiscsibe Étteremre szabott ár-érték dokumentációt**, a feltöltött BK Ingatlan Stúdió ajánlat stílusához hasonlóan:
 
-A jelenlegi működés alapján:
+- átlátható, ügyfélbarát magyarázat,
+- modulonkénti értékbontás,
+- baráti/óvatos árazás,
+- külön kiemelve az utóbbi időben elkészült új funkciókat,
+- chatben olvasható teljes szövegként,
+- plusz letölthető dokumentumként is.
 
-- a **fotó készítése** és a **képfájl feltöltése** technikailag támogatott,
-- az AI kitöltés csak akkor jelenik meg, ha a csatolt fájl képként felismerhető,
-- a **PDF / digitális számla felismerés nincs rendesen implementálva**,
-- feltöltés után nincs elég egyértelmű állapotjelzés arról, hogy:
-  - feltöltés folyamatban,
-  - adatkinyerés indul,
-  - adatkinyerés kész,
-  - mit töltött ki az AI,
-  - mit hagyott üresen bizonytalanság miatt.
+## Kimenet
 
-Ezt javítjuk.
+A következőket készítem el:
 
----
+1. **Teljes ajánlati / ár-érték szöveg chatben**
+   - rögtön átnézhető,
+   - könnyen módosítható,
+   - másolható emailbe vagy dokumentumba.
 
-## Új cél
+2. **Letölthető dokumentum**
+   - javasolt formátum: `.docx` és/vagy `.pdf`,
+   - Kiscsibe arculathoz igazítva:
+     - sötétkék,
+     - sárga,
+     - krém,
+     - letisztult, üzleti, mégis barátságos hangvétel.
 
-A számlafeltöltés úgy működjön, ahogy egy admin várná:
-
-```text
-Fájl kiválasztása / Fotó készítése
-→ fájl feltöltése
-→ AI adatkinyerés automatikusan elindul
-→ látható feldolgozási állapot
-→ AI csak a biztos mezőket tölti ki
-→ bizonytalan mezők üresen maradnak
-→ admin manuálisan ellenőrzi és menti
-```
-
----
-
-## 1. Automatikus AI feldolgozás feltöltés után
-
-A `Fájl kiválasztása` vagy `Fotó készítése` után ne kelljen külön keresni az AI gombot.
-
-Új működés:
-
-1. Admin kiválaszt egy fájlt.
-2. A rendszer feltölti az `invoices` bucketbe.
-3. Sikeres feltöltés után automatikusan elindítja az adatkinyerést az első feldolgozható fájlra.
-4. Közben egy jól látható státusz jelenik meg.
-
-Példa státusz:
+## Dokumentum javasolt felépítése
 
 ```text
-1. Fájl feltöltése...
-2. Számla adatainak felismerése...
-3. AI ellenőrzés kész — kérlek nézd át mentés előtt.
+1. Címlap
+2. Rövid bevezető
+3. Miért nem sablon rendszer?
+4. Mit tartalmaz a Kiscsibe rendszer?
+5. Alap rendszer értékbontás
+6. Frissen elkészült extra modulok
+7. Új funkciók baráti árazással
+8. Havi karbantartás / támogatás javaslat
+9. Mit kezel a Kiscsibe, mit automatizál a rendszer?
+10. Lezárás
 ```
 
-A manuális `AI kitöltés újra` gomb megmarad, ha az admin újra akarja próbálni.
+## Tartalmi fókusz
 
----
+A dokumentum nem csak a legutóbbi 1-2 módosítást fogja felsorolni, hanem **a teljes új modulcsomagot értékeli**, különösen ezeket:
 
-## 2. Képfájlok támogatása
+### Admin és jogosultság
 
-Támogatott képfájlok:
+- főadmin megtartása,
+- új admin emailek engedélyezése:
+  - `info@kiscsibeetterem.hu`
+  - `iroda@kiscsibeetterem.hu`
+- szerepkör alapú jogosultság,
+- módosítási napló alapjai.
+
+### Dokumentumtár
+
+- dokumentumfeltöltés,
+- mappák,
+- címkék / tagek,
+- csillagozás,
+- 3 pontos gyorsműveletek,
+- tömeges műveletek,
+- dokumentumrészletek,
+- kényelmesebb rendezés.
+
+### Pénzügyi modul
+
+- számlák kezelése,
+- partnerek kezelése,
+- partner-számla kapcsolat,
+- teszt számlák kezelése,
+- pénzügyi összesítők,
+- lejárt / fizetésre váró számlák,
+- gyorsműveletek.
+
+### AI számlafelismerés
+
+- fotózott számla feldolgozás,
+- képfájl alapú számlafelismerés,
+- digitális PDF számla szövegkinyerése,
+- szkennelt PDF képként történő próbafeldolgozása,
+- automatikus adatkinyerés feltöltés után,
+- bizonytalan mezők üresen hagyása,
+- admin általi kézi ellenőrzés.
+
+### Admin kézikönyv és belső kommunikáció
+
+- „Mi változott?” rész,
+- admin kézikönyv frissítések,
+- jegyzet / észrevétel rendszer az asszisztensnek és tulajdonosnak,
+- használat közbeni visszajelzések gyűjtése.
+
+## Árazási logika
+
+A kiválasztott hangvétel: **baráti/óvatos**.
+
+Ezért nem túl magas, prémium ügynökségi árakat használok, hanem olyan tételeket, amelyek:
+
+- hihetőek,
+- pár tízezer forintos extra fejlesztésként is elfogadhatók,
+- mégis megmutatják, hogy sok munka és üzleti érték van mögöttük.
+
+Példa jellegű extra tételek:
 
 ```text
-.jpg
-.jpeg
-.png
-.webp
-.heic / heif, ha a böngésző és eszköz támogatja
+Dokumentumtár gyorsműveletek és címkézés: +25 000 Ft
+Pénzügyi teszt rekord kezelés és gyors szűrők: +20 000 Ft
+AI PDF/képfájl számlafelismerés: +35 000 Ft
+Partner-számla összekötés javítása: +25 000 Ft
+Admin módosítási napló és belső jegyzetek: +30 000 Ft
+Admin kézikönyv és changelog bővítés: +15 000 Ft
 ```
 
-Képnél a rendszer ugyanúgy dolgozik, mint a fotónál:
+Ezeket a végső dokumentumban finomítom úgy, hogy ne legyen túl agresszív, inkább „értéket bemutató” jellegű legyen.
 
-- feltöltött kép URL-je átmegy az edge functionbe,
-- Lovable AI képként elemzi,
-- strukturált adatokat ad vissza.
+## Javasolt dokumentum hangvétel
 
-Képnél ez működjön akkor is, ha nem telefonos kamera készült, hanem például:
-
-- letöltött számlakép,
-- emailből mentett kép,
-- beszállítótól kapott JPG/PNG.
-
----
-
-## 3. Digitális PDF számla felismerése
-
-A PDF-eknél kétféle eset van, ezért kétlépcsős megoldást építünk.
-
-### A) Digitális / szöveges PDF
-
-Ez a leggyakoribb online számla.
-
-Példa:
-
-- Számlázz.hu PDF
-- Billingo PDF
-- NAV Online Számla PDF
-- emailben kapott beszállítói PDF
-
-Új működés:
-
-1. A frontend beolvassa a PDF szövegét.
-2. A kinyert szöveg megy az `extract-invoice-data` edge functionbe.
-3. Az edge function ugyanazzal az AI adatkinyerő logikával feldolgozza.
-4. A mezők kitöltődnek, ha elég biztosak.
-
-Ehhez valószínűleg beépítünk egy PDF-olvasó könyvtárat:
+A BK mintához hasonlóan személyes, de professzionális:
 
 ```text
-pdfjs-dist
+Szia!
+
+Az alábbi dokumentumban összeszedtem, milyen értékű rendszer épült fel a Kiscsibe Étterem mögé, és külön kiemeltem azokat az újabb funkciókat is, amelyek az utóbbi időben készültek el.
+
+Nem egy egyszerű weboldalról van szó, hanem egy napi működést támogató rendelési, adminisztrációs, pénzügyi és AI-alapú háttérrendszerről.
 ```
 
-### B) Szkennelt / képes PDF
-
-Ha a PDF-ben nincs kinyerhető szöveg, akkor:
-
-1. a rendszer megpróbálja az első oldalt képpé renderelni,
-2. azt elküldi képalapú AI felismerésre,
-3. ha így sem biztos, akkor nem találgat, hanem figyelmeztet.
-
-Üzenet például:
-
-```text
-Ez a PDF valószínűleg szkennelt kép. Megpróbáltam képként felismerni, de néhány adat bizonytalan maradt. Kérlek ellenőrizd vagy töltsd ki kézzel.
-```
-
----
-
-## 4. Edge function bővítése: kép és szöveg mód
-
-A jelenlegi edge function csak ezt várja:
-
-```text
-image_url
-```
-
-Bővítem, hogy több bemenetet kezeljen:
-
-```text
-image_url
-document_text
-file_name
-file_type
-```
-
-### Új működés az edge functionben
-
-```text
-Ha image_url van:
-  képalapú számlafelismerés
-
-Ha document_text van:
-  digitális PDF szöveges számlafelismerés
-
-Ha mindkettő van:
-  először szöveg, majd ha kevés adat jött ki, kép fallback
-```
-
-A prompt is módosul:
-
-- magyar számla / nyugta adatok felismerése,
-- digitális számla szövegből is,
-- csak biztos adatokat adjon vissza,
-- bizonytalan adatot hagyjon üresen,
-- minden mezőhöz opcionális biztossági jelzés.
-
----
-
-## 5. Nem találgatunk: bizonytalan mezők maradjanak üresek
-
-A mostani AI hajlamos lehet „best effort” módon tippelni. Ezt megváltoztatjuk.
-
-Új szabály:
-
-```text
-Ha egy mező nem egyértelmű, ne töltse ki.
-```
-
-Példák:
-
-- ha nem biztos a fizetési határidőben → `due_date` üres,
-- ha nem biztos az adószámban → `partner_tax_id` üres,
-- ha több összeg is van és nem egyértelmű a végösszeg → `gross_amount` üres,
-- ha a számlaszám nem biztos → `invoice_number` üres.
-
-Az AI összefoglalóban látszódjon:
-
-```text
-Kitöltve: Partner, Számlaszám, Bruttó összeg
-Kézi ellenőrzés kell: Fizetési határidő, Adószám
-```
-
----
-
-## 6. Jobb felhasználói visszajelzés a feltöltőben
-
-A csatolt fájlok résznél legyen egyértelmű folyamatjelzés.
-
-### Feltöltés közben
-
-```text
-Fájl feltöltése...
-```
-
-### AI feldolgozás közben
-
-```text
-Adatkinyerés folyamatban...
-Ez eltarthat pár másodpercig.
-```
-
-### Siker esetén
-
-```text
-AI felismerés kész.
-6 mezőt kitöltöttem, 2 mező kézi ellenőrzést igényel.
-```
-
-### Részleges siker esetén
-
-```text
-Részleges felismerés.
-A bizonytalan adatokat üresen hagytam.
-```
-
-### Hiba esetén
-
-```text
-Nem sikerült adatot kinyerni ebből a fájlból.
-Próbálj jobb minőségű képet, vagy töltsd ki kézzel.
-```
-
----
-
-## 7. AI összefoglaló panel javítása
-
-A mostani egyszerű AI panelt bővítjük.
-
-Új panel:
-
-```text
-AI felismerés eredménye
-
-Állapot: Kész / Részleges / Sikertelen
-Forrás: PDF szöveg / Kép / Szkennelt PDF képként
-Biztosság: magas / közepes / alacsony
-
-Kitöltött mezők:
-✓ Partner neve
-✓ Számla száma
-✓ Kiállítás dátuma
-✓ Bruttó összeg
-
-Kézi kitöltés javasolt:
-! Fizetési határidő
-! Adószám
-! Tételsorok
-```
-
-Ez sokkal érthetőbb lesz, mint az, hogy „Fájl 1” megjelenik, de semmi nem történik.
-
----
-
-## 8. Fájl lista használhatóbbá tétele
-
-A csatolt fájlok listájában ne csak „Fájl 1” legyen.
-
-Legyen látható:
-
-```text
-szamla-metro-2026.pdf
-PDF · feltöltve · AI feldolgozva
-
-vagy
-
-IMG_1234.jpg
-Kép · feltöltve · AI feldolgozás kész
-```
-
-Ehhez a feltöltött fájlokról eltárolunk ideiglenes UI metaadatot:
-
-- eredeti fájlnév,
-- fájltípus,
-- feldolgozás állapota,
-- AI eredmény állapota.
-
-A számlába továbbra is a `file_urls` kerül mentésre, tehát nem kell nagy adatbázis-átalakítás első körben.
-
----
-
-## 9. PDF / kép elfogadási szöveg javítása
-
-A feltöltő alatt a mostani szöveg félrevezető, mert azt sugallja, hogy csak fotón működik.
-
-Új szöveg:
-
-```text
-Tölthetsz fel fotót, képfájlt vagy digitális PDF számlát is.
-Az AI automatikusan megpróbálja kinyerni az adatokat.
-A bizonytalan mezőket üresen hagyja, ezeket kézzel tudod kitölteni.
-```
-
-Fotó tipp külön:
-
-```text
-Fotónál: jó fényben, felülről, teljes számla látszódjon.
-```
-
----
-
-## 10. Tételsorok kezelése PDF-ből is
-
-Ha az AI felismeri a tételsorokat PDF-ből vagy képből, akkor ugyanúgy bekerülnek a szerkeszthető tételsor táblába:
-
-```text
-Liszt 10 kg
-Tej 12 l
-Tojás 30 db
-```
-
-Ha a tételsorok bizonytalanok, akkor nem töltjük be őket automatikusan, hanem az AI panel jelzi:
-
-```text
-Tételsorok nem voltak elég biztosan felismerhetők.
-```
-
----
-
-## 11. Changelog és kézikönyv frissítés
-
-Az admin kézikönyv pénzügyi részébe bekerül:
-
-- fotózott számla felismerése,
-- feltöltött képfájl felismerése,
-- digitális PDF számla felismerése,
-- mikor marad üresen egy mező,
-- mit jelent a részleges AI felismerés.
-
-A „Mi változott?” részbe új bejegyzés:
-
-```text
-ÚJ — PDF és képfájl alapú számlafelismerés
-A számlák feltöltése után automatikusan elindul az AI adatkinyerés. Digitális PDF-ekből és képekből is próbál adatot kinyerni, a bizonytalan mezőket pedig üresen hagyja.
-```
-
----
-
-## Érintett fájlok
-
-```text
-src/components/admin/InvoiceFileUpload.tsx
-src/components/admin/InvoiceFormDialog.tsx
-supabase/functions/extract-invoice-data/index.ts
-src/data/adminHelpContent.ts
-src/data/adminChangelog.ts
-package.json
-package-lock.json
-```
-
-Lehetséges új segédfájl:
-
-```text
-src/lib/pdfInvoiceExtract.ts
-```
-
----
-
-## Megvalósítási sorrend
-
-1. **Feltöltő UI javítása**
-   - fájlnév, típus, feldolgozási állapot,
-   - automatikus AI indítás feltöltés után,
-   - manuális „AI újrapróbálás” gomb.
-
-2. **PDF szövegkinyerés**
-   - `pdfjs-dist` beépítése,
-   - digitális PDF szövegének kinyerése,
-   - szkennelt PDF fallback képként.
-
-3. **Edge function bővítés**
-   - `image_url` mellett `document_text` támogatás,
-   - új prompt: bizonytalan mezők maradjanak üresek,
-   - strukturáltabb válasz: kitöltött / bizonytalan mezők.
-
-4. **InvoiceFormDialog kitöltési logika**
-   - csak a biztos mezők kerüljenek be,
-   - ne írja felül a már kézzel kitöltött mezőt,
-   - AI összefoglaló panel bővítése.
-
-5. **Tételsorok és státuszok**
-   - biztos tételsorok automatikus betöltése,
-   - bizonytalan tételeknél kézi ellenőrzési jelzés.
-
-6. **Kézikönyv + changelog**
-   - pénzügyi AI felismerés leírása,
-   - PDF támogatás dokumentálása,
-   - új „Mi változott?” bejegyzés.
+## Dokumentum vizuális iránya
+
+A letölthető dokumentum a Kiscsibe arculatához igazodik:
+
+- sötétkék fejléc,
+- sárga kiemelések,
+- krém háttér vagy világos tartalmi blokkok,
+- táblázatos ár-érték bontás,
+- jól olvasható fejezetcímek,
+- üzleti, de nem túl merev megjelenés.
+
+## Minőségellenőrzés
+
+A dokumentum elkészítése után:
+
+1. legenerálom a letölthető fájlt,
+2. PDF esetén oldalanként képpé konvertálom,
+3. átnézem, hogy:
+   - nincs-e levágott szöveg,
+   - nincs-e túlcsúszó táblázat,
+   - nincs-e üres vagy hibás oldal,
+   - megfelelőek-e a színek és margók,
+   - olvasható-e minden ár és modulnév.
+4. ha hibát találok, javítom és újragenerálom.
+
+## Elkészítés menete jóváhagyás után
+
+1. A feltöltött BK ajánlat szerkezete alapján elkészítem a Kiscsibe verzió szövegét.
+2. Beépítem a frissen elkészült modulokat és baráti árazásukat.
+3. Elkészítem a chatben olvasható teljes változatot.
+4. Legenerálom a letölthető dokumentumot.
+5. Vizuálisan ellenőrzöm az oldalakat.
+6. Átadom a kész fájlt letöltési linkkel.
