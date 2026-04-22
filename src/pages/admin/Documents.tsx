@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import AdminLayout from "./AdminLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Trash2, FolderInput } from "lucide-react";
+import { Search, Trash2, FolderInput, Tag, Star, ArrowUpDown } from "lucide-react";
 import { DocumentUploader } from "@/components/admin/documents/DocumentUploader";
 import { FolderSidebar } from "@/components/admin/documents/FolderSidebar";
 import { DocumentCard } from "@/components/admin/documents/DocumentCard";
@@ -11,6 +11,7 @@ import { VersionHistory } from "@/components/admin/documents/VersionHistory";
 import {
   useDocuments,
   useFolders,
+  useTags,
   DocumentRow,
   useDeleteDocument,
   useUpdateDocument,
@@ -27,10 +28,12 @@ const Documents = () => {
   const [selectedFolder, setSelectedFolder] = useState<string | null | "all" | "starred">("all");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<"newest" | "name" | "size">("newest");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [detailDoc, setDetailDoc] = useState<DocumentRow | null>(null);
   const [versionsDoc, setVersionsDoc] = useState<DocumentRow | null>(null);
   const { data: folders = [] } = useFolders();
+  const { data: tags = [] } = useTags();
   const del = useDeleteDocument();
   const update = useUpdateDocument();
 
@@ -45,6 +48,13 @@ const Documents = () => {
 
   const { data: documents = [], isLoading } = useDocuments(filter);
 
+  const sortedDocuments = useMemo(() => {
+    const rows = [...documents];
+    if (sortBy === "name") rows.sort((a, b) => a.name.localeCompare(b.name, "hu"));
+    if (sortBy === "size") rows.sort((a, b) => b.file_size - a.file_size);
+    return rows;
+  }, [documents, sortBy]);
+
   const toggleSelect = (id: string) => {
     setSelected((prev) => {
       const next = new Set(prev);
@@ -54,11 +64,31 @@ const Documents = () => {
   };
 
   const uploadFolderId = selectedFolder === "all" || selectedFolder === "starred" ? null : selectedFolder;
+  const uploadTags = selectedTag ? [selectedTag] : [];
 
   const bulkMove = async (folderId: string | null) => {
     await Promise.all(
       Array.from(selected).map((id) => update.mutateAsync({ id, folder_id: folderId })),
     );
+    setSelected(new Set());
+  };
+
+  const bulkTag = async (tagName: string, mode: "add" | "remove") => {
+    const docs = documents.filter((d) => selected.has(d.id));
+    await Promise.all(
+      docs.map((d) => {
+        const next =
+          mode === "add"
+            ? Array.from(new Set([...d.tags, tagName]))
+            : d.tags.filter((t) => t !== tagName);
+        return update.mutateAsync({ id: d.id, tags: next });
+      }),
+    );
+    setSelected(new Set());
+  };
+
+  const bulkStar = async () => {
+    await Promise.all(Array.from(selected).map((id) => update.mutateAsync({ id, is_starred: true })));
     setSelected(new Set());
   };
 
@@ -91,10 +121,10 @@ const Documents = () => {
           />
 
           <div className="flex-1 space-y-4 min-w-0">
-            <DocumentUploader folderId={uploadFolderId} />
+            <DocumentUploader folderId={uploadFolderId} defaultTags={uploadTags} />
 
-            <div className="flex items-center gap-2">
-              <div className="relative flex-1">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <div className="relative flex-1 min-w-0">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   value={search}
@@ -103,6 +133,17 @@ const Documents = () => {
                   className="pl-8"
                 />
               </div>
+              <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <ArrowUpDown className="h-4 w-4 mr-2" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="newest">Legújabb elöl</SelectItem>
+                  <SelectItem value="name">Név szerint</SelectItem>
+                  <SelectItem value="size">Méret szerint</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {selected.size > 0 && (
@@ -122,6 +163,35 @@ const Documents = () => {
                     ))}
                   </SelectContent>
                 </Select>
+                <Select onValueChange={(v) => bulkTag(v, "add")}>
+                  <SelectTrigger className="w-44 h-8">
+                    <Tag className="h-3.5 w-3.5 mr-1" />
+                    <SelectValue placeholder="Címke hozzáadása..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {tags.map((t) => (
+                      <SelectItem key={t.id} value={t.name}>
+                        {t.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select onValueChange={(v) => bulkTag(v, "remove")}>
+                  <SelectTrigger className="w-44 h-8">
+                    <Tag className="h-3.5 w-3.5 mr-1" />
+                    <SelectValue placeholder="Címke levétele..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {tags.map((t) => (
+                      <SelectItem key={t.id} value={t.name}>
+                        {t.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button size="sm" variant="outline" onClick={bulkStar}>
+                  <Star className="h-3.5 w-3.5 mr-1" /> Csillagozás
+                </Button>
                 <Button size="sm" variant="destructive" onClick={bulkDelete}>
                   <Trash2 className="h-3.5 w-3.5 mr-1" /> Törlés
                 </Button>
@@ -133,14 +203,14 @@ const Documents = () => {
 
             {isLoading ? (
               <p className="text-sm text-muted-foreground py-8 text-center">Betöltés...</p>
-            ) : documents.length === 0 ? (
+            ) : sortedDocuments.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <p>Nincs megjeleníthető fájl.</p>
                 <p className="text-xs mt-1">Tölts fel valamit a fenti dobozból!</p>
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                {documents.map((doc) => (
+                {sortedDocuments.map((doc) => (
                   <DocumentCard
                     key={doc.id}
                     doc={doc}
