@@ -19,6 +19,11 @@ const Invoices = () => {
 
   const { data: invoices = [], isLoading } = useInvoices(filters);
 
+  const reportInvoices = useMemo(
+    () => invoices.filter((inv) => !inv.exclude_from_reports),
+    [invoices]
+  );
+
   const overdueInvoices = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -50,13 +55,13 @@ const Invoices = () => {
             <InfoTip text="Rögzítsd a bejövő költségszámlákat és kövesd a pénzügyi helyzetet." />
           </h1>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => exportInvoicesToExcel(invoices)} disabled={invoices.length === 0}>
+            <Button variant="outline" size="sm" onClick={() => exportInvoicesToExcel(reportInvoices)} disabled={reportInvoices.length === 0}>
               <Download className="h-4 w-4 mr-1" />
               Export
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" disabled={invoices.length === 0}>
+                <Button variant="outline" size="sm" disabled={reportInvoices.length === 0}>
                   <FileSpreadsheet className="h-4 w-4 mr-1" />
                   ÁFA export
                 </Button>
@@ -65,12 +70,12 @@ const Invoices = () => {
                 <DropdownMenuItem onClick={() => {
                   const now = new Date();
                   const label = `${now.getFullYear()}_${String(now.getMonth() + 1).padStart(2, "0")}`;
-                  exportVatSummaryToExcel(invoices, label);
+                  exportVatSummaryToExcel(reportInvoices, label);
                 }}>Havi ÁFA export</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => {
                   const now = new Date();
                   const q = Math.ceil((now.getMonth() + 1) / 3);
-                  exportVatSummaryToExcel(invoices, `${now.getFullYear()}_Q${q}`);
+                  exportVatSummaryToExcel(reportInvoices, `${now.getFullYear()}_Q${q}`);
                 }}>Negyedéves ÁFA export</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
