@@ -51,7 +51,11 @@ const PartnerDetailDialog = ({ open, onOpenChange, partner }: Props) => {
   const { data: invoices = [] } = usePartnerInvoices(partner.id, partner.name);
 
   const hasInvoices = invoices.length > 0;
-  const totalGross = invoices.reduce((s, inv) => s + (inv.gross_amount || 0), 0);
+  const reportInvoices = invoices.filter((inv: any) => !inv.exclude_from_reports);
+  const totalGross = reportInvoices.reduce((s, inv) => s + (inv.gross_amount || 0), 0);
+  const openDebt = reportInvoices.filter((inv: any) => inv.status !== "paid" && inv.status !== "cancelled").reduce((s, inv) => s + (inv.gross_amount || 0), 0);
+  const overdueCount = reportInvoices.filter((inv: any) => inv.due_date && new Date(inv.due_date) < new Date() && inv.status !== "paid" && inv.status !== "cancelled").length;
+  const lastInvoiceDate = reportInvoices[0]?.issue_date ? new Date(reportInvoices[0].issue_date).toLocaleDateString("hu-HU") : "—";
 
   const set = (key: string, val: any) => {
     setForm((f) => ({ ...f, [key]: val }));
@@ -211,6 +215,27 @@ const PartnerDetailDialog = ({ open, onOpenChange, partner }: Props) => {
           )}
 
           <Separator />
+
+          {hasInvoices && (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+              <div className="rounded-lg border bg-muted/30 p-3">
+                <p className="text-xs text-muted-foreground">Összes számlaérték</p>
+                <p className="font-semibold">{fmt(totalGross)}</p>
+              </div>
+              <div className="rounded-lg border bg-muted/30 p-3">
+                <p className="text-xs text-muted-foreground">Nyitott tartozás</p>
+                <p className="font-semibold">{fmt(openDebt)}</p>
+              </div>
+              <div className="rounded-lg border bg-muted/30 p-3">
+                <p className="text-xs text-muted-foreground">Lejárt számlák</p>
+                <p className="font-semibold">{overdueCount} db</p>
+              </div>
+              <div className="rounded-lg border bg-muted/30 p-3">
+                <p className="text-xs text-muted-foreground">Utolsó számla</p>
+                <p className="font-semibold">{lastInvoiceDate}</p>
+              </div>
+            </div>
+          )}
 
           {/* Linked invoices */}
           <div className="space-y-3">
