@@ -8,7 +8,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Download, ExternalLink } from "lucide-react";
+import { Download, ExternalLink, FolderOpen, Info, Loader2, Tags } from "lucide-react";
 import {
   DocumentRow,
   getSignedUrl,
@@ -16,6 +16,7 @@ import {
   useTags,
   useFolders,
 } from "@/hooks/useDocuments";
+import { toast } from "@/hooks/use-toast";
 import {
   Select,
   SelectContent,
@@ -63,6 +64,7 @@ export const DocumentDetailDialog = ({
       folder_id: folderId === "none" ? null : folderId,
       tags: selectedTags,
     });
+    toast({ title: "Dokumentum frissítve" });
     onOpenChange(false);
   };
 
@@ -114,8 +116,8 @@ export const DocumentDetailDialog = ({
             <Input value={name} onChange={(e) => setName(e.target.value)} />
           </div>
 
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">Mappa</label>
+          <div className="rounded-lg border bg-card p-3 space-y-2">
+            <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5"><FolderOpen className="h-3.5 w-3.5" /> Mappa</label>
             <Select value={folderId} onValueChange={setFolderId}>
               <SelectTrigger>
                 <SelectValue />
@@ -131,8 +133,8 @@ export const DocumentDetailDialog = ({
             </Select>
           </div>
 
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">Címkék</label>
+          <div className="rounded-lg border bg-card p-3 space-y-2">
+            <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5"><Tags className="h-3.5 w-3.5" /> Címkék</label>
             <div className="flex flex-wrap gap-1.5 mt-1">
               {tags.map((t) => {
                 const active = selectedTags.includes(t.name);
@@ -171,11 +173,22 @@ export const DocumentDetailDialog = ({
             />
           </div>
 
-          <div className="text-xs text-muted-foreground space-y-0.5 pt-2 border-t">
-            <p>Eredeti fájlnév: {doc.original_filename}</p>
-            <p>Verzió: v{doc.version}</p>
-            <p>Feltöltve: {new Date(doc.created_at).toLocaleString("hu-HU")}</p>
-            {doc.uploaded_by_name && <p>Feltöltő: {doc.uploaded_by_name}</p>}
+          <div className="grid sm:grid-cols-3 gap-2 text-xs text-muted-foreground pt-2 border-t">
+            <div className="rounded-md bg-muted/50 p-2">
+              <p className="font-semibold text-foreground flex items-center gap-1"><Info className="h-3 w-3" /> Fájl</p>
+              <p className="truncate" title={doc.original_filename}>{doc.original_filename}</p>
+              <p>{doc.mime_type || "Ismeretlen típus"}</p>
+            </div>
+            <div className="rounded-md bg-muted/50 p-2">
+              <p className="font-semibold text-foreground">Feltöltés</p>
+              <p>{new Date(doc.created_at).toLocaleString("hu-HU")}</p>
+              {doc.uploaded_by_name && <p className="truncate">{doc.uploaded_by_name}</p>}
+            </div>
+            <div className="rounded-md bg-muted/50 p-2">
+              <p className="font-semibold text-foreground">Verzió</p>
+              <p>v{doc.version}</p>
+              <p>{doc.is_latest_version ? "Legfrissebb" : "Korábbi verzió"}</p>
+            </div>
           </div>
         </div>
 
@@ -183,7 +196,10 @@ export const DocumentDetailDialog = ({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Mégse
           </Button>
-          <Button onClick={save}>Mentés</Button>
+          <Button onClick={save} disabled={update.isPending}>
+            {update.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            Mentés
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

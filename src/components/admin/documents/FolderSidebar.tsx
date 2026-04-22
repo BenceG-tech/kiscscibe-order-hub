@@ -14,6 +14,7 @@ import {
   useCreateFolder,
   useDeleteFolder,
   useTags,
+  useDocuments,
 } from "@/hooks/useDocuments";
 import { TagManager } from "./TagManager";
 
@@ -29,6 +30,7 @@ const COLORS = ["#F6C22D", "#EF4444", "#10B981", "#3B82F6", "#A855F7", "#F97316"
 export const FolderSidebar = ({ selectedFolder, onSelect, selectedTag, onSelectTag }: Props) => {
   const { data: folders = [] } = useFolders();
   const { data: tags = [] } = useTags();
+  const { data: documents = [] } = useDocuments();
   const createFolder = useCreateFolder();
   const deleteFolder = useDeleteFolder();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -36,33 +38,39 @@ export const FolderSidebar = ({ selectedFolder, onSelect, selectedTag, onSelectT
   const [name, setName] = useState("");
   const [color, setColor] = useState(COLORS[0]);
 
+  const countForFolder = (id: string | null | "all" | "starred") => {
+    if (id === "all") return documents.length;
+    if (id === "starred") return documents.filter((d) => d.is_starred).length;
+    return documents.filter((d) => d.folder_id === id).length;
+  };
+
   const itemCls = (active: boolean) =>
-    `w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-left transition-colors ${
-      active ? "bg-primary text-primary-foreground" : "hover:bg-muted"
+    `w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-left transition-colors border ${
+      active ? "bg-primary text-primary-foreground border-primary" : "hover:bg-muted border-transparent"
     }`;
 
   return (
     <aside className="w-full md:w-60 shrink-0 space-y-4">
       <div className="space-y-1">
         <button onClick={() => onSelect("all")} className={itemCls(selectedFolder === "all")}>
-          <Inbox className="h-4 w-4" /> Minden fájl
+          <Inbox className="h-4 w-4" /> <span className="flex-1">Minden fájl</span><span className="text-xs opacity-70">{countForFolder("all")}</span>
         </button>
         <button
           onClick={() => onSelect("starred")}
           className={itemCls(selectedFolder === "starred")}
         >
-          <Star className="h-4 w-4" /> Csillagos
+          <Star className="h-4 w-4" /> <span className="flex-1">Csillagos</span><span className="text-xs opacity-70">{countForFolder("starred")}</span>
         </button>
         <button onClick={() => onSelect(null)} className={itemCls(selectedFolder === null)}>
-          <Folder className="h-4 w-4" /> Nincs mappa
+          <Folder className="h-4 w-4" /> <span className="flex-1">Nincs mappa</span><span className="text-xs opacity-70">{countForFolder(null)}</span>
         </button>
       </div>
 
       <div>
         <div className="flex items-center justify-between px-2 mb-1">
           <span className="text-xs font-semibold text-muted-foreground uppercase">Mappák</span>
-          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setDialogOpen(true)}>
-            <Plus className="h-3.5 w-3.5" />
+          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setDialogOpen(true)}>
+            <Plus className="h-3.5 w-3.5 mr-1" /> Új
           </Button>
         </div>
         <div className="space-y-0.5">
@@ -70,7 +78,7 @@ export const FolderSidebar = ({ selectedFolder, onSelect, selectedTag, onSelectT
             <div key={f.id} className="group flex items-center gap-1">
               <button onClick={() => onSelect(f.id)} className={itemCls(selectedFolder === f.id)}>
                 <FolderOpen className="h-4 w-4" style={{ color: f.color }} />
-                <span className="truncate flex-1">{f.name}</span>
+                <span className="truncate flex-1">{f.name}</span><span className="text-xs opacity-70">{countForFolder(f.id)}</span>
               </button>
               <Button
                 size="icon"
@@ -92,12 +100,12 @@ export const FolderSidebar = ({ selectedFolder, onSelect, selectedTag, onSelectT
         <div className="flex items-center justify-between px-2 mb-1">
           <span className="text-xs font-semibold text-muted-foreground uppercase">Címkék</span>
           <Button
-            size="icon"
+            size="sm"
             variant="ghost"
-            className="h-6 w-6"
+            className="h-7 px-2 text-xs"
             onClick={() => setTagDialogOpen(true)}
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Plus className="h-3.5 w-3.5 mr-1" /> Új
           </Button>
         </div>
         <div className="flex flex-wrap gap-1 px-2">
