@@ -1,456 +1,401 @@
 
-# Terv — Pénzügyi modul átnézése, egyszerűsítése és számla/partner workflow javítása
+# Terv — Számla fájlfeltöltés után automatikus adatkinyerés képből és digitális PDF-ből
 
-## Gyors megállapítások
+## Mi a gond most?
 
-A jelenlegi pénzügyi rész már sok mindent tud, de pár ponton félreérthető:
+Jelenleg a számla csatolásnál a fájl feltöltése megtörténik, de az adatkinyerés nem indul el automatikusan.
 
-1. **A „Bence Gatai” számlák nem kézzel felvitt beszállítói számlák**, hanem automatikus rendelés-bizonylatok (`order_receipt`), amelyek completed rendelésből jöttek létre.
-2. Ezek a számlák jelenleg **csak megtekinthetők**, ezért nincs rajtuk törlés gomb a számla szerkesztő ablakban.
-3. A rendszerben jelenleg ezek látszanak Bence néven:
-   - 3 automatikus rendelés-bizonylat
-   - ebből 2 fizetettként, 1 sztornóként szerepel
-4. A fényképes számlafeltöltés működése:
-   - fotó vagy fájl feltöltés az `invoices` privát storage bucketbe,
-   - képnél megjelenik az **AI kitöltés** gomb,
-   - az AI kinyeri: partner, adószám, számlaszám, dátumok, bruttó összeg, ÁFA, kategória,
-   - a kitöltött mezők sárgás jelölést kapnak,
-   - jelenleg viszont az AI által kinyert tételsorok **nem kerülnek automatikusan a tételek táblába**, ezt érdemes javítani.
-5. A számlák és partnerek össze vannak kötve, de nem elég erősen:
-   - partner kiválasztható számlánál,
-   - partner adatlapján látszanak kapcsolt számlák,
-   - viszont nincs elég gyors művelet: partnerhez kapcsolás, duplikált partner javítás, teszt számla kizárás, gyors státusz kezelés.
-6. Fontos technikai észrevétel: az audit log táblák és függvények megvannak, de a jelenlegi adatbázis állapot szerint **nincsenek bekötve audit triggerek**. Ez azt jelenti, hogy a „ki mikor mit módosított” pénzügyi naplózást külön javítani kell.
+A jelenlegi működés alapján:
+
+- a **fotó készítése** és a **képfájl feltöltése** technikailag támogatott,
+- az AI kitöltés csak akkor jelenik meg, ha a csatolt fájl képként felismerhető,
+- a **PDF / digitális számla felismerés nincs rendesen implementálva**,
+- feltöltés után nincs elég egyértelmű állapotjelzés arról, hogy:
+  - feltöltés folyamatban,
+  - adatkinyerés indul,
+  - adatkinyerés kész,
+  - mit töltött ki az AI,
+  - mit hagyott üresen bizonytalanság miatt.
+
+Ezt javítjuk.
 
 ---
 
-## 1. Teszt számlák és teszt rendelések kezelése
+## Új cél
 
-Nem simán vakon törölném az automatikus rendelés-bizonylatokat, mert ezek rendelésből keletkeztek. Biztonságosabb és átláthatóbb megoldás:
-
-### Új működés
-
-A számláknál legyen egy külön jelölés:
+A számlafeltöltés úgy működjön, ahogy egy admin várná:
 
 ```text
-Teszt / belső próba
-```
-
-A tesztként jelölt számla:
-
-- alapból nem számít bele az összesítőkbe,
-- nem számít bele ÁFA exportba,
-- nem számít bele bevétel/költség eredménybe,
-- külön szűrővel visszanézhető,
-- audit naplóban látszik, ki jelölte tesztnek.
-
-### Bence Gatai rekordok
-
-A mostani Bence Gatai automatikus bizonylatokra első körben ezt alkalmaznám:
-
-```text
-Tesztként jelölés + pénzügyi összesítőkből kizárás
-```
-
-Ha később valóban végleges törlés kell, azt csak owner/főadmin műveletként érdemes engedni.
-
-### UI
-
-Számla listán:
-
-```text
-Bence Gatai
-Rendelés-bizonylat · Teszt
-Nem számít bele a pénzügyi összesítőkbe
-```
-
-Szűrő:
-
-```text
-[ ] Teszt rekordok mutatása
+Fájl kiválasztása / Fotó készítése
+→ fájl feltöltése
+→ AI adatkinyerés automatikusan elindul
+→ látható feldolgozási állapot
+→ AI csak a biztos mezőket tölti ki
+→ bizonytalan mezők üresen maradnak
+→ admin manuálisan ellenőrzi és menti
 ```
 
 ---
 
-## 2. Számlák oldal egyszerűsítése
+## 1. Automatikus AI feldolgozás feltöltés után
 
-A jelenlegi számla lista működik, de gyorsabban értelmezhetővé tenném.
+A `Fájl kiválasztása` vagy `Fotó készítése` után ne kelljen külön keresni az AI gombot.
 
-### Új felső áttekintés
+Új működés:
 
-A számlák tetejére kerülne egy érthetőbb pénzügyi blokk:
+1. Admin kiválaszt egy fájlt.
+2. A rendszer feltölti az `invoices` bucketbe.
+3. Sikeres feltöltés után automatikusan elindítja az adatkinyerést az első feldolgozható fájlra.
+4. Közben egy jól látható státusz jelenik meg.
 
-```text
-Ez a hónap
-- Bejövő költség
-- Bevételek
-- Fizetésre vár
-- Lejárt
-- Eredmény
-```
-
-Plusz gyors chipek:
+Példa státusz:
 
 ```text
-Ma fizetendő
-Lejárt
-Fizetésre vár
-Nincs partnerhez kötve
-AI-val kitöltött
-Teszt rekordok
+1. Fájl feltöltése...
+2. Számla adatainak felismerése...
+3. AI ellenőrzés kész — kérlek nézd át mentés előtt.
 ```
 
-### Lista kártyák javítása
+A manuális `AI kitöltés újra` gomb megmarad, ha az admin újra akarja próbálni.
 
-Minden számlán jobban látszódjon:
+---
 
-- típus: bejövő / kimenő / rendelés-bizonylat,
-- partnerhez van-e kötve,
-- van-e csatolt fájl,
-- AI-val lett-e kitöltve,
-- fizetési határidő állapot,
-- teszt-e,
-- ki hozta létre / mikor módosult.
+## 2. Képfájlok támogatása
+
+Támogatott képfájlok:
+
+```text
+.jpg
+.jpeg
+.png
+.webp
+.heic / heif, ha a böngésző és eszköz támogatja
+```
+
+Képnél a rendszer ugyanúgy dolgozik, mint a fotónál:
+
+- feltöltött kép URL-je átmegy az edge functionbe,
+- Lovable AI képként elemzi,
+- strukturált adatokat ad vissza.
+
+Képnél ez működjön akkor is, ha nem telefonos kamera készült, hanem például:
+
+- letöltött számlakép,
+- emailből mentett kép,
+- beszállítótól kapott JPG/PNG.
+
+---
+
+## 3. Digitális PDF számla felismerése
+
+A PDF-eknél kétféle eset van, ezért kétlépcsős megoldást építünk.
+
+### A) Digitális / szöveges PDF
+
+Ez a leggyakoribb online számla.
 
 Példa:
 
+- Számlázz.hu PDF
+- Billingo PDF
+- NAV Online Számla PDF
+- emailben kapott beszállítói PDF
+
+Új működés:
+
+1. A frontend beolvassa a PDF szövegét.
+2. A kinyert szöveg megy az `extract-invoice-data` edge functionbe.
+3. Az edge function ugyanazzal az AI adatkinyerő logikával feldolgozza.
+4. A mezők kitöltődnek, ha elég biztosak.
+
+Ehhez valószínűleg beépítünk egy PDF-olvasó könyvtárat:
+
 ```text
-Metro Kft.                         -45 230 Ft
-Bejövő számla · Alapanyag · Partnerhez kötve
-Számlaszám: M-2026/0012 · Határidő: ápr. 25.
-Fájl: 1 kép · AI kitöltve · iroda@... módosította
+pdfjs-dist
+```
+
+### B) Szkennelt / képes PDF
+
+Ha a PDF-ben nincs kinyerhető szöveg, akkor:
+
+1. a rendszer megpróbálja az első oldalt képpé renderelni,
+2. azt elküldi képalapú AI felismerésre,
+3. ha így sem biztos, akkor nem találgat, hanem figyelmeztet.
+
+Üzenet például:
+
+```text
+Ez a PDF valószínűleg szkennelt kép. Megpróbáltam képként felismerni, de néhány adat bizonytalan maradt. Kérlek ellenőrizd vagy töltsd ki kézzel.
 ```
 
 ---
 
-## 3. Számla műveletek a listából
+## 4. Edge function bővítése: kép és szöveg mód
 
-A listaelemeken legyen 3 pontos gyorsmenü, hogy ne kelljen mindent megnyitni.
-
-### Új gyors műveletek
+A jelenlegi edge function csak ezt várja:
 
 ```text
-Megnyitás / szerkesztés
-Fizetve jelölés
-Fizetésre vár
-Partnerhez kapcsolás
-Tesztként jelölés
-Duplikálás
-Csatolmány megnyitása
-Törlés / sztornózás
+image_url
 ```
 
-### Törlés szabály
+Bővítem, hogy több bemenetet kezeljen:
 
-- kézzel felvitt számlát admin törölhet,
-- rendelésből automatikusan létrejött bizonylatnál inkább:
-  - sztornózás,
-  - tesztként jelölés,
-  - pénzügyből kizárás,
-- owner/főadmin kapna külön „végleges törlés” opciót, ha tényleg szükséges.
+```text
+image_url
+document_text
+file_name
+file_type
+```
+
+### Új működés az edge functionben
+
+```text
+Ha image_url van:
+  képalapú számlafelismerés
+
+Ha document_text van:
+  digitális PDF szöveges számlafelismerés
+
+Ha mindkettő van:
+  először szöveg, majd ha kevés adat jött ki, kép fallback
+```
+
+A prompt is módosul:
+
+- magyar számla / nyugta adatok felismerése,
+- digitális számla szövegből is,
+- csak biztos adatokat adjon vissza,
+- bizonytalan adatot hagyjon üresen,
+- minden mezőhöz opcionális biztossági jelzés.
 
 ---
 
-## 4. Partner-számla kapcsolat erősítése
+## 5. Nem találgatunk: bizonytalan mezők maradjanak üresek
 
-Most van partner választó, de a rendszer még engedi, hogy ugyanaz a beszállító szövegként szerepeljen partnerkapcsolat nélkül.
+A mostani AI hajlamos lehet „best effort” módon tippelni. Ezt megváltoztatjuk.
 
-### Javítások
-
-1. Számla mentéskor, ha van egyező partner név/adószám alapján:
-   - ajánlja fel az összekötést.
-2. Ha nincs partner:
-   - egy gombbal lehessen partnerként menteni.
-3. Partner adatlapján:
-   - kapcsolt számlák,
-   - összes költés,
-   - nyitott tartozás,
-   - utolsó számla dátuma,
-   - átlagos fizetési határidő.
-4. Partner listán:
-   - „van nyitott számla” jelzés,
-   - „lejárt tartozás” jelzés,
-   - összes számlaérték.
-
-### Példa
+Új szabály:
 
 ```text
-Tóth és Tóth Sütő Kft.
-3 számla · 42 120 Ft összesen · 1 fizetésre vár
+Ha egy mező nem egyértelmű, ne töltse ki.
+```
+
+Példák:
+
+- ha nem biztos a fizetési határidőben → `due_date` üres,
+- ha nem biztos az adószámban → `partner_tax_id` üres,
+- ha több összeg is van és nem egyértelmű a végösszeg → `gross_amount` üres,
+- ha a számlaszám nem biztos → `invoice_number` üres.
+
+Az AI összefoglalóban látszódjon:
+
+```text
+Kitöltve: Partner, Számlaszám, Bruttó összeg
+Kézi ellenőrzés kell: Fizetési határidő, Adószám
 ```
 
 ---
 
-## 5. AI számlafelismerés javítása
+## 6. Jobb felhasználói visszajelzés a feltöltőben
 
-A jelenlegi fényképes feltöltés jó alap, de lehet sokkal felhasználóbarátabb.
+A csatolt fájlok résznél legyen egyértelmű folyamatjelzés.
 
-### Jelenlegi folyamat
-
-```text
-Fotó készítése / fájl kiválasztása
-→ feltöltés privát storage-ba
-→ AI kitöltés
-→ mezők automatikus kitöltése
-→ admin ellenőrzi
-→ mentés
-```
-
-### Javítandó pontok
-
-#### 1. Tételsorok automatikus betöltése
-
-Az edge function már kér tételsorokat, de a frontend jelenleg nem tölti be őket a számla tétel táblába.
-
-Ezt javítanám:
+### Feltöltés közben
 
 ```text
-AI felismeri:
-- Liszt 10 kg
-- Tej 12 l
-- Tojás 30 db
-
-A számla tételek automatikusan megjelennek szerkeszthető sorokként.
+Fájl feltöltése...
 ```
 
-#### 2. AI ellenőrző panel
+### AI feldolgozás közben
 
-AI kitöltés után ne csak mezők változzanak, hanem legyen egy összefoglaló:
+```text
+Adatkinyerés folyamatban...
+Ez eltarthat pár másodpercig.
+```
+
+### Siker esetén
+
+```text
+AI felismerés kész.
+6 mezőt kitöltöttem, 2 mező kézi ellenőrzést igényel.
+```
+
+### Részleges siker esetén
+
+```text
+Részleges felismerés.
+A bizonytalan adatokat üresen hagytam.
+```
+
+### Hiba esetén
+
+```text
+Nem sikerült adatot kinyerni ebből a fájlból.
+Próbálj jobb minőségű képet, vagy töltsd ki kézzel.
+```
+
+---
+
+## 7. AI összefoglaló panel javítása
+
+A mostani egyszerű AI panelt bővítjük.
+
+Új panel:
 
 ```text
 AI felismerés eredménye
-Biztosság: közepes
-Partner: Tóth és Tóth Sütő Kft.
-Összeg: 6 543 Ft
-ÁFA: 27%
-Tételek: 4 db
 
-Kérlek ellenőrizd mentés előtt.
+Állapot: Kész / Részleges / Sikertelen
+Forrás: PDF szöveg / Kép / Szkennelt PDF képként
+Biztosság: magas / közepes / alacsony
+
+Kitöltött mezők:
+✓ Partner neve
+✓ Számla száma
+✓ Kiállítás dátuma
+✓ Bruttó összeg
+
+Kézi kitöltés javasolt:
+! Fizetési határidő
+! Adószám
+! Tételsorok
 ```
 
-#### 3. PDF támogatás tisztázása
+Ez sokkal érthetőbb lesz, mint az, hogy „Fájl 1” megjelenik, de semmi nem történik.
 
-Most a gomb főleg képre épül. Ha PDF-et töltenek fel, azt külön kell kezelni.
+---
 
-Javaslat:
+## 8. Fájl lista használhatóbbá tétele
 
-- képnél: jelenlegi AI kép OCR,
-- PDF-nél: vagy első oldal feldolgozása, vagy külön üzenet:
-  - „PDF felismerés következő fejlesztésben”
-- UI-ban egyértelmű jelzés:
-  - „AI kitöltés jelenleg fotózott számláknál működik legjobban.”
+A csatolt fájlok listájában ne csak „Fájl 1” legyen.
 
-#### 4. Jobb hibaüzenetek
-
-Most általános hiba van. Legyenek konkrétabbak:
+Legyen látható:
 
 ```text
-Nem találtam számla képet.
-A kép túl homályos.
-Nem olvasható az összeg.
-AI kredit elfogyott.
-Próbáld újra közelebbi fotóval.
+szamla-metro-2026.pdf
+PDF · feltöltve · AI feldolgozva
+
+vagy
+
+IMG_1234.jpg
+Kép · feltöltve · AI feldolgozás kész
 ```
 
-#### 5. Mobil fotózás útmutató
+Ehhez a feltöltött fájlokról eltárolunk ideiglenes UI metaadatot:
 
-A fotó gomb fölé/tooltipbe:
+- eredeti fájlnév,
+- fájltípus,
+- feldolgozás állapota,
+- AI eredmény állapota.
+
+A számlába továbbra is a `file_urls` kerül mentésre, tehát nem kell nagy adatbázis-átalakítás első körben.
+
+---
+
+## 9. PDF / kép elfogadási szöveg javítása
+
+A feltöltő alatt a mostani szöveg félrevezető, mert azt sugallja, hogy csak fotón működik.
+
+Új szöveg:
 
 ```text
-Tipp: fotózd felülről, jó fényben, teljes számla látszódjon.
+Tölthetsz fel fotót, képfájlt vagy digitális PDF számlát is.
+Az AI automatikusan megpróbálja kinyerni az adatokat.
+A bizonytalan mezőket üresen hagyja, ezeket kézzel tudod kitölteni.
+```
+
+Fotó tipp külön:
+
+```text
+Fotónál: jó fényben, felülről, teljes számla látszódjon.
 ```
 
 ---
 
-## 6. Tooltipek és segítség minden fontos pénzügyi ponton
+## 10. Tételsorok kezelése PDF-ből is
 
-A felhasználóbarátság miatt a pénzügyi modulban egységes tooltipeket tennék:
-
-### Számlák oldal
-
-- Bejövő számla
-- Kimenő számla
-- Rendelés-bizonylat
-- Fizetésre vár
-- Lejárt
-- Sztornó
-- Teszt rekord
-- ÁFA export
-- Havi export
-- Negyedéves export
-
-### Számla szerkesztő
-
-- Partner kiválasztása
-- Partner kézi megadás
-- Adószám
-- Számlaszám
-- Kiállítás dátuma
-- Fizetési határidő
-- Bruttó összeg
-- ÁFA kulcs
-- Speciális ÁFA
-- AI kitöltés
-- Csatolt fájlok
-- Fizetve mentés
-
-### Partnerek
-
-- Aktív / archivált partner
-- Fizetési feltétel
-- Kapcsolt számlák
-- Partner archiválás vs törlés
-
----
-
-## 7. Pénzügyi naplózás javítása
-
-Mivel az audit log struktúra már megvan, de a triggerek nincsenek aktívan bekötve, ezt javítani kell.
-
-### Bekötendő táblák
+Ha az AI felismeri a tételsorokat PDF-ből vagy képből, akkor ugyanúgy bekerülnek a szerkeszthető tételsor táblába:
 
 ```text
-invoices
-invoice_items
-recurring_invoices
-partners
-documents
-document_activity
-daily_offers
-daily_offer_items
-menu_items
-settings
+Liszt 10 kg
+Tej 12 l
+Tojás 30 db
 ```
 
-Pénzügyi fókuszban első körben:
+Ha a tételsorok bizonytalanok, akkor nem töltjük be őket automatikusan, hanem az AI panel jelzi:
 
 ```text
-invoices
-invoice_items
-recurring_invoices
-partners
-```
-
-### Mit lássunk?
-
-```text
-Ma 10:42 — iroda@kiscsibeetterem.hu fizetve jelölte: Metro Kft. / M-2026-0012
-Tegnap 15:20 — info@kiscsibeetterem.hu új partnert hozott létre: Globál Pack Kft.
-Tegnap 13:05 — gataibence@gmail.com tesztként jelölte: Bence Gatai / Y43630
+Tételsorok nem voltak elég biztosan felismerhetők.
 ```
 
 ---
 
-## 8. Gyors fejlesztések, amik sokat javítanak
+## 11. Changelog és kézikönyv frissítés
 
-### Rövid távon beépíthető funkciók
+Az admin kézikönyv pénzügyi részébe bekerül:
 
-1. **Tesztként jelölés**
-   - Bence tesztek és későbbi próbaadatok kulturált kezelése.
+- fotózott számla felismerése,
+- feltöltött képfájl felismerése,
+- digitális PDF számla felismerése,
+- mikor marad üresen egy mező,
+- mit jelent a részleges AI felismerés.
 
-2. **Partner nélküli számlák szűrő**
-   - gyorsan látszik, mit kell rendbe tenni.
+A „Mi változott?” részbe új bejegyzés:
 
-3. **AI-val kitöltött számlák jelzése**
-   - könnyebb ellenőrizni.
-
-4. **AI tételsorok automatikus betöltése**
-   - kevesebb kézi munka.
-
-5. **Lista 3 pontos gyorsmenü**
-   - státusz, partnerkapcsolás, teszt jelölés.
-
-6. **Fizetési határidő alapján gyors szűrők**
-   - „ma esedékes”, „lejárt”, „7 napon belül”.
-
-7. **Partner adatlap pénzügyi összefoglaló**
-   - mennyit költöttünk nála, van-e tartozás.
-
-8. **Changelog + kézikönyv frissítés**
-   - a pénzügyi modul használata legyen leírva érthetően.
+```text
+ÚJ — PDF és képfájl alapú számlafelismerés
+A számlák feltöltése után automatikusan elindul az AI adatkinyerés. Digitális PDF-ekből és képekből is próbál adatot kinyerni, a bizonytalan mezőket pedig üresen hagyja.
+```
 
 ---
 
-## 9. Érintett fájlok
+## Érintett fájlok
 
 ```text
-src/pages/admin/Invoices.tsx
-src/components/admin/InvoiceFilters.tsx
-src/components/admin/InvoiceListItem.tsx
-src/components/admin/InvoiceFormDialog.tsx
 src/components/admin/InvoiceFileUpload.tsx
-src/components/admin/InvoiceSummaryCards.tsx
-src/components/admin/PartnerSelector.tsx
-src/pages/admin/Partners.tsx
-src/components/admin/PartnerDetailDialog.tsx
-src/hooks/useInvoices.ts
-src/hooks/usePartners.ts
+src/components/admin/InvoiceFormDialog.tsx
+supabase/functions/extract-invoice-data/index.ts
 src/data/adminHelpContent.ts
 src/data/adminChangelog.ts
-supabase/functions/extract-invoice-data/index.ts
-supabase/migrations/...
+package.json
+package-lock.json
 ```
 
----
-
-## 10. Adatbázis módosítások
-
-### Számlákhoz új mezők
+Lehetséges új segédfájl:
 
 ```text
-invoices.is_test boolean default false
-invoices.exclude_from_reports boolean default false
-invoices.ai_extracted boolean default false
-invoices.ai_confidence text nullable
-invoices.ai_reviewed_at timestamp nullable
-invoices.ai_reviewed_by uuid nullable
+src/lib/pdfInvoiceExtract.ts
 ```
-
-### Partner kapcsolat javítás
-
-Meglévő `partner_id` mezőt használjuk tovább, nem kell új partner kapcsolat tábla.
-
-### Audit triggerek
-
-A meglévő `audit_log_trigger()` függvényt ténylegesen bekötjük a pénzügyi táblákra.
 
 ---
 
-## 11. Megvalósítási sorrend
+## Megvalósítási sorrend
 
-1. **Adatbázis**
-   - `is_test`, `exclude_from_reports`, AI mezők hozzáadása számlákhoz.
-   - audit triggerek bekötése pénzügyi táblákra.
+1. **Feltöltő UI javítása**
+   - fájlnév, típus, feldolgozási állapot,
+   - automatikus AI indítás feltöltés után,
+   - manuális „AI újrapróbálás” gomb.
 
-2. **Bence teszt rekordok kezelése**
-   - Bence Gatai automatikus bizonylatok tesztként jelölhetők legyenek.
-   - Alapból ne számítsanak bele pénzügyi összesítőkbe, ha tesztek.
+2. **PDF szövegkinyerés**
+   - `pdfjs-dist` beépítése,
+   - digitális PDF szövegének kinyerése,
+   - szkennelt PDF fallback képként.
 
-3. **Számla lista és szűrők**
-   - teszt rekord szűrő,
-   - partner nélküli szűrő,
-   - lejárt / ma esedékes / 7 napon belül chipek,
-   - 3 pontos gyorsmenü.
+3. **Edge function bővítés**
+   - `image_url` mellett `document_text` támogatás,
+   - új prompt: bizonytalan mezők maradjanak üresek,
+   - strukturáltabb válasz: kitöltött / bizonytalan mezők.
 
-4. **Számla szerkesztő**
-   - tooltipek bővítése,
-   - tesztként jelölés kapcsoló,
-   - partnerhez kapcsolás egyértelműsítése,
-   - AI kitöltés ellenőrző panel.
+4. **InvoiceFormDialog kitöltési logika**
+   - csak a biztos mezők kerüljenek be,
+   - ne írja felül a már kézzel kitöltött mezőt,
+   - AI összefoglaló panel bővítése.
 
-5. **AI adatkinyerés**
-   - tételsorok automatikus betöltése,
-   - jobb hibaüzenetek,
-   - PDF/fotó működés egyértelmű jelzése.
+5. **Tételsorok és státuszok**
+   - biztos tételsorok automatikus betöltése,
+   - bizonytalan tételeknél kézi ellenőrzési jelzés.
 
-6. **Partner oldal**
-   - pénzügyi összefoglaló partnerenként,
-   - nyitott/leárt számlák jelzése,
-   - partnerhez nem kötött számlák összekapcsolási lehetősége.
-
-7. **Kézikönyv és changelog**
-   - pénzügyi modul magyarázat,
-   - AI számlafelismerés használati útmutató,
-   - teszt számlák kezelése,
-   - „Mi változott?” új bejegyzés.
-
+6. **Kézikönyv + changelog**
+   - pénzügyi AI felismerés leírása,
+   - PDF támogatás dokumentálása,
+   - új „Mi változott?” bejegyzés.
