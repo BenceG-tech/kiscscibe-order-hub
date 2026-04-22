@@ -274,6 +274,7 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
 
   const handleExtracted = (data: ExtractedInvoiceData) => {
     const filled = new Set<string>();
+    const extractedVatRate = data.vat_rate ?? parseInt(form.vat_rate) || 27;
 
     setForm((f) => {
       const next = { ...f };
@@ -317,10 +318,29 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
       return next;
     });
 
+    if (data.line_items?.length) {
+      setLineItems(data.line_items.map((item) => {
+        const quantity = Number(item.quantity || 1);
+        const lineTotal = Number(item.line_total || 0);
+        const unitPrice = Number(item.unit_price || (lineTotal && quantity ? Math.round(lineTotal / quantity / (1 + extractedVatRate / 100)) : 0));
+        return {
+          tempId: newTempId(),
+          description: item.description,
+          quantity,
+          unit: item.unit || "db",
+          unit_price: unitPrice,
+          vat_rate: extractedVatRate,
+          line_total: lineTotal || calcLineTotal(quantity, unitPrice, extractedVatRate),
+        };
+      }));
+      filled.add("line_items");
+    }
+
     setAiFilledFields(filled);
+    setAiSummary(data);
 
     if (filled.size > 0) {
-      toast.success("AI kitöltötte a számla adatait — kérlek ellenőrizd!");
+      toast.success(`AI kitöltötte a számla adatait${data.line_items?.length ? ` és ${data.line_items.length} tételt` : ""} — kérlek ellenőrizd!`);
     } else {
       toast.info("Az AI nem talált új kitöltendő mezőt.");
     }
@@ -348,6 +368,11 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
       vat_rate: vatRate,
       notes: form.notes || null,
       file_urls: form.file_urls,
+      is_test: form.is_test,
+      exclude_from_reports: form.is_test ? true : form.exclude_from_reports,
+      ai_extracted: !!aiSummary || invoice?.ai_extracted || false,
+      ai_confidence: aiSummary?.confidence || invoice?.ai_confidence || null,
+      ai_reviewed_at: aiSummary ? new Date().toISOString() : invoice?.ai_reviewed_at || null,
     };
 
     const saveItems = async (invoiceId: string) => {
