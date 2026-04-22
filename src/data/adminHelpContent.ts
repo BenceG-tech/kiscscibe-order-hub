@@ -71,6 +71,7 @@ export const HELP_PAGE_GROUPS: HelpPageGroup[] = [
   { id: "about-faq", tabGroup: "content", title: "Rólunk & GYIK", icon: "ℹ️", route: "/admin/about", description: "Rólunk oldal, GYIK, hirdetmény" },
   { id: "legal", tabGroup: "content", title: "Jogi oldalak", icon: "📜", route: "/admin/legal", description: "Impresszum, ÁSZF, Adatvédelem" },
   { id: "documents", tabGroup: "content", title: "Dokumentumok", icon: "📁", route: "/admin/documents", description: "Drive — szerződések, NAV iratok" },
+  { id: "activity-log", tabGroup: "content", title: "Módosítási napló", icon: "🧾", route: "/admin/activity", description: "Ki, mikor, mit módosított" },
   { id: "pwa-push", tabGroup: "content", title: "Mobil app & értesítések", icon: "📱", description: "PWA telepítés, push értesítések" },
   { id: "troubleshoot", tabGroup: "content", title: "Mit tegyek ha…", icon: "🆘", description: "Hibakeresés, gyakori problémák" },
 ];
@@ -105,6 +106,7 @@ export const QUICK_MAP: QuickMapEntry[] = [
   { icon: "💰", title: "Számlák", route: "/admin/invoices", description: "Beszállítói számlák AI felismeréssel, ismétlődő számlák, fizetési emlékeztetők." },
   { icon: "🏢", title: "Partnerek", route: "/admin/partners", description: "Beszállítók adatai — automatikusan kapcsolódnak a számlákhoz." },
   { icon: "📁", title: "Dokumentumok", route: "/admin/documents", description: "Drive-szerű dokumentumtár — szerződések, NAV iratok, verziózva." },
+  { icon: "🧾", title: "Napló", route: "/admin/activity", description: "Minden fontos admin módosítás visszakereshető: ki, mikor, mit változtatott." },
   { icon: "📸", title: "Galéria", route: "/admin/gallery", description: "Ételek és Éttermünk képek a publikus galériához." },
   { icon: "ℹ️", title: "Rólunk", route: "/admin/about", description: "A Rólunk oldal tartalma — szöveg, számok, képek." },
   { icon: "❓", title: "GYIK", route: "/admin/faq", description: "Gyakori kérdések szerkesztése a publikus oldalon." },
