@@ -74,6 +74,8 @@ const defaultForm = {
   notes: "",
   file_urls: [] as string[],
   status: "draft" as string,
+  is_test: false,
+  exclude_from_reports: false,
 };
 
 const aiHighlight = "bg-yellow-50 dark:bg-yellow-950/30 border-yellow-300";
@@ -113,6 +115,7 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
   const [paymentDate, setPaymentDate] = useState<Date>(new Date());
   const [showPaymentPicker, setShowPaymentPicker] = useState(false);
   const [lineItems, setLineItems] = useState<LocalLineItem[]>([]);
+  const [aiSummary, setAiSummary] = useState<ExtractedInvoiceData | null>(null);
 
   const create = useCreateInvoice();
   const update = useUpdateInvoice();
@@ -157,6 +160,8 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
         notes: invoice.notes || "",
         file_urls: invoice.file_urls || [],
         status: invoice.status,
+        is_test: invoice.is_test || false,
+        exclude_from_reports: invoice.exclude_from_reports || false,
       });
       setSpecialVat(null);
       setSelectedPartnerId((invoice as any).partner_id || null);
@@ -167,6 +172,7 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
       setSelectedPartnerId(null);
     }
     setAiFilledFields(new Set());
+    setAiSummary(null);
     setPaymentDate(new Date());
   }, [invoice, open]);
 
