@@ -38,7 +38,7 @@ serve(async (req) => {
               { type: "image_url", image_url: { url: image_url } },
               {
                 type: "text",
-                text: "Extract all data from this Hungarian invoice/receipt image. Look for: partner name, tax ID (adószám), invoice number (számlaszám), issue date (kelt/kiállítás), due date (fizetési határidő), gross amount (bruttó összeg in HUF), VAT rate, and categorize it. Also extract line items if visible.",
+                text: "Extract all data from this Hungarian invoice/receipt image. Look for: partner name, tax ID (adószám), invoice number (számlaszám), issue date (kelt/kiállítás), due date (fizetési határidő), gross amount (bruttó összeg in HUF), VAT rate, and categorize it. Extract line items if visible, including unit where possible. Add confidence as magas, közepes, or alacsony. If the photo is blurry or key amounts are unreadable, use alacsony confidence and still return best-effort data.",
               },
             ],
           },
@@ -64,6 +64,7 @@ serve(async (req) => {
                     enum: ["ingredients", "utility", "rent", "equipment", "salary", "tax", "other"],
                     description: "Best guess category for this expense",
                   },
+                  confidence: { type: "string", enum: ["magas", "közepes", "alacsony"], description: "How confident the extraction is" },
                   line_items: {
                     type: "array",
                     items: {
@@ -71,6 +72,7 @@ serve(async (req) => {
                       properties: {
                         description: { type: "string" },
                         quantity: { type: "number" },
+                        unit: { type: "string", description: "Unit like db, kg, l, csomag if visible" },
                         unit_price: { type: "number" },
                         line_total: { type: "number" },
                       },
@@ -79,7 +81,7 @@ serve(async (req) => {
                     description: "Individual line items from the invoice",
                   },
                 },
-                required: ["partner_name", "partner_tax_id", "invoice_number", "issue_date", "due_date", "gross_amount", "vat_rate", "category", "line_items"],
+                required: ["partner_name", "partner_tax_id", "invoice_number", "issue_date", "due_date", "gross_amount", "vat_rate", "category", "confidence", "line_items"],
               },
             },
           },
