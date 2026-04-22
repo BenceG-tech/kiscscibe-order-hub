@@ -6,7 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Bot, FileText, Image as ImageIcon, ExternalLink, AlertTriangle, CalendarIcon, FlaskConical, Link2, Copy, Ban } from "lucide-react";
-import { useUpdateInvoice, type Invoice } from "@/hooks/useInvoices";
+import { useCreateInvoice, useUpdateInvoice, type Invoice } from "@/hooks/useInvoices";
 import { differenceInDays } from "date-fns";
 import { format } from "date-fns";
 import { hu } from "date-fns/locale";
@@ -45,6 +45,7 @@ const InvoiceListItem = ({ invoice, onClick }: Props) => {
   const isOrderReceipt = invoice.type === "order_receipt";
   const status = STATUS_MAP[invoice.status] || STATUS_MAP.draft;
   const update = useUpdateInvoice();
+  const create = useCreateInvoice();
 
   const [showPaymentPicker, setShowPaymentPicker] = useState(false);
   const [paymentDate, setPaymentDate] = useState<Date>(new Date());
@@ -72,6 +73,16 @@ const InvoiceListItem = ({ invoice, onClick }: Props) => {
 
   const quickUpdate = (updates: Partial<Invoice>) => {
     update.mutate({ id: invoice.id, ...updates } as any);
+  };
+
+  const duplicateAsDraft = () => {
+    const { id, created_at, updated_at, order_id, ...copy } = invoice;
+    create.mutate({
+      ...copy,
+      status: "draft",
+      order_id: null,
+      invoice_number: invoice.invoice_number ? `${invoice.invoice_number}-másolat` : null,
+    } as any);
   };
 
   // Get first image thumbnail
@@ -237,7 +248,7 @@ const InvoiceListItem = ({ invoice, onClick }: Props) => {
               <Ban className="h-4 w-4 mr-2" />
               Sztornózás
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => quickUpdate({ invoice_number: `${invoice.invoice_number || "másolat"}-copy`, status: "draft" } as any)}>
+            <DropdownMenuItem onClick={duplicateAsDraft}>
               <Copy className="h-4 w-4 mr-2" />
               Duplikálás vázlatként
             </DropdownMenuItem>
