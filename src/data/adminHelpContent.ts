@@ -648,11 +648,13 @@ export const HELP_CATEGORIES: HelpCategory[] = [
         routes: ["/admin/documents"],
         whatItDoes: "A Drive-szerű felület — szerződések, NAV iratok, képek, bármi tárolható, verziózva.",
         howToUse: [
-          "Mappákba szervezheted a dokumentumokat.",
-          "Címkékkel keresheted (pl. 'NAV', 'szerződés', 'foto').",
+          "Feltöltés előtt válassz mappát és címkéket, így a fájl rögtön rendszerezve kerül be.",
+          "A dokumentumkártya 3 pontos menüjéből gyorsan áthelyezheted mappába, hozzáadhatsz/levehetsz címkéket, csillagozhatod vagy megnyithatod a részleteket.",
+          "Több kijelölt fájlnál egyszerre tudsz mappát váltani, címkét hozzáadni/levenni, csillagozni vagy törölni.",
+          "A kereső mellett rendezhetsz legújabb, név vagy méret szerint.",
           "Új verzió feltöltésekor a régi megmarad — bármikor visszaállítható.",
         ],
-        whyItHelps: "Egy helyen minden papír — sose vesz el szerződés vagy számla.",
+        whyItHelps: "Egy helyen minden papír — a gyors mappázás és címkézés miatt az asszisztens is könnyen rendben tudja tartani.",
       },
       {
         id: "activity-log",

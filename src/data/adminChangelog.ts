@@ -13,6 +13,15 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-04-22",
+    title: "Dokumentumtár gyors műveletek",
+    description:
+      "A Dokumentumok rész összetettebb és felhasználóbarátabb lett: mappázás, címkézés, csillagozás közvetlenül a 3 pontos menüből, feltöltés előtti mappa/címke választás, tömeges címke műveletek és rendezés.",
+    type: "improved",
+    tabGroup: "content",
+    helpTopicId: "doc-vault",
+  },
+  {
+    date: "2026-04-22",
     title: "Admin módosítási napló és kézikönyv jegyzetek",
     description:
       "Új Napló oldal készült: látható, ki mikor mit módosított a dokumentumokban, étlapon, napi ajánlatban, számlákban és partnereknél. A kézikönyv elején új jegyzet blokk is van, ahol használat közben lehet észrevételt írni.",

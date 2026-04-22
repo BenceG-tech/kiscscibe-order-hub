@@ -706,7 +706,7 @@ const ChangelogView = ({
       <h3 className="text-base font-bold">Mi változott a rendszerben?</h3>
     </div>
     <p className="text-sm text-muted-foreground">
-      Az utolsó frissítések — kattints egy bejegyzésre a részletes súgóhoz.
+      Ez a lista akkor frissül, amikor új fejlesztés vagy javítás kerül az oldalba. Az új bejegyzések 7 napig számítanak frissnek; megnyitás után a piros jelzés eltűnik ennél a böngészőnél.
     </p>
 
     {recent.length > 0 && (
