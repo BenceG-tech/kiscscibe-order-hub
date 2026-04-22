@@ -654,6 +654,31 @@ export const HELP_CATEGORIES: HelpCategory[] = [
         ],
         whyItHelps: "Egy helyen minden papír — sose vesz el szerződés vagy számla.",
       },
+      {
+        id: "activity-log",
+        pageGroup: "activity-log",
+        title: "Módosítási napló",
+        routes: ["/admin/activity"],
+        whatItDoes: "Megmutatja, ki mikor mit módosított a fontos admin területeken: dokumentumok, étlap, napi ajánlat, számlák, partnerek és tartalmak.",
+        howToUse: [
+          "Nyisd meg a Napló oldalt az admin navigációból.",
+          "Szűrj modulra, felhasználóra, dátumra vagy műveletre.",
+          "Kattints a szem ikonra, ha látni szeretnéd az előtte/utána mezőváltozásokat.",
+        ],
+        whyItHelps: "Ha valami elállítódik, gyorsan visszakereshető, ki és mikor változtatott rajta.",
+      },
+      {
+        id: "admin-notes",
+        pageGroup: "activity-log",
+        title: "Kézikönyv jegyzetek és észrevételek",
+        whatItDoes: "A kézikönyv elején gyors jegyzetet lehet írni arról, mi nem egyértelmű, hibás vagy hiányzik.",
+        howToUse: [
+          "Nyisd meg a jobb alsó súgó gombbal a kézikönyvet.",
+          "A Jegyzetek / észrevételek blokkban kattints az Új gombra.",
+          "Írd le röviden a problémát; a rendszer automatikusan menti az aktuális admin oldal kontextusát.",
+        ],
+        whyItHelps: "A tulaj és az asszisztens munka közben tud visszajelzést adni, amit később célzottan lehet javítani.",
+      },
     ],
   },
   {
