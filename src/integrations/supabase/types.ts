@@ -14,6 +14,135 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_log: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_name: string | null
+          actor_user_id: string | null
+          after_data: Json | null
+          before_data: Json | null
+          changed_fields: string[]
+          created_at: string
+          entity_id: string | null
+          entity_label: string | null
+          entity_table: string
+          id: string
+          module: string
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_name?: string | null
+          actor_user_id?: string | null
+          after_data?: Json | null
+          before_data?: Json | null
+          changed_fields?: string[]
+          created_at?: string
+          entity_id?: string | null
+          entity_label?: string | null
+          entity_table: string
+          id?: string
+          module: string
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_name?: string | null
+          actor_user_id?: string | null
+          after_data?: Json | null
+          before_data?: Json | null
+          changed_fields?: string[]
+          created_at?: string
+          entity_id?: string | null
+          entity_label?: string | null
+          entity_table?: string
+          id?: string
+          module?: string
+        }
+        Relationships: []
+      }
+      admin_email_allowlist: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          is_active: boolean
+          label: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      admin_notes: {
+        Row: {
+          body: string
+          context_label: string | null
+          created_at: string
+          created_by: string | null
+          created_by_email: string | null
+          created_by_name: string | null
+          id: string
+          page_route: string | null
+          priority: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          context_label?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_email?: string | null
+          created_by_name?: string | null
+          id?: string
+          page_route?: string | null
+          priority?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          context_label?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_email?: string | null
+          created_by_name?: string | null
+          id?: string
+          page_route?: string | null
+          priority?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       blackout_dates: {
         Row: {
           created_at: string | null
@@ -1406,7 +1535,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      audit_changed_fields: {
+        Args: { after_row: Json; before_row: Json }
+        Returns: string[]
+      }
+      audit_entity_label: {
+        Args: { row_data: Json; table_name: string }
+        Returns: string
+      }
+      audit_module_for_table: { Args: { table_name: string }; Returns: string }
       bootstrap_first_admin: { Args: never; Returns: boolean }
+      claim_admin_access: { Args: never; Returns: boolean }
       gen_order_code: { Args: never; Returns: string }
       get_customer_order: {
         Args: { customer_phone: string; order_code: string }
@@ -1480,6 +1619,7 @@ export type Database = {
       is_admin: { Args: { check_user_id?: string }; Returns: boolean }
       is_admin_or_staff: { Args: { _user_id?: string }; Returns: boolean }
       is_date_in_past: { Args: { check_date: string }; Returns: boolean }
+      is_owner: { Args: { check_user_id?: string }; Returns: boolean }
       is_staff: { Args: { _user_id?: string }; Returns: boolean }
       is_weekend: { Args: { check_date: string }; Returns: boolean }
       update_capacity_slot: {
