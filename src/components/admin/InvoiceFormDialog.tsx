@@ -477,6 +477,8 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
           {!isReadonly && (
             <PartnerSelector
               value={selectedPartnerId}
+              suggestedName={form.partner_name}
+              suggestedTaxNumber={form.partner_tax_id}
               onSelect={(partner: Partner | null) => {
                 setSelectedPartnerId(partner?.id || null);
                 if (partner) {
@@ -485,6 +487,19 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
                 }
               }}
             />
+          )}
+
+          {!isReadonly && (
+            <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/30 p-3">
+              <div className="space-y-0.5">
+                <Label className="flex items-center gap-1">
+                  Teszt / belső próba
+                  <InfoTip text="Tesztként jelölve nem számít bele az összesítőkbe és exportokba. Jó próbarendelésekhez vagy hibás teszt számlákhoz." side="right" />
+                </Label>
+                <p className="text-xs text-muted-foreground">Automatikusan kizárásra kerül a pénzügyi riportokból.</p>
+              </div>
+              <Checkbox checked={form.is_test} onCheckedChange={(v) => set("is_test", !!v)} />
+            </div>
           )}
 
           {/* Partner name (manual fallback) */}
@@ -804,6 +819,18 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
                 onChange={(urls) => set("file_urls", urls)}
                 onExtracted={handleExtracted}
               />
+              {aiSummary && (
+                <div className="rounded-lg border bg-muted/30 p-3 text-sm space-y-1">
+                  <div className="font-medium">AI felismerés eredménye</div>
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                    <span>Biztosság: {aiSummary.confidence || "közepes"}</span>
+                    <span>Tételek: {aiSummary.line_items?.length || 0} db</span>
+                    <span className="truncate">Partner: {aiSummary.partner_name || "—"}</span>
+                    <span>Összeg: {aiSummary.gross_amount?.toLocaleString("hu-HU") || "—"} Ft</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Kérlek ellenőrizd mentés előtt, különösen az összeget, ÁFA kulcsot és dátumokat.</p>
+                </div>
+              )}
             </div>
           )}
 
