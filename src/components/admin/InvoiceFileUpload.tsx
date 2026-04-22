@@ -13,7 +13,8 @@ export interface ExtractedInvoiceData {
   gross_amount?: number;
   vat_rate?: number;
   category?: string;
-  line_items?: { description: string; quantity?: number; unit_price?: number; line_total?: number }[];
+  confidence?: "magas" | "közepes" | "alacsony";
+  line_items?: { description: string; quantity?: number; unit?: string; unit_price?: number; line_total?: number }[];
 }
 
 interface Props {
@@ -71,7 +72,7 @@ const InvoiceFileUpload = ({ fileUrls, onChange, onExtracted }: Props) => {
   const handleExtract = async () => {
     const imageUrl = fileUrls.find((u) => isImageUrl(u));
     if (!imageUrl) {
-      toast.error("Nincs kép a csatolt fájlok között.");
+      toast.error("AI kitöltéshez fotózott számlaképre van szükség. PDF felismerés későbbi fejlesztésben érkezik.");
       return;
     }
 
@@ -89,13 +90,13 @@ const InvoiceFileUpload = ({ fileUrls, onChange, onExtracted }: Props) => {
       if (data?.success && data?.data) {
         onExtracted?.(data.data);
       } else {
-        toast.error(data?.error || "Nem sikerült számla adatokat felismerni");
+        toast.error(data?.error || "Nem találtam elég olvasható számla adatot. Próbáld újra közelebbi, világosabb fotóval.");
       }
     } catch (err: any) {
       if (err?.name === "AbortError") {
         toast.error("Időtúllépés — próbáld újra.");
       } else {
-        toast.error("Nem sikerült számla adatokat felismerni");
+        toast.error(err?.message || "Nem sikerült számla adatokat felismerni. Ellenőrizd, hogy a teljes számla látszik-e a képen.");
       }
       console.error("Extract error:", err);
     } finally {
@@ -145,6 +146,10 @@ const InvoiceFileUpload = ({ fileUrls, onChange, onExtracted }: Props) => {
           </Button>
         )}
       </div>
+
+      <p className="text-xs text-muted-foreground">
+        Tipp: fotózd felülről, jó fényben, úgy hogy a teljes számla és az összeg is látszódjon. Az AI kitöltés fotózott számláknál működik a legjobban.
+      </p>
 
       <input
         ref={cameraRef}
