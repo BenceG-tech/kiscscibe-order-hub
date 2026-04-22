@@ -13,6 +13,15 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-04-22",
+    title: "PDF és képfájl alapú számlafelismerés",
+    description:
+      "A számlák feltöltése után automatikusan elindul az AI adatkinyerés. Digitális PDF-ekből, szkennelt PDF-ekből és képekből is próbál adatot kinyerni, a bizonytalan mezőket pedig üresen hagyja kézi ellenőrzésre.",
+    type: "new",
+    tabGroup: "finance",
+    helpTopicId: "invoice-ocr",
+  },
+  {
+    date: "2026-04-22",
     title: "Pénzügyi modul gyorsabb és átláthatóbb lett",
     description:
       "A számlák tesztként jelölhetők és kizárhatók a riportokból, új gyors szűrők és 3 pontos műveletek kerültek a listába, az AI számlafelismerés tételsorokat is betölt, a partnereknél pedig pénzügyi összefoglaló látszik.",

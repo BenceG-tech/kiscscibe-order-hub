@@ -291,7 +291,7 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
         next.invoice_number = data.invoice_number;
         filled.add("invoice_number");
       }
-      if (data.issue_date) {
+      if (data.issue_date && (!f.issue_date || f.issue_date === defaultForm.issue_date)) {
         next.issue_date = data.issue_date;
         filled.add("issue_date");
       }
@@ -299,7 +299,7 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
         next.due_date = data.due_date;
         filled.add("due_date");
       }
-      if (data.gross_amount && !f.gross_amount) {
+      if (data.gross_amount && data.gross_amount > 0 && !f.gross_amount) {
         next.gross_amount = String(data.gross_amount);
         filled.add("gross_amount");
       }
@@ -318,7 +318,7 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
       return next;
     });
 
-    if (data.line_items?.length) {
+    if (data.line_items?.length && data.confidence !== "alacsony") {
       setLineItems(data.line_items.map((item) => {
         const quantity = Number(item.quantity || 1);
         const lineTotal = Number(item.line_total || 0);
@@ -337,7 +337,11 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
     }
 
     setAiFilledFields(filled);
-    setAiSummary(data);
+    setAiSummary({
+      ...data,
+      filled_fields: data.filled_fields?.length ? data.filled_fields : Array.from(filled),
+      needs_review: data.needs_review || [],
+    });
 
     if (filled.size > 0) {
       toast.success(`AI kitöltötte a számla adatait${data.line_items?.length ? ` és ${data.line_items.length} tételt` : ""} — kérlek ellenőrizd!`);
@@ -820,15 +824,30 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
                 onExtracted={handleExtracted}
               />
               {aiSummary && (
-                <div className="rounded-lg border bg-muted/30 p-3 text-sm space-y-1">
-                  <div className="font-medium">AI felismerés eredménye</div>
-                  <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                    <span>Biztosság: {aiSummary.confidence || "közepes"}</span>
-                    <span>Tételek: {aiSummary.line_items?.length || 0} db</span>
-                    <span className="truncate">Partner: {aiSummary.partner_name || "—"}</span>
-                    <span>Összeg: {aiSummary.gross_amount?.toLocaleString("hu-HU") || "—"} Ft</span>
+                <div className="rounded-lg border bg-muted/30 p-3 text-sm space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="font-medium">AI felismerés eredménye</div>
+                    <Badge variant={aiSummary.confidence === "alacsony" ? "outline" : "secondary"} className="text-[10px]">
+                      {aiSummary.confidence || "közepes"}
+                    </Badge>
                   </div>
-                  <p className="text-xs text-muted-foreground">Kérlek ellenőrizd mentés előtt, különösen az összeget, ÁFA kulcsot és dátumokat.</p>
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                    <span>Forrás: {aiSummary.source === "pdf_text" ? "PDF szöveg" : aiSummary.source === "pdf_image" ? "PDF képként" : "Kép"}</span>
+                    <span>Tételek: {aiSummary.line_items?.length || 0} db</span>
+                    <span className="truncate">Partner: {aiSummary.partner_name || "kézi kitöltés"}</span>
+                    <span>Összeg: {aiSummary.gross_amount ? `${aiSummary.gross_amount.toLocaleString("hu-HU")} Ft` : "kézi kitöltés"}</span>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2 text-xs">
+                    <div>
+                      <p className="font-medium text-foreground mb-1">Kitöltve</p>
+                      <p className="text-muted-foreground">{aiSummary.filled_fields?.length ? aiSummary.filled_fields.join(", ") : "Nem töltött ki biztos mezőt."}</p>
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground mb-1">Kézi ellenőrzés</p>
+                      <p className="text-muted-foreground">{aiSummary.needs_review?.length ? aiSummary.needs_review.join(", ") : "Nincs külön jelzett bizonytalan mező."}</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">A bizonytalan adatokat az AI üresen hagyja. Mentés előtt ellenőrizd az összeget, ÁFA kulcsot, dátumokat és tételsorokat.</p>
                 </div>
               )}
             </div>
