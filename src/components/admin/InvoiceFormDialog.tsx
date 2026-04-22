@@ -291,7 +291,7 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
         next.invoice_number = data.invoice_number;
         filled.add("invoice_number");
       }
-      if (data.issue_date) {
+      if (data.issue_date && (!f.issue_date || f.issue_date === defaultForm.issue_date)) {
         next.issue_date = data.issue_date;
         filled.add("issue_date");
       }
@@ -299,7 +299,7 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
         next.due_date = data.due_date;
         filled.add("due_date");
       }
-      if (data.gross_amount && !f.gross_amount) {
+      if (data.gross_amount && data.gross_amount > 0 && !f.gross_amount) {
         next.gross_amount = String(data.gross_amount);
         filled.add("gross_amount");
       }
@@ -318,7 +318,7 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
       return next;
     });
 
-    if (data.line_items?.length) {
+    if (data.line_items?.length && data.confidence !== "alacsony") {
       setLineItems(data.line_items.map((item) => {
         const quantity = Number(item.quantity || 1);
         const lineTotal = Number(item.line_total || 0);
@@ -337,7 +337,11 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
     }
 
     setAiFilledFields(filled);
-    setAiSummary(data);
+    setAiSummary({
+      ...data,
+      filled_fields: data.filled_fields?.length ? data.filled_fields : Array.from(filled),
+      needs_review: data.needs_review || [],
+    });
 
     if (filled.size > 0) {
       toast.success(`AI kitöltötte a számla adatait${data.line_items?.length ? ` és ${data.line_items.length} tételt` : ""} — kérlek ellenőrizd!`);
