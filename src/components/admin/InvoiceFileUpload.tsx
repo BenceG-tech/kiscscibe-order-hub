@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Camera, CheckCircle2, FileText, Loader2, RefreshCw, Upload, Wand2, X, AlertTriangle } from "lucide-react";
+import { Camera, CheckCircle2, FileText, Loader2, RefreshCw, Upload, X, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { extractInvoicePdfContent } from "@/lib/pdfInvoiceExtract";
@@ -208,7 +208,7 @@ const InvoiceFileUpload = ({ fileUrls, onChange, onExtracted }: Props) => {
               </a>
               {file.status === "extracting" && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
               {file.status === "done" && <CheckCircle2 className="h-4 w-4 text-primary" />}
-              {file.status === "partial" && <AlertTriangle className="h-4 w-4 text-amber-500" />}
+              {file.status === "partial" && <AlertTriangle className="h-4 w-4 text-muted-foreground" />}
               {file.status === "failed" && onExtracted && (
                 <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => retryExtract(file.url)}>
                   <RefreshCw className="h-3.5 w-3.5" />
