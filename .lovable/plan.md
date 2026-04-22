@@ -1,166 +1,167 @@
 
-# Terv — Kiscsibe ár-érték dokumentáció újraírása és újratervezése
+# Terv — Kiscsibe ár-érték dokumentáció újratervezése professzionálisabb, tömörebb formában
 
 ## Cél
 
-Újragondolom a Kiscsibe ár-érték dokumentációt úgy, hogy:
+Új verziót készítek a dokumentumból, mert a jelenlegi megjelenés nem elég professzionális, a betűméret túl kicsi / nehezen olvasható, és a felépítés túl laza.
 
-- jobban olvasható legyen,
-- erősebb legyen a kontraszt,
-- letisztultabb és szebb legyen a felépítés,
-- barátibb, természetesebb hangulatban mutassa be az elkészült extra fejlesztéseket,
-- az extra fejlesztésekért ne tételenként sok külön díj szerepeljen, hanem egy **egységes, baráti 50 000 Ft-os extra fejlesztési díj**.
+Az új verzió:
 
-Az új dokumentum nem „számlázósan nyomulós” lesz, hanem inkább ilyen hangulatú:
+- lényegretörőbb lesz,
+- jobban olvasható lesz,
+- professzionálisabb ajánlati dokumentumként fog kinézni,
+- a Kiscsibe honlap arculatát követi,
+- a Kiscsibe betű- és színvilágát használja,
+- nem lesz túlzsúfolt,
+- az 50 000 Ft-os extra díjat baráti, de egyértelmű formában mutatja be.
+
+## Arculati irány
+
+A dokumentum a Kiscsibe meglévő arculatához igazodik:
 
 ```text
-Az elmúlt időszakban több olyan plusz funkció is elkészült, ami túlmutat az eredeti alap működésen.
-Ezeknél nem csak fejlesztési idő, hanem AI kredit, tesztelés, hibajavítás és sok finomhangolás is volt.
-Ezt nem piaci áron, hanem baráti, jelképes extra fejlesztési díjként kezelném: +50 000 Ft.
+Sötétkék: #1F2A41
+Kiscsibe sárga: #F6C22D
+Krém: #FFF8E6
+Fehér / törtfehér kártyák
+Sofia jellegű címsorok
+Letisztult sans-serif törzsszöveg
 ```
 
-## 1. Vizuális újratervezés
+A mostani túl halvány, túl nagy üres felületeket tartalmazó elrendezés helyett erősebb vizuális hierarchia lesz:
 
-A mostani verzió helyett világosabb, jobban olvasható dokumentumot készítek.
+- nagy, jól olvasható címsorok,
+- rövidebb bekezdések,
+- erősebb kontraszt,
+- kevesebb dekoráció,
+- rendezett kártyák és árblokkok,
+- ajánlati dokumentumhoz illő ritmus.
 
-### Új vizuális irány
+## Új szerkezet
 
-- háttér: világos krém / majdnem fehér,
-- szöveg: sötétkék vagy majdnem fekete,
-- kiemelések: Kiscsibe sárga,
-- kevesebb sötét blokk,
-- nagyobb margók,
-- levegősebb oldalak,
-- kevesebb zsúfolt táblázat,
-- jobb árblokkok.
+A dokumentum rövidebb és célratörőbb lesz.
 
-A dokumentum célja nem az, hogy „designos” legyen mindenáron, hanem hogy első ránézésre is érthető, megbízható és könnyen olvasható legyen.
-
-## 2. Felépítés egyszerűsítése
-
-A korábbi szerkezet helyett egy természetesebb, könnyebben befogadható sorrendet használok.
-
-Új javasolt felépítés:
+Javasolt felépítés:
 
 ```text
 1. Címlap
-2. Rövid személyes bevezető
-3. Mi épült fel a Kiscsibe mögé?
-4. Alaprendszer értéke
-5. Az utóbbi időszak extra fejlesztései
-6. Miért jelent ez plusz munkát és költséget?
-7. Baráti extra fejlesztési díj: +50 000 Ft
-8. Mit kap ezért a Kiscsibe?
-9. Javasolt havi támogatás / karbantartás
-10. Lezárás
+   - Kiscsibe Étterem
+   - Ár-érték összefoglaló
+   - Egyedi rendelési, adminisztrációs és pénzügyi rendszer
+
+2. Rövid összefoglaló
+   - Nem egyszerű weboldalról van szó
+   - A rendszer napi működést támogat
+   - Rendelés, admin, pénzügy, dokumentumok, AI
+
+3. Mit tartalmaz a rendszer?
+   - Rendeléskezelés
+   - Admin felület
+   - Napi ajánlat és étlapkezelés
+   - Pénzügyi modul
+   - Partnerek
+   - Dokumentumtár
+   - AI számlafelismerés
+   - Kézikönyv és változásnapló
+
+4. Frissen elkészült extra fejlesztések
+   - PDF és képfájl alapú számlafelismerés
+   - Automatikus adatkinyerés feltöltés után
+   - Bizonytalan mezők üresen hagyása
+   - Dokumentumtár bővítések
+   - Pénzügyi modul egyszerűsítése
+   - Partner-számla kapcsolat javítása
+
+5. Baráti extra fejlesztési díj
+   - +50 000 Ft
+   - rövid, emberi indoklással
+   - AI kredit, tesztelés, hibajavítás, finomhangolás
+
+6. Javasolt havi támogatás
+   - opcionális, rövid ajánlás
+   - karbantartás, kisebb módosítások, ellenőrzés
+
+7. Lezárás
+   - korrekt, baráti együttműködés hangsúlyozása
 ```
 
-## 3. Extra funkciók árazásának átírása
+## Szövegezési irány
 
-A sok külön kis tétel helyett egyetlen, barátságos összeg szerepel majd.
+A dokumentumból kiveszem a hosszú, túlmagyarázó részeket. Helyette rövidebb, erősebb, ajánlat-kompatibilis szöveg lesz.
 
-### Régi logika helyett
-
-Nem így lesz kiemelve:
+Példa az extra díj megfogalmazására:
 
 ```text
-AI számlafelismerés: 35 000 Ft
-Dokumentumtár: 25 000 Ft
-Partner kapcsolat: 25 000 Ft
-...
-```
+Az elmúlt időszakban több olyan extra fejlesztés készült el, amely már túlmutat az alap működésen.
 
-### Új logika
+Ide tartozik többek között az AI-alapú számlafelismerés képből és PDF-ből, a pénzügyi modul átláthatóbbá tétele, a dokumentumtár bővítése, valamint a kényelmesebb admin használat.
 
-Így lesz bemutatva:
+Ezeknél nem csak fejlesztési idő, hanem AI kredit, tesztelés, hibajavítás és több kör finomhangolás is felmerült.
 
-```text
-Utólag elkészült extra fejlesztési csomag
-Baráti, egyösszegű díj: +50 000 Ft
-```
-
-Ez tartalmazza például:
-
-- dokumentumtár kényelmesebb kezelése,
-- mappák, címkék, gyorsműveletek,
-- pénzügyi modul egyszerűsítése,
-- teszt számlák kezelése,
-- partner-számla kapcsolat javítása,
-- AI számlafelismerés képből,
-- AI számlafelismerés PDF-ből,
-- automatikus adatkinyerés feltöltés után,
-- bizonytalan mezők üresen hagyása,
-- admin kézikönyv és „Mi változott?” frissítések.
-
-## 4. Baráti hangvételű magyarázat az 50 000 Ft-ra
-
-A dokumentumban lesz egy külön blokk, ami finoman és érthetően indokolja az extra díjat.
-
-Javasolt szöveg:
-
-```text
-Az utóbbi időszakban több olyan extra funkció is elkészült, ami már nem csak egyszerű felületi módosítás volt, hanem összetettebb háttérlogikát, AI-alapú feldolgozást, tesztelést és finomhangolást igényelt.
-
-Ide tartozik például a dokumentumtár bővítése, a pénzügyi modul átláthatóbbá tétele, a számlák és partnerek kezelése, illetve az AI-alapú számlafelismerés, ami képből és digitális PDF-ből is próbál adatot kinyerni.
-
-Ezeknél a fejlesztéseknél nem csak munkaidő, hanem AI kredit és több körös próbálgatás is felmerült. Ezt nem külön-külön, piaci áron szeretném elszámolni, hanem egy baráti, egyösszegű extra fejlesztési díjként:
+Ezt nem külön-külön, piaci áron számolnám el, hanem egy baráti, egyösszegű extra fejlesztési díjként:
 
 +50 000 Ft
-
-Ez az összeg inkább jelképes kompenzáció a plusz időre, technikai munkára és AI költségekre, miközben a Kiscsibe rendszer továbbra is kedvező, hosszú távon használható megoldás marad.
 ```
 
-## 5. Ár-érték oldal új megfogalmazása
+## Tipográfia és méretezés
 
-A dokumentumban továbbra is látszani fog, hogy a teljes rendszer értéke ennél jóval nagyobb, de az extra díj baráti.
+Kiemelten figyelek arra, hogy ne legyen mikroszkopikus a szöveg.
 
-Példa blokk:
+Tervezett méretek PDF-ben:
 
 ```text
-A Kiscsibe rendszere ma már nem csak egy weboldal, hanem egy napi működést támogató háttérrendszer:
-
-- rendeléskezelés,
-- napi ajánlat kezelése,
-- admin felület,
-- dokumentumtár,
-- pénzügyi modul,
-- számlák és partnerek kezelése,
-- AI alapú számlaadat-felismerés,
-- belső kézikönyv és változásnapló.
-
-Egy ilyen rendszer piaci fejlesztési értéke jóval magasabb lenne, de a cél itt nem az ügynökségi árazás, hanem egy hosszú távon is korrekt, baráti együttműködés.
+Címlap főcím: 34–42 pt
+Oldalcímek: 22–28 pt
+Szekciócímek: 15–18 pt
+Törzsszöveg: 11.5–13 pt
+Kiemelt ár: 34–44 pt
+Apró megjegyzés: minimum 9.5–10 pt
 ```
 
-## 6. Új dokumentumverziók
+A PDF-ben nem lesznek túl hosszú sorok, mert az rontja az olvashatóságot.
 
-Az eredeti fájlokat nem írom felül. Új verziókat készítek:
+## Vizuális javítások
+
+Az új verzióban:
+
+- nem lesz túl halvány a szöveg,
+- nem lesz túl kicsi a betű,
+- nem lesz túl sok üres terület,
+- az árblokk nagy és egyértelmű lesz,
+- a dokumentum inkább prémium ajánlati összefoglalónak fog hatni,
+- a Kiscsibe sötétkék-sárga-krém arculat erősebben megjelenik,
+- a címlap és a belső oldalak egységesebbek lesznek.
+
+## Új fájlverziók
+
+Nem írom felül a meglévő v2 fájlokat. Új verziókat készítek:
 
 ```text
-kiscsibe_arertek_dokumentacio_v2.pdf
-kiscsibe_arertek_dokumentacio_v2.docx
-kiscsibe_arertek_dokumentacio_v2.md
+kiscsibe_arertek_dokumentacio_v3.pdf
+kiscsibe_arertek_dokumentacio_v3.docx
+kiscsibe_arertek_dokumentacio_v3.md
 ```
 
-Így összehasonlítható marad a régi és az új változat.
+## Minőségellenőrzés
 
-## 7. Minőségellenőrzés
+A PDF elkészítése után oldalanként képpé alakítom és ellenőrzöm:
 
-A PDF-et oldalanként képpé alakítom és átnézem, hogy:
+- olvasható-e minden szöveg,
+- elég nagy-e a betűméret,
+- megfelelő-e a kontraszt,
+- nincs-e levágott vagy túlcsúszó szöveg,
+- az 50 000 Ft-os árblokk jól látszik-e,
+- a dokumentum összképe professzionális-e,
+- a Kiscsibe honlap arculatához illeszkedik-e.
 
-- jó-e a kontraszt,
-- minden szöveg olvasható-e,
-- nincs-e levágott vagy túlcsúszó rész,
-- az árblokk jól látszik-e,
-- nem túl sötét-e a dokumentum,
-- mobilon / kisebb nézetben is érthető-e a fő üzenet,
-- az 50 000 Ft-os extra díj baráti, de egyértelmű módon jelenik-e meg.
+Ha hibát találok, javítom és újragenerálom, csak utána adom át a fájlokat.
 
 ## Kimenet
 
 Elkészítem:
 
-1. az újraírt teljes szöveget chatben,
-2. a letölthető PDF-et,
-3. a letölthető DOCX-et,
-4. a Markdown változatot,
-5. röviden jelzem, mit javítottam az előző verzióhoz képest.
+1. az új, rövidebb szövegváltozatot,
+2. a professzionálisabb PDF-et,
+3. a szerkeszthető DOCX-et,
+4. a Markdown forrást,
+5. röviden jelzem, mit javítottam a v2-höz képest.
