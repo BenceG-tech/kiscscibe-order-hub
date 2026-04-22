@@ -70,6 +70,7 @@ import {
   markChangelogViewed,
   type ChangelogEntry,
 } from "@/data/adminChangelog";
+import { AdminNotesPanel } from "@/components/admin/help/AdminNotesPanel";
 
 interface AdminHelpPanelProps {
   open: boolean;
@@ -467,6 +468,9 @@ const GridView = ({
 
   return (
     <div className="space-y-4">
+      {/* Routines — featured top block */}
+      <AdminNotesPanel />
+
       {/* Routines — featured top block */}
       <div>
         <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5">
