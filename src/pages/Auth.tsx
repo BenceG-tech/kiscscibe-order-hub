@@ -13,11 +13,14 @@ import { Link } from 'react-router-dom';
 const Auth: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
   
-  const { user, signIn, signOut, isAdmin, isStaff, loading: authLoading, rolesLoading } = useAuth();
+  const { user, signIn, signUp, signOut, isAdmin, isStaff, loading: authLoading, rolesLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [loadingTooLong, setLoadingTooLong] = useState(false);
@@ -43,11 +46,16 @@ const Auth: React.FC = () => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+    setMessage('');
 
-    const { error } = await signIn(email, password);
+    const result = mode === 'signin'
+      ? await signIn(email, password)
+      : await signUp(email, password, fullName);
     
-    if (error) {
-      setError(error.message);
+    if (result.error) {
+      setError(result.error.message);
+    } else if (mode === 'signup') {
+      setMessage('Regisztráció elindítva. Ha szükséges, erősítsd meg az email címedet, majd jelentkezz be.');
     }
     
     setIsLoading(false);
@@ -113,10 +121,29 @@ const Auth: React.FC = () => {
 
         <Card>
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold">Belépés</CardTitle>
+            <CardTitle className="text-2xl font-bold">{mode === 'signin' ? 'Belépés' : 'Admin regisztráció'}</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSignIn} className="space-y-4">
+              {mode === 'signup' && (
+                <Alert>
+                  <AlertDescription>
+                    Admin fiókot csak az előre engedélyezett email címek kapnak. Más emaillel létrejöhet fiók, de nem lesz admin hozzáférés.
+                  </AlertDescription>
+                </Alert>
+              )}
+              {mode === 'signup' && (
+                <div className="space-y-2">
+                  <Label htmlFor="signup-name">Név</Label>
+                  <Input
+                    id="signup-name"
+                    type="text"
+                    placeholder="Teljes név"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                  />
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="signin-email">Email cím</Label>
                 <Input
@@ -162,8 +189,27 @@ const Auth: React.FC = () => {
                 </Alert>
               )}
 
+              {message && (
+                <Alert>
+                  <AlertDescription>{message}</AlertDescription>
+                </Alert>
+              )}
+
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? <LoadingSpinner className="w-4 h-4" /> : 'Belépés'}
+                {isLoading ? <LoadingSpinner className="w-4 h-4" /> : mode === 'signin' ? 'Belépés' : 'Regisztráció'}
+              </Button>
+
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full"
+                onClick={() => {
+                  setMode(mode === 'signin' ? 'signup' : 'signin');
+                  setError('');
+                  setMessage('');
+                }}
+              >
+                {mode === 'signin' ? 'Admin regisztráció' : 'Már van fiókom — belépés'}
               </Button>
             </form>
           </CardContent>

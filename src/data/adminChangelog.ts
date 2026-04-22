@@ -12,6 +12,23 @@ export interface ChangelogEntry {
 // Newest first
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: "2026-04-22",
+    title: "Admin módosítási napló és kézikönyv jegyzetek",
+    description:
+      "Új Napló oldal készült: látható, ki mikor mit módosított a dokumentumokban, étlapon, napi ajánlatban, számlákban és partnereknél. A kézikönyv elején új jegyzet blokk is van, ahol használat közben lehet észrevételt írni.",
+    type: "new",
+    tabGroup: "content",
+    helpTopicId: "activity-log",
+  },
+  {
+    date: "2026-04-22",
+    title: "Engedélyezett admin regisztráció",
+    description:
+      "A főadmin mellett az előre engedélyezett Kiscsibe email címek admin jogosultságot kaphatnak regisztráció/bejelentkezés után, biztonságosan a user_roles rendszerben.",
+    type: "new",
+    tabGroup: "content",
+  },
+  {
     date: "2026-04-21",
     title: "Kiscsibe-stílusú FB poszt AI generátor",
     description:

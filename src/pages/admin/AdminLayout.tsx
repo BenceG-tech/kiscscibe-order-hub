@@ -19,6 +19,7 @@ import {
   User,
   Image,
   FileText,
+  FileClock,
   Info,
   LayoutDashboard,
   BarChart3,
@@ -61,6 +62,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   // SECONDARY items — less frequently used, behind "Több" on desktop, inline on mobile
   const secondaryNavItems: typeof primaryNavItems = [
     { href: "/admin/coupons", label: "Kuponok", mobileLabel: "Kupon", icon: Tag, badgeCount: 0 },
+    { href: "/admin/activity", label: "Napló", mobileLabel: "Napló", icon: FileClock, badgeCount: 0 },
     { href: "/admin/partners", label: "Partnerek", mobileLabel: "Partner", icon: Users, badgeCount: 0 },
     { href: "/admin/gallery", label: "Galéria", mobileLabel: "Galéria", icon: Image, badgeCount: 0 },
     { href: "/admin/about", label: "Rólunk oldal", mobileLabel: "Rólunk", icon: Info, badgeCount: 0 },
