@@ -9,6 +9,7 @@ export interface Invoice {
   invoice_number: string | null;
   partner_name: string;
   partner_tax_id: string | null;
+  partner_id: string | null;
   order_id: string | null;
   issue_date: string;
   due_date: string | null;
@@ -20,6 +21,12 @@ export interface Invoice {
   category: string;
   notes: string | null;
   file_urls: string[];
+  is_test: boolean;
+  exclude_from_reports: boolean;
+  ai_extracted: boolean;
+  ai_confidence: string | null;
+  ai_reviewed_at: string | null;
+  ai_reviewed_by: string | null;
   created_at: string;
   updated_at: string;
   created_by: string | null;
@@ -44,6 +51,10 @@ export interface InvoiceFilters {
   dateFrom?: string;
   dateTo?: string;
   search?: string;
+  showTests?: boolean;
+  unlinkedOnly?: boolean;
+  aiOnly?: boolean;
+  due?: "today" | "overdue" | "week";
 }
 
 export const useInvoices = (filters?: InvoiceFilters) => {
@@ -72,6 +83,27 @@ export const useInvoices = (filters?: InvoiceFilters) => {
       }
       if (filters?.search) {
         query = query.ilike("partner_name", `%${filters.search}%`);
+      }
+      if (!filters?.showTests) {
+        query = query.eq("exclude_from_reports", false);
+      }
+      if (filters?.unlinkedOnly) {
+        query = query.is("partner_id", null).neq("type", "order_receipt");
+      }
+      if (filters?.aiOnly) {
+        query = query.eq("ai_extracted", true);
+      }
+      if (filters?.due) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayStr = today.toISOString().slice(0, 10);
+        const week = new Date(today);
+        week.setDate(week.getDate() + 7);
+        const weekStr = week.toISOString().slice(0, 10);
+        query = query.not("status", "in", "(paid,cancelled)").not("due_date", "is", null);
+        if (filters.due === "today") query = query.eq("due_date", todayStr);
+        if (filters.due === "overdue") query = query.lt("due_date", todayStr);
+        if (filters.due === "week") query = query.gte("due_date", todayStr).lte("due_date", weekStr);
       }
 
       const { data, error } = await query;

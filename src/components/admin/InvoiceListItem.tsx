@@ -2,10 +2,11 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
-import { Paperclip, Bot, FileText, Image as ImageIcon, ExternalLink, AlertTriangle, CalendarIcon } from "lucide-react";
-import { useUpdateInvoice, type Invoice } from "@/hooks/useInvoices";
+import { MoreHorizontal, Bot, FileText, Image as ImageIcon, ExternalLink, AlertTriangle, CalendarIcon, FlaskConical, Link2, Copy, Ban } from "lucide-react";
+import { useCreateInvoice, useUpdateInvoice, type Invoice } from "@/hooks/useInvoices";
 import { differenceInDays } from "date-fns";
 import { format } from "date-fns";
 import { hu } from "date-fns/locale";
@@ -44,6 +45,7 @@ const InvoiceListItem = ({ invoice, onClick }: Props) => {
   const isOrderReceipt = invoice.type === "order_receipt";
   const status = STATUS_MAP[invoice.status] || STATUS_MAP.draft;
   const update = useUpdateInvoice();
+  const create = useCreateInvoice();
 
   const [showPaymentPicker, setShowPaymentPicker] = useState(false);
   const [paymentDate, setPaymentDate] = useState<Date>(new Date());
@@ -69,6 +71,20 @@ const InvoiceListItem = ({ invoice, onClick }: Props) => {
     setShowPaymentPicker(false);
   };
 
+  const quickUpdate = (updates: Partial<Invoice>) => {
+    update.mutate({ id: invoice.id, ...updates } as any);
+  };
+
+  const duplicateAsDraft = () => {
+    const { id, created_at, updated_at, order_id, ...copy } = invoice;
+    create.mutate({
+      ...copy,
+      status: "draft",
+      order_id: null,
+      invoice_number: invoice.invoice_number ? `${invoice.invoice_number}-másolat` : null,
+    } as any);
+  };
+
   // Get first image thumbnail
   const firstImage = invoice.file_urls.find(isImageUrl);
 
@@ -77,7 +93,7 @@ const InvoiceListItem = ({ invoice, onClick }: Props) => {
       onClick={onClick}
       className={`flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 p-3 sm:p-4 rounded-lg border bg-card hover:bg-muted/50 cursor-pointer transition-colors ${
         isOrderReceipt ? "border-l-4 border-l-primary/40" : ""
-      }`}
+      } ${invoice.is_test ? "opacity-75 border-dashed" : ""}`}
     >
       {/* Thumbnail */}
       {firstImage && (
@@ -101,6 +117,23 @@ const InvoiceListItem = ({ invoice, onClick }: Props) => {
               <Bot className="h-3 w-3" />
               Auto
             </Badge>
+          )}
+          {invoice.is_test && (
+            <Badge variant="outline" className="text-[10px] gap-1">
+              <FlaskConical className="h-3 w-3" />
+              Teszt
+            </Badge>
+          )}
+          {invoice.ai_extracted && (
+            <Badge variant="secondary" className="text-[10px] gap-1">
+              <Bot className="h-3 w-3" />
+              AI
+            </Badge>
+          )}
+          {invoice.partner_id ? (
+            <Badge variant="outline" className="text-[10px] gap-1"><Link2 className="h-3 w-3" />Partner</Badge>
+          ) : !isOrderReceipt && (
+            <Badge variant="secondary" className="text-[10px]">Nincs partnerhez kötve</Badge>
           )}
         </div>
         <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-wrap">
@@ -195,6 +228,38 @@ const InvoiceListItem = ({ invoice, onClick }: Props) => {
         <span className={`text-sm font-bold whitespace-nowrap ${isIncoming ? "text-destructive" : "text-green-600"}`}>
           {isIncoming ? "-" : "+"}{fmt(invoice.gross_amount)}
         </span>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+            <DropdownMenuItem onClick={onClick}>Megnyitás / szerkesztés</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleStatusChange("paid")}>Fizetve jelölés</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => quickUpdate({ status: "pending", payment_date: null })}>Fizetésre vár</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => quickUpdate({ is_test: !invoice.is_test, exclude_from_reports: !invoice.is_test })}>
+              <FlaskConical className="h-4 w-4 mr-2" />
+              {invoice.is_test ? "Teszt jelölés levétele" : "Tesztként jelölés"}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => quickUpdate({ status: "cancelled" })}>
+              <Ban className="h-4 w-4 mr-2" />
+              Sztornózás
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={duplicateAsDraft}>
+              <Copy className="h-4 w-4 mr-2" />
+              Duplikálás vázlatként
+            </DropdownMenuItem>
+            {invoice.file_urls[0] && (
+              <DropdownMenuItem onClick={() => window.open(invoice.file_urls[0], "_blank")}>
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Csatolmány megnyitása
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );

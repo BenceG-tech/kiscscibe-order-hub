@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { startOfMonth, endOfMonth, subMonths, format } from "date-fns";
 import type { InvoiceFilters as Filters } from "@/hooks/useInvoices";
+import InfoTip from "@/components/admin/InfoTip";
 
 interface Props {
   filters: Filters;
@@ -36,6 +37,10 @@ const InvoiceFilters = ({ filters, onChange }: Props) => {
 
   const clearDates = () => {
     onChange({ ...filters, dateFrom: "", dateTo: "" });
+  };
+
+  const toggle = (key: keyof Filters) => {
+    onChange({ ...filters, [key]: !filters[key] });
   };
 
   return (
@@ -112,6 +117,31 @@ const InvoiceFilters = ({ filters, onChange }: Props) => {
             ✕ Törlés
           </Button>
         )}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Button variant={filters.due === "today" ? "default" : "outline"} size="sm" className="text-xs h-7" onClick={() => onChange({ ...filters, due: filters.due === "today" ? undefined : "today" })}>
+          Ma esedékes
+        </Button>
+        <Button variant={filters.due === "overdue" ? "destructive" : "outline"} size="sm" className="text-xs h-7" onClick={() => onChange({ ...filters, due: filters.due === "overdue" ? undefined : "overdue" })}>
+          Lejárt
+        </Button>
+        <Button variant={filters.due === "week" ? "default" : "outline"} size="sm" className="text-xs h-7" onClick={() => onChange({ ...filters, due: filters.due === "week" ? undefined : "week" })}>
+          7 napon belül
+        </Button>
+        <Button variant={filters.status === "pending" ? "default" : "outline"} size="sm" className="text-xs h-7" onClick={() => onChange({ ...filters, status: filters.status === "pending" ? "all" : "pending" })}>
+          Fizetésre vár
+        </Button>
+        <Button variant={filters.unlinkedOnly ? "default" : "outline"} size="sm" className="text-xs h-7" onClick={() => toggle("unlinkedOnly")}>
+          Nincs partnerhez kötve
+        </Button>
+        <Button variant={filters.aiOnly ? "default" : "outline"} size="sm" className="text-xs h-7" onClick={() => toggle("aiOnly")}>
+          AI-val kitöltött
+        </Button>
+        <Button variant={filters.showTests ? "secondary" : "outline"} size="sm" className="text-xs h-7 gap-1" onClick={() => toggle("showTests")}>
+          Teszt rekordok
+          <InfoTip text="Tesztként jelölt bizonylatok alapból nem számítanak bele az összesítőkbe és exportokba." side="bottom" />
+        </Button>
       </div>
     </div>
   );

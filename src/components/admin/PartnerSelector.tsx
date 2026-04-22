@@ -12,14 +12,22 @@ interface Props {
   value?: string | null; // partner id
   onSelect: (partner: Partner | null) => void;
   disabled?: boolean;
+  suggestedName?: string;
+  suggestedTaxNumber?: string;
 }
 
-const PartnerSelector = ({ value, onSelect, disabled }: Props) => {
+const PartnerSelector = ({ value, onSelect, disabled, suggestedName, suggestedTaxNumber }: Props) => {
   const [open, setOpen] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const { data: partners = [] } = useActivePartners();
 
   const selectedPartner = partners.find((p) => p.id === value) || null;
+  const suggestedPartner = !selectedPartner && (suggestedName || suggestedTaxNumber)
+    ? partners.find((p) =>
+        (!!suggestedTaxNumber && p.tax_number === suggestedTaxNumber) ||
+        (!!suggestedName && p.name.toLowerCase() === suggestedName.toLowerCase())
+      )
+    : null;
 
   const handleSelect = (partner: Partner) => {
     if (partner.id === value) {
@@ -113,6 +121,12 @@ const PartnerSelector = ({ value, onSelect, disabled }: Props) => {
             </Command>
           </PopoverContent>
         </Popover>
+        {suggestedPartner && (
+          <Button type="button" variant="secondary" size="sm" className="w-full justify-start text-xs" onClick={() => onSelect(suggestedPartner)} disabled={disabled}>
+            <Plus className="h-3.5 w-3.5 mr-1" />
+            Talált egyező partner: {suggestedPartner.name} — összekapcsolás
+          </Button>
+        )}
       </div>
 
       <PartnerFormDialog

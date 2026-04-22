@@ -74,6 +74,8 @@ const defaultForm = {
   notes: "",
   file_urls: [] as string[],
   status: "draft" as string,
+  is_test: false,
+  exclude_from_reports: false,
 };
 
 const aiHighlight = "bg-yellow-50 dark:bg-yellow-950/30 border-yellow-300";
@@ -113,6 +115,7 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
   const [paymentDate, setPaymentDate] = useState<Date>(new Date());
   const [showPaymentPicker, setShowPaymentPicker] = useState(false);
   const [lineItems, setLineItems] = useState<LocalLineItem[]>([]);
+  const [aiSummary, setAiSummary] = useState<ExtractedInvoiceData | null>(null);
 
   const create = useCreateInvoice();
   const update = useUpdateInvoice();
@@ -157,6 +160,8 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
         notes: invoice.notes || "",
         file_urls: invoice.file_urls || [],
         status: invoice.status,
+        is_test: invoice.is_test || false,
+        exclude_from_reports: invoice.exclude_from_reports || false,
       });
       setSpecialVat(null);
       setSelectedPartnerId((invoice as any).partner_id || null);
@@ -167,6 +172,7 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
       setSelectedPartnerId(null);
     }
     setAiFilledFields(new Set());
+    setAiSummary(null);
     setPaymentDate(new Date());
   }, [invoice, open]);
 
@@ -268,6 +274,7 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
 
   const handleExtracted = (data: ExtractedInvoiceData) => {
     const filled = new Set<string>();
+    const extractedVatRate = data.vat_rate ?? (parseInt(form.vat_rate) || 27);
 
     setForm((f) => {
       const next = { ...f };
@@ -311,10 +318,29 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
       return next;
     });
 
+    if (data.line_items?.length) {
+      setLineItems(data.line_items.map((item) => {
+        const quantity = Number(item.quantity || 1);
+        const lineTotal = Number(item.line_total || 0);
+        const unitPrice = Number(item.unit_price || (lineTotal && quantity ? Math.round(lineTotal / quantity / (1 + extractedVatRate / 100)) : 0));
+        return {
+          tempId: newTempId(),
+          description: item.description,
+          quantity,
+          unit: item.unit || "db",
+          unit_price: unitPrice,
+          vat_rate: extractedVatRate,
+          line_total: lineTotal || calcLineTotal(quantity, unitPrice, extractedVatRate),
+        };
+      }));
+      filled.add("line_items");
+    }
+
     setAiFilledFields(filled);
+    setAiSummary(data);
 
     if (filled.size > 0) {
-      toast.success("AI kitöltötte a számla adatait — kérlek ellenőrizd!");
+      toast.success(`AI kitöltötte a számla adatait${data.line_items?.length ? ` és ${data.line_items.length} tételt` : ""} — kérlek ellenőrizd!`);
     } else {
       toast.info("Az AI nem talált új kitöltendő mezőt.");
     }
@@ -342,6 +368,11 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
       vat_rate: vatRate,
       notes: form.notes || null,
       file_urls: form.file_urls,
+      is_test: form.is_test,
+      exclude_from_reports: form.is_test ? true : form.exclude_from_reports,
+      ai_extracted: !!aiSummary || invoice?.ai_extracted || false,
+      ai_confidence: aiSummary?.confidence || invoice?.ai_confidence || null,
+      ai_reviewed_at: aiSummary ? new Date().toISOString() : invoice?.ai_reviewed_at || null,
     };
 
     const saveItems = async (invoiceId: string) => {
@@ -446,6 +477,8 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
           {!isReadonly && (
             <PartnerSelector
               value={selectedPartnerId}
+              suggestedName={form.partner_name}
+              suggestedTaxNumber={form.partner_tax_id}
               onSelect={(partner: Partner | null) => {
                 setSelectedPartnerId(partner?.id || null);
                 if (partner) {
@@ -454,6 +487,19 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
                 }
               }}
             />
+          )}
+
+          {!isReadonly && (
+            <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/30 p-3">
+              <div className="space-y-0.5">
+                <Label className="flex items-center gap-1">
+                  Teszt / belső próba
+                  <InfoTip text="Tesztként jelölve nem számít bele az összesítőkbe és exportokba. Jó próbarendelésekhez vagy hibás teszt számlákhoz." side="right" />
+                </Label>
+                <p className="text-xs text-muted-foreground">Automatikusan kizárásra kerül a pénzügyi riportokból.</p>
+              </div>
+              <Checkbox checked={form.is_test} onCheckedChange={(v) => set("is_test", !!v)} />
+            </div>
           )}
 
           {/* Partner name (manual fallback) */}
@@ -773,6 +819,18 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
                 onChange={(urls) => set("file_urls", urls)}
                 onExtracted={handleExtracted}
               />
+              {aiSummary && (
+                <div className="rounded-lg border bg-muted/30 p-3 text-sm space-y-1">
+                  <div className="font-medium">AI felismerés eredménye</div>
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                    <span>Biztosság: {aiSummary.confidence || "közepes"}</span>
+                    <span>Tételek: {aiSummary.line_items?.length || 0} db</span>
+                    <span className="truncate">Partner: {aiSummary.partner_name || "—"}</span>
+                    <span>Összeg: {aiSummary.gross_amount?.toLocaleString("hu-HU") || "—"} Ft</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Kérlek ellenőrizd mentés előtt, különösen az összeget, ÁFA kulcsot és dátumokat.</p>
+                </div>
+              )}
             </div>
           )}
 

@@ -827,14 +827,20 @@ export type Database = {
       }
       invoices: {
         Row: {
+          ai_confidence: string | null
+          ai_extracted: boolean
+          ai_reviewed_at: string | null
+          ai_reviewed_by: string | null
           category: string
           created_at: string
           created_by: string | null
           due_date: string | null
+          exclude_from_reports: boolean
           file_urls: string[]
           gross_amount: number
           id: string
           invoice_number: string | null
+          is_test: boolean
           issue_date: string
           net_amount: number
           notes: string | null
@@ -850,14 +856,20 @@ export type Database = {
           vat_rate: number
         }
         Insert: {
+          ai_confidence?: string | null
+          ai_extracted?: boolean
+          ai_reviewed_at?: string | null
+          ai_reviewed_by?: string | null
           category?: string
           created_at?: string
           created_by?: string | null
           due_date?: string | null
+          exclude_from_reports?: boolean
           file_urls?: string[]
           gross_amount?: number
           id?: string
           invoice_number?: string | null
+          is_test?: boolean
           issue_date?: string
           net_amount?: number
           notes?: string | null
@@ -873,14 +885,20 @@ export type Database = {
           vat_rate?: number
         }
         Update: {
+          ai_confidence?: string | null
+          ai_extracted?: boolean
+          ai_reviewed_at?: string | null
+          ai_reviewed_by?: string | null
           category?: string
           created_at?: string
           created_by?: string | null
           due_date?: string | null
+          exclude_from_reports?: boolean
           file_urls?: string[]
           gross_amount?: number
           id?: string
           invoice_number?: string | null
+          is_test?: boolean
           issue_date?: string
           net_amount?: number
           notes?: string | null
