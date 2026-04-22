@@ -55,12 +55,12 @@ serve(async (req) => {
               parameters: {
                 type: "object",
                 properties: {
-                  partner_name: { type: "string", description: "Name of the invoice issuer/partner" },
-                  partner_tax_id: { type: "string", description: "Tax ID (adószám) of the partner, e.g. 12345678-2-42" },
-                  invoice_number: { type: "string", description: "Invoice number (számlaszám)" },
-                  issue_date: { type: "string", description: "Issue date in YYYY-MM-DD format" },
-                  due_date: { type: "string", description: "Due date in YYYY-MM-DD format" },
-                  gross_amount: { type: "integer", description: "Gross amount in HUF (integer)" },
+                  partner_name: { type: "string", description: "Name of the invoice issuer/partner, empty if uncertain" },
+                  partner_tax_id: { type: "string", description: "Tax ID (adószám), empty if uncertain" },
+                  invoice_number: { type: "string", description: "Invoice number (számlaszám), empty if uncertain" },
+                  issue_date: { type: "string", description: "Issue date in YYYY-MM-DD format, empty if uncertain" },
+                  due_date: { type: "string", description: "Due date in YYYY-MM-DD format, empty if uncertain" },
+                  gross_amount: { type: "integer", description: "Final gross amount in HUF, 0 if uncertain" },
                   vat_rate: { type: "integer", enum: [27, 5, 0], description: "VAT rate percentage" },
                   category: {
                     type: "string",
@@ -68,6 +68,9 @@ serve(async (req) => {
                     description: "Best guess category for this expense",
                   },
                   confidence: { type: "string", enum: ["magas", "közepes", "alacsony"], description: "How confident the extraction is" },
+                  source: { type: "string", enum: ["image", "pdf_text", "pdf_image"], description: "Input source used for extraction" },
+                  filled_fields: { type: "array", items: { type: "string" }, description: "Fields that were filled confidently" },
+                  needs_review: { type: "array", items: { type: "string" }, description: "Fields intentionally left empty or requiring manual admin review" },
                   line_items: {
                     type: "array",
                     items: {
@@ -84,7 +87,7 @@ serve(async (req) => {
                     description: "Individual line items from the invoice",
                   },
                 },
-                required: ["partner_name", "partner_tax_id", "invoice_number", "issue_date", "due_date", "gross_amount", "vat_rate", "category", "confidence", "line_items"],
+                required: ["partner_name", "partner_tax_id", "invoice_number", "issue_date", "due_date", "gross_amount", "vat_rate", "category", "confidence", "source", "filled_fields", "needs_review", "line_items"],
               },
             },
           },
