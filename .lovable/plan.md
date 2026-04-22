@@ -1,484 +1,253 @@
 
 
-# Terv — Admin jogosultság, módosítási napló és kézikönyv jegyzetek
+# Terv — Dokumentumtár felhasználóbarátabbá tétele + „Mi változott?” működésének tisztázása
 
-## Cél
+## 1. Dokumentumkártyák 3 pontos menüjének kibővítése
 
-Három dolgot építünk össze egy rendszerré:
+A dokumentumkártyák jobb felső / név melletti **3 pontos menüje** most csak alap műveleteket tud. Kibővítem úgy, hogy innen lehessen gyorsan rendezni a fájlokat, ne kelljen mindig megnyitni a részletező ablakot.
 
-1. **A két megadott email adminisztrátorként tudjon regisztrálni**
-   - `info@kiscsibeetterem.hu`
-   - `iroda@kiscsibeetterem.hu`
+Új menüpontok:
 
-2. **A jelenlegi főadmin megmaradjon főadminnak**
-   - `gataibence@gmail.com`
-   - Ez külön „tulaj / főadmin” szint lesz, nem csak sima admin.
+```text
+Megnyitás
+Letöltés
+Részletek szerkesztése
 
-3. **Minden fontos admin módosítás visszakövethető legyen**
-   - ki csinálta,
-   - mikor,
-   - melyik modulban,
-   - mit módosított,
-   - mi volt előtte és utána.
+Mappa
+  Nincs mappa
+  Szerződések
+  Számlák
+  NAV / hivatalos
+  ...
 
-Plusz: az **admin kézikönyvbe kerül egy jegyzet / észrevétel rész**, ahova a tulaj vagy asszisztens használat közben le tudja írni, mit kellene javítani vagy hozzáadni.
+Címkék
+  + Sürgős
+  + Fizetendő
+  ✓ Könyvelőnek
+  ...
+
+Csillagozás / Csillag levétele
+Verziók
+Törlés
+```
+
+### Mit tud majd?
+
+- **Mappához rendelés közvetlenül a 3 pontból**
+- **Címke hozzáadása / levétele közvetlenül a 3 pontból**
+- **Csillagozás szöveges menüpontként is**, nem csak kis ikonként
+- **Részletek szerkesztése** menüpont, ami megnyitja a mostani szerkesztő dialogot
+- A tag-ek színei a menüben is látszanak kis pöttyként
+
+Ez főleg az adminnak / asszisztensnek lesz gyorsabb, mert nem kell minden dokumentumot külön megnyitni csak azért, hogy átrakja mappába vagy címkézze.
 
 ---
 
-## 1. Admin regisztráció engedélyezése a megadott emailekre
+## 2. Dokumentumkártyák információgazdagabbá tétele
 
-### Új jogosultsági logika
+A kártyákon jobban látszódjon, hogy mi micsoda.
 
-Nem a `profiles.role` mezőre építünk, mert az biztonságilag gyenge. A meglévő biztonságos `user_roles` rendszert használjuk tovább.
+Kiegészítések:
 
-Létrejön egy új engedélyezési tábla:
+- mappa neve kis badge-ként, ha van mappában
+- tag-ek színesebben és érthetőbben
+- feltöltő + dátum rövidebb, olvashatóbb formában
+- fájltípus jelölés:
+  - kép
+  - PDF
+  - Word / Excel
+  - egyéb fájl
+- verzió badge marad
+- „csillagos” dokumentumok vizuálisan kicsit jobban kiemelve
 
-```text
-admin_email_allowlist
-- email
-- role: owner / admin / staff
-- label: pl. Tulaj, Asszisztens, Fejlesztő
-- is_active
-- created_at
-```
-
-### Kezdő engedélyezett emailek
-
-| Email | Szerep |
-|---|---|
-| `gataibence@gmail.com` | `owner` / főadmin |
-| `info@kiscsibeetterem.hu` | `admin` |
-| `iroda@kiscsibeetterem.hu` | `admin` |
-
-### Hogyan működik majd?
-
-Amikor valaki belép vagy regisztrál:
-
-1. A rendszer megnézi az email címét.
-2. Ha szerepel az engedélyezett admin email listában:
-   - automatikusan megkapja a megfelelő szerepet a `user_roles` táblában,
-   - admin felülethez hozzáfér.
-3. Ha nem szerepel a listában:
-   - nem lesz admin,
-   - nem jut be az admin felületre.
-
-### Auth oldal módosítás
-
-A jelenlegi belépő oldal csak belépést mutat. Ezt kibővítem:
-
-- „Belépés” mód
-- „Admin regisztráció” mód
-- Regisztrációnál egyértelmű szöveg:
-  - csak előre engedélyezett email címmel lehet admin fiókot létrehozni,
-  - más email nem kap admin hozzáférést.
-
----
-
-## 2. Főadmin / owner szerep
-
-### Új szerep
-
-A meglévő szerepkörök mellé bekerül:
+Példa:
 
 ```text
-owner
-```
-
-Ez a főadmin szint.
-
-### Fontos szabály
-
-Az `owner` is adminnak számít, tehát minden jelenlegi admin oldal továbbra is működik neki.
-
-Technikailag:
-
-```text
-is_admin = owner vagy admin
-```
-
-### Mire lesz jó az owner?
-
-A későbbi érzékenyebb dolgokat csak a főadmin kezelheti:
-
-- engedélyezett admin emailek kezelése,
-- audit napló export / részletes megtekintés,
-- kézikönyv jegyzetek lezárása / státuszolása,
-- esetleges későbbi jogosultságkezelés.
-
-Első körben nem bonyolítjuk túl külön admin kezelőfelülettel, de a rendszer alapja meglesz hozzá.
-
----
-
-## 3. Globális módosítási napló
-
-### Új adatbázis tábla
-
-Létrejön egy központi napló:
-
-```text
-admin_audit_log
-- id
-- created_at
-- actor_user_id
-- actor_email
-- actor_name
-- action: insert / update / delete
-- module: documents / menu / daily_offer / invoices / partners / settings / etc.
-- entity_table
-- entity_id
-- entity_label
-- before_data
-- after_data
-- changed_fields
-```
-
-### Mit fog naplózni?
-
-Első körben ezekre a fontos admin területekre kerül automatikus naplózás:
-
-#### Dokumentumok
-- dokumentum feltöltés
-- új verzió feltöltés
-- dokumentum törlés
-- mappa módosítás
-- címke módosítás
-- csillagozás / átnevezés / áthelyezés
-
-#### Étlap
-- étel létrehozása
-- étel módosítása
-- ár módosítása
-- allergén módosítása
-- kép módosítása
-- aktív / inaktív állapot változtatása
-- fix tétel kapcsoló
-
-#### Napi / heti ajánlat
-- napi ajánlat létrehozása
-- napi ajánlat módosítása
-- napi ajánlat törlése
-- tételek hozzáadása / törlése
-- leves / főétel menürész jelölés
-- elfogyott kapcsoló
-- menü ár / adag módosítás
-
-#### Számlázás
-- bizonylat létrehozása
-- bizonylat módosítása
-- fizetési státusz módosítása
-- határidő módosítása
-- tételsor módosítása
-- ismétlődő számla módosítása
-
-#### Partnerek
-- partner létrehozása
-- partner módosítása
-- partner archiválása / aktiválása
-- fizetési feltételek módosítása
-
-#### Egyéb admin tartalom
-- galéria képek
-- kuponok
-- kapacitás
-- hirdetmények / beállítások
-- rólunk / GYIK / jogi tartalmak
-
-### Miért adatbázis-szinten?
-
-Nem csak gombnyomásnál naplózunk frontendből, hanem adatbázis triggerrel is.
-
-Ez azért jobb, mert:
-
-- nem marad ki módosítás akkor sem, ha más komponensből történik,
-- számlák, partnerek, dokumentumok, menü elemek egységesen követhetők,
-- később is visszanézhető lesz, hogy pontosan mi változott.
-
----
-
-## 4. Új admin oldal: „Módosítási napló”
-
-Létrejön egy új admin oldal:
-
-```text
-/admin/activity
-```
-
-A navigációba bekerül:
-
-```text
-Napló
-```
-
-### Oldal felépítése
-
-Felül gyors szűrők:
-
-- keresés
-- modul szerint:
-  - Dokumentumok
-  - Étlap
-  - Napi ajánlat
-  - Számlák
-  - Partnerek
-  - Tartalom
-- felhasználó szerint
-- dátum szerint
-- művelet szerint:
-  - létrehozás
-  - módosítás
-  - törlés
-
-### Lista nézet
-
-Példa sorok:
-
-```text
-Ma 09:42 — iroda@kiscsibeetterem.hu módosította a Napi ajánlatot
-Tegnap 14:10 — info@kiscsibeetterem.hu feltöltött egy dokumentumot
-2026.04.18 11:03 — gataibence@gmail.com módosított egy partner adatlapot
-```
-
-### Részletező nézet
-
-Egy naplóbejegyzésre kattintva látszik:
-
-```text
-Ki: iroda@kiscsibeetterem.hu
-Mikor: 2026.04.22 09:42
-Modul: Napi ajánlat
-Művelet: módosítás
-Érintett elem: 2026.04.23 napi menü
-
-Változott mezők:
-- price_huf: 2200 → 2400
-- remaining_portions: 50 → 45
-```
-
-Nem cél, hogy túl technikai legyen, de a fontos változások érthetően látszódjanak.
-
----
-
-## 5. Dokumentumtár naplózásának javítása
-
-A dokumentumtárban már van külön `document_activity`, de ezt egységesítem a globális naplóval.
-
-### Megmarad
-
-A dokumentum részleteinél továbbra is látszik:
-
-- feltöltő,
-- feltöltés ideje,
-- verziók.
-
-### Bővül
-
-Minden dokumentum művelet bekerül a globális `admin_audit_log` naplóba is.
-
-Így nem két külön logika lesz, hanem:
-
-- dokumentumon belül gyors előzmények,
-- globális naplóban teljes admin aktivitás.
-
----
-
-## 6. Kézikönyv jegyzet / észrevétel rész
-
-Az admin kézikönyv főoldalára bekerül egy kiemelt kártya:
-
-```text
-Jegyzetek / észrevételek
-Írd le, ha valami nem egyértelmű, hibás, vagy hiányzik.
-```
-
-### Új adatbázis tábla
-
-```text
-admin_notes
-- id
-- title
-- body
-- page_route
-- context_label
-- status: open / in_progress / done / rejected
-- priority: low / normal / high
-- created_by
-- created_by_email
-- created_by_name
-- resolved_by
-- resolved_at
-- created_at
-- updated_at
-```
-
-### Mire jó?
-
-A tulaj vagy asszisztens használat közben tud írni például ilyet:
-
-```text
-Oldal: Napi ajánlat
-Megjegyzés:
-Nem egyértelmű, hogy a Kép és poszt fülön melyik gomb generálja csak a Facebook szöveget.
-```
-
-Vagy:
-
-```text
-Oldal: Számlák
-Megjegyzés:
-Jó lenne, ha külön jelölni lehetne a készpénzes beszállítói számlákat.
-```
-
-### Kézikönyvben megjelenés
-
-A kézikönyv elején:
-
-- „Új jegyzet” gomb
-- „Nyitott jegyzetek” lista
-- státusz badge:
-  - Nyitott
-  - Folyamatban
-  - Kész
-- aktuális oldal automatikus kitöltése:
-  - ha a felhasználó épp a `/admin/daily-menu` oldalon van, a jegyzet automatikusan „Napi ajánlat” kontextust kap.
-
-### Főadminnak hasznos extra
-
-A főadmin később látja:
-
-- ki írta,
-- melyik oldalon,
-- mikor,
-- milyen státuszban van,
-- mi lett javítva.
-
----
-
-## 7. Kézikönyv bővítése az új funkciókkal
-
-Az admin kézikönyvbe bekerül két új téma:
-
-### „Módosítási napló”
-
-Leírja:
-
-- hol található,
-- hogyan kell szűrni,
-- mire jó,
-- mit jelent az előtte / utána nézet.
-
-### „Jegyzetek és észrevételek”
-
-Leírja:
-
-- mikor érdemes jegyzetet írni,
-- hogyan kell megadni a problémát,
-- hogyan látja ezt később a főadmin.
-
-A „Mi változott?” részbe is bekerül új bejegyzésként:
-
-```text
-ÚJ — Admin módosítási napló
-ÚJ — Kézikönyv jegyzetek
-ÚJ — Engedélyezett admin regisztráció
+[ kép / PDF előnézet ]
+
+Szerződés_2026.pdf       ⋮
+📁 Szerződések
+#Fizetendő  #Könyvelőnek
+PDF · 1.4 MB · v2
+iroda@... · ápr. 22.
 ```
 
 ---
 
-## 8. Biztonsági szabályok
+## 3. Feltöltő rész átalakítása: mappa + tag választás feltöltés előtt
 
-### Admin hozzáférés
+A feltöltő doboz most egyszerű, de nem irányítja eléggé a felhasználót.
 
-- Csak az engedélyezett email listán szereplők kaphatnak admin role-t automatikusan.
-- Role továbbra is a `user_roles` táblában lesz.
-- Nem localStorage-ból, nem frontendből, nem `profiles.role` alapján döntünk.
+Új feltöltési élmény:
 
-### Audit napló
+```text
+Feltöltés dokumentumtárba
 
-- Adminok olvashatják.
-- Nem törölhető normál adminból.
-- Append-only jellegű: a napló célja, hogy utólag visszakövethető maradjon.
+Mappa: [Nincs mappa / Számlák / Szerződések / ...]
+Címkék: [Fizetendő] [Sürgős] [Könyvelőnek]
 
-### Jegyzetek
+[ Húzd ide a fájlokat ]
+[ Fájl választás ] [ Fotózás ]
+```
 
-- Adminok létrehozhatnak jegyzetet.
-- Adminok láthatják a jegyzeteket.
-- Főadmin később külön kezelheti / lezárhatja őket.
+### Működés
+
+- Ha bal oldalt egy mappa van kiválasztva, azt előtölti.
+- Ha tag filter aktív, azt is felajánlja alapértelmezett címkének.
+- Feltöltés előtt lehessen kiválasztani:
+  - mappát
+  - egy vagy több címkét
+- Feltöltés után a fájl már rögtön rendezve kerül be.
+
+Ez különösen hasznos számláknál, szerződéseknél, NAV dokumentumoknál.
 
 ---
 
-## 9. Érintett fájlok és területek
+## 4. Gyors szerkesztő dialog finomítása
 
-### Adatbázis
+A meglévő dokumentum részletező ablakot megtartom, de használhatóbbá teszem.
 
-Új / módosított elemek:
+Bővítések:
+
+- mappa választó jobban kiemelve
+- címkék mellett „Új címke” gyors gomb
+- „Mentés” gombnál loading állapot
+- sikeres mentés után toast:
+  - „Dokumentum frissítve”
+- meta adatok rendezettebb blokkokban:
+  - fájl adatok
+  - feltöltési adatok
+  - verzió adatok
+
+Nem alakítom át az adatlogikát, csak az élményt javítom.
+
+---
+
+## 5. Tömeges műveletek bővítése
+
+A kijelölt dokumentumoknál most van:
+
+- áthelyezés mappába
+- törlés
+
+Ezt kibővítem:
 
 ```text
-admin_email_allowlist
-admin_audit_log
-admin_notes
-owner role az app_role enumba
-claim_admin_access / ensure_admin_access RPC
-audit trigger function
-audit triggerek a fontos admin táblákra
-RLS policy-k
+3 kiválasztva
+[ Áthelyezés... ]
+[ Címke hozzáadása... ]
+[ Címke eltávolítása... ]
+[ Csillagozás ]
+[ Törlés ]
 ```
 
-### Frontend
+Így egyszerre több fájl rendezhető.
 
-Érintett fő fájlok:
+---
+
+## 6. Oldalsáv javítása
+
+A bal oldali Dokumentumok oldalsávban most vannak mappák és címkék. Ezt átláthatóbbá teszem:
+
+- aktív mappa / tag erősebb kijelölése
+- mappák mellett dokumentumszám, ha könnyen megoldható meglévő lekérdezésből
+- „Új mappa” és „Új címke” gombok szövegesebbek legyenek, ne csak kis plusz ikon
+- címke-kezelőben lehessen látni a színeket és példákat:
+  - Sürgős
+  - Fizetendő
+  - Könyvelőnek
+  - Szerződés
+  - NAV
+
+Adatbázis-módosítás ehhez várhatóan nem kell, mert a mappa, címke és szín rendszer már létezik.
+
+---
+
+## 7. Rendezés és nézet opciók
+
+A dokumentumtár tetejére bekerül egy egyszerűbb vezérlősor:
 
 ```text
-src/contexts/AuthContext.tsx
-src/pages/Auth.tsx
-src/App.tsx
-src/pages/admin/AdminLayout.tsx
-src/components/admin/AdminHelpPanel.tsx
-src/data/adminHelpContent.ts
+Keresés...
+Rendezés: [Legújabb elöl] [Név szerint] [Méret szerint]
+Nézet: [Kártya] [Lista]
+```
+
+Első körben:
+
+- kártya nézet marad alapértelmezett
+- lista nézet opcionálisan bekerülhet egyszerű táblázatos formában:
+  - név
+  - mappa
+  - címkék
+  - feltöltő
+  - dátum
+  - műveletek
+
+Ha túl nagy lenne egy körben, akkor a lista nézetet külön második lépésként hagyom, de a rendezést mindenképp érdemes beépíteni.
+
+---
+
+## 8. „Mi változott?” rész működése
+
+A „Mi változott?” rész jelenleg **nem automatikusan az adatbázisból frissül**, hanem a fejlesztői changelog listából:
+
+```text
 src/data/adminChangelog.ts
 ```
 
-Új fájlok:
+Ez azt jelenti:
+
+- amikor új funkciót vagy javítást készítünk,
+- hozzá kell adni egy új bejegyzést ebbe a fájlba,
+- ekkor jelenik meg az admin kézikönyv „Mi változott?” részében.
+
+A piros szám badge úgy működik, hogy:
+
+- az elmúlt 7 nap friss bejegyzéseit nézi,
+- amit a felhasználó még nem nyitott meg, azt újnak számolja,
+- ha megnyitja a „Mi változott?” részt, a rendszer elmenti localStorage-ba, hogy látta.
+
+### Ezt most javítom dokumentáció szinten is
+
+A kézikönyvben a „Mi változott?” rész tetejére bekerül egy rövid magyarázat:
 
 ```text
-src/pages/admin/Activity.tsx
-src/hooks/useAdminAuditLog.ts
-src/hooks/useAdminNotes.ts
-src/components/admin/activity/ActivityLogList.tsx
-src/components/admin/activity/ActivityLogDetailDialog.tsx
-src/components/admin/help/AdminNotesPanel.tsx
+Ez a lista akkor frissül, amikor új fejlesztés vagy javítás kerül az oldalba.
+Az új bejegyzések 7 napig számítanak frissnek.
 ```
+
+És ehhez a mostani dokumentumtár-fejlesztéshez is bekerül egy új changelog bejegyzés:
+
+```text
+ÚJ / JAVÍTVA — Dokumentumtár gyors műveletek
+Mappázás, címkézés és csillagozás közvetlenül a dokumentumkártyák 3 pontos menüjéből.
+```
+
+---
+
+## Érintett fájlok
+
+| Fájl | Módosítás |
+|---|---|
+| `src/components/admin/documents/DocumentCard.tsx` | 3 pontos menü kibővítése mappa/tag/csillag/részletek műveletekkel |
+| `src/components/admin/documents/DocumentUploader.tsx` | feltöltés előtti mappa és címke választás |
+| `src/components/admin/documents/DocumentDetailDialog.tsx` | szerkesztő dialog finomítása |
+| `src/components/admin/documents/FolderSidebar.tsx` | oldalsáv használhatósági javítások |
+| `src/pages/admin/Documents.tsx` | rendezés, tömeges tag műveletek, feltöltőhöz aktív tag átadása |
+| `src/hooks/useDocuments.ts` | kisebb helper logika a tag/mappa frissítésekhez |
+| `src/data/adminChangelog.ts` | új bejegyzés a dokumentumtár fejlesztésről |
+| `src/data/adminHelpContent.ts` | dokumentumtár kézikönyv téma bővítése |
+| `src/components/admin/AdminHelpPanel.tsx` | „Mi változott?” magyarázó szöveg hozzáadása |
 
 ---
 
 ## Megvalósítási sorrend
 
-1. **Jogosultsági alap**
-   - `owner` role hozzáadása
-   - admin email allowlist tábla
-   - három email felvétele
-   - automatikus role kiosztás belépés / regisztráció után
-
-2. **Auth oldal**
-   - admin regisztráció mód hozzáadása
-   - belépés után role frissítés / ellenőrzés
-
-3. **Audit adatbázis**
-   - `admin_audit_log` tábla
-   - audit trigger function
-   - triggerek dokumentumokra, menüre, napi ajánlatra, számlákra, partnerekre és fő admin tartalmakra
-
-4. **Módosítási napló oldal**
-   - `/admin/activity`
-   - lista, szűrők, részletező dialog
-   - admin navigációba „Napló” menüpont
-
-5. **Kézikönyv jegyzetek**
-   - `admin_notes` tábla
-   - kézikönyv elejére jegyzet blokk
-   - új jegyzet dialog
-   - nyitott jegyzetek listája
-
-6. **Kézikönyv és changelog frissítés**
-   - új kézikönyv témák
-   - „Mi változott?” bejegyzések
+1. Dokumentumkártya 3 pontos menüjének kibővítése
+2. Feltöltő doboz mappa + címke választóval
+3. Tömeges címke műveletek
+4. Oldalsáv és részletező dialog finomítása
+5. Rendezés hozzáadása
+6. Kézikönyv + „Mi változott?” magyarázat + changelog bejegyzés
 
