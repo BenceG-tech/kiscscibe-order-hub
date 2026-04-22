@@ -274,7 +274,7 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
 
   const handleExtracted = (data: ExtractedInvoiceData) => {
     const filled = new Set<string>();
-    const extractedVatRate = data.vat_rate ?? parseInt(form.vat_rate) || 27;
+    const extractedVatRate = data.vat_rate ?? (parseInt(form.vat_rate) || 27);
 
     setForm((f) => {
       const next = { ...f };
