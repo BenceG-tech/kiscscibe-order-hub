@@ -788,6 +788,8 @@ const MenuItemManagement = () => {
                 currentImageUrl={itemForm.image_url}
                 onImageUploaded={(url) => setItemForm({...itemForm, image_url: url})}
                 onImageRemoved={() => setItemForm({...itemForm, image_url: ""})}
+                itemName={itemForm.name}
+                itemId={editingItem?.id}
               />
               
               <div>
