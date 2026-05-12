@@ -109,7 +109,8 @@ serve(async (req) => {
     // Upload to Supabase Storage
     const fileId = item_id || crypto.randomUUID();
     const folder = item_id ? "ai-generated" : "ai-generated/standalone";
-    const filePath = `${folder}/${fileId}.${imageExt}`;
+    // Always use a unique filename so subsequent generations don't get cached behind the same URL
+    const filePath = `${folder}/${fileId}-${Date.now()}.${imageExt}`;
     const contentType = `image/${base64Match[1]}`;
 
     const uploadResponse = await fetch(
