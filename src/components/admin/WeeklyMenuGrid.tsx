@@ -707,8 +707,36 @@ export default function WeeklyMenuGrid() {
         </div>
       </div>
 
+      {/* Day Jump Bar + Mirrored Top Scrollbar */}
+      <DayJumpBar
+        weekDates={weekDates}
+        scrollRef={scrollRef}
+        topScrollRef={topScrollRef}
+      />
+
       {/* Grid Table */}
-      <ScrollArea className="w-full rounded-lg border">
+      <div
+        ref={scrollRef}
+        tabIndex={0}
+        onWheel={(e) => {
+          if (e.shiftKey && scrollRef.current) {
+            scrollRef.current.scrollLeft += e.deltaY;
+          }
+        }}
+        onKeyDown={(e) => {
+          if (!scrollRef.current) return;
+          if (e.key === "ArrowRight") { scrollRef.current.scrollBy({ left: 160, behavior: "smooth" }); }
+          if (e.key === "ArrowLeft") { scrollRef.current.scrollBy({ left: -160, behavior: "smooth" }); }
+        }}
+        onScroll={() => {
+          if (syncingRef.current) { syncingRef.current = false; return; }
+          if (topScrollRef.current && scrollRef.current) {
+            syncingRef.current = true;
+            topScrollRef.current.scrollLeft = scrollRef.current.scrollLeft;
+          }
+        }}
+        className="w-full overflow-x-auto rounded-lg border focus:outline-none focus:ring-2 focus:ring-ring"
+      >
         <div className="min-w-[900px]">
           <table className="w-full border-separate border-spacing-0">
             <thead>
@@ -722,7 +750,7 @@ export default function WeeklyMenuGrid() {
                   const itemCount = Object.values(dayItems).reduce((acc, items) => acc + items.length, 0);
                   
                   return (
-                    <th key={idx} className="border-b border-l p-3 text-center font-medium text-sm min-w-[140px]">
+                    <th key={idx} data-day-index={idx} className="border-b border-l p-3 text-center font-medium text-sm min-w-[140px]">
                       <div>{WEEKDAYS[idx]}</div>
                       <div className="text-xs text-muted-foreground font-normal">
                         {format(date, "MM.dd.")}
@@ -847,8 +875,5 @@ export default function WeeklyMenuGrid() {
             </tbody>
           </table>
         </div>
-        <ScrollBar orientation="horizontal" />
-      </ScrollArea>
-    </div>
-  );
-}
+      </div>
+
