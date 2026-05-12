@@ -168,6 +168,7 @@ const FixItems = () => {
     image_url: "",
     is_active: true,
   });
+  const [activeTab, setActiveTab] = useState<string>("");
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
