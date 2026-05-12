@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ImageIcon, Upload, Loader2, X, Sparkles, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import ZoomableImage from "./ZoomableImage";
 
 interface QuickImageUploadProps {
   itemId: string;
