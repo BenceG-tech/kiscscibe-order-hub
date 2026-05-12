@@ -402,7 +402,14 @@ const Etlap = () => {
                             </div>
                             <div className="p-4 md:p-6 space-y-3">
                               <div className="flex items-start justify-between gap-2">
-                                <h4 className="font-semibold">{capitalizeFirst(item.item_name)}</h4>
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-semibold">{capitalizeFirst(item.item_name)}</h4>
+                                  {item.is_menu_part && (
+                                    <Badge variant="outline" className="mt-1 text-[10px] border-primary/40 text-primary">
+                                      Menüben is
+                                    </Badge>
+                                  )}
+                                </div>
                                 <Badge variant="secondary" className="shrink-0 bg-primary/10 text-primary font-semibold">
                                   {item.item_price_huf} Ft
                                 </Badge>
