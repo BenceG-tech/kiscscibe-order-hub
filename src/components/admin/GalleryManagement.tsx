@@ -316,6 +316,26 @@ const GalleryManagement = () => {
                 bucketName="menu-images"
                 isUploading={addMultipleImagesMutation.isPending}
               />
+
+              {addGalleryType === 'food' && (
+                <div className="border-t pt-4 space-y-2">
+                  <Label>Vagy generáltass AI képet egy étel nevéből</Label>
+                  <Input
+                    placeholder="pl. Rántott karaj burgonyával"
+                    value={aiFoodName}
+                    onChange={(e) => setAiFoodName(e.target.value)}
+                  />
+                  <AIGenerateImageButton
+                    itemName={aiFoodName}
+                    onGenerated={(url) => {
+                      addMultipleImagesMutation.mutate([{ url, altText: aiFoodName }]);
+                      setAiFoodName("");
+                    }}
+                    fullWidth
+                    label="AI kép generálása és hozzáadás"
+                  />
+                </div>
+              )}
             </div>
           </DialogContent>
         </Dialog>
