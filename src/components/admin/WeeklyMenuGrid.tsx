@@ -627,6 +627,10 @@ export default function WeeklyMenuGrid() {
 
   const initialOpenDayIndex = useMemo(() => getSmartInitialDayIndex(weekDates), [weekDates]);
 
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const topScrollRef = useRef<HTMLDivElement>(null);
+  const syncingRef = useRef(false);
+
   if (isMobile) {
     return (
       <WeeklyGridMobile
@@ -653,10 +657,6 @@ export default function WeeklyMenuGrid() {
       />
     );
   }
-
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const topScrollRef = useRef<HTMLDivElement>(null);
-  const syncingRef = useRef(false);
 
   return (
     <div className="space-y-4">
