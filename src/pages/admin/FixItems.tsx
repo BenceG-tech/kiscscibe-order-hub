@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import ImageUpload from "@/components/admin/ImageUpload";
 import InfoTip from "@/components/admin/InfoTip";
 import ImagePreviewLightbox from "@/components/admin/ImagePreviewLightbox";
@@ -405,112 +405,165 @@ const FixItems = () => {
           <Card><CardContent className="py-8 text-center text-muted-foreground">Nincsenek kategóriák.</CardContent></Card>
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <div className="sticky top-14 z-20 -mx-4 px-4 py-2 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border">
-              <div className="overflow-x-auto scrollbar-thin">
-                <TabsList className="inline-flex h-auto p-1 gap-1 bg-muted/40">
+            <div className="grid md:grid-cols-[15rem_1fr] gap-4">
+              {/* Mobile: Select dropdown */}
+              <div className="md:hidden sticky top-14 z-20 -mx-4 px-4 py-2 bg-background/95 backdrop-blur border-b border-border">
+                <Select value={activeTab} onValueChange={setActiveTab}>
+                  <SelectTrigger className="w-full h-11">
+                    <SelectValue placeholder="Válassz kategóriát" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((cat) => {
+                      const count = (grouped.map.get(cat.id) || []).length;
+                      return (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          <span className="flex items-center justify-between gap-3 w-full">
+                            <span className={count === 0 ? "text-muted-foreground" : ""}>{cat.name}</span>
+                            <span className="text-xs text-muted-foreground tabular-nums">{count}</span>
+                          </span>
+                        </SelectItem>
+                      );
+                    })}
+                    {grouped.uncategorized.length > 0 && (
+                      <SelectItem value="__uncategorized__">
+                        <span className="flex items-center justify-between gap-3 w-full">
+                          <span>Egyéb</span>
+                          <span className="text-xs text-muted-foreground tabular-nums">{grouped.uncategorized.length}</span>
+                        </span>
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Desktop: Sticky vertical sidebar */}
+              <aside className="hidden md:block">
+                <div className="sticky top-32 space-y-1 max-h-[calc(100vh-10rem)] overflow-y-auto pr-2">
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground px-3 py-2">
+                    Kategóriák
+                  </div>
                   {categories.map((cat) => {
                     const count = (grouped.map.get(cat.id) || []).length;
+                    const isActive = activeTab === cat.id;
                     return (
-                      <TabsTrigger
+                      <button
                         key={cat.id}
-                        value={cat.id}
-                        className="whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                        type="button"
+                        onClick={() => setActiveTab(cat.id)}
+                        className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-md text-sm text-left transition-colors border-l-4 ${
+                          isActive
+                            ? "bg-primary/10 border-primary text-primary font-semibold"
+                            : count === 0
+                              ? "border-transparent text-muted-foreground hover:bg-muted/50"
+                              : "border-transparent hover:bg-muted/60"
+                        }`}
                       >
-                        <span className="font-medium">{cat.name}</span>
+                        <span className="truncate">{cat.name}</span>
                         <Badge
-                          variant={count > 0 ? "secondary" : "outline"}
-                          className="ml-2 h-5 min-w-[20px] px-1.5 text-[10px]"
+                          variant={isActive ? "default" : count > 0 ? "secondary" : "outline"}
+                          className="h-5 min-w-[22px] px-1.5 text-[10px] flex-shrink-0"
                         >
                           {count}
                         </Badge>
-                      </TabsTrigger>
+                      </button>
                     );
                   })}
                   {grouped.uncategorized.length > 0 && (
-                    <TabsTrigger value="__uncategorized__" className="whitespace-nowrap">
-                      Egyéb
-                      <Badge variant="secondary" className="ml-2 h-5 min-w-[20px] px-1.5 text-[10px]">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("__uncategorized__")}
+                      className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-md text-sm text-left transition-colors border-l-4 ${
+                        activeTab === "__uncategorized__"
+                          ? "bg-primary/10 border-primary text-primary font-semibold"
+                          : "border-transparent hover:bg-muted/60"
+                      }`}
+                    >
+                      <span className="truncate">Egyéb</span>
+                      <Badge variant="secondary" className="h-5 min-w-[22px] px-1.5 text-[10px] flex-shrink-0">
                         {grouped.uncategorized.length}
                       </Badge>
-                    </TabsTrigger>
+                    </button>
                   )}
-                </TabsList>
+                </div>
+              </aside>
+
+              {/* Content */}
+              <div className="min-w-0">
+                {categories.map((cat) => {
+                  const list = grouped.map.get(cat.id) || [];
+                  const showImages = displaySettings[cat.id]?.showImages !== false;
+                  return (
+                    <TabsContent key={cat.id} value={cat.id} className="mt-0">
+                      <Card>
+                        <CardContent className="p-3 sm:p-4 space-y-3">
+                          <div className="flex items-center justify-between gap-3 flex-wrap pb-3 border-b border-border">
+                            <div className="flex items-center gap-2">
+                              <h2 className="text-lg font-semibold">{cat.name}</h2>
+                              <Badge variant="secondary">{list.length} tétel</Badge>
+                            </div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <label className="flex items-center gap-2 text-sm cursor-pointer px-2 py-1 rounded-md bg-muted/40">
+                                {showImages ? <ImageIcon className="h-4 w-4 text-primary" /> : <List className="h-4 w-4 text-muted-foreground" />}
+                                <span className="hidden sm:inline">{showImages ? "Képes" : "Lista"}</span>
+                                <Switch checked={showImages} onCheckedChange={(v) => toggleCategoryImages(cat.id, v)} />
+                              </label>
+                              <Button size="sm" variant="outline" onClick={() => openCreate(cat.id)}>
+                                <FilePlus2 className="h-4 w-4 mr-1" />
+                                <span className="hidden sm:inline">Új tétel</span>
+                                <span className="sm:hidden">Új</span>
+                              </Button>
+                              <Button size="sm" onClick={() => setAddExistingFor({ id: cat.id, name: cat.name })}>
+                                <PackageSearch className="h-4 w-4 mr-1" />
+                                <span className="hidden sm:inline">Meglévő hozzáadása</span>
+                                <span className="sm:hidden">Meglévő</span>
+                              </Button>
+                            </div>
+                          </div>
+
+                          {list.length === 0 ? (
+                            <p className="text-sm text-muted-foreground py-8 text-center">Nincs tétel ebben a kategóriában. Adj hozzá egyet a fenti gombokkal.</p>
+                          ) : (
+                            <DndContext
+                              sensors={sensors}
+                              collisionDetection={closestCenter}
+                              onDragEnd={(e) => handleDragEnd(e, cat.id)}
+                            >
+                              <SortableContext items={list.map((i) => i.id)} strategy={verticalListSortingStrategy}>
+                                <div className="space-y-2">
+                                  {list.map((it) => (
+                                    <FixItemRow
+                                      key={it.id}
+                                      item={it}
+                                      onEdit={openEdit}
+                                      onDelete={deleteItem}
+                                      onToggleActive={toggleActive}
+                                      onUnpin={unpinFromFix}
+                                    />
+                                  ))}
+                                </div>
+                              </SortableContext>
+                            </DndContext>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </TabsContent>
+                  );
+                })}
+
+                {grouped.uncategorized.length > 0 && (
+                  <TabsContent value="__uncategorized__" className="mt-0">
+                    <Card>
+                      <CardContent className="p-3 sm:p-4 space-y-2">
+                        <h2 className="text-lg font-semibold pb-3 border-b border-border">Kategória nélküli</h2>
+                        {grouped.uncategorized.map((it) => (
+                          <FixItemRow key={it.id} item={it} onEdit={openEdit} onDelete={deleteItem} onToggleActive={toggleActive} onUnpin={unpinFromFix} />
+                        ))}
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+                )}
               </div>
             </div>
-
-            {categories.map((cat) => {
-              const list = grouped.map.get(cat.id) || [];
-              const showImages = displaySettings[cat.id]?.showImages !== false;
-              return (
-                <TabsContent key={cat.id} value={cat.id} className="mt-4">
-                  <Card>
-                    <CardContent className="p-3 sm:p-4 space-y-3">
-                      <div className="flex items-center justify-between gap-3 flex-wrap pb-3 border-b border-border">
-                        <div className="flex items-center gap-2">
-                          <h2 className="text-lg font-semibold">{cat.name}</h2>
-                          <Badge variant="secondary">{list.length} tétel</Badge>
-                        </div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <label className="flex items-center gap-2 text-sm cursor-pointer px-2 py-1 rounded-md bg-muted/40">
-                            {showImages ? <ImageIcon className="h-4 w-4 text-primary" /> : <List className="h-4 w-4 text-muted-foreground" />}
-                            <span className="hidden sm:inline">{showImages ? "Képes" : "Lista"}</span>
-                            <Switch checked={showImages} onCheckedChange={(v) => toggleCategoryImages(cat.id, v)} />
-                          </label>
-                          <Button size="sm" variant="outline" onClick={() => openCreate(cat.id)}>
-                            <FilePlus2 className="h-4 w-4 mr-1" />
-                            <span className="hidden sm:inline">Új tétel</span>
-                            <span className="sm:hidden">Új</span>
-                          </Button>
-                          <Button size="sm" onClick={() => setAddExistingFor({ id: cat.id, name: cat.name })}>
-                            <PackageSearch className="h-4 w-4 mr-1" />
-                            <span className="hidden sm:inline">Meglévő hozzáadása</span>
-                            <span className="sm:hidden">Meglévő</span>
-                          </Button>
-                        </div>
-                      </div>
-
-                      {list.length === 0 ? (
-                        <p className="text-sm text-muted-foreground py-8 text-center">Nincs tétel ebben a kategóriában. Adj hozzá egyet a fenti gombokkal.</p>
-                      ) : (
-                        <DndContext
-                          sensors={sensors}
-                          collisionDetection={closestCenter}
-                          onDragEnd={(e) => handleDragEnd(e, cat.id)}
-                        >
-                          <SortableContext items={list.map((i) => i.id)} strategy={verticalListSortingStrategy}>
-                            <div className="space-y-2">
-                              {list.map((it) => (
-                                <FixItemRow
-                                  key={it.id}
-                                  item={it}
-                                  onEdit={openEdit}
-                                  onDelete={deleteItem}
-                                  onToggleActive={toggleActive}
-                                  onUnpin={unpinFromFix}
-                                />
-                              ))}
-                            </div>
-                          </SortableContext>
-                        </DndContext>
-                      )}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              );
-            })}
-
-            {grouped.uncategorized.length > 0 && (
-              <TabsContent value="__uncategorized__" className="mt-4">
-                <Card>
-                  <CardContent className="p-3 sm:p-4 space-y-2">
-                    <h2 className="text-lg font-semibold pb-3 border-b border-border">Kategória nélküli</h2>
-                    {grouped.uncategorized.map((it) => (
-                      <FixItemRow key={it.id} item={it} onEdit={openEdit} onDelete={deleteItem} onToggleActive={toggleActive} onUnpin={unpinFromFix} />
-                    ))}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            )}
           </Tabs>
         )}
 
