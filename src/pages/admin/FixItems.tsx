@@ -125,16 +125,26 @@ const FixItemRow = ({
         <Button variant="ghost" size="sm" onClick={() => onToggleActive(item)} className="h-8 w-8 p-0" title={item.is_active ? "Inaktívvá tesz" : "Aktívvá tesz"}>
           {item.is_active ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4 text-muted-foreground" />}
         </Button>
-        <Button variant="ghost" size="sm" onClick={() => onEdit(item)} className="h-8 w-8 p-0">
+        <Button variant="ghost" size="sm" onClick={() => onEdit(item)} className="h-8 w-8 p-0" title="Szerkesztés">
           <Edit className="h-4 w-4" />
         </Button>
         <Button
           variant="ghost"
           size="sm"
+          onClick={() => onUnpin(item)}
+          className="h-8 w-8 p-0"
+          title="Eltávolítás a fixekből (megmarad az étlapon)"
+        >
+          <PinOff className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => {
-            if (confirm(`Biztosan törlöd: "${item.name}"?`)) onDelete(item.id);
+            if (confirm(`Véglegesen TÖRLI a tételt: "${item.name}"?\n\nHa csak a fixekből szeretnéd kivenni, használd a kitűző-eltávolítás (PinOff) gombot.`)) onDelete(item.id);
           }}
           className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+          title="Végleges törlés"
         >
           <Trash2 className="h-4 w-4" />
         </Button>
