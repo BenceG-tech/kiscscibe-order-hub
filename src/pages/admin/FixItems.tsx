@@ -70,11 +70,13 @@ const FixItemRow = ({
   onEdit,
   onDelete,
   onToggleActive,
+  onUnpin,
 }: {
   item: MenuItem;
   onEdit: (it: MenuItem) => void;
   onDelete: (id: string) => void;
   onToggleActive: (it: MenuItem) => void;
+  onUnpin: (it: MenuItem) => void;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
   const style = {
