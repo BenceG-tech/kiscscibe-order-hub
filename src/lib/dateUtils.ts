@@ -32,6 +32,34 @@ export const getSmartWeekStart = (): Date => {
   return currentWeekMonday;
 };
 
+/**
+ * Returns the index (0-4) of the day that should be open by default
+ * in the mobile weekly grid. Picks today if the week contains today and
+ * it's before 16:00; otherwise the next weekday in the visible week.
+ * Falls back to 0 (Monday) if none match (past/future weeks).
+ */
+export const getSmartInitialDayIndex = (weekDates: Date[]): number => {
+  if (!weekDates?.length) return 0;
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const afterCutoff = now.getHours() >= 16;
+
+  const fmt = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+  const todayIdx = weekDates.findIndex((d) => fmt(d) === todayStr);
+
+  if (todayIdx !== -1) {
+    if (!afterCutoff) return todayIdx;
+    // After cutoff -> next weekday in this week, otherwise stay on today
+    return todayIdx < weekDates.length - 1 ? todayIdx + 1 : todayIdx;
+  }
+
+  // Week is in past or future: find first day >= today
+  const nextIdx = weekDates.findIndex((d) => fmt(d) >= todayStr);
+  return nextIdx === -1 ? 0 : nextIdx;
+};
+
 // ... keep existing code (getSmartInitialDate, isAfterClosingHours, getNextBusinessDay, shouldShowTomorrowContent, getContentLabel)
 
 /**

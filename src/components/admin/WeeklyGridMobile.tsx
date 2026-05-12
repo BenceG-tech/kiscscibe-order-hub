@@ -5,7 +5,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ChevronLeft, ChevronRight, ChevronDown, Loader2, Check, Download } from "lucide-react";
 import { WeeklyGridCell } from "./WeeklyGridCell";
 import { DailyPriceInput } from "./DailyPriceInput";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 interface MenuItem {
@@ -53,6 +53,7 @@ interface WeeklyGridMobileProps {
   isLoading: boolean;
   isPending: boolean;
   onExport?: () => void;
+  initialOpenDayIndex?: number;
 }
 
 const WEEKDAYS = ["Hétfő", "Kedd", "Szerda", "Csütörtök", "Péntek"];
@@ -77,8 +78,13 @@ export function WeeklyGridMobile({
   isLoading,
   isPending,
   onExport,
+  initialOpenDayIndex = 0,
 }: WeeklyGridMobileProps) {
-  const [openDays, setOpenDays] = useState<Record<number, boolean>>({ 0: true });
+  const [openDays, setOpenDays] = useState<Record<number, boolean>>({ [initialOpenDayIndex]: true });
+
+  useEffect(() => {
+    setOpenDays({ [initialOpenDayIndex]: true });
+  }, [initialOpenDayIndex]);
 
   const toggleDay = (index: number) => {
     setOpenDays(prev => ({ ...prev, [index]: !prev[index] }));

@@ -314,6 +314,7 @@ import AIGenerateImageButton from "./AIGenerateImageButton";
                     itemId={itemId || undefined}
                     onGenerated={(url) => setImageUrl(url)}
                     fullWidth
+                    hasExistingImage={!!imageUrl}
                   />
                 </div>
               </div>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -13,6 +13,7 @@ interface AIGenerateImageButtonProps {
   variant?: "default" | "outline" | "secondary";
   label?: string;
   fullWidth?: boolean;
+  hasExistingImage?: boolean;
 }
 
 const AIGenerateImageButton = ({
@@ -22,10 +23,13 @@ const AIGenerateImageButton = ({
   disabled,
   size = "sm",
   variant = "outline",
-  label = "AI kép generálása",
+  label,
   fullWidth,
+  hasExistingImage = false,
 }: AIGenerateImageButtonProps) => {
   const [loading, setLoading] = useState(false);
+  const effectiveLabel = label ?? (hasExistingImage ? "Új AI kép" : "AI kép generálása");
+  const effectiveVariant = hasExistingImage && variant === "outline" ? "secondary" : variant;
 
   const handleClick = async () => {
     if (!itemName?.trim()) {
@@ -53,7 +57,7 @@ const AIGenerateImageButton = ({
   return (
     <Button
       type="button"
-      variant={variant}
+      variant={effectiveVariant}
       size={size}
       onClick={handleClick}
       disabled={disabled || loading}
@@ -61,10 +65,12 @@ const AIGenerateImageButton = ({
     >
       {loading ? (
         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+      ) : hasExistingImage ? (
+        <RefreshCw className="h-4 w-4 mr-2" />
       ) : (
         <Sparkles className="h-4 w-4 mr-2" />
       )}
-      {loading ? "Generálás..." : label}
+      {loading ? "Generálás..." : effectiveLabel}
     </Button>
   );
 };
