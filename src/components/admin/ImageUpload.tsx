@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Upload, X, Image } from "lucide-react";
+import { Upload, X, Image, Maximize2 } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/loading";
+import ImagePreviewLightbox from "./ImagePreviewLightbox";
 
 interface ImageUploadProps {
   currentImageUrl?: string;
@@ -24,6 +25,11 @@ const ImageUpload = ({
 }: ImageUploadProps) => {
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentImageUrl || null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+
+  useEffect(() => {
+    setPreviewUrl(currentImageUrl || null);
+  }, [currentImageUrl]);
 
   const uploadImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -104,17 +110,27 @@ const ImageUpload = ({
       
       {previewUrl ? (
         <div className="relative">
-          <div className="w-full max-w-xs mx-auto">
-            <img 
-              src={previewUrl} 
-              alt="Preview" 
-              className="w-full h-48 object-cover rounded-lg border border-border"
-            />
+          <div className="w-full max-w-xs mx-auto relative group">
+            <button
+              type="button"
+              onClick={() => setLightboxOpen(true)}
+              className="block w-full focus:outline-none focus:ring-2 focus:ring-primary rounded-lg"
+              aria-label="Kép nagyítása"
+            >
+              <img
+                src={previewUrl}
+                alt="Preview"
+                className="w-full h-48 object-cover rounded-lg border border-border cursor-zoom-in transition-transform group-hover:scale-[1.01]"
+              />
+              <span className="absolute bottom-2 left-2 bg-background/80 backdrop-blur-sm rounded-md p-1.5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                <Maximize2 className="h-4 w-4 text-foreground" />
+              </span>
+            </button>
             <Button
               type="button"
               variant="destructive"
               size="sm"
-              className="absolute top-2 right-2"
+              className="absolute top-2 right-2 z-10"
               onClick={removeImage}
             >
               <X className="h-4 w-4" />
@@ -149,6 +165,8 @@ const ImageUpload = ({
           </div>
         </div>
       )}
+
+      <ImagePreviewLightbox src={previewUrl} open={lightboxOpen} onOpenChange={setLightboxOpen} />
     </div>
   );
 };
