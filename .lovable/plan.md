@@ -1,42 +1,69 @@
 # Probléma
 
-A `/admin/daily-menu` → "Napi ajánlatok" tab `WeeklyMenuGrid` táblázata 900px+ széles. Desktopon, ha valaki **nem** trackpadet használ, a vízszintes görgetéshez le kell tekerni a lap aljára, hogy elérje a böngésző alján megjelenő scrollbart. Ez nehezíti a péntek oszlop elérését.
+1. **Az „Étel szerkesztése" dialógusban (és több admin felületen) a kis képre még mindig nem lehet rákattintani**, hogy nagyban megnézd. A `MenuItemEditDialog`, `QuickImageUpload`, `MultiImageUpload`, `WeeklyGridCell`, `DailyOfferImageGenerator` mind sima `<img>`-et használ, lightbox nélkül.
+2. **A Fix tételek oldalon** a kategóriák egy hosszú vízszintes scrollos tab-sávban vannak (Levesek, Tészta ételek, Köretek, Főzelékek, Főzelék feltét, Rántott ételek, Desszertek, Csirkés-zöldséges, …). Ennyi kategóriánál a horizontális görgetés sem desktopon, sem mobilon nem felhasználóbarát.
 
 # Megoldás
 
-A `WeeklyMenuGrid.tsx` jelenleg egy `ScrollArea`-t használ vízszintes `ScrollBar`-ral a tartalom alatt. Több, egymást kiegészítő apró javítást teszünk, ami egér-felhasználóknak is azonnal kényelmessé teszi a navigációt — minden a komponens prezentációs rétegében marad, üzleti logika nem változik.
+## 1) „Nagyítható kép" mindenhol — egységes megoldás
 
-## 1) Felül egy "navigációs sáv" a napokhoz (fő megoldás)
+Minden helyen ugyanazt a **`ImagePreviewLightbox`** komponenst használjuk (már létezik). Bevezetünk egy apró, egyszerű wrapper komponenst, hogy ne ismételjük magunkat:
 
-A táblázat fölé, a hét-választó alá berakunk egy **sticky** kis sávot:
-- Bal/jobb nyíl gombok (oszlopnyi görgetés balra/jobbra).
-- 5 nap "chip" (H, K, Sze, Cs, P + dátum), kattintásra az adott oszlop a látható területre görget (`scrollIntoView({ behavior:"smooth", inline:"center" })`).
-- Az aktuálisan látható nap chipje kiemelve.
-- A sáv `sticky top-…` a admin headert követve, hogy görgetés közben is elérhető legyen.
+- **Új:** `src/components/admin/ZoomableImage.tsx` — egy `<button>` + `<img>` + beépített `ImagePreviewLightbox`. Props: `src, alt, className, thumbClassName`. A hover-en megjelenik egy `Maximize2` ikon overlay (mint az `ImageUpload`-ban).
+- A jelenlegi `<img>` használatokat lecseréljük `ZoomableImage`-re az alábbi fájlokban:
+  - `src/components/admin/MenuItemEditDialog.tsx` (a 334. sor körüli preview kép — **ez a csatolt képen látható konkrét eset**)
+  - `src/components/admin/QuickImageUpload.tsx` (147. sor)
+  - `src/components/admin/MultiImageUpload.tsx` (197. sor)
+  - `src/components/admin/WeeklyGridCell.tsx` (109. és 230. sor — napi rácson látható thumbnail-ek)
+  - `src/components/admin/DailyOfferImageGenerator.tsx` (750., 889., 940. sor — a generált FB képek és előnézetek)
 
-Így soha nem kell az aljára menni: egy kattintás = ugrás Péntekre.
+A meglévő törlés/X gombok és funkciók változatlanok maradnak, csak a thumbnail kattinthatóvá válik (a delete `<button>` `onClick` `e.stopPropagation()`-nel marad).
 
-## 2) Tükrözött vízszintes scrollbar a tetején
+## 2) Fix tételek kategória-navigáció — új layout
 
-Egy vékony, mindig látható horizontal scrollbar a táblázat **fölé**, ami szinkronban van az alsóval (két `div` `onScroll` egymást vezérli). Egér-húzásos görgetésre is alkalmas anélkül, hogy a táblázat aljáig kéne menni.
+A jelenlegi `Tabs` + horizontal scroll helyett **kétféle nézet, breakpoint alapján**:
 
-## 3) Shift + egérgörgő → vízszintes görgetés
+### Desktop (md ≥ 768px) — bal oldali sticky kategória-lista
+```text
+┌─────────────────┬───────────────────────────────────────┐
+│  KATEGÓRIÁK     │  Rántott ételek           [Képes ⊙]   │
+│  ──────────     │  3 tétel    [+ Új]  [Meglévő]         │
+│  ▸ Levesek   0  │  ─────────────────────────────────    │
+│  ▸ Tészta    0  │  ⋮⋮  🍗  Rántott csirkemell  2150 Ft │
+│  ▸ Köretek   0  │  ⋮⋮  🍖  Rántott karaj      2150 Ft  │
+│  ▸ Főzelék   0  │  ⋮⋮  🧀  Rántott sajt       2150 Ft  │
+│  ● Rántott   3  │                                       │
+│  ▸ Desszert  0  │                                       │
+│  ▸ Csirkés…  0  │                                       │
+└─────────────────┴───────────────────────────────────────┘
+```
+- Bal oldal: **`w-56` sticky vertikális lista** (sticky `top-32`), saját scrollbar ha sok a kategória.
+- Minden sor: kategória név + jobb oldalt count badge.
+- Aktív kategória: `bg-primary/10 border-l-4 border-primary text-primary` kiemelés.
+- Üres kategóriák halványabban (`text-muted-foreground`) — látszik melyikben van valódi tartalom.
+- Opcionális mini „search" input a lista tetején, ha 8+ kategória van (gyors szűrés név alapján). Csak az ikon-input megy be, kis YAGNI-toleranciával — egy `Input` `placeholder="Keresés…"`.
 
-A scroll konténerre `onWheel` handler: ha `e.shiftKey` (vagy ha vízszintes mozgás 0 és csak vertikális van, opcionálisan átfordítjuk Shift nélkül is — ezt biztonság kedvéért csak Shift-tel csináljuk, hogy a normál függőleges görgetést ne törjük).
+### Mobil (< md) — sima `Select` dropdown
+- A bal sávot egy szép, full-width **`Select`** váltja ki: pl. „Rántott ételek (3)".
+- Egy kattintás → natív-szerű dropdown az összes kategóriával + count-tal.
+- Nincs többé vízszintes görgetés. Az aktív kategória neve és a count azonnal látszik.
+- A kategória-fejléc (cím + Képes toggle + Új/Meglévő gombok) marad a tartalom tetején, kompakt elrendezésben.
 
-## 4) Apróságok
+### Megtartjuk a `Tabs` állapotkezelést
+A `Tabs` Radix komponens a háttérben marad (állapot + content váltás), csak a `TabsList` UI-t cseréljük le a fenti két nézetre (`hidden md:block` + `md:hidden`). Az `activeTab` state és minden meglévő logika változatlan.
 
-- A scroll konténerre `tabIndex={0}` + `←`/`→` billentyű = oszloplépés.
-- A bal nyíl gomb disabled-re vált, ha már a Hétfő látszik; jobb nyíl, ha a Péntek látszik (egyszerű `scrollLeft`/`scrollWidth` ellenőrzés).
+# Érintett fájlok
 
-# Érintett fájl
-
-- `src/components/admin/WeeklyMenuGrid.tsx` — kb. 711–851 sor körüli render rész:
-  - A `ScrollArea` helyett (vagy köré) sima `div ref` + `overflow-x-auto` konténer, hogy `scrollLeft`-et tudjunk vezérelni.
-  - Új kis komponens helyben: `DayJumpBar` (nyilak + chipek + felső scrollbar), nem külön fájlban, hogy a meglévő struktúra ne bomoljon.
-  - A `<th>` cellákhoz `data-day-index` attribútum, hogy a chipekből el tudjuk érni őket scrollIntoView-hoz.
+- **Új:** `src/components/admin/ZoomableImage.tsx`
+- `src/components/admin/MenuItemEditDialog.tsx` (1 csere)
+- `src/components/admin/QuickImageUpload.tsx` (1 csere)
+- `src/components/admin/MultiImageUpload.tsx` (1 csere)
+- `src/components/admin/WeeklyGridCell.tsx` (2 csere)
+- `src/components/admin/DailyOfferImageGenerator.tsx` (3 csere)
+- `src/pages/admin/FixItems.tsx` — a `TabsList` blokk (kb. 408–439 sor) cseréje a fenti split layoutra; a `TabsContent` rész marad. A `Card` belső header (cím + Képes toggle + gombok) és a sortable lista szintén marad.
 
 # Nem változik
 
-- Adatlekérdezések, mutációk, RLS, üzleti logika, mobil nézet (`WeeklyGridMobile`).
-- Színek/tokenek a meglévő semantic tokeneket használják.
+- Adatlekérdezések, mutációk, RLS, üzleti logika, képgeneráló edge function.
+- A drag-and-drop sorrendezés, a Képes/Lista toggle, az „Új tétel" / „Meglévő hozzáadása" funkciók viselkedése.
+- Az `ImagePreviewLightbox` komponens API-ja.
