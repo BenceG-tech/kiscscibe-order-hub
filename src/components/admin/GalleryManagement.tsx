@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { Plus, Trash2, ArrowUp, ArrowDown, Pencil, Image as ImageIcon, Loader2, Utensils, Building2, ArrowRightLeft } from "lucide-react";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import MultiImageUpload from "./MultiImageUpload";
+import AIGenerateImageButton from "./AIGenerateImageButton";
 
 type GalleryType = "food" | "interior";
 
