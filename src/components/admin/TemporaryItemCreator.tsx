@@ -9,6 +9,7 @@ import { Plus, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import ImageUpload from './ImageUpload';
+import AIGenerateImageButton from './AIGenerateImageButton';
 import { capitalizeFirst } from '@/lib/utils';
 
 interface MenuCategory {
