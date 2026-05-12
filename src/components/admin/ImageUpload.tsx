@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Upload, X, Image, Maximize2 } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/loading";
 import ImagePreviewLightbox from "./ImagePreviewLightbox";
+import AIGenerateImageButton from "./AIGenerateImageButton";
 
 interface ImageUploadProps {
   currentImageUrl?: string;
@@ -14,6 +15,8 @@ interface ImageUploadProps {
   onImageRemoved: () => void;
   bucketName?: string;
   maxSize?: number; // in MB
+  itemName?: string;
+  itemId?: string;
 }
 
 const ImageUpload = ({ 
@@ -21,7 +24,9 @@ const ImageUpload = ({
   onImageUploaded, 
   onImageRemoved,
   bucketName = "menu-images",
-  maxSize = 5
+  maxSize = 5,
+  itemName,
+  itemId,
 }: ImageUploadProps) => {
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentImageUrl || null);
@@ -164,6 +169,19 @@ const ImageUpload = ({
             </p>
           </div>
         </div>
+      )}
+
+      {itemName !== undefined && (
+        <AIGenerateImageButton
+          itemName={itemName || ""}
+          itemId={itemId}
+          onGenerated={(url) => {
+            setPreviewUrl(url);
+            onImageUploaded(url);
+          }}
+          fullWidth
+          hasExistingImage={!!previewUrl}
+        />
       )}
 
       <ImagePreviewLightbox src={previewUrl} open={lightboxOpen} onOpenChange={setLightboxOpen} />

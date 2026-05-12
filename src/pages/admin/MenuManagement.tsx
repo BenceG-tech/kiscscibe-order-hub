@@ -330,6 +330,8 @@ const MenuManagement = () => {
                     onImageUploaded={(url) => setItemForm({...itemForm, image_url: url})}
                     onImageRemoved={() => setItemForm({...itemForm, image_url: ""})}
                     bucketName="menu-images"
+                    itemName={itemForm.name}
+                    itemId={editingItem?.id}
                   />
                 </div>
                 
