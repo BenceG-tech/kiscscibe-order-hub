@@ -263,8 +263,8 @@ const Etlap = () => {
   // Check if daily offer is sold out
   const isSoldOut = dailyData?.offer_remaining_portions === 0;
 
-  // Get extra items (not part of menu)
-  const extraItems = dailyData?.items.filter(item => !item.is_menu_part) || [];
+  // Show all items individually so menu-part items can also be ordered separately
+  const extraItems = dailyData?.items || [];
 
   return (
     <div className="min-h-screen bg-background">
