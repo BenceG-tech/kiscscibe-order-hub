@@ -1,55 +1,42 @@
-## Terv
+# Probléma
 
-### 1) Kép nagyítás (lightbox) minden AI kép generálási helyen
+A `/admin/daily-menu` → "Napi ajánlatok" tab `WeeklyMenuGrid` táblázata 900px+ széles. Desktopon, ha valaki **nem** trackpadet használ, a vízszintes görgetéshez le kell tekerni a lap aljára, hogy elérje a böngésző alján megjelenő scrollbart. Ez nehezíti a péntek oszlop elérését.
 
-**Új komponens:** `src/components/admin/ImagePreviewLightbox.tsx`
-- Egyszerű Dialog, ami teljes méretben megjeleníti a képet
-- Bezárás X-szel vagy háttérre kattintással
-- Letöltés gomb opcionálisan
+# Megoldás
 
-**`src/components/admin/ImageUpload.tsx` módosítása:**
-- A jelenlegi thumbnail képet `<button>`-ba csomagoljuk
-- Kattintásra megnyílik a lightbox
-- A meglévő ✕ (eltávolítás) gomb külön marad, nem indítja a lightboxot
-- Hover állapotban kis nagyító (Maximize2) ikon a kép sarkában jelzi, hogy kattintható
+A `WeeklyMenuGrid.tsx` jelenleg egy `ScrollArea`-t használ vízszintes `ScrollBar`-ral a tartalom alatt. Több, egymást kiegészítő apró javítást teszünk, ami egér-felhasználóknak is azonnal kényelmessé teszi a navigációt — minden a komponens prezentációs rétegében marad, üzleti logika nem változik.
 
-Ez automatikusan érvényesül mindenhol, ahol `ImageUpload` van használva:
-- Fix tételek dialog
-- MenuItemEditDialog (étlap szerkesztés)
-- Daily menu szerkesztés
-- TemporaryItemCreator
-- Galéria feltöltés stb.
+## 1) Felül egy "navigációs sáv" a napokhoz (fő megoldás)
 
-**Egyéb képes helyek ellenőrzése:**
-- `MultiImageUpload.tsx`, `QuickImageUpload.tsx`, `AnnouncementEditor.tsx` banner kép, `DailyOfferImageGenerator.tsx` előnézet → ugyanazt a lightboxot kapják
+A táblázat fölé, a hét-választó alá berakunk egy **sticky** kis sávot:
+- Bal/jobb nyíl gombok (oszlopnyi görgetés balra/jobbra).
+- 5 nap "chip" (H, K, Sze, Cs, P + dátum), kattintásra az adott oszlop a látható területre görget (`scrollIntoView({ behavior:"smooth", inline:"center" })`).
+- Az aktuálisan látható nap chipje kiemelve.
+- A sáv `sticky top-…` a admin headert követve, hogy görgetés közben is elérhető legyen.
 
-### 2) Fix tételek átláthatóbb megjelenítése (tab-os nézet)
+Így soha nem kell az aljára menni: egy kattintás = ugrás Péntekre.
 
-**`src/pages/admin/FixItems.tsx` átalakítása:**
+## 2) Tükrözött vízszintes scrollbar a tetején
 
-Jelenleg minden kategória egymás alatt egy nagy Card-ban → sok görgetés.
-Helyette **kategória tab sáv** felül:
+Egy vékony, mindig látható horizontal scrollbar a táblázat **fölé**, ami szinkronban van az alsóval (két `div` `onScroll` egymást vezérli). Egér-húzásos görgetésre is alkalmas anélkül, hogy a táblázat aljáig kéne menni.
 
-```text
-[Italok 12] [Savanyúság 4] [Desszertek 6] [Köretek 3] ...
-```
+## 3) Shift + egérgörgő → vízszintes görgetés
 
-- `Tabs` komponens (shadcn) horizontálisan görgethető tab listával (mobilon `overflow-x-auto`, AdminLayout standard)
-- Minden tab fülön: az adott kategória darabszám badge + display toggle (Képes/Lista) + "Új" / "Meglévő hozzáadása" gombok egy kompakt sorban
-- Alatta csak az adott kategória drag-and-drop listája
-- "Mind" fül opcionálisan: mindent egyben mutat (jelenlegi nézet), ha valakinek mégis kell
+A scroll konténerre `onWheel` handler: ha `e.shiftKey` (vagy ha vízszintes mozgás 0 és csak vertikális van, opcionálisan átfordítjuk Shift nélkül is — ezt biztonság kedvéért csak Shift-tel csináljuk, hogy a normál függőleges görgetést ne törjük).
 
-**URL state:** aktív tab `?cat=<id>` query paraméterben → frissítés után megőrzi
-**Üres kategóriák:** halványítva, de elérhetők (hogy hozzá tudj adni)
-**Kategória nélküli** elemek külön "Egyéb" tab-on
+## 4) Apróságok
 
-**Eredmény:** egyszerre csak 1 kategóriát látsz → jóval kevesebb görgetés, gyorsabb átkapcsolás.
+- A scroll konténerre `tabIndex={0}` + `←`/`→` billentyű = oszloplépés.
+- A bal nyíl gomb disabled-re vált, ha már a Hétfő látszik; jobb nyíl, ha a Péntek látszik (egyszerű `scrollLeft`/`scrollWidth` ellenőrzés).
 
-### Érintett fájlok
+# Érintett fájl
 
-- ÚJ: `src/components/admin/ImagePreviewLightbox.tsx`
-- MÓD: `src/components/admin/ImageUpload.tsx` (kattintható thumb + lightbox)
-- MÓD: `src/pages/admin/FixItems.tsx` (Tabs alapú elrendezés)
-- (esetleg) MÓD: `MultiImageUpload.tsx`, `QuickImageUpload.tsx` ha gyorsan beleilleszthető
+- `src/components/admin/WeeklyMenuGrid.tsx` — kb. 711–851 sor körüli render rész:
+  - A `ScrollArea` helyett (vagy köré) sima `div ref` + `overflow-x-auto` konténer, hogy `scrollLeft`-et tudjunk vezérelni.
+  - Új kis komponens helyben: `DayJumpBar` (nyilak + chipek + felső scrollbar), nem külön fájlban, hogy a meglévő struktúra ne bomoljon.
+  - A `<th>` cellákhoz `data-day-index` attribútum, hogy a chipekből el tudjuk érni őket scrollIntoView-hoz.
 
-Backend / adatbázis változás **nincs**, csak UI.
+# Nem változik
+
+- Adatlekérdezések, mutációk, RLS, üzleti logika, mobil nézet (`WeeklyGridMobile`).
+- Színek/tokenek a meglévő semantic tokeneket használják.
