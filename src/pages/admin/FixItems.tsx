@@ -153,6 +153,8 @@ const FixItemRow = ({
           <Trash2 className="h-4 w-4" />
         </Button>
       </div>
+
+      <ImagePreviewLightbox src={item.image_url} open={previewOpen} onOpenChange={setPreviewOpen} alt={item.name} />
     </div>
   );
 };
