@@ -275,7 +275,7 @@ import DuplicateResolverDialog, { DuplicateCandidate } from "./DuplicateResolver
                 <Input
                   id="name"
                   value={name}
-                  onChange={(e) => { setName(e.target.value); setDuplicateWarning(null); }}
+                  onChange={(e) => setName(e.target.value)}
                   placeholder="Étel neve"
                 />
              </div>
