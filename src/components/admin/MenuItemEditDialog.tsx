@@ -302,12 +302,18 @@ import AIGenerateImageButton from "./AIGenerateImageButton";
                     <ImageIcon className="h-8 w-8 text-muted-foreground" />
                   </div>
                 )}
-                <div>
+                <div className="space-y-2">
                   <Input
                     type="file"
                     accept="image/*"
                     onChange={handleImageUpload}
                     className="w-full"
+                  />
+                  <AIGenerateImageButton
+                    itemName={name}
+                    itemId={itemId || undefined}
+                    onGenerated={(url) => setImageUrl(url)}
+                    fullWidth
                   />
                 </div>
               </div>
