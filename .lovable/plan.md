@@ -1,79 +1,45 @@
 ## Cél
 
-Két javítás:
-1. **Menü részeként jelölt étel külön is rendelhető legyen** (ne csak a komplett menüben).
-2. **AI képgenerálás kiterjesztése** további helyekre (Mesterétel-könyvtár, Ideiglenes ételek, Galéria).
+Az AI által generált ételképek a jövőben ne stúdió-fotó stílusú "fehér porcelán tányér sötét palán" felállásban készüljenek, hanem a Kiscsibe Étterem valódi tálalási stílusát tükrözzék — ahogy a feltöltött referenciaképeken is látszik.
 
----
+## Két autentikus stílus (véletlenszerűen váltakozva)
 
-## 1) Menüs ételek külön rendelhetősége
+**A) Fehér papír (műanyag) ovális tányér**
+- Egyszerű fehér, enyhén fényes ovális elviteles tányér
+- Sötét/sötétszürke asztal háttér
+- Felülről kicsit ferdén fotózva (kb. 60–75°)
+- Természetes nappali fény
+- Magyaros tálalás, friss petrezselyem zöld díszítés
 
-### Jelenlegi állapot
+**B) Kartondoboz piros-fehér kockás papírral**
+- Barna kraft kartondoboz (elviteles)
+- Belül piros-fehér kockás (vichy mintás) sütőpapír
+- Az étel a kockás papíron fekszik
+- Háttér: fa asztal vagy étterem belső, kicsit elmosódva
+- Ferde, közeli kompozíció, természetes fény
+- Mellette kis friss saláta-uborka-paradicsom dekor (opcionális)
 
-A `daily_offer_items` tábla `is_menu_part` mezője alapján:
-- A komplett menü (leves + főétel + desszert) egyben rendelhető a `DailyMenuPanel`-ből.
-- Az "extra ételek" listából (`Etlap.tsx` 267. sor: `!item.is_menu_part`) **kiszűrjük** azokat, amik menü részei → ezért nem rendelhetők egyedileg.
+## Implementáció
 
-### Megoldás
+**Egyetlen fájl módosul:** `supabase/functions/generate-food-image/index.ts`
 
-**Frontend változtatás (semmi DB / backend logika nem érintett):**
+1. A jelenlegi fix `prompt` (fehér porcelán + sötét pala) helyett egy **prompt-választó** logika:
+   - Ha a hívó küld `style` paramétert (`"plate"` vagy `"box"`), azt használjuk
+   - Egyébként véletlen 50/50 választás a két stílus között
+   - `prompt_override` továbbra is felülír mindent (visszafelé kompatibilis)
 
-- `src/pages/Etlap.tsx` és `src/components/UnifiedDailySection.tsx`:
-  - Az `extraItems` szűrése változik: **minden napi ajánlat elemet megjeleníteni** egyedi rendelhetőként, az egyedi áron (a `menu_items.price_huf`).
-  - A menüs ételek továbbra is megjelennek a komplett menü blokkban a menü áron.
-  - A menü részeként jelölt ételek mellé (egyedi listában) **kis "Menüben is" badge** kerül, hogy a vendég lássa.
-- `DailyOffersPanel.tsx` és `DailyMenuPanel.tsx`:
-  - A megjelenítési logika kiegészül: a menüs leves/főétel egyenként is megjelenik az egyedi áron.
-  - Kosárba helyezéskor a meglévő `complete_menu_id_soup_main` cart deduplikációs logika nem zavar (külön ID külön rendelésnek).
+2. Két új prompt-sablon (angol nyelven, az AI modell így pontosabb):
+   - **plate prompt**: "Authentic Hungarian restaurant takeaway photo of '{item_name}'. Served on a simple white oval disposable paper/plastic plate on a dark slate/wooden table. Shot from a slight overhead angle (~60-70°), soft natural daylight. Garnish with fresh parsley. Homestyle, generous portion, realistic restaurant presentation — NOT studio food photography. Photorealistic."
+   - **box prompt**: "Authentic Hungarian restaurant takeaway photo of '{item_name}'. Served in a brown kraft cardboard takeaway box lined with red-and-white checkered (vichy/gingham) parchment paper. Wooden restaurant table background, slightly blurred. Shot from a close angled perspective, natural daylight from a window. Optional small fresh side salad (lettuce, tomato, cucumber) garnish. Homestyle, generous portion. Photorealistic, NOT studio food photography."
 
-### Eredmény
+3. Az `AIGenerateImageButton` komponens **nem változik** — automatikusan élvezi az új stílust. Opcionálisan később bővíthető egy stílus-választóval, de most nem szükséges.
 
-- A vendég választhat:
-  - **Komplett menü** (leves + főétel + desszert) → menü ár (pl. 2200 Ft)
-  - **Csak főétel** vagy **csak leves** → egyedi `menu_items.price_huf` áron.
-- Üzleti logika, ár, KDS, számlázás érintetlen.
-
----
-
-## 2) AI képgenerálás kiterjesztése
-
-### Jelenlegi állapot
-
-`generate-food-image` edge function létezik (Gemini 2.5 Flash Image), de UI-ban csak:
-- `MenuItemManagement` (Mesterétel-könyvtár batch generátor — `AIBatchImageGenerator`).
-
-### Hiányzó helyek
-
-| Hely | Komponens | Mi kerül oda |
-|---|---|---|
-| Egyedi ételszerkesztés | `MenuItemEditDialog.tsx` | "AI kép generálása" gomb a kép mező mellé |
-| Ideiglenes étel létrehozása | `TemporaryItemCreator.tsx` | Ugyanaz a gomb |
-| Ideiglenes ételek könyvtára | `TemporaryItemsLibrary.tsx` | Gomb a kép nélküli elemekhez |
-| Galéria felöltés (Ételek) | `GalleryManagement.tsx` | "AI generálás az étel nevével" opció |
-
-### Implementáció
-
-- Új közös komponens: `src/components/admin/AIGenerateImageButton.tsx`
-  - Props: `itemName`, `onGenerated(url)`, opcionális `description`
-  - Hívja a meglévő `generate-food-image` edge functiont
-  - Loading állapot, toast visszajelzés, hiba kezelés (429/402)
-- Beillesztjük a fenti 4 komponensbe a meglévő képfelöltő mezők mellé, "VAGY AI-val" módban.
-- Galériánál opcionális mező: a felhasználó beír egy ételnevet, és AI generál képet hozzá.
-
-### Stílus
-
-A meglévő gomb stílusát (`Sparkles` ikon, `bg-gradient-to-r from-primary`) követjük az `AIBatchImageGenerator`-ból, hogy konzisztens legyen.
-
----
-
-## Mit nem érintünk
-
-- Backend / DB séma változás nincs.
-- A `generate-food-image` edge function nem módosul.
-- A meglévő rendelésfeldolgozás, KDS, hírlevél, számla logika érintetlen.
+## Mit NEM változtatunk
+- Nincs DB séma változás
+- Nincs frontend változás
+- Az `AIBatchImageGenerator` és `DailyOfferImageGenerator` (FB poszt) is változatlan marad — utóbbi külön edge function-t használ
+- A `generate-food-image` API szerződés visszafelé kompatibilis (csak új opcionális `style` paraméter)
 
 ## QA
-
-- Mobil + desktop nézet ellenőrzés (402px breakpoint).
-- Menü blokk + egyedi rendelés egyszerre megjelenik, kosárba mindkettő külön kerül.
-- AI gomb működik mind a 4 helyen, generált kép mentődik a megfelelő `image_url` mezőbe.
+- Generálok 2-3 tesztképet a Mesterétel-könyvtárból különböző ételekre
+- Ellenőrzöm: tényleg váltakozik a két stílus, az ételek felismerhetőek, a tálalás autentikus magyaros (nem michelin-csillagos)

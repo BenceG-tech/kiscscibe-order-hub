@@ -18,7 +18,7 @@ serve(async (req) => {
       throw new Error("Supabase configuration missing");
     }
 
-    const { item_id, item_name, prompt_override } = await req.json();
+    const { item_id, item_name, prompt_override, style } = await req.json();
 
     if (!item_name) {
       return new Response(
@@ -27,8 +27,15 @@ serve(async (req) => {
       );
     }
 
-    const prompt = prompt_override || 
-      `Professional food photography of "${item_name}", Hungarian cuisine style. Served on a white ceramic plate on a dark slate surface. Overhead 45-degree angle, soft natural lighting from the left. Garnished with fresh herbs. Restaurant quality presentation. Ultra high resolution, photorealistic.`;
+    const platePrompt = `Authentic Hungarian restaurant takeaway photo of "${item_name}". Served on a simple white oval disposable paper/plastic plate placed on a dark slate or dark wooden table. Shot from a slight overhead angle (around 60-70 degrees), soft natural daylight. Garnished with a small sprig of fresh parsley. Homestyle, generous portion, realistic everyday Hungarian restaurant presentation — NOT studio fine-dining food photography. Photorealistic, sharp focus on the food.`;
+
+    const boxPrompt = `Authentic Hungarian restaurant takeaway photo of "${item_name}". Served inside an open brown kraft cardboard takeaway box lined with red-and-white checkered (vichy / gingham pattern) parchment paper. Wooden restaurant table background, slightly out of focus. Shot from a close angled perspective, natural daylight coming from a window. Optionally a tiny fresh garnish of lettuce, tomato slice and cucumber on the side. Homestyle, generous portion. Photorealistic, NOT studio fine-dining food photography.`;
+
+    const chosenStyle = style === "plate" || style === "box"
+      ? style
+      : (Math.random() < 0.5 ? "plate" : "box");
+
+    const prompt = prompt_override || (chosenStyle === "plate" ? platePrompt : boxPrompt);
 
     console.log(`Generating image for: ${item_name}`);
 
