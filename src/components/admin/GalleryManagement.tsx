@@ -34,6 +34,7 @@ const GalleryManagement = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [addGalleryType, setAddGalleryType] = useState<GalleryType>("food");
   const [editingImage, setEditingImage] = useState<GalleryImage | null>(null);
+  const [aiFoodName, setAiFoodName] = useState("");
 
   const { data: allImages = [], isLoading } = useQuery({
     queryKey: ['admin-gallery-images'],
