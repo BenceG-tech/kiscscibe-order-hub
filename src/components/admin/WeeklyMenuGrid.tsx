@@ -5,7 +5,7 @@ import { format, startOfWeek, addDays, addWeeks, subWeeks } from "date-fns";
 import { getSmartWeekStart, getSmartInitialDayIndex } from "@/lib/dateUtils";
 import { hu } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+
 import { ChevronLeft, ChevronRight, Loader2, Check, Download, Ban, Copy, Trash2 } from "lucide-react";
 import { CopyMenuDialog } from "./CopyMenuDialog";
 import { toast } from "sonner";
