@@ -171,6 +171,19 @@ const ImageUpload = ({
         </div>
       )}
 
+      {itemName !== undefined && (
+        <AIGenerateImageButton
+          itemName={itemName || ""}
+          itemId={itemId}
+          onGenerated={(url) => {
+            setPreviewUrl(url);
+            onImageUploaded(url);
+          }}
+          fullWidth
+          hasExistingImage={!!previewUrl}
+        />
+      )}
+
       <ImagePreviewLightbox src={previewUrl} open={lightboxOpen} onOpenChange={setLightboxOpen} />
     </div>
   );
