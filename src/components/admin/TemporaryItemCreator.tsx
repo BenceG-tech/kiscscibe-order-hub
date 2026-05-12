@@ -197,6 +197,7 @@ export const TemporaryItemCreator: React.FC<TemporaryItemCreatorProps> = ({
               itemName={formData.name}
               onGenerated={(url) => setFormData(prev => ({ ...prev, image_url: url }))}
               fullWidth
+              hasExistingImage={!!formData.image_url}
             />
           </div>
 
