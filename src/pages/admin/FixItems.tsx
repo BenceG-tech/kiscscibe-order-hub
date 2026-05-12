@@ -432,6 +432,7 @@ const FixItems = () => {
                             onEdit={openEdit}
                             onDelete={deleteItem}
                             onToggleActive={toggleActive}
+                            onUnpin={unpinFromFix}
                           />
                         ))}
                       </div>
