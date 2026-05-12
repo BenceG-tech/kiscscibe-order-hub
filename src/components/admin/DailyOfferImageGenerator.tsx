@@ -11,6 +11,7 @@ import { Download, Image as ImageIcon, Upload, Trash2, Loader2, Calendar, Chevro
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import ZoomableImage from "./ZoomableImage";
 
 interface MenuItem {
   id: string;
@@ -937,7 +938,7 @@ const DailyOfferImageGenerator = () => {
                       Törlés
                     </Button>
                   </div>
-                  <img
+                  <ZoomableImage
                     src={uploadedImageUrl}
                     alt="Feltöltött napi ajánlat"
                     className="max-w-[300px] rounded-lg shadow border border-border"
