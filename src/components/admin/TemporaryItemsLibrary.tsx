@@ -208,12 +208,26 @@ export const TemporaryItemsLibrary: React.FC<TemporaryItemsLibraryProps> = ({
                             )}
                           </div>
                           
-                          {item.image_url && (
+                          {item.image_url ? (
                             <img 
                               src={item.image_url} 
                               alt={item.name}
                               className="w-12 h-12 object-cover rounded"
                             />
+                          ) : (
+                            <div onClick={(e) => e.stopPropagation()}>
+                              <AIGenerateImageButton
+                                itemName={item.name}
+                                itemId={item.id}
+                                onGenerated={(url) => {
+                                  setTemporaryItems(prev => prev.map(i => i.id === item.id ? { ...i, image_url: url } : i));
+                                  if (onRefreshData) onRefreshData();
+                                }}
+                                size="sm"
+                                variant="outline"
+                                label="AI kép"
+                              />
+                            </div>
                           )}
                           
                           <div className="flex-1" onClick={() => onItemToggle(item.id)} style={{ cursor: 'pointer' }}>
