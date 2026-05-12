@@ -24,6 +24,7 @@
 import { Loader2, Upload, X, ImageIcon } from "lucide-react";
 import { capitalizeFirst } from "@/lib/utils";
 import AIGenerateImageButton from "./AIGenerateImageButton";
+import ZoomableImage from "./ZoomableImage";
 import DuplicateResolverDialog, { DuplicateCandidate } from "./DuplicateResolverDialog";
  
  const ALLERGENS = [
