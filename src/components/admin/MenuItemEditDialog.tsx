@@ -427,34 +427,47 @@ import DuplicateResolverDialog, { DuplicateCandidate } from "./DuplicateResolver
            </div>
          )}
 
-         {/* Save Button - Always visible */}
-         {!itemLoading && (
-           <div className="flex-shrink-0 pt-4 border-t space-y-2">
-             {duplicateWarning && (
-               <div className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-2 rounded-lg">
-                 ⚠️ {duplicateWarning}
-               </div>
-             )}
-             <Button
-               onClick={handleSave}
-               disabled={saveMutation.isPending}
-               className="w-full"
-               variant={duplicateWarning ? "destructive" : "default"}
-             >
-               {saveMutation.isPending ? (
-                 <>
-                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                   Mentés...
-                 </>
-               ) : duplicateWarning ? (
-                 "Mentés mindenképp"
-               ) : (
-                 "Mentés"
-               )}
-             </Button>
-           </div>
-         )}
-       </DialogContent>
-     </Dialog>
-   );
- }
+          {/* Save Button - Always visible */}
+          {!itemLoading && (
+            <div className="flex-shrink-0 pt-4 border-t space-y-2">
+              <Button
+                onClick={handleSave}
+                disabled={saveMutation.isPending}
+                className="w-full"
+              >
+                {saveMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Mentés...
+                  </>
+                ) : (
+                  "Mentés"
+                )}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <DuplicateResolverDialog
+        open={showResolver}
+        onOpenChange={setShowResolver}
+        duplicates={duplicates}
+        draft={{
+          name: name.trim(),
+          category_id: categoryId,
+          price_huf: parseInt(price) || 0,
+          image_url: imageUrl,
+          description: description || null,
+          allergens,
+          is_active: isActive,
+          is_always_available: isAlwaysAvailable,
+        }}
+        onKeepBoth={handleKeepBoth}
+        onReplaceExisting={handleReplace}
+        onKeepExisting={handleKeepExisting}
+        saving={resolving || saveMutation.isPending}
+      />
+    </>
+  );
+}
