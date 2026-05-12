@@ -23,6 +23,7 @@
  import { toast } from "sonner";
 import { Loader2, Upload, X, ImageIcon } from "lucide-react";
 import { capitalizeFirst } from "@/lib/utils";
+import AIGenerateImageButton from "./AIGenerateImageButton";
  
  const ALLERGENS = [
    "Glutén",
