@@ -27,9 +27,19 @@ serve(async (req) => {
       );
     }
 
-    const platePrompt = `Authentic Hungarian restaurant takeaway photo of "${item_name}". Served on a simple white oval disposable paper/plastic plate placed on a dark slate or dark wooden table. Shot from a slight overhead angle (around 60-70 degrees), soft natural daylight. Garnished with a small sprig of fresh parsley. Homestyle, generous portion, realistic everyday Hungarian restaurant presentation — NOT studio fine-dining food photography. Photorealistic, sharp focus on the food.`;
+    const pick = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
-    const boxPrompt = `Authentic Hungarian restaurant takeaway photo of "${item_name}". Served inside an open brown kraft cardboard takeaway box lined with red-and-white checkered (vichy / gingham pattern) parchment paper. Wooden restaurant table background, slightly out of focus. Shot from a close angled perspective, natural daylight coming from a window. Optionally a tiny fresh garnish of lettuce, tomato slice and cucumber on the side. Homestyle, generous portion. Photorealistic, NOT studio fine-dining food photography.`;
+    const angles = ["45 degree", "55 degree", "65 degree", "70 degree slightly overhead", "low close angle"];
+    const lights = ["soft natural daylight from the left", "warm window light from the right", "soft diffused overhead daylight", "golden hour warm light"];
+    const surfaces = ["dark slate stone table", "dark walnut wooden table", "weathered oak wooden table", "rustic dark pine table"];
+    const garnishes = ["a small sprig of fresh parsley", "a few fresh dill leaves", "a pinch of paprika dust on the rim", "a small lemon wedge on the side", "no garnish"];
+    const compositions = ["food slightly off-center to the right", "food centered", "food slightly off-center to the left", "close-up filling most of the frame"];
+
+    const variation = `Composition: ${pick(angles)}, ${pick(lights)}, ${pick(surfaces)}. Plating: ${pick(compositions)}, ${pick(garnishes)}. Variation seed #${Math.floor(Math.random() * 1_000_000)}.`;
+
+    const platePrompt = `Authentic Hungarian restaurant takeaway photo of "${item_name}". Served on a simple white oval disposable paper/plastic plate. Homestyle, generous portion, realistic everyday Hungarian restaurant presentation — NOT studio fine-dining food photography. Photorealistic, sharp focus on the food. ${variation}`;
+
+    const boxPrompt = `Authentic Hungarian restaurant takeaway photo of "${item_name}". Served inside an open brown kraft cardboard takeaway box lined with red-and-white checkered (vichy / gingham pattern) parchment paper. Wooden restaurant table background, slightly out of focus. Optionally a tiny fresh garnish of lettuce, tomato slice and cucumber on the side. Homestyle, generous portion. Photorealistic, NOT studio fine-dining food photography. ${variation}`;
 
     const chosenStyle = style === "plate" || style === "box"
       ? style
