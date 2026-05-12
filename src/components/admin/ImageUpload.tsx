@@ -27,6 +27,10 @@ const ImageUpload = ({
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentImageUrl || null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
+  useEffect(() => {
+    setPreviewUrl(currentImageUrl || null);
+  }, [currentImageUrl]);
+
   const uploadImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
