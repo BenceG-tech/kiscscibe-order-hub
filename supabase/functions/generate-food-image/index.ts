@@ -20,9 +20,9 @@ serve(async (req) => {
 
     const { item_id, item_name, prompt_override } = await req.json();
 
-    if (!item_id || !item_name) {
+    if (!item_name) {
       return new Response(
-        JSON.stringify({ error: "item_id and item_name are required" }),
+        JSON.stringify({ error: "item_name is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
