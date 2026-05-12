@@ -172,13 +172,13 @@ const AlwaysAvailableSection = ({
                         {item.description && (
                           <p className="text-xs text-muted-foreground line-clamp-2">{item.description}</p>
                         )}
-                        <div className="flex items-center justify-between gap-2">
-                          <Badge variant="secondary" className="shrink-0 bg-primary/10 text-primary font-semibold text-xs">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                          <Badge variant="secondary" className="self-start shrink-0 bg-primary/10 text-primary font-semibold text-xs">
                             {item.price_huf} Ft
                           </Badge>
-                          <Button onClick={() => handleAddToCart(item)} size="sm" className="h-8 px-3 text-xs">
-                            <ShoppingCart className="h-3 w-3 mr-1" />
-                            Kosárba
+                          <Button onClick={() => handleAddToCart(item)} size="sm" className="h-8 px-2 text-xs w-full sm:w-auto min-w-0">
+                            <ShoppingCart className="h-3 w-3 mr-1 shrink-0" />
+                            <span className="truncate">Kosárba</span>
                           </Button>
                         </div>
                       </div>

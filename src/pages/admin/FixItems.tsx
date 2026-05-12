@@ -14,7 +14,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import ImageUpload from "@/components/admin/ImageUpload";
 import InfoTip from "@/components/admin/InfoTip";
 import { capitalizeFirst } from "@/lib/utils";
-import { GripVertical, Edit, Trash2, Plus, Eye, EyeOff, ImageIcon, List, Save, Pin } from "lucide-react";
+import { GripVertical, Edit, Trash2, Eye, EyeOff, ImageIcon, List, Save, Pin, PinOff, FilePlus2, PackageSearch } from "lucide-react";
+import AIGenerateImageButton from "@/components/admin/AIGenerateImageButton";
+import AddExistingFixItemDialog from "@/components/admin/AddExistingFixItemDialog";
 import {
   DndContext,
   closestCenter,
@@ -62,11 +64,13 @@ const FixItemRow = ({
   onEdit,
   onDelete,
   onToggleActive,
+  onUnpin,
 }: {
   item: MenuItem;
   onEdit: (it: MenuItem) => void;
   onDelete: (id: string) => void;
   onToggleActive: (it: MenuItem) => void;
+  onUnpin: (it: MenuItem) => void;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
   const style = {
@@ -115,16 +119,26 @@ const FixItemRow = ({
         <Button variant="ghost" size="sm" onClick={() => onToggleActive(item)} className="h-8 w-8 p-0" title={item.is_active ? "Inaktívvá tesz" : "Aktívvá tesz"}>
           {item.is_active ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4 text-muted-foreground" />}
         </Button>
-        <Button variant="ghost" size="sm" onClick={() => onEdit(item)} className="h-8 w-8 p-0">
+        <Button variant="ghost" size="sm" onClick={() => onEdit(item)} className="h-8 w-8 p-0" title="Szerkesztés">
           <Edit className="h-4 w-4" />
         </Button>
         <Button
           variant="ghost"
           size="sm"
+          onClick={() => onUnpin(item)}
+          className="h-8 w-8 p-0"
+          title="Eltávolítás a fixekből (megmarad az étlapon)"
+        >
+          <PinOff className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => {
-            if (confirm(`Biztosan törlöd: "${item.name}"?`)) onDelete(item.id);
+            if (confirm(`Véglegesen TÖRLI a tételt: "${item.name}"?\n\nHa csak a fixekből szeretnéd kivenni, használd a kitűző-eltávolítás (PinOff) gombot.`)) onDelete(item.id);
           }}
           className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+          title="Végleges törlés"
         >
           <Trash2 className="h-4 w-4" />
         </Button>
@@ -322,6 +336,24 @@ const FixItems = () => {
     void loadAll();
   };
 
+  const unpinFromFix = async (item: MenuItem) => {
+    if (!confirm(`Eltávolítod a fixekből: "${item.name}"?\n\nA tétel megmarad az étlapon, csak a fix listából kerül ki.`)) return;
+    const { error } = await supabase.from("menu_items").update({ is_always_available: false }).eq("id", item.id);
+    if (error) {
+      toast({ title: "Hiba", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Eltávolítva a fixekből", description: `${item.name} továbbra is elérhető az étlapon` });
+    void loadAll();
+  };
+
+  const [addExistingFor, setAddExistingFor] = useState<{ id: string; name: string } | null>(null);
+
+  const nextOrderFor = (categoryId: string) => {
+    const list = grouped.map.get(categoryId) || [];
+    return list.length > 0 ? Math.max(...list.map((i) => i.display_order)) + 1 : 1;
+  };
+
   if (loading) {
     return (
       <AdminLayout>
@@ -365,9 +397,13 @@ const FixItems = () => {
                       <span>{showImages ? "Képes megjelenítés" : "Lista (kép nélkül)"}</span>
                       <Switch checked={showImages} onCheckedChange={(v) => toggleCategoryImages(cat.id, v)} />
                     </label>
-                    <Button size="sm" onClick={() => openCreate(cat.id)}>
-                      <Plus className="h-4 w-4 mr-1" />
+                    <Button size="sm" variant="outline" onClick={() => openCreate(cat.id)}>
+                      <FilePlus2 className="h-4 w-4 mr-1" />
                       Új tétel
+                    </Button>
+                    <Button size="sm" onClick={() => setAddExistingFor({ id: cat.id, name: cat.name })}>
+                      <PackageSearch className="h-4 w-4 mr-1" />
+                      Meglévő hozzáadása
                     </Button>
                   </div>
                 </div>
@@ -390,6 +426,7 @@ const FixItems = () => {
                             onEdit={openEdit}
                             onDelete={deleteItem}
                             onToggleActive={toggleActive}
+                            onUnpin={unpinFromFix}
                           />
                         ))}
                       </div>
@@ -407,7 +444,7 @@ const FixItems = () => {
             <CardContent>
               <div className="space-y-2">
                 {grouped.uncategorized.map((it) => (
-                  <FixItemRow key={it.id} item={it} onEdit={openEdit} onDelete={deleteItem} onToggleActive={toggleActive} />
+                  <FixItemRow key={it.id} item={it} onEdit={openEdit} onDelete={deleteItem} onToggleActive={toggleActive} onUnpin={unpinFromFix} />
                 ))}
               </div>
             </CardContent>
@@ -455,6 +492,15 @@ const FixItems = () => {
                   onImageRemoved={() => setForm({ ...form, image_url: "" })}
                   bucketName="menu-images"
                 />
+                <div className="mt-2">
+                  <AIGenerateImageButton
+                    itemName={form.name}
+                    itemId={editing?.id}
+                    onGenerated={(url) => setForm((f) => ({ ...f, image_url: url }))}
+                    hasExistingImage={!!form.image_url}
+                    fullWidth
+                  />
+                </div>
               </div>
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} />
@@ -467,6 +513,17 @@ const FixItems = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {addExistingFor && (
+          <AddExistingFixItemDialog
+            open={!!addExistingFor}
+            onOpenChange={(v) => { if (!v) setAddExistingFor(null); }}
+            targetCategoryId={addExistingFor.id}
+            targetCategoryName={addExistingFor.name}
+            nextDisplayOrderStart={nextOrderFor(addExistingFor.id)}
+            onAdded={() => { setAddExistingFor(null); void loadAll(); }}
+          />
+        )}
       </div>
     </AdminLayout>
   );
