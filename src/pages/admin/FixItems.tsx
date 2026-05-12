@@ -99,11 +99,18 @@ const FixItemRow = ({
       </button>
 
       {item.image_url ? (
-        <img
-          src={item.image_url}
-          alt={item.name}
-          className="w-10 h-10 sm:w-12 sm:h-12 object-cover rounded-md flex-shrink-0"
-        />
+        <button
+          type="button"
+          onClick={() => setPreviewOpen(true)}
+          className="flex-shrink-0 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+          title="Kép nagyítása"
+        >
+          <img
+            src={item.image_url}
+            alt={item.name}
+            className="w-10 h-10 sm:w-12 sm:h-12 object-cover rounded-md cursor-zoom-in hover:opacity-80 transition-opacity"
+          />
+        </button>
       ) : (
         <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-md bg-muted flex items-center justify-center flex-shrink-0">
           <ImageIcon className="h-4 w-4 text-muted-foreground/50" />
