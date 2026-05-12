@@ -108,6 +108,11 @@ const App = () => (
                   <Suspense fallback={<LazyFallback />}><AdminMenu /></Suspense>
                 </ProtectedRoute>
               } />
+              <Route path="/admin/fix-items" element={
+                <ProtectedRoute requireAdmin>
+                  <Suspense fallback={<LazyFallback />}><AdminFixItems /></Suspense>
+                </ProtectedRoute>
+              } />
               <Route path="/admin/daily-menu" element={
                 <ProtectedRoute requireAdmin>
                   <Suspense fallback={<LazyFallback />}><AdminDailyMenu /></Suspense>
