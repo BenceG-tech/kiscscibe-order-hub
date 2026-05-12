@@ -144,7 +144,7 @@ export function QuickImageUpload({
           <div className="relative aspect-video w-full overflow-hidden rounded-lg border bg-muted">
             {previewUrl ? (
               <>
-                <img
+                <ZoomableImage
                   src={previewUrl}
                   alt={itemName}
                   className="h-full w-full object-cover"
@@ -152,7 +152,7 @@ export function QuickImageUpload({
                 <Button
                   variant="destructive"
                   size="icon"
-                  className="absolute right-2 top-2 h-6 w-6"
+                  className="absolute right-2 top-2 h-6 w-6 z-10"
                   onClick={handleRemoveImage}
                   disabled={isUploading || isGenerating}
                 >
