@@ -184,7 +184,9 @@ import DuplicateResolverDialog, { DuplicateCandidate } from "./DuplicateResolver
      );
    };
  
-  const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
+  const [duplicates, setDuplicates] = useState<DuplicateCandidate[]>([]);
+  const [showResolver, setShowResolver] = useState(false);
+  const [resolving, setResolving] = useState(false);
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -192,22 +194,66 @@ import DuplicateResolverDialog, { DuplicateCandidate } from "./DuplicateResolver
       return;
     }
 
-    // Check for duplicate names
+    // Check for duplicate names (case/whitespace tolerant via ilike)
     const { data: existing } = await supabase
       .from("menu_items")
-      .select("id, name")
+      .select("id, name, category_id, price_huf, image_url, description, allergens, is_active, is_temporary, is_always_available")
       .neq("id", itemId || "")
       .ilike("name", name.trim());
 
     if (existing && existing.length > 0) {
-      if (!duplicateWarning) {
-        setDuplicateWarning(`Már létezik ilyen nevű étel: "${existing[0].name}". Kattints újra a mentésre ha mégis folytatnád.`);
-        return;
-      }
+      setDuplicates(existing as any);
+      setShowResolver(true);
+      return;
     }
 
-    setDuplicateWarning(null);
     saveMutation.mutate();
+  };
+
+  const archiveOrDeleteDuplicate = async (dupId: string, dupName: string) => {
+    // Check references — if referenced anywhere, archive instead of delete
+    const [offerRefs, orderRefs] = await Promise.all([
+      supabase.from("daily_offer_items").select("id", { count: "exact", head: true }).eq("item_id", dupId),
+      supabase.from("order_items").select("id", { count: "exact", head: true }).eq("item_id", dupId),
+    ]);
+    const referenced = (offerRefs.count || 0) > 0 || (orderRefs.count || 0) > 0;
+
+    if (referenced) {
+      const { error } = await supabase
+        .from("menu_items")
+        .update({ is_active: false, name: `${dupName} (régi)` } as any)
+        .eq("id", dupId);
+      if (error) throw error;
+      toast.warning("A régi étel hivatkozva van — inaktívvá tettük az adatok megőrzése érdekében.");
+    } else {
+      const { error } = await supabase.from("menu_items").delete().eq("id", dupId);
+      if (error) throw error;
+    }
+  };
+
+  const handleReplace = async (dupId: string) => {
+    const dup = duplicates.find((d) => d.id === dupId);
+    if (!dup) return;
+    setResolving(true);
+    try {
+      await archiveOrDeleteDuplicate(dupId, dup.name);
+      setShowResolver(false);
+      saveMutation.mutate();
+    } catch (e: any) {
+      console.error(e);
+      toast.error("Nem sikerült a meglévőt felülírni: " + (e?.message || ""));
+    } finally {
+      setResolving(false);
+    }
+  };
+
+  const handleKeepBoth = () => {
+    setShowResolver(false);
+    saveMutation.mutate();
+  };
+
+  const handleKeepExisting = () => {
+    setShowResolver(false);
   };
  
    return (
