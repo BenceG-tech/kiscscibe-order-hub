@@ -4,8 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Upload, X, Image } from "lucide-react";
+import { Upload, X, Image, Maximize2 } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/loading";
+import ImagePreviewLightbox from "./ImagePreviewLightbox";
 
 interface ImageUploadProps {
   currentImageUrl?: string;
