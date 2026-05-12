@@ -57,7 +57,7 @@ const AIGenerateImageButton = ({
   return (
     <Button
       type="button"
-      variant={variant}
+      variant={effectiveVariant}
       size={size}
       onClick={handleClick}
       disabled={disabled || loading}
@@ -65,10 +65,12 @@ const AIGenerateImageButton = ({
     >
       {loading ? (
         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+      ) : hasExistingImage ? (
+        <RefreshCw className="h-4 w-4 mr-2" />
       ) : (
         <Sparkles className="h-4 w-4 mr-2" />
       )}
-      {loading ? "Generálás..." : label}
+      {loading ? "Generálás..." : effectiveLabel}
     </Button>
   );
 };
