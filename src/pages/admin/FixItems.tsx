@@ -391,77 +391,117 @@ const FixItems = () => {
           </div>
         </div>
 
-        {categories.map((cat) => {
-          const list = grouped.map.get(cat.id) || [];
-          const showImages = displaySettings[cat.id]?.showImages !== false; // default ON
-
-          return (
-            <Card key={cat.id}>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    {cat.name}
-                    <Badge variant="secondary">{list.length} tétel</Badge>
-                  </CardTitle>
-
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <label className="flex items-center gap-2 text-sm cursor-pointer">
-                      {showImages ? <ImageIcon className="h-4 w-4 text-primary" /> : <List className="h-4 w-4 text-muted-foreground" />}
-                      <span>{showImages ? "Képes megjelenítés" : "Lista (kép nélkül)"}</span>
-                      <Switch checked={showImages} onCheckedChange={(v) => toggleCategoryImages(cat.id, v)} />
-                    </label>
-                    <Button size="sm" variant="outline" onClick={() => openCreate(cat.id)}>
-                      <FilePlus2 className="h-4 w-4 mr-1" />
-                      Új tétel
-                    </Button>
-                    <Button size="sm" onClick={() => setAddExistingFor({ id: cat.id, name: cat.name })}>
-                      <PackageSearch className="h-4 w-4 mr-1" />
-                      Meglévő hozzáadása
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {list.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-4 text-center">Nincs tétel ebben a kategóriában.</p>
-                ) : (
-                  <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={(e) => handleDragEnd(e, cat.id)}
-                  >
-                    <SortableContext items={list.map((i) => i.id)} strategy={verticalListSortingStrategy}>
-                      <div className="space-y-2">
-                        {list.map((it) => (
-                          <FixItemRow
-                            key={it.id}
-                            item={it}
-                            onEdit={openEdit}
-                            onDelete={deleteItem}
-                            onToggleActive={toggleActive}
-                            onUnpin={unpinFromFix}
-                          />
-                        ))}
-                      </div>
-                    </SortableContext>
-                  </DndContext>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
-
-        {grouped.uncategorized.length > 0 && (
-          <Card>
-            <CardHeader><CardTitle className="text-lg">Kategória nélküli</CardTitle></CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {grouped.uncategorized.map((it) => (
-                  <FixItemRow key={it.id} item={it} onEdit={openEdit} onDelete={deleteItem} onToggleActive={toggleActive} onUnpin={unpinFromFix} />
-                ))}
+        {categories.length === 0 ? (
+          <Card><CardContent className="py-8 text-center text-muted-foreground">Nincsenek kategóriák.</CardContent></Card>
+        ) : (
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <div className="sticky top-14 z-20 -mx-4 px-4 py-2 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border">
+              <div className="overflow-x-auto scrollbar-thin">
+                <TabsList className="inline-flex h-auto p-1 gap-1 bg-muted/40">
+                  {categories.map((cat) => {
+                    const count = (grouped.map.get(cat.id) || []).length;
+                    return (
+                      <TabsTrigger
+                        key={cat.id}
+                        value={cat.id}
+                        className="whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                      >
+                        <span className="font-medium">{cat.name}</span>
+                        <Badge
+                          variant={count > 0 ? "secondary" : "outline"}
+                          className="ml-2 h-5 min-w-[20px] px-1.5 text-[10px]"
+                        >
+                          {count}
+                        </Badge>
+                      </TabsTrigger>
+                    );
+                  })}
+                  {grouped.uncategorized.length > 0 && (
+                    <TabsTrigger value="__uncategorized__" className="whitespace-nowrap">
+                      Egyéb
+                      <Badge variant="secondary" className="ml-2 h-5 min-w-[20px] px-1.5 text-[10px]">
+                        {grouped.uncategorized.length}
+                      </Badge>
+                    </TabsTrigger>
+                  )}
+                </TabsList>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+
+            {categories.map((cat) => {
+              const list = grouped.map.get(cat.id) || [];
+              const showImages = displaySettings[cat.id]?.showImages !== false;
+              return (
+                <TabsContent key={cat.id} value={cat.id} className="mt-4">
+                  <Card>
+                    <CardContent className="p-3 sm:p-4 space-y-3">
+                      <div className="flex items-center justify-between gap-3 flex-wrap pb-3 border-b border-border">
+                        <div className="flex items-center gap-2">
+                          <h2 className="text-lg font-semibold">{cat.name}</h2>
+                          <Badge variant="secondary">{list.length} tétel</Badge>
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <label className="flex items-center gap-2 text-sm cursor-pointer px-2 py-1 rounded-md bg-muted/40">
+                            {showImages ? <ImageIcon className="h-4 w-4 text-primary" /> : <List className="h-4 w-4 text-muted-foreground" />}
+                            <span className="hidden sm:inline">{showImages ? "Képes" : "Lista"}</span>
+                            <Switch checked={showImages} onCheckedChange={(v) => toggleCategoryImages(cat.id, v)} />
+                          </label>
+                          <Button size="sm" variant="outline" onClick={() => openCreate(cat.id)}>
+                            <FilePlus2 className="h-4 w-4 mr-1" />
+                            <span className="hidden sm:inline">Új tétel</span>
+                            <span className="sm:hidden">Új</span>
+                          </Button>
+                          <Button size="sm" onClick={() => setAddExistingFor({ id: cat.id, name: cat.name })}>
+                            <PackageSearch className="h-4 w-4 mr-1" />
+                            <span className="hidden sm:inline">Meglévő hozzáadása</span>
+                            <span className="sm:hidden">Meglévő</span>
+                          </Button>
+                        </div>
+                      </div>
+
+                      {list.length === 0 ? (
+                        <p className="text-sm text-muted-foreground py-8 text-center">Nincs tétel ebben a kategóriában. Adj hozzá egyet a fenti gombokkal.</p>
+                      ) : (
+                        <DndContext
+                          sensors={sensors}
+                          collisionDetection={closestCenter}
+                          onDragEnd={(e) => handleDragEnd(e, cat.id)}
+                        >
+                          <SortableContext items={list.map((i) => i.id)} strategy={verticalListSortingStrategy}>
+                            <div className="space-y-2">
+                              {list.map((it) => (
+                                <FixItemRow
+                                  key={it.id}
+                                  item={it}
+                                  onEdit={openEdit}
+                                  onDelete={deleteItem}
+                                  onToggleActive={toggleActive}
+                                  onUnpin={unpinFromFix}
+                                />
+                              ))}
+                            </div>
+                          </SortableContext>
+                        </DndContext>
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              );
+            })}
+
+            {grouped.uncategorized.length > 0 && (
+              <TabsContent value="__uncategorized__" className="mt-4">
+                <Card>
+                  <CardContent className="p-3 sm:p-4 space-y-2">
+                    <h2 className="text-lg font-semibold pb-3 border-b border-border">Kategória nélküli</h2>
+                    {grouped.uncategorized.map((it) => (
+                      <FixItemRow key={it.id} item={it} onEdit={openEdit} onDelete={deleteItem} onToggleActive={toggleActive} onUnpin={unpinFromFix} />
+                    ))}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            )}
+          </Tabs>
         )}
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
