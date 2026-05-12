@@ -256,8 +256,9 @@ import DuplicateResolverDialog, { DuplicateCandidate } from "./DuplicateResolver
     setShowResolver(false);
   };
  
-   return (
-     <Dialog open={open} onOpenChange={onOpenChange}>
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden">
         <DialogHeader className="flex-shrink-0">
            <DialogTitle>Étel szerkesztése</DialogTitle>
