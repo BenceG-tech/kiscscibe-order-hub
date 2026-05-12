@@ -498,6 +498,15 @@ const FixItems = () => {
                   onImageRemoved={() => setForm({ ...form, image_url: "" })}
                   bucketName="menu-images"
                 />
+                <div className="mt-2">
+                  <AIGenerateImageButton
+                    itemName={form.name}
+                    itemId={editing?.id}
+                    onGenerated={(url) => setForm((f) => ({ ...f, image_url: url }))}
+                    hasExistingImage={!!form.image_url}
+                    fullWidth
+                  />
+                </div>
               </div>
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} />
