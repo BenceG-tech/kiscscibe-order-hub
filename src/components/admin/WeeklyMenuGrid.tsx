@@ -1,11 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, addDays, addWeeks, subWeeks } from "date-fns";
 import { getSmartWeekStart, getSmartInitialDayIndex } from "@/lib/dateUtils";
 import { hu } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+
 import { ChevronLeft, ChevronRight, Loader2, Check, Download, Ban, Copy, Trash2 } from "lucide-react";
 import { CopyMenuDialog } from "./CopyMenuDialog";
 import { toast } from "sonner";
@@ -627,6 +627,10 @@ export default function WeeklyMenuGrid() {
 
   const initialOpenDayIndex = useMemo(() => getSmartInitialDayIndex(weekDates), [weekDates]);
 
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const topScrollRef = useRef<HTMLDivElement>(null);
+  const syncingRef = useRef(false);
+
   if (isMobile) {
     return (
       <WeeklyGridMobile
@@ -707,8 +711,36 @@ export default function WeeklyMenuGrid() {
         </div>
       </div>
 
+      {/* Day Jump Bar + Mirrored Top Scrollbar */}
+      <DayJumpBar
+        weekDates={weekDates}
+        scrollRef={scrollRef}
+        topScrollRef={topScrollRef}
+      />
+
       {/* Grid Table */}
-      <ScrollArea className="w-full rounded-lg border">
+      <div
+        ref={scrollRef}
+        tabIndex={0}
+        onWheel={(e) => {
+          if (e.shiftKey && scrollRef.current) {
+            scrollRef.current.scrollLeft += e.deltaY;
+          }
+        }}
+        onKeyDown={(e) => {
+          if (!scrollRef.current) return;
+          if (e.key === "ArrowRight") { scrollRef.current.scrollBy({ left: 160, behavior: "smooth" }); }
+          if (e.key === "ArrowLeft") { scrollRef.current.scrollBy({ left: -160, behavior: "smooth" }); }
+        }}
+        onScroll={() => {
+          if (syncingRef.current) { syncingRef.current = false; return; }
+          if (topScrollRef.current && scrollRef.current) {
+            syncingRef.current = true;
+            topScrollRef.current.scrollLeft = scrollRef.current.scrollLeft;
+          }
+        }}
+        className="w-full overflow-x-auto rounded-lg border focus:outline-none focus:ring-2 focus:ring-ring"
+      >
         <div className="min-w-[900px]">
           <table className="w-full border-separate border-spacing-0">
             <thead>
@@ -722,7 +754,7 @@ export default function WeeklyMenuGrid() {
                   const itemCount = Object.values(dayItems).reduce((acc, items) => acc + items.length, 0);
                   
                   return (
-                    <th key={idx} className="border-b border-l p-3 text-center font-medium text-sm min-w-[140px]">
+                    <th key={idx} data-day-index={idx} className="border-b border-l p-3 text-center font-medium text-sm min-w-[140px]">
                       <div>{WEEKDAYS[idx]}</div>
                       <div className="text-xs text-muted-foreground font-normal">
                         {format(date, "MM.dd.")}
@@ -847,8 +879,123 @@ export default function WeeklyMenuGrid() {
             </tbody>
           </table>
         </div>
-        <ScrollBar orientation="horizontal" />
-      </ScrollArea>
+      </div>
     </div>
   );
 }
+
+interface DayJumpBarProps {
+  weekDates: Date[];
+  scrollRef: React.RefObject<HTMLDivElement>;
+  topScrollRef: React.RefObject<HTMLDivElement>;
+}
+
+function DayJumpBar({ weekDates, scrollRef, topScrollRef }: DayJumpBarProps) {
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [contentWidth, setContentWidth] = useState(900);
+  const [atStart, setAtStart] = useState(true);
+  const [atEnd, setAtEnd] = useState(false);
+  const syncingTopRef = useRef(false);
+
+  const updateState = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setContentWidth(el.scrollWidth);
+    setAtStart(el.scrollLeft <= 4);
+    setAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 4);
+    // Determine which day is most centered
+    const ths = el.querySelectorAll<HTMLTableCellElement>("th[data-day-index]");
+    const center = el.scrollLeft + el.clientWidth / 2;
+    let best = 0;
+    let bestDist = Infinity;
+    ths.forEach((th) => {
+      const mid = th.offsetLeft + th.offsetWidth / 2;
+      const d = Math.abs(mid - center);
+      if (d < bestDist) { bestDist = d; best = Number(th.dataset.dayIndex); }
+    });
+    setActiveIdx(best);
+  }, [scrollRef]);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    updateState();
+    const onScroll = () => updateState();
+    el.addEventListener("scroll", onScroll, { passive: true });
+    const ro = new ResizeObserver(updateState);
+    ro.observe(el);
+    return () => { el.removeEventListener("scroll", onScroll); ro.disconnect(); };
+  }, [updateState, scrollRef]);
+
+  const jumpTo = (idx: number) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const th = el.querySelector<HTMLTableCellElement>(`th[data-day-index="${idx}"]`);
+    if (!th) return;
+    // Sticky category column is w-48 = 192px
+    const target = th.offsetLeft - 192;
+    el.scrollTo({ left: Math.max(0, target), behavior: "smooth" });
+  };
+
+  const scrollByAmount = (delta: number) => {
+    scrollRef.current?.scrollBy({ left: delta, behavior: "smooth" });
+  };
+
+  return (
+    <div className="sticky top-14 z-20 -mx-1 px-1 py-2 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border/40 flex flex-col gap-2">
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-8 w-8 shrink-0"
+          onClick={() => scrollByAmount(-200)}
+          disabled={atStart}
+          aria-label="Görgetés balra"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <div className="flex items-center gap-1.5 overflow-x-auto flex-1">
+          {weekDates.map((date, idx) => (
+            <button
+              key={idx}
+              onClick={() => jumpTo(idx)}
+              className={`shrink-0 px-3 h-8 rounded-md text-xs font-medium transition-colors border ${
+                activeIdx === idx
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background text-foreground border-border hover:bg-accent"
+              }`}
+            >
+              {WEEKDAYS[idx]} <span className="opacity-70 ml-1">{format(date, "MM.dd.")}</span>
+            </button>
+          ))}
+        </div>
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-8 w-8 shrink-0"
+          onClick={() => scrollByAmount(200)}
+          disabled={atEnd}
+          aria-label="Görgetés jobbra"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+      {/* Mirrored top scrollbar */}
+      <div
+        ref={topScrollRef}
+        onScroll={() => {
+          if (syncingTopRef.current) { syncingTopRef.current = false; return; }
+          if (scrollRef.current && topScrollRef.current) {
+            syncingTopRef.current = true;
+            scrollRef.current.scrollLeft = topScrollRef.current.scrollLeft;
+          }
+        }}
+        className="overflow-x-auto h-3"
+        aria-hidden="true"
+      >
+        <div style={{ width: contentWidth, height: 1 }} />
+      </div>
+    </div>
+  );
+}
+
