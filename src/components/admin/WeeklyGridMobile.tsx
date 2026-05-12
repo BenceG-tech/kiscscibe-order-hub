@@ -5,7 +5,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ChevronLeft, ChevronRight, ChevronDown, Loader2, Check, Download } from "lucide-react";
 import { WeeklyGridCell } from "./WeeklyGridCell";
 import { DailyPriceInput } from "./DailyPriceInput";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 interface MenuItem {

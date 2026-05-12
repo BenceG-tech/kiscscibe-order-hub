@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, addDays, addWeeks, subWeeks } from "date-fns";
-import { getSmartWeekStart } from "@/lib/dateUtils";
+import { getSmartWeekStart, getSmartInitialDayIndex } from "@/lib/dateUtils";
 import { hu } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -625,6 +625,8 @@ export default function WeeklyMenuGrid() {
   
   const isLoading = offersLoading;
 
+  const initialOpenDayIndex = useMemo(() => getSmartInitialDayIndex(weekDates), [weekDates]);
+
   if (isMobile) {
     return (
       <WeeklyGridMobile
@@ -647,6 +649,7 @@ export default function WeeklyMenuGrid() {
         isLoading={isLoading}
         isPending={isPending}
         onExport={exportToExcel}
+        initialOpenDayIndex={initialOpenDayIndex}
       />
     );
   }
