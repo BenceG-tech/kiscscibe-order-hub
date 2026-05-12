@@ -14,7 +14,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import ImageUpload from "@/components/admin/ImageUpload";
 import InfoTip from "@/components/admin/InfoTip";
 import { capitalizeFirst } from "@/lib/utils";
-import { GripVertical, Edit, Trash2, Plus, Eye, EyeOff, ImageIcon, List, Save, Pin } from "lucide-react";
+import { GripVertical, Edit, Trash2, Plus, Eye, EyeOff, ImageIcon, List, Save, Pin, PinOff, ChevronDown, FilePlus2, PackageSearch } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import AIGenerateImageButton from "@/components/admin/AIGenerateImageButton";
+import AddExistingFixItemDialog from "@/components/admin/AddExistingFixItemDialog";
 import {
   DndContext,
   closestCenter,
