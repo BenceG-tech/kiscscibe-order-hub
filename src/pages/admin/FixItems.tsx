@@ -403,9 +403,13 @@ const FixItems = () => {
                       <span>{showImages ? "Képes megjelenítés" : "Lista (kép nélkül)"}</span>
                       <Switch checked={showImages} onCheckedChange={(v) => toggleCategoryImages(cat.id, v)} />
                     </label>
-                    <Button size="sm" onClick={() => openCreate(cat.id)}>
-                      <Plus className="h-4 w-4 mr-1" />
+                    <Button size="sm" variant="outline" onClick={() => openCreate(cat.id)}>
+                      <FilePlus2 className="h-4 w-4 mr-1" />
                       Új tétel
+                    </Button>
+                    <Button size="sm" onClick={() => setAddExistingFor({ id: cat.id, name: cat.name })}>
+                      <PackageSearch className="h-4 w-4 mr-1" />
+                      Meglévő hozzáadása
                     </Button>
                   </div>
                 </div>
