@@ -20,9 +20,9 @@ serve(async (req) => {
 
     const { item_id, item_name, prompt_override } = await req.json();
 
-    if (!item_id || !item_name) {
+    if (!item_name) {
       return new Response(
-        JSON.stringify({ error: "item_id and item_name are required" }),
+        JSON.stringify({ error: "item_name is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -90,7 +90,9 @@ serve(async (req) => {
     }
 
     // Upload to Supabase Storage
-    const filePath = `ai-generated/${item_id}.${imageExt}`;
+    const fileId = item_id || crypto.randomUUID();
+    const folder = item_id ? "ai-generated" : "ai-generated/standalone";
+    const filePath = `${folder}/${fileId}.${imageExt}`;
     const contentType = `image/${base64Match[1]}`;
 
     const uploadResponse = await fetch(
@@ -115,24 +117,26 @@ serve(async (req) => {
     // Get public URL
     const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/menu-images/${filePath}`;
 
-    // Update menu item
-    const updateResponse = await fetch(
-      `${SUPABASE_URL}/rest/v1/menu_items?id=eq.${item_id}`,
-      {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-          apikey: SUPABASE_SERVICE_ROLE_KEY,
-          "Content-Type": "application/json",
-          Prefer: "return=minimal",
-        },
-        body: JSON.stringify({ image_url: publicUrl }),
-      }
-    );
+    // Update menu item only when item_id provided
+    if (item_id) {
+      const updateResponse = await fetch(
+        `${SUPABASE_URL}/rest/v1/menu_items?id=eq.${item_id}`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+            apikey: SUPABASE_SERVICE_ROLE_KEY,
+            "Content-Type": "application/json",
+            Prefer: "return=minimal",
+          },
+          body: JSON.stringify({ image_url: publicUrl }),
+        }
+      );
 
-    if (!updateResponse.ok) {
-      console.error("DB update error:", await updateResponse.text());
-      throw new Error("Failed to update menu item image URL");
+      if (!updateResponse.ok) {
+        console.error("DB update error:", await updateResponse.text());
+        throw new Error("Failed to update menu item image URL");
+      }
     }
 
     console.log(`Successfully generated image for ${item_name}: ${publicUrl}`);

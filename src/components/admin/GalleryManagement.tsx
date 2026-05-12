@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { Plus, Trash2, ArrowUp, ArrowDown, Pencil, Image as ImageIcon, Loader2, Utensils, Building2, ArrowRightLeft } from "lucide-react";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import MultiImageUpload from "./MultiImageUpload";
+import AIGenerateImageButton from "./AIGenerateImageButton";
 
 type GalleryType = "food" | "interior";
 
@@ -33,6 +34,7 @@ const GalleryManagement = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [addGalleryType, setAddGalleryType] = useState<GalleryType>("food");
   const [editingImage, setEditingImage] = useState<GalleryImage | null>(null);
+  const [aiFoodName, setAiFoodName] = useState("");
 
   const { data: allImages = [], isLoading } = useQuery({
     queryKey: ['admin-gallery-images'],
@@ -314,6 +316,26 @@ const GalleryManagement = () => {
                 bucketName="menu-images"
                 isUploading={addMultipleImagesMutation.isPending}
               />
+
+              {addGalleryType === 'food' && (
+                <div className="border-t pt-4 space-y-2">
+                  <Label>Vagy generáltass AI képet egy étel nevéből</Label>
+                  <Input
+                    placeholder="pl. Rántott karaj burgonyával"
+                    value={aiFoodName}
+                    onChange={(e) => setAiFoodName(e.target.value)}
+                  />
+                  <AIGenerateImageButton
+                    itemName={aiFoodName}
+                    onGenerated={(url) => {
+                      addMultipleImagesMutation.mutate([{ url, altText: aiFoodName }]);
+                      setAiFoodName("");
+                    }}
+                    fullWidth
+                    label="AI kép generálása és hozzáadás"
+                  />
+                </div>
+              )}
             </div>
           </DialogContent>
         </Dialog>

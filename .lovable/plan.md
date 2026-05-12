@@ -1,61 +1,79 @@
+## Cél
 
-# Terv — Rendelés-leadási hiba javítása custom domainen (CORS)
+Két javítás:
+1. **Menü részeként jelölt étel külön is rendelhető legyen** (ne csak a komplett menüben).
+2. **AI képgenerálás kiterjesztése** további helyekre (Mesterétel-könyvtár, Ideiglenes ételek, Galéria).
 
-## Mi a hiba?
+---
 
-Megnéztem a kódot és megtaláltam a problémát. **Nem véletlen, hogy csak te tudsz Lovable-ből rendelni — Krisztina gépén CORS-hiba miatt blokkolja a böngésző a rendelést.**
+## 1) Menüs ételek külön rendelhetősége
 
-A részletek:
+### Jelenlegi állapot
 
-A rendszer az élesben két cím alatt érhető el:
-- `https://kiscsibe-etterem.hu`
-- `https://kiscsibeetterem.hu`
+A `daily_offer_items` tábla `is_menu_part` mezője alapján:
+- A komplett menü (leves + főétel + desszert) egyben rendelhető a `DailyMenuPanel`-ből.
+- Az "extra ételek" listából (`Etlap.tsx` 267. sor: `!item.is_menu_part`) **kiszűrjük** azokat, amik menü részei → ezért nem rendelhetők egyedileg.
 
-Az edge function-ök (köztük a `submit-order`, ami a rendelést leadja) egy közös CORS-listát használnak, ami a `supabase/functions/_shared/cors.ts` fájlban van. Ebben a listában jelenleg **csak** a Lovable preview és published címek szerepelnek:
+### Megoldás
 
-```text
-https://kiscscibe-order-hub.lovable.app
-https://id-preview--98ed56c3-...lovable.app
-http://localhost:5173
-http://localhost:3000
-http://localhost:8080
-+ wildcard: bármi ami .lovable.app vagy .lovableproject.com végű
-```
+**Frontend változtatás (semmi DB / backend logika nem érintett):**
 
-A két éles custom domain (`kiscsibe-etterem.hu`, `kiscsibeetterem.hu`) **nincs benne**.
+- `src/pages/Etlap.tsx` és `src/components/UnifiedDailySection.tsx`:
+  - Az `extraItems` szűrése változik: **minden napi ajánlat elemet megjeleníteni** egyedi rendelhetőként, az egyedi áron (a `menu_items.price_huf`).
+  - A menüs ételek továbbra is megjelennek a komplett menü blokkban a menü áron.
+  - A menü részeként jelölt ételek mellé (egyedi listában) **kis "Menüben is" badge** kerül, hogy a vendég lássa.
+- `DailyOffersPanel.tsx` és `DailyMenuPanel.tsx`:
+  - A megjelenítési logika kiegészül: a menüs leves/főétel egyenként is megjelenik az egyedi áron.
+  - Kosárba helyezéskor a meglévő `complete_menu_id_soup_main` cart deduplikációs logika nem zavar (külön ID külön rendelésnek).
 
-Ennek a hatása: ha valaki a `kiscsibe-etterem.hu` oldalon nyitja meg az appot, és megpróbál rendelést leadni, a böngészője Origin-ellenőrzést végez. Mivel az edge function nem küld vissza érvényes `Access-Control-Allow-Origin` fejlécet erre a domainre, a böngésző elutasítja a választ, és a rendelés "csendben" elhal — a felhasználó csak annyit lát, hogy nem történik semmi, vagy hibát kap.
+### Eredmény
 
-Te azért tudsz rendelni, mert a Lovable preview-ből (`*.lovable.app`) dolgozol, ami benne van az allowlistában.
+- A vendég választhat:
+  - **Komplett menü** (leves + főétel + desszert) → menü ár (pl. 2200 Ft)
+  - **Csak főétel** vagy **csak leves** → egyedi `menu_items.price_huf` áron.
+- Üzleti logika, ár, KDS, számlázás érintetlen.
 
-## Mit javítok?
+---
 
-Egy fájlt érint, a `supabase/functions/_shared/cors.ts`-t. Két lépést teszek:
+## 2) AI képgenerálás kiterjesztése
 
-1. **Hozzáadom mindkét custom domaint** az `ALLOWED_ORIGINS` listához:
-   - `https://kiscsibe-etterem.hu`
-   - `https://www.kiscsibe-etterem.hu`
-   - `https://kiscsibeetterem.hu`
-   - `https://www.kiscsibeetterem.hu`
+### Jelenlegi állapot
 
-2. Ez **minden edge function-re egyszerre** érvényes lesz, mert mindegyik ezt a közös CORS-modult használja. Tehát nem csak a rendelés-leadás javul meg, hanem a kapcsolati űrlap, hírlevél, értékelés, stb. is — bármi, ami eddig a custom domainen csendben elhalt volna.
+`generate-food-image` edge function létezik (Gemini 2.5 Flash Image), de UI-ban csak:
+- `MenuItemManagement` (Mesterétel-könyvtár batch generátor — `AIBatchImageGenerator`).
 
-## Mit nem nyúlok hozzá
+### Hiányzó helyek
 
-- Semmi más logikához nem nyúlok: rendelési flow, validáció, RLS, email küldés, minden marad ugyanaz.
-- A meglévő Lovable és localhost engedélyek megmaradnak, hogy a fejlesztés és a Lovable preview tovább működjön.
-- Adatbázis-változtatás nincs.
+| Hely | Komponens | Mi kerül oda |
+|---|---|---|
+| Egyedi ételszerkesztés | `MenuItemEditDialog.tsx` | "AI kép generálása" gomb a kép mező mellé |
+| Ideiglenes étel létrehozása | `TemporaryItemCreator.tsx` | Ugyanaz a gomb |
+| Ideiglenes ételek könyvtára | `TemporaryItemsLibrary.tsx` | Gomb a kép nélküli elemekhez |
+| Galéria felöltés (Ételek) | `GalleryManagement.tsx` | "AI generálás az étel nevével" opció |
 
-## Tesztelés a javítás után
+### Implementáció
 
-A deploy automatikus. Utána Krisztina ezt tudja tesztelni:
+- Új közös komponens: `src/components/admin/AIGenerateImageButton.tsx`
+  - Props: `itemName`, `onGenerated(url)`, opcionális `description`
+  - Hívja a meglévő `generate-food-image` edge functiont
+  - Loading állapot, toast visszajelzés, hiba kezelés (429/402)
+- Beillesztjük a fenti 4 komponensbe a meglévő képfelöltő mezők mellé, "VAGY AI-val" módban.
+- Galériánál opcionális mező: a felhasználó beír egy ételnevet, és AI generál képet hozzá.
 
-1. Bemegy a `https://kiscsibe-etterem.hu` oldalra (a saját gépén).
-2. Hozzáad egy ételt a kosárhoz, kitölti a checkout adatokat, és leadja a rendelést.
-3. Sikeres rendelés esetén megjelenik a megerősítő oldal a rendelési kóddal.
+### Stílus
 
-Ha a böngésző DevTools Console-ja még mindig CORS-hibát mutat, az azt jelenti, hogy esetleg cache-eli a régi preflight választ — egy hard refresh (Ctrl+Shift+R / Cmd+Shift+R) megoldja.
+A meglévő gomb stílusát (`Sparkles` ikon, `bg-gradient-to-r from-primary`) követjük az `AIBatchImageGenerator`-ból, hogy konzisztens legyen.
 
-## Miért fordulhatott elő ez?
+---
 
-A Lovable platform alapból csak a saját `.lovable.app` URL-eket ismeri. Amikor a custom domaineket (`kiscsibe-etterem.hu`, `kiscsibeetterem.hu`) hozzákapcsolták a projekthez, az edge function-ök CORS-listáját nem frissítették velük együtt. Ez egy klasszikus "csak a fejlesztőnek működik" típusú hiba: te a Lovable preview-ből tesztelted, ami engedélyezett origin, így nálad sosem jött elő.
+## Mit nem érintünk
+
+- Backend / DB séma változás nincs.
+- A `generate-food-image` edge function nem módosul.
+- A meglévő rendelésfeldolgozás, KDS, hírlevél, számla logika érintetlen.
+
+## QA
+
+- Mobil + desktop nézet ellenőrzés (402px breakpoint).
+- Menü blokk + egyedi rendelés egyszerre megjelenik, kosárba mindkettő külön kerül.
+- AI gomb működik mind a 4 helyen, generált kép mentődik a megfelelő `image_url` mezőbe.

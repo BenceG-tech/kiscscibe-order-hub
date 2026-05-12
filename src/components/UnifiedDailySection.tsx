@@ -291,6 +291,11 @@ const UnifiedDailySection = () => {
                   <h4 className="text-base md:text-lg font-bold font-sofia leading-tight">
                     {capitalizeFirst(item.item_name)}
                   </h4>
+                  {item.is_menu_part && (
+                    <Badge variant="outline" className="text-[10px] border-primary/40 text-primary">
+                      Menüben is
+                    </Badge>
+                  )}
                   {item.item_description && (
                     <p className="text-xs text-muted-foreground line-clamp-2">
                       {item.item_description}

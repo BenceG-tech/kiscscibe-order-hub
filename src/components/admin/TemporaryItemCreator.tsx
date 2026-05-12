@@ -9,6 +9,7 @@ import { Plus, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import ImageUpload from './ImageUpload';
+import AIGenerateImageButton from './AIGenerateImageButton';
 import { capitalizeFirst } from '@/lib/utils';
 
 interface MenuCategory {
@@ -191,6 +192,11 @@ export const TemporaryItemCreator: React.FC<TemporaryItemCreatorProps> = ({
               currentImageUrl={formData.image_url}
               onImageUploaded={(url) => setFormData(prev => ({ ...prev, image_url: url }))}
               onImageRemoved={() => setFormData(prev => ({ ...prev, image_url: '' }))}
+            />
+            <AIGenerateImageButton
+              itemName={formData.name}
+              onGenerated={(url) => setFormData(prev => ({ ...prev, image_url: url }))}
+              fullWidth
             />
           </div>
 
