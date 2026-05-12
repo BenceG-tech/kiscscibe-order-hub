@@ -75,6 +75,7 @@ const FixItemRow = ({
   onUnpin: (it: MenuItem) => void;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
+  const [previewOpen, setPreviewOpen] = useState(false);
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
