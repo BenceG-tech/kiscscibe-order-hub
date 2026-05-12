@@ -1,54 +1,38 @@
-## Cél
 
-A "fix tételek" (állandó ételek, italok, savanyúságok stb.) kezelése külön, dedikált admin felületre kerüljön, ahol könnyen átlátható, drag-and-drop módon sorrendezhető, és kategóriánként beállítható, hogy a vendégoldalon képpel vagy kép nélkül (tisztán szöveges listaként) jelenjenek meg.
+## 1. Fix tételek admin – felhasználóbarátabb kezelés
 
-## Mit építünk
+**`src/pages/admin/FixItems.tsx`**
 
-### 1) Új admin tab: "Fix tételek"
-- Az admin menüben új menüpont (`/admin/fix-items`) a meglévő "Étlap kezelés" mellé.
-- Csak az `is_always_available = true` tételek listája — kategóriákra bontva (Italok, Savanyúság, Desszert stb.).
-- Kategóriánként összecsukható szekció, fejlécben:
-  - kategória név + tételszám
-  - **"Megjelenítés képpel" kapcsoló** (per kategória)
-  - **"Új tétel"** gomb (előre kitöltött kategóriával, `is_always_available=true`)
-- Tételsorok kompakt formában: drag-fogantyú, mini kép (vagy csak név ha nincs kép), név, ár, allergének badge, gyors gombok (szerkeszt, aktív/inaktív, töröl).
+- **„Új tétel" gomb → dropdown / kis menü** kategóriánként két opcióval:
+  - **„Új tétel létrehozása"** – a jelenlegi szerkesztő dialógus (új menu_item, `is_always_available = true`).
+  - **„Meglévő tétel hozzáadása"** – új választó dialógus (`AddExistingItemDialog`), amely a `menu_items`-ből listázza azokat, ahol `is_always_available = false`. Keresőmező + kategória szűrés, kép + név + ár előnézet, többes kijelölés. Mentésnél csak a `is_always_available = true` és a megfelelő `display_order` frissül – semmi más adat nem változik. Mivel ugyanaz a `menu_items` rekord, a változás automatikusan megjelenik mindenhol (étlap, daily offer, stb.).
 
-### 2) Drag-and-drop sorrendezés
-- `@dnd-kit/core` + `@dnd-kit/sortable` (már használjuk a projektben galériánál — ha nem, telepítjük).
-- Mobilon fogantyú ikon hosszú nyomásra/megfogásra húzható.
-- Sorrend mentése azonnali (drop után), optimistic update + toast.
+- **Szerkesztő dialógus bővítés** (`Tétel szerkesztése` / `Új fix tétel`):
+  - A kép feltöltő mellé / alá tegyük be az `AIGenerateImageButton`-t (ugyanúgy, mint a `MenuItemEditDialog`-ban). `itemId` csak meglévő tételnél, `itemName` mindig a `form.name`. Generálás után `setForm({ ...form, image_url: url })`.
+  - „Eltávolítás a fixekből" gomb a delete mellé: `is_always_available = false`-ra állítja (megőrzi a tételt az étlapon, csak kiveszi a fix listából). A delete továbbra is teljes törlés marad, megerősítéssel egyértelművé tesszük a különbséget.
 
-### 3) Kategória-szintű "képes / lista" beállítás
-- A vendégoldali `AlwaysAvailableSection` kategóriánként vagy képes kártyaként, vagy egyszerű felsorolásként rendereli a tételeket.
-- Lista mód: nincs logo placeholder, nincs kép — csak név · rövid leírás · ár · "Kosárba" gomb, vékony sorokkal.
+- **Apró UX finomítás**: kategória fejléc jobb felső sarkában a kapcsoló mellé világos felirat (`Képes` / `Lista`), gombok ikonnal és tooltippel.
 
-### 4) Beállítások mentése
-- Új `settings` kulcs: `always_available_display` (JSON), pl. `{ "<categoryId>": { "showImages": false } }`.
-- Új mező `menu_items` táblán: `display_order INTEGER` (sorrendezéshez, kategórián belül).
+## 2. Adatkonzisztencia
 
-## Vendégoldali változás
+A `FixItems` és a többi admin felület (Menu, MenuItemManagement) ugyanazt a `menu_items` táblát használja, így bármilyen módosítás (név, ár, kép, allergének) automatikusan szinkronban van. Nincs szükséges sémaváltozás. A `display_order` a fix listán belüli sorrendet jelöli, az étlap továbbra is a saját rendezését használja.
 
-A `AlwaysAvailableSection.tsx` lekéri a beállítást és a `display_order` szerint rendez. Lista módnál a kártyás grid helyett egyszerű, sűrűn szedett lista jelenik meg (logó/placeholder nélkül).
+## 3. Étlap mobil – „Kosárba" gomb lecsúszik a kártyáról
 
-## Technikai részletek
+**`src/components/sections/AlwaysAvailableSection.tsx`**
 
-**Adatbázis migráció:**
-- `ALTER TABLE menu_items ADD COLUMN display_order INTEGER DEFAULT 0;`
-- Index `(category_id, display_order)`-re.
-- Initial backfill: `display_order = row_number() OVER (PARTITION BY category_id ORDER BY name)`.
-- `settings` táblába új sor `key='always_available_display'` (RLS már megengedő publikus olvasásra → új policy `key = 'always_available_display'`-re).
+Probléma: képes nézetben `grid-cols-2`, kis mobil szélességen a `flex items-center justify-between` sorba egymás mellé teszi a `2150 Ft` badge-et és a `Kosárba` gombot, de a gomb felirata kilóg a kártyából (lásd csatolt képernyőkép).
 
-**Frontend fájlok:**
-- ÚJ: `src/pages/admin/FixItems.tsx` — fő oldal.
-- ÚJ: `src/components/admin/FixItemRow.tsx` — sortable sor.
-- ÚJ: `src/components/admin/FixItemCategoryBlock.tsx` — kategória blokk + kapcsoló.
-- MÓD: `src/pages/admin/AdminLayout.tsx` — új nav link.
-- MÓD: `src/App.tsx` — új route.
-- MÓD: `src/components/sections/AlwaysAvailableSection.tsx` — display setting + display_order alkalmazása, lista mód renderelés.
-- MÓD: `src/hooks/useRestaurantSettings.ts` (vagy új `useAlwaysAvailableDisplay`) — beállítás betöltése.
+Megoldás (csak prezentációs kód):
+- Kis kártyában (mobilon, `grid-cols-2`) a price + gomb **egymás alá**: `flex-col items-stretch gap-2`, badge balra, gomb teljes szélességű.
+- `sm:` breakpointtól vissza a jelenlegi `flex-row justify-between` elrendezésre.
+- Gomb: `w-full sm:w-auto`, ikon + „Kosárba" felirat marad, `truncate`-tel biztosítjuk hogy ne nőjjön ki.
+- Ár badge: `self-start` mobilon.
 
-**Megmarad:** Az "Étlap kezelés" oldal érintetlen, ott is látszanak a fix tételek (a "📌 Fix tételek" szűrő marad), de a kényelmes kezelés az új tabon.
+Eredmény: minden tartalom a kártyán belül marad, a gomb tappolható és olvasható méretű 360–414 px szélességen is.
 
-## Nyitott kérdés (építés közben tisztázható)
+## QA
 
-A kép/lista kapcsoló legyen-e **globális** (egy kapcsoló az egész "Mindig elérhető" szekcióra) vagy **kategóriánként** (italok lista, desszert kép)? Tervben kategóriánként van — ez rugalmasabb, és ha mindig ugyanazt akarják, akkor is két kattintás az egész.
+- Admin fix tételek: meglévő tétel hozzáadása → megjelenik a fix listában, eredeti étlapon ár/név változatlan.
+- AI kép generálás a fix tétel szerkesztőben működik, kép mentődik.
+- Étlap mobil 375 / 402 px viewporton: „Kosárba" gomb a kártyán belül van, nem csúszik le.
