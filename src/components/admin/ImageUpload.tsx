@@ -165,6 +165,8 @@ const ImageUpload = ({
           </div>
         </div>
       )}
+
+      <ImagePreviewLightbox src={previewUrl} open={lightboxOpen} onOpenChange={setLightboxOpen} />
     </div>
   );
 };
