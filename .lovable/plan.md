@@ -1,71 +1,54 @@
 ## Cél
 
-A `MenuItemEditDialog` jelenlegi duplikáció-figyelmeztetése csak egy szöveges ⚠️ üzenet ("Kattints újra ha mégis folytatnád"). Helyette: ha egy vagy több azonos nevű (ékezet/kisbetű független) étel már létezik, dobjon fel egy **összehasonlító dialógust**, amiben az admin oldalra látja a meglévő(eke)t és az újat, és egy kattintással eldöntheti, melyiket tartsa meg.
+A "fix tételek" (állandó ételek, italok, savanyúságok stb.) kezelése külön, dedikált admin felületre kerüljön, ahol könnyen átlátható, drag-and-drop módon sorrendezhető, és kategóriánként beállítható, hogy a vendégoldalon képpel vagy kép nélkül (tisztán szöveges listaként) jelenjenek meg.
 
-## Új komponens — `DuplicateResolverDialog`
+## Mit építünk
 
-Helye: `src/components/admin/DuplicateResolverDialog.tsx`
+### 1) Új admin tab: "Fix tételek"
+- Az admin menüben új menüpont (`/admin/fix-items`) a meglévő "Étlap kezelés" mellé.
+- Csak az `is_always_available = true` tételek listája — kategóriákra bontva (Italok, Savanyúság, Desszert stb.).
+- Kategóriánként összecsukható szekció, fejlécben:
+  - kategória név + tételszám
+  - **"Megjelenítés képpel" kapcsoló** (per kategória)
+  - **"Új tétel"** gomb (előre kitöltött kategóriával, `is_always_available=true`)
+- Tételsorok kompakt formában: drag-fogantyú, mini kép (vagy csak név ha nincs kép), név, ár, allergének badge, gyors gombok (szerkeszt, aktív/inaktív, töröl).
 
-**Megjelenés (mobilon egymás alatt, deszkopon 2 oszlop):**
-- Bal kártya: **Meglévő étel** (ha több is van, kis tabok közöttük: "1 · Rántott sajt", "2 · Rántott Sajt").
-- Jobb kártya: **Új / szerkesztett változat** (a form jelenlegi állapota).
+### 2) Drag-and-drop sorrendezés
+- `@dnd-kit/core` + `@dnd-kit/sortable` (már használjuk a projektben galériánál — ha nem, telepítjük).
+- Mobilon fogantyú ikon hosszú nyomásra/megfogásra húzható.
+- Sorrend mentése azonnali (drop után), optimistic update + toast.
 
-Mindkét kártya tartalma:
-- Kép thumbnail (vagy "Nincs kép" placeholder)
-- Név
-- Kategória neve
-- Ár (Ft)
-- Leírás (rövidítve)
-- Allergének badge-ek
-- Státusz: aktív / inaktív, mindig elérhető, ideiglenes
-- Eltérő mezők kiemelve (sárga háttér / `bg-primary/10`), hogy az admin azonnal lássa a különbséget
+### 3) Kategória-szintű "képes / lista" beállítás
+- A vendégoldali `AlwaysAvailableSection` kategóriánként vagy képes kártyaként, vagy egyszerű felsorolásként rendereli a tételeket.
+- Lista mód: nincs logo placeholder, nincs kép — csak név · rövid leírás · ár · "Kosárba" gomb, vékony sorokkal.
 
-**Akciógombok (alul):**
-1. **„Meglévő megtartása"** — bezár, mentés nélkül. (Ez az alapértelmezett biztonságos opció.)
-2. **„Meglévő felülírása az újjal"** — a kiválasztott meglévő rekordot frissíti az új mezőkkel (ha új-rekord létrehozása volt, akkor `update` a meglévő id-jén; ha szerkesztés volt, akkor a meglévő törlődik és az aktuális marad). Ha a meglévő hivatkozott (van `daily_offer_items` vagy `order_items` rá), a törlés helyett `is_active = false` jelölés és toast-figyelmeztetés.
-3. **„Mindkettő megtartása"** — figyelmen kívül hagyja a duplikációt, simán menti az újat.
-4. **„Mégse"** — bezár, marad a szerkesztő.
+### 4) Beállítások mentése
+- Új `settings` kulcs: `always_available_display` (JSON), pl. `{ "<categoryId>": { "showImages": false } }`.
+- Új mező `menu_items` táblán: `display_order INTEGER` (sorrendezéshez, kategórián belül).
 
-## Integráció a `MenuItemEditDialog`-ba
+## Vendégoldali változás
 
-A jelenlegi `handleSave` logikát átírjuk:
+A `AlwaysAvailableSection.tsx` lekéri a beállítást és a `display_order` szerint rendez. Lista módnál a kártyás grid helyett egyszerű, sűrűn szedett lista jelenik meg (logó/placeholder nélkül).
 
-```text
-1. Név validáció (változatlan)
-2. ilike lekérdezés → ha van találat:
-     - setDuplicates(existing)  // teljes mezőkkel: id, name, category_id, price_huf, image_url, description, allergens, is_active, is_temporary, is_always_available
-     - setShowDuplicateResolver(true)
-     - return
-3. Egyébként: saveMutation.mutate()
-```
+## Technikai részletek
 
-A `DuplicateResolverDialog` callbackjei:
-- `onKeepExisting()` → resolver bezár, szerkesztő nyitva marad (a felhasználó vagy módosítja a nevet, vagy bezárja).
-- `onReplaceExisting(existingId)` → meglévő törlése (vagy archiválása, ha hivatkozott) + saveMutation.
-- `onKeepBoth()` → saveMutation azonnal.
+**Adatbázis migráció:**
+- `ALTER TABLE menu_items ADD COLUMN display_order INTEGER DEFAULT 0;`
+- Index `(category_id, display_order)`-re.
+- Initial backfill: `display_order = row_number() OVER (PARTITION BY category_id ORDER BY name)`.
+- `settings` táblába új sor `key='always_available_display'` (RLS már megengedő publikus olvasásra → új policy `key = 'always_available_display'`-re).
 
-A korábbi `duplicateWarning` state és a "destructive" gomb-variáns törlődik — a resolver dialog veszi át a szerepet.
+**Frontend fájlok:**
+- ÚJ: `src/pages/admin/FixItems.tsx` — fő oldal.
+- ÚJ: `src/components/admin/FixItemRow.tsx` — sortable sor.
+- ÚJ: `src/components/admin/FixItemCategoryBlock.tsx` — kategória blokk + kapcsoló.
+- MÓD: `src/pages/admin/AdminLayout.tsx` — új nav link.
+- MÓD: `src/App.tsx` — új route.
+- MÓD: `src/components/sections/AlwaysAvailableSection.tsx` — display setting + display_order alkalmazása, lista mód renderelés.
+- MÓD: `src/hooks/useRestaurantSettings.ts` (vagy új `useAlwaysAvailableDisplay`) — beállítás betöltése.
 
-### Hivatkozott rekord kezelése
+**Megmarad:** Az "Étlap kezelés" oldal érintetlen, ott is látszanak a fix tételek (a "📌 Fix tételek" szűrő marad), de a kényelmes kezelés az új tabon.
 
-A „felülírás" akciónál először lekérdezzük:
-```text
-exists in daily_offer_items where item_id = X  → bool
-exists in order_items where item_id = X        → bool
-```
-Ha bármelyik létezik:
-- A meglévő rekordot **nem töröljük**, hanem `is_active = false`-ra állítjuk és átnevezzük (`name + " (régi)"`).
-- Toast: „A régi étel hivatkozva van rendelésekben/ajánlatokban — inaktívvá tettük az adatok megőrzése érdekében."
+## Nyitott kérdés (építés közben tisztázható)
 
-Ha sehol nincs hivatkozva → DELETE a régire, INSERT az újra (ha új-rekord létrehozás), vagy UPDATE új mezőkkel és DELETE a duplikátumra (ha szerkesztés módban).
-
-## Érintett fájlok
-
-- **Új**: `src/components/admin/DuplicateResolverDialog.tsx` — összehasonlító dialógus, kategória név lookup-pal.
-- **Módosul**: `src/components/admin/MenuItemEditDialog.tsx` — `handleSave` átírása, `duplicateWarning` state lecserélése `duplicates` + `showResolver`-re; resolver render az `<Dialog>` mellé/után.
-
-## Mit nem érint a változás
-
-- A `MasterMenuImport` (Excel import) saját duplikátum-szűrése változatlan.
-- A `TemporaryItemCreator` (ideiglenes ételek) most nem ellenőriz duplikátumot — opcionális kiterjesztés, jelen körből kihagyva.
-- A backend / adatbázis séma változatlan — pure frontend változás.
+A kép/lista kapcsoló legyen-e **globális** (egy kapcsoló az egész "Mindig elérhető" szekcióra) vagy **kategóriánként** (italok lista, desszert kép)? Tervben kategóriánként van — ez rugalmasabb, és ha mindig ugyanazt akarják, akkor is két kattintás az egész.

@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/components/ui/use-toast";
 import { capitalizeFirst } from "@/lib/utils";
-import { ShoppingCart, Package } from "lucide-react";
+import { ShoppingCart, Package, Plus } from "lucide-react";
 import kiscsibeLogo from "@/assets/kiscsibe_logo_round.png";
 
 interface AlwaysAvailableItem {
@@ -17,6 +17,7 @@ interface AlwaysAvailableItem {
   image_url: string | null;
   allergens: string[] | null;
   category_id: string | null;
+  display_order: number;
 }
 
 interface Category {
@@ -25,19 +26,18 @@ interface Category {
   sort: number;
 }
 
+type DisplaySettings = Record<string, { showImages: boolean }>;
+
 interface AlwaysAvailableSectionProps {
-  /** Show only featured items (for homepage) */
   featuredOnly?: boolean;
-  /** Max items to show (for homepage) */
   maxItems?: number;
-  /** Custom title */
   title?: string;
 }
 
-const AlwaysAvailableSection = ({ 
-  featuredOnly = false, 
-  maxItems, 
-  title = "Mindig elérhető" 
+const AlwaysAvailableSection = ({
+  featuredOnly = false,
+  maxItems,
+  title = "Mindig elérhető",
 }: AlwaysAvailableSectionProps) => {
   const { toast } = useToast();
   const { addItem } = useCart();
@@ -47,14 +47,13 @@ const AlwaysAvailableSection = ({
     queryFn: async () => {
       let query = supabase
         .from("menu_items")
-        .select("id, name, description, price_huf, image_url, allergens, category_id")
+        .select("id, name, description, price_huf, image_url, allergens, category_id, display_order")
         .eq("is_active", true)
         .eq("is_always_available", true)
+        .order("display_order")
         .order("name");
 
-      if (featuredOnly) {
-        query = query.eq("is_featured", true);
-      }
+      if (featuredOnly) query = query.eq("is_featured", true);
 
       const { data, error } = await query;
       if (error) throw error;
@@ -74,11 +73,22 @@ const AlwaysAvailableSection = ({
     },
   });
 
+  const { data: displaySettings = {} } = useQuery({
+    queryKey: ["always-available-display-settings"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("settings")
+        .select("value_json")
+        .eq("key", "always_available_display")
+        .maybeSingle();
+      return (data?.value_json as DisplaySettings) || {};
+    },
+  });
+
   if (isLoading || items.length === 0) return null;
 
   const displayItems = maxItems ? items.slice(0, maxItems) : items;
 
-  // Group by category
   const grouped = categories
     .map((cat) => ({
       category: cat,
@@ -86,7 +96,6 @@ const AlwaysAvailableSection = ({
     }))
     .filter((g) => g.items.length > 0);
 
-  // Items without category
   const uncategorized = displayItems.filter(
     (item) => !item.category_id || !categories.find((c) => c.id === item.category_id)
   );
@@ -119,72 +128,98 @@ const AlwaysAvailableSection = ({
         <h3 className="text-xl font-bold">{title}</h3>
       </div>
 
-      {grouped.map((group) => (
-        <div key={group.category.id} className="space-y-3">
-          {grouped.length > 1 && (
-            <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-              {group.category.name}
-            </h4>
-          )}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {group.items.map((item) => (
-              <Card
-                key={item.id}
-                className="group border-0 bg-card/95 backdrop-blur-sm shadow-md rounded-2xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
-              >
-                <CardContent className="p-0">
-                  <div className="aspect-[4/3] overflow-hidden">
-                    {item.image_url ? (
-                      <img
-                        src={item.image_url}
-                        alt={item.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center">
-                        <img
-                          src={kiscsibeLogo}
-                          alt="Kiscsibe"
-                          className="h-[60%] w-auto object-contain opacity-60"
-                        />
+      {grouped.map((group) => {
+        const showImages = displaySettings[group.category.id]?.showImages !== false; // default ON
+
+        return (
+          <div key={group.category.id} className="space-y-3">
+            {grouped.length > 1 && (
+              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                {group.category.name}
+              </h4>
+            )}
+
+            {showImages ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {group.items.map((item) => (
+                  <Card
+                    key={item.id}
+                    className="group border-0 bg-card/95 backdrop-blur-sm shadow-md rounded-2xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
+                  >
+                    <CardContent className="p-0">
+                      <div className="aspect-[4/3] overflow-hidden">
+                        {item.image_url ? (
+                          <img
+                            src={item.image_url}
+                            alt={item.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center">
+                            <img
+                              src={kiscsibeLogo}
+                              alt="Kiscsibe"
+                              className="h-[60%] w-auto object-contain opacity-60"
+                            />
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                  <div className="p-3 space-y-2">
-                    <div className="flex items-start justify-between gap-1">
-                      <h4 className="font-semibold text-sm leading-tight">
+                      <div className="p-3 space-y-2">
+                        <h4 className="font-semibold text-sm leading-tight">
+                          {capitalizeFirst(item.name)}
+                        </h4>
+                        {item.description && (
+                          <p className="text-xs text-muted-foreground line-clamp-2">{item.description}</p>
+                        )}
+                        <div className="flex items-center justify-between gap-2">
+                          <Badge variant="secondary" className="shrink-0 bg-primary/10 text-primary font-semibold text-xs">
+                            {item.price_huf} Ft
+                          </Badge>
+                          <Button onClick={() => handleAddToCart(item)} size="sm" className="h-8 px-3 text-xs">
+                            <ShoppingCart className="h-3 w-3 mr-1" />
+                            Kosárba
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-xl border border-border/50 bg-card/95 backdrop-blur-sm divide-y divide-border/40 overflow-hidden">
+                {group.items.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between gap-3 px-3 py-2.5 hover:bg-muted/40 transition-colors"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium text-sm leading-tight truncate">
                         {capitalizeFirst(item.name)}
-                      </h4>
+                      </div>
+                      {item.description && (
+                        <div className="text-xs text-muted-foreground truncate">{item.description}</div>
+                      )}
                     </div>
-                    {item.description && (
-                      <p className="text-xs text-muted-foreground line-clamp-2">
-                        {item.description}
-                      </p>
-                    )}
-                    <div className="flex items-center justify-between gap-2">
-                      <Badge
-                        variant="secondary"
-                        className="shrink-0 bg-primary/10 text-primary font-semibold text-xs"
-                      >
-                        {item.price_huf} Ft
-                      </Badge>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-sm font-semibold text-primary tabular-nums">{item.price_huf} Ft</span>
                       <Button
                         onClick={() => handleAddToCart(item)}
                         size="sm"
-                        className="h-8 px-3 text-xs"
+                        variant="outline"
+                        className="h-8 w-8 p-0"
+                        aria-label="Kosárba"
                       >
-                        <ShoppingCart className="h-3 w-3 mr-1" />
-                        Kosárba
+                        <Plus className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
+                ))}
+              </div>
+            )}
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };

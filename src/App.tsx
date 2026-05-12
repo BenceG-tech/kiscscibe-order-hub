@@ -31,6 +31,7 @@ import Rate from "./pages/Rate";
 const AdminDashboard = React.lazy(() => import("./pages/admin/Dashboard"));
 const AdminOrders = React.lazy(() => import("./pages/admin/Orders"));
 const AdminMenu = React.lazy(() => import("./pages/admin/Menu"));
+const AdminFixItems = React.lazy(() => import("./pages/admin/FixItems"));
 const AdminMenuSchedule = React.lazy(() => import("./pages/admin/MenuSchedule"));
 const AdminDailyMenu = React.lazy(() => import("./pages/admin/DailyMenu"));
 const AdminCapacity = React.lazy(() => import("./pages/admin/Capacity"));
@@ -105,6 +106,11 @@ const App = () => (
               <Route path="/admin/menu" element={
                 <ProtectedRoute requireAdmin>
                   <Suspense fallback={<LazyFallback />}><AdminMenu /></Suspense>
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/fix-items" element={
+                <ProtectedRoute requireAdmin>
+                  <Suspense fallback={<LazyFallback />}><AdminFixItems /></Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/admin/daily-menu" element={
