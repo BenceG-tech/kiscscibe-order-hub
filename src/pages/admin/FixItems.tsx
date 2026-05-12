@@ -196,9 +196,19 @@ const FixItems = () => {
     if (catsRes.error || itemsRes.error) {
       toast({ title: "Hiba", description: "Nem sikerült betölteni az adatokat", variant: "destructive" });
     }
-    setCategories(catsRes.data || []);
+    const cats = catsRes.data || [];
+    setCategories(cats);
     setItems((itemsRes.data || []) as MenuItem[]);
     setDisplaySettings((settingsRes.data?.value_json as DisplaySettings) || {});
+    if (!activeTab && cats.length > 0) {
+      // Prefer first category that has items
+      const itemsByCat = new Map<string, number>();
+      for (const it of (itemsRes.data || []) as MenuItem[]) {
+        if (it.category_id) itemsByCat.set(it.category_id, (itemsByCat.get(it.category_id) || 0) + 1);
+      }
+      const firstWithItems = cats.find((c) => (itemsByCat.get(c.id) || 0) > 0);
+      setActiveTab(firstWithItems?.id || cats[0].id);
+    }
     setLoading(false);
   };
 
