@@ -332,7 +332,7 @@ import DuplicateResolverDialog, { DuplicateCandidate } from "./DuplicateResolver
               <div className="space-y-2">
                 {imageUrl ? (
                   <div className="relative inline-block">
-                    <img
+                    <ZoomableImage
                       src={imageUrl}
                       alt="Preview"
                       className="h-24 w-24 rounded-lg object-cover border"
@@ -340,7 +340,7 @@ import DuplicateResolverDialog, { DuplicateCandidate } from "./DuplicateResolver
                     <Button
                       variant="destructive"
                       size="icon"
-                      className="absolute -top-2 -right-2 h-6 w-6"
+                      className="absolute -top-2 -right-2 h-6 w-6 z-10"
                       onClick={() => setImageUrl(null)}
                     >
                       <X className="h-3 w-3" />
