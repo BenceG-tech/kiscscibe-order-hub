@@ -193,6 +193,11 @@ export const TemporaryItemCreator: React.FC<TemporaryItemCreatorProps> = ({
               onImageUploaded={(url) => setFormData(prev => ({ ...prev, image_url: url }))}
               onImageRemoved={() => setFormData(prev => ({ ...prev, image_url: '' }))}
             />
+            <AIGenerateImageButton
+              itemName={formData.name}
+              onGenerated={(url) => setFormData(prev => ({ ...prev, image_url: url }))}
+              fullWidth
+            />
           </div>
 
           <Button 
