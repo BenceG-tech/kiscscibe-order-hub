@@ -519,6 +519,17 @@ const FixItems = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {addExistingFor && (
+          <AddExistingFixItemDialog
+            open={!!addExistingFor}
+            onOpenChange={(v) => { if (!v) setAddExistingFor(null); }}
+            targetCategoryId={addExistingFor.id}
+            targetCategoryName={addExistingFor.name}
+            nextDisplayOrderStart={nextOrderFor(addExistingFor.id)}
+            onAdded={() => { setAddExistingFor(null); void loadAll(); }}
+          />
+        )}
       </div>
     </AdminLayout>
   );
