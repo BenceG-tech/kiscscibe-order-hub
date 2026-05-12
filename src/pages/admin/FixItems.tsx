@@ -342,6 +342,24 @@ const FixItems = () => {
     void loadAll();
   };
 
+  const unpinFromFix = async (item: MenuItem) => {
+    if (!confirm(`Eltávolítod a fixekből: "${item.name}"?\n\nA tétel megmarad az étlapon, csak a fix listából kerül ki.`)) return;
+    const { error } = await supabase.from("menu_items").update({ is_always_available: false }).eq("id", item.id);
+    if (error) {
+      toast({ title: "Hiba", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Eltávolítva a fixekből", description: `${item.name} továbbra is elérhető az étlapon` });
+    void loadAll();
+  };
+
+  const [addExistingFor, setAddExistingFor] = useState<{ id: string; name: string } | null>(null);
+
+  const nextOrderFor = (categoryId: string) => {
+    const list = grouped.map.get(categoryId) || [];
+    return list.length > 0 ? Math.max(...list.map((i) => i.display_order)) + 1 : 1;
+  };
+
   if (loading) {
     return (
       <AdminLayout>
