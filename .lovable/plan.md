@@ -1,89 +1,71 @@
 ## Cél
 
-Két admin-fejlesztés a heti ajánlat felületén:
+A `MenuItemEditDialog` jelenlegi duplikáció-figyelmeztetése csak egy szöveges ⚠️ üzenet ("Kattints újra ha mégis folytatnád"). Helyette: ha egy vagy több azonos nevű (ékezet/kisbetű független) étel már létezik, dobjon fel egy **összehasonlító dialógust**, amiben az admin oldalra látja a meglévő(eke)t és az újat, és egy kattintással eldöntheti, melyiket tartsa meg.
 
-1. **Mobil heti rács**: ne mindig a Hétfő nyíljon, hanem az "aktuális szerkeszthető nap" (a mai nap, vagy a hét következő nyitott napja).
-2. **AI képgenerálás**: ne ugyanazt a képet adja minden próbálkozásra — minden generálás új, eltérő képet adjon, és legyen egy egyértelmű "Új kép" / újragenerálás gomb.
+## Új komponens — `DuplicateResolverDialog`
 
----
+Helye: `src/components/admin/DuplicateResolverDialog.tsx`
 
-## 1. Mobil — automatikus napra ugrás
+**Megjelenés (mobilon egymás alatt, deszkopon 2 oszlop):**
+- Bal kártya: **Meglévő étel** (ha több is van, kis tabok közöttük: "1 · Rántott sajt", "2 · Rántott Sajt").
+- Jobb kártya: **Új / szerkesztett változat** (a form jelenlegi állapota).
 
-### Jelenlegi viselkedés
-- `WeeklyMenuGrid` mindig az "okos hét" hétfőjével indul.
-- `WeeklyGridMobile`-ban az accordion fix `openDays = { 0: true }` — vagyis mindig hétfő van nyitva, akkor is, ha kedd délután van.
+Mindkét kártya tartalma:
+- Kép thumbnail (vagy "Nincs kép" placeholder)
+- Név
+- Kategória neve
+- Ár (Ft)
+- Leírás (rövidítve)
+- Allergének badge-ek
+- Státusz: aktív / inaktív, mindig elérhető, ideiglenes
+- Eltérő mezők kiemelve (sárga háttér / `bg-primary/10`), hogy az admin azonnal lássa a különbséget
 
-### Új logika
-Új helper `getSmartInitialDayIndex(weekDates)` ami a `weekDates` (H–P) tömbből kiválasztja a megnyitandó napot:
+**Akciógombok (alul):**
+1. **„Meglévő megtartása"** — bezár, mentés nélkül. (Ez az alapértelmezett biztonságos opció.)
+2. **„Meglévő felülírása az újjal"** — a kiválasztott meglévő rekordot frissíti az új mezőkkel (ha új-rekord létrehozása volt, akkor `update` a meglévő id-jén; ha szerkesztés volt, akkor a meglévő törlődik és az aktuális marad). Ha a meglévő hivatkozott (van `daily_offer_items` vagy `order_items` rá), a törlés helyett `is_active = false` jelölés és toast-figyelmeztetés.
+3. **„Mindkettő megtartása"** — figyelmen kívül hagyja a duplikációt, simán menti az újat.
+4. **„Mégse"** — bezár, marad a szerkesztő.
 
-- Ha a hét = aktuális hét:
-  - Hétköznap **16:00 előtt** → **mai nap** indexe (0–4).
-  - Hétköznap **16:00 után** → **következő hétköznap** indexe (péntek 16:00 után már a hét vége — ekkor 0, mert a `getSmartWeekStart` úgyis a következő hétre lép).
-- Ha a hét ≠ aktuális hét (előre/hátralapozott) → **0 (hétfő)**, mint most.
+## Integráció a `MenuItemEditDialog`-ba
 
-### Érintett fájlok
-- `src/lib/dateUtils.ts` — új export: `getSmartInitialDayIndex(weekDates: Date[]): number`.
-- `src/components/admin/WeeklyGridMobile.tsx` — `openDays` kezdőértéke a prop alapján számolva (új prop: `initialOpenDayIndex?: number`, default 0). `useState` initializerben `{ [initialOpenDayIndex]: true }`.
-- `src/components/admin/WeeklyMenuGrid.tsx` — átadja a számolt indexet a `<WeeklyGridMobile>` komponensnek.
-
-Hét-váltáskor (előre/hátra navigáció) az accordion állapota nem nullázódik újra — ez szándékos, csak az első megnyitáskor (vagy explicit "Ma" gomb után) ugorjon a megfelelő napra. Megoldás: `useEffect`-ben figyeljük a `currentWeekStart` változását és újraszámoljuk az `openDays`-t.
-
-### Felhasználói élmény
-- Kedd délután → kedd nyitva.
-- Csütörtök 17:00 → péntek nyitva (még aznap intézhető a holnapi nap).
-- Péntek 16:00 után → automatikusan a következő heti hétfő (jelenlegi `getSmartWeekStart` viselkedés marad).
-
----
-
-## 2. AI képgenerálás — minden generálás új kép
-
-### Probléma
-A Gemini Flash Image determinisztikusan ugyanazt a képet adja vissza ugyanarra a promptra (azonos étel név → azonos kép), így törlés/újrapróbálás nem segít.
-
-### Megoldás — backend (`supabase/functions/generate-food-image/index.ts`)
-Minden hívásnál apró, **véletlenszerű variációt** szúrunk a promptba, hogy más kép szülessen:
-
-- Random elemek tárából (pl. szögek: 45/55/65/70°, fényirány: balról / jobbról / felülről, asztal: dark slate / dark walnut / weathered oak, garnírung-variánsok, tál pozíció: kicsit balra / középen / kicsit jobbra eltolva), minden híváskor 2–3 elem random kombinációja kerül a prompt végére.
-- Random `seed` szám szöveges hozzáfűzése (`"variation #${random}"`) — a modell ettől más kompozíciót generál.
-- A két stílus (plate / box) random választása marad.
-
-Így ugyanarra az ételnévre minden generálás más képet ad.
-
-### Megoldás — frontend (`src/components/admin/AIGenerateImageButton.tsx`)
-- A gomb felirata és viselkedése akkor változik, ha már van kép:
-  - Ha **nincs kép** → `"AI kép generálása"` (jelenlegi).
-  - Ha **van kép** (új prop: `hasExistingImage?: boolean`) → `"Új AI kép"` címke + `RefreshCw` ikon, `variant="secondary"`.
-- A meglévő `onGenerated` callback hívásakor a kép URL-je felülírja a régit (ahogy most is).
-
-A 4 felhasználási helyen (`MenuItemEditDialog`, `TemporaryItemCreator`, `TemporaryItemsLibrary`, `GalleryManagement`) átadjuk a `hasExistingImage` propot, ahol értelmezhető (van-e már `image_url`).
-
-### Storage megjegyzés
-Az edge function jelenleg `${item_id}.${ext}` néven menti a fájlt, így felülírja a régit (`x-upsert: true`). Ez marad — a régi kép cserélődik az újra, nem duzzad fel a bucket. A standalone (item_id nélküli) feltöltések random UUID-vel mennek, azokra ez nem vonatkozik.
-
----
-
-## Technikai részletek
+A jelenlegi `handleSave` logikát átírjuk:
 
 ```text
-WeeklyMenuGrid
-  ├─ useMemo: initialOpenDayIndex = getSmartInitialDayIndex(weekDates, currentWeekStart)
-  └─ <WeeklyGridMobile initialOpenDayIndex={...} />
-        └─ useState/useEffect: openDays = { [initialOpenDayIndex]: true }
-                                 (újraszámol amikor a prop változik)
-
-generate-food-image (edge function)
-  ├─ angles[], lighting[], surfaces[], garnishes[] — random pick
-  ├─ prompt += " | composition variation: ${angle}, ${light}, ${surface}, ${garnish}, seed-${randomInt}"
-  └─ stílus (plate/box) random — marad
+1. Név validáció (változatlan)
+2. ilike lekérdezés → ha van találat:
+     - setDuplicates(existing)  // teljes mezőkkel: id, name, category_id, price_huf, image_url, description, allergens, is_active, is_temporary, is_always_available
+     - setShowDuplicateResolver(true)
+     - return
+3. Egyébként: saveMutation.mutate()
 ```
 
-## Fájlok
+A `DuplicateResolverDialog` callbackjei:
+- `onKeepExisting()` → resolver bezár, szerkesztő nyitva marad (a felhasználó vagy módosítja a nevet, vagy bezárja).
+- `onReplaceExisting(existingId)` → meglévő törlése (vagy archiválása, ha hivatkozott) + saveMutation.
+- `onKeepBoth()` → saveMutation azonnal.
 
-- `src/lib/dateUtils.ts` — új helper.
-- `src/components/admin/WeeklyMenuGrid.tsx` — prop átadás.
-- `src/components/admin/WeeklyGridMobile.tsx` — initialOpenDayIndex prop.
-- `supabase/functions/generate-food-image/index.ts` — random variáció a promptban.
-- `src/components/admin/AIGenerateImageButton.tsx` — `hasExistingImage` prop, "Új AI kép" felirat/ikon.
-- `src/components/admin/MenuItemEditDialog.tsx`, `TemporaryItemCreator.tsx`, `TemporaryItemsLibrary.tsx`, `GalleryManagement.tsx` — `hasExistingImage` prop átadás.
+A korábbi `duplicateWarning` state és a "destructive" gomb-variáns törlődik — a resolver dialog veszi át a szerepet.
 
-Edge function deploy a végén.
+### Hivatkozott rekord kezelése
+
+A „felülírás" akciónál először lekérdezzük:
+```text
+exists in daily_offer_items where item_id = X  → bool
+exists in order_items where item_id = X        → bool
+```
+Ha bármelyik létezik:
+- A meglévő rekordot **nem töröljük**, hanem `is_active = false`-ra állítjuk és átnevezzük (`name + " (régi)"`).
+- Toast: „A régi étel hivatkozva van rendelésekben/ajánlatokban — inaktívvá tettük az adatok megőrzése érdekében."
+
+Ha sehol nincs hivatkozva → DELETE a régire, INSERT az újra (ha új-rekord létrehozás), vagy UPDATE új mezőkkel és DELETE a duplikátumra (ha szerkesztés módban).
+
+## Érintett fájlok
+
+- **Új**: `src/components/admin/DuplicateResolverDialog.tsx` — összehasonlító dialógus, kategória név lookup-pal.
+- **Módosul**: `src/components/admin/MenuItemEditDialog.tsx` — `handleSave` átírása, `duplicateWarning` state lecserélése `duplicates` + `showResolver`-re; resolver render az `<Dialog>` mellé/után.
+
+## Mit nem érint a változás
+
+- A `MasterMenuImport` (Excel import) saját duplikátum-szűrése változatlan.
+- A `TemporaryItemCreator` (ideiglenes ételek) most nem ellenőriz duplikátumot — opcionális kiterjesztés, jelen körből kihagyva.
+- A backend / adatbázis séma változatlan — pure frontend változás.

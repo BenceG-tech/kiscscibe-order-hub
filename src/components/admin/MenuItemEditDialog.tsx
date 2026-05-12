@@ -24,6 +24,7 @@
 import { Loader2, Upload, X, ImageIcon } from "lucide-react";
 import { capitalizeFirst } from "@/lib/utils";
 import AIGenerateImageButton from "./AIGenerateImageButton";
+import DuplicateResolverDialog, { DuplicateCandidate } from "./DuplicateResolverDialog";
  
  const ALLERGENS = [
    "Glutén",
@@ -183,7 +184,9 @@ import AIGenerateImageButton from "./AIGenerateImageButton";
      );
    };
  
-  const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
+  const [duplicates, setDuplicates] = useState<DuplicateCandidate[]>([]);
+  const [showResolver, setShowResolver] = useState(false);
+  const [resolving, setResolving] = useState(false);
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -191,26 +194,71 @@ import AIGenerateImageButton from "./AIGenerateImageButton";
       return;
     }
 
-    // Check for duplicate names
+    // Check for duplicate names (case/whitespace tolerant via ilike)
     const { data: existing } = await supabase
       .from("menu_items")
-      .select("id, name")
+      .select("id, name, category_id, price_huf, image_url, description, allergens, is_active, is_temporary, is_always_available")
       .neq("id", itemId || "")
       .ilike("name", name.trim());
 
     if (existing && existing.length > 0) {
-      if (!duplicateWarning) {
-        setDuplicateWarning(`Már létezik ilyen nevű étel: "${existing[0].name}". Kattints újra a mentésre ha mégis folytatnád.`);
-        return;
-      }
+      setDuplicates(existing as any);
+      setShowResolver(true);
+      return;
     }
 
-    setDuplicateWarning(null);
     saveMutation.mutate();
   };
+
+  const archiveOrDeleteDuplicate = async (dupId: string, dupName: string) => {
+    // Check references — if referenced anywhere, archive instead of delete
+    const [offerRefs, orderRefs] = await Promise.all([
+      supabase.from("daily_offer_items").select("id", { count: "exact", head: true }).eq("item_id", dupId),
+      supabase.from("order_items").select("id", { count: "exact", head: true }).eq("item_id", dupId),
+    ]);
+    const referenced = (offerRefs.count || 0) > 0 || (orderRefs.count || 0) > 0;
+
+    if (referenced) {
+      const { error } = await supabase
+        .from("menu_items")
+        .update({ is_active: false, name: `${dupName} (régi)` } as any)
+        .eq("id", dupId);
+      if (error) throw error;
+      toast.warning("A régi étel hivatkozva van — inaktívvá tettük az adatok megőrzése érdekében.");
+    } else {
+      const { error } = await supabase.from("menu_items").delete().eq("id", dupId);
+      if (error) throw error;
+    }
+  };
+
+  const handleReplace = async (dupId: string) => {
+    const dup = duplicates.find((d) => d.id === dupId);
+    if (!dup) return;
+    setResolving(true);
+    try {
+      await archiveOrDeleteDuplicate(dupId, dup.name);
+      setShowResolver(false);
+      saveMutation.mutate();
+    } catch (e: any) {
+      console.error(e);
+      toast.error("Nem sikerült a meglévőt felülírni: " + (e?.message || ""));
+    } finally {
+      setResolving(false);
+    }
+  };
+
+  const handleKeepBoth = () => {
+    setShowResolver(false);
+    saveMutation.mutate();
+  };
+
+  const handleKeepExisting = () => {
+    setShowResolver(false);
+  };
  
-   return (
-     <Dialog open={open} onOpenChange={onOpenChange}>
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden">
         <DialogHeader className="flex-shrink-0">
            <DialogTitle>Étel szerkesztése</DialogTitle>
@@ -228,7 +276,7 @@ import AIGenerateImageButton from "./AIGenerateImageButton";
                 <Input
                   id="name"
                   value={name}
-                  onChange={(e) => { setName(e.target.value); setDuplicateWarning(null); }}
+                  onChange={(e) => setName(e.target.value)}
                   placeholder="Étel neve"
                 />
              </div>
@@ -380,34 +428,47 @@ import AIGenerateImageButton from "./AIGenerateImageButton";
            </div>
          )}
 
-         {/* Save Button - Always visible */}
-         {!itemLoading && (
-           <div className="flex-shrink-0 pt-4 border-t space-y-2">
-             {duplicateWarning && (
-               <div className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-2 rounded-lg">
-                 ⚠️ {duplicateWarning}
-               </div>
-             )}
-             <Button
-               onClick={handleSave}
-               disabled={saveMutation.isPending}
-               className="w-full"
-               variant={duplicateWarning ? "destructive" : "default"}
-             >
-               {saveMutation.isPending ? (
-                 <>
-                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                   Mentés...
-                 </>
-               ) : duplicateWarning ? (
-                 "Mentés mindenképp"
-               ) : (
-                 "Mentés"
-               )}
-             </Button>
-           </div>
-         )}
-       </DialogContent>
-     </Dialog>
-   );
- }
+          {/* Save Button - Always visible */}
+          {!itemLoading && (
+            <div className="flex-shrink-0 pt-4 border-t space-y-2">
+              <Button
+                onClick={handleSave}
+                disabled={saveMutation.isPending}
+                className="w-full"
+              >
+                {saveMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Mentés...
+                  </>
+                ) : (
+                  "Mentés"
+                )}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <DuplicateResolverDialog
+        open={showResolver}
+        onOpenChange={setShowResolver}
+        duplicates={duplicates}
+        draft={{
+          name: name.trim(),
+          category_id: categoryId,
+          price_huf: parseInt(price) || 0,
+          image_url: imageUrl,
+          description: description || null,
+          allergens,
+          is_active: isActive,
+          is_always_available: isAlwaysAvailable,
+        }}
+        onKeepBoth={handleKeepBoth}
+        onReplaceExisting={handleReplace}
+        onKeepExisting={handleKeepExisting}
+        saving={resolving || saveMutation.isPending}
+      />
+    </>
+  );
+}
