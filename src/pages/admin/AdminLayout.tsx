@@ -29,7 +29,8 @@ import {
   HelpCircle,
   FolderOpen,
   MoreHorizontal,
-  ChevronDown
+  ChevronDown,
+  Pin
 } from "lucide-react";
 import { HelpFloatingButton } from "@/components/admin/HelpFloatingButton";
 
