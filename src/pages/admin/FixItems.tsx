@@ -450,7 +450,7 @@ const FixItems = () => {
             <CardContent>
               <div className="space-y-2">
                 {grouped.uncategorized.map((it) => (
-                  <FixItemRow key={it.id} item={it} onEdit={openEdit} onDelete={deleteItem} onToggleActive={toggleActive} />
+                  <FixItemRow key={it.id} item={it} onEdit={openEdit} onDelete={deleteItem} onToggleActive={toggleActive} onUnpin={unpinFromFix} />
                 ))}
               </div>
             </CardContent>
