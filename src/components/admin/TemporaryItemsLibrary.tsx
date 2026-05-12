@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { useToast } from '@/hooks/use-toast';
 import { capitalizeFirst, normalizeText } from '@/lib/utils';
+import AIGenerateImageButton from './AIGenerateImageButton';
 
 interface MenuItem {
   id: string;
