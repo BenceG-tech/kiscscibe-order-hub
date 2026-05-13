@@ -1,59 +1,58 @@
-## Probléma
+## Cél
 
-1. Az AI képgenerátor jelenleg véletlenszerű asztalt választ (slate / dió / tölgy / fenyő) → nem konzisztens.
-2. Minden ételhez **ovális** papírtányért használ — főételhez kerek, lapos kell.
-3. Levesekhez és szaftos ételekhez (pörkölt, paprikás, gulyás, tokány, sólet, mártásos) szintén ovális tányért tesz — fehér papír **mélytányér** kéne.
-4. A 2. képen látható „Edge Function returned a non-2xx status code" akkor jön, amikor a Gemini Flash Image válasz nem tartalmaz képet (text-only response, pl. tartalom-szűrés vagy csak rövid akadás) — most azonnal 500-zal eldobjuk.
+Amikor valaki üzenetben (Messenger, WhatsApp, iMessage, Slack, Discord, Facebook, LinkedIn) elküldi az oldal linkjét, jelenjen meg egy gazdag link preview: cím, leírás és nagy kép a Kiscsibe Étteremről.
 
-## Megoldás
+## Mit találtam
 
-Egyetlen fájl: `supabase/functions/generate-food-image/index.ts`.
+- Az `index.html` már tartalmaz `og:title`, `og:description`, `og:image`, `twitter:*` tageket.
+- A `/images/og-kiscsibe.png` elérhető (HTTP 200) a `kiscscibe-order-hub.lovable.app` domainen.
+- **Problémák**, amik miatt a preview törékeny:
+  1. Az `og:image` **abszolút URL-je a lovable.app domainre mutat**, így ha valaki a `kiscsibe-etterem.hu` vagy `kiscsibeetterem.hu` linket osztja meg, egyes scraperek (Facebook, iMessage) cross-domain miatt nem mindig töltik be a képet, vagy hibásan cache-elik.
+  2. Hiányzik az **`og:url`** és **`og:site_name`** tag — ezek nélkül a Facebook/Messenger gyakran "üres" preview-t mutat.
+  3. Hiányzik az **`og:locale`** (`hu_HU`) — a lokalizált megjelenítéshez.
+  4. Hiányzik a `<meta name="robots" content="index, follow">` és a `<link rel="canonical">` — SEO + preview konzisztencia miatt fontos.
+  5. A kép `1200x630`-ként van deklarálva, de nem ellenőriztük, hogy tényleg ilyen méretű-e — ha nem, a Facebook elutasíthatja.
+  6. Nincs külön Twitter-specifikus `twitter:url` és `twitter:site` tag.
 
-### 1. Konzisztens asztal
+## Mit fogok csinálni
 
-- `surfaces` tömb törölve. **Mindig** ugyanaz: `dark slate stone table` (a memóriában rögzített brand-stílus).
-- A többi variáció (szög, fény, garníroz) marad — ettől nem lesz uniform unalmas, de az asztal és tányér konzisztens.
+### 1. `index.html` meta tag bővítés
 
-### 2. Étel-típus felismerés a névből
+Hozzáadom / módosítom a `<head>` szekcióban:
 
-Egyszerű kulcsszó-heurisztika az `item_name` lowercase + accent-stripped változatán:
+- **Relatív → abszolút domain-független megoldás:** Az `og:image` URL-jét lecserélem a publikus domain alapú abszolút URL-re. Mivel a Lovable buildje statikus HTML-t generál és a custom domain a `kiscsibe-etterem.hu`, a végleges OG képet egy domain-független, `https://kiscscibe-order-hub.lovable.app/images/og-kiscsibe.png` URL-re hagyom (ez minden domainről elérhető CDN-en), de hozzáadom a custom domain alternatívát is `og:image:secure_url` taggel.
+- **Új tagek:**
+  - `<meta property="og:url" content="https://kiscsibe-etterem.hu/">`
+  - `<meta property="og:site_name" content="Kiscsibe Reggeliző & Étterem">`
+  - `<meta property="og:locale" content="hu_HU">`
+  - `<meta property="og:image:alt" content="Kiscsibe Reggeliző & Étterem - friss házi ételek">`
+  - `<meta property="og:image:type" content="image/png">`
+  - `<meta name="twitter:url" content="https://kiscsibe-etterem.hu/">`
+  - `<meta name="twitter:site" content="@kiscsibeetterem">` (ha van Twitter handle, ha nincs, kihagyom)
+  - `<link rel="canonical" href="https://kiscsibe-etterem.hu/">`
+  - `<meta name="robots" content="index, follow">`
 
-- **soup** (leves) → ha tartalmazza: `leves`, `levest`, `consommé`, `húsleves`, `gulyásleves`, `bableves`, `gyümölcsleves`, `raguleves`, `becsinalt`
-- **saucy** (mélytányér, de nem leves) → ha tartalmazza: `pörkölt`, `paprikas`, `paprikás`, `tokány`, `tokany`, `ragu`, `sólet`, `solet`, `gulyás` (de nem `gulyásleves` → már soup), `mártás`, `martas`, `becsinált`, `babgulyás`, `lecsó`, `lecso`, `körömpörkölt`
-- **main** (alap) → minden más
+### 2. OG kép validáció
 
-A meglévő `style` paraméter (`plate` / `box`) tovább működik — ha a hívó kifejezetten kéri, az nyer. Új opcionális `dish_kind` paraméter is támogatott (`soup` / `saucy` / `main`) felülbírálásra.
+- Megnyitom a meglévő `public/images/og-kiscsibe.png`-t és ellenőrzöm a méretét. Ha **nem 1200x630**, akkor:
+  - Generálok egy új, **1200x630 px** méretű, branded OG képet a Kiscsibe étterem stílusában (sötét háttér, sárga `#F6C22D` accent, Sofia font cím, házi ételek tematika), és kicserélem.
+  - Ha 1200x630, marad.
 
-### 3. Új prompt sablonok
+### 3. Tesztelés
 
-Mind ugyanazon az asztalon, fehér papír edényen:
-
-- **soupPrompt**: `"Served in a simple plain white round disposable paper deep soup bowl (papír mélytányér), broth/soup clearly visible, steam optional. ..."`
-- **saucyPrompt**: `"Served in a simple plain white round disposable paper deep plate (papír mélytányér) so the sauce stays contained, generous portion. ..."`
-- **mainPrompt**: `"Served on a simple plain white ROUND FLAT disposable paper plate (NOT oval, NOT ceramic, NOT square). ..."`
-- **boxPrompt**: marad mint van (kraft doboz vichy papírral) — `style="box"` esetén.
-
-Mindegyikben kiemelve negatívok: `NOT oval, NOT ceramic, NOT studio fine-dining`.
-
-A `style="plate"` fallback most a `dish_kind` szerint a megfelelő (soup/saucy/main) prompt-ot adja vissza — nem mindig az oválisat.
-
-### 4. Retry, ha nincs kép a válaszban
-
-Az AI gateway hívást egy `for (let attempt = 0; attempt < 3; attempt++)` ciklusba tesszük:
-
-- 200 OK + üres `images` mező → retry (max 3 próba), kis prompt-erősítéssel: `"Return an IMAGE, not text. "` előtaggal.
-- 429 / 402 → azonnali return a meglévő hibaüzenetekkel (nincs retry).
-- Más nem-2xx → 1× retry, utána throw.
-- 3 sikertelen próba után: `return new Response({ error: "Az AI most nem tudott képet generálni, próbáld újra." }, { status: 502 })` — így a kliens toast-ja érthető lesz, nem általános „non-2xx".
-
-### 5. Kliens
-
-Nincs változás. A `AIGenerateImageButton` már mutatja a `data.error` szöveget toast-ban, így az új barátságos üzenet automatikusan megjelenik.
+- A változtatás után megadom a felhasználónak ezeket a debug linkeket, ahol ő maga is tudja "frissíteni" a cache-t a közösségi platformokon (mert a Facebook/LinkedIn agresszíven cache-eli az OG képet):
+  - Facebook Sharing Debugger: `https://developers.facebook.com/tools/debug/`
+  - LinkedIn Post Inspector: `https://www.linkedin.com/post-inspector/`
+  - Twitter Card Validator: `https://cards-dev.twitter.com/validator`
+  - WhatsApp / iMessage automatikusan újratöltik 7 nap után, vagy ha a URL paramétert kap (pl. `?v=2`).
 
 ## Érintett fájlok
 
-- `supabase/functions/generate-food-image/index.ts` — promptok, dish-kind detektor, retry, konzisztens asztal.
+- `index.html` — meta tagek bővítése
+- `public/images/og-kiscsibe.png` — esetleges csere ha rossz méretű
 
-## Nem változik
+## Amit NEM csinálok
 
-- Storage upload, `menu_items.image_url` frissítés, RLS, kliens komponensek, batch generátor.
+- Nem nyúlok a működő funkciókhoz (rendelés, admin, étlap).
+- Nem változtatom a hero képet vagy más vizuális elemet az oldalon.
+- Nem adok hozzá új SDK-t vagy függőséget.
