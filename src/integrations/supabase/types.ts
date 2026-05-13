@@ -1651,6 +1651,10 @@ export type Database = {
         Args: { daily_id: string; quantity_needed: number; table_name: string }
         Returns: boolean
       }
+      validate_coupon_code: {
+        Args: { p_code: string; p_order_total: number }
+        Returns: Json
+      }
       validate_menu_composition: {
         Args: { offer_id: string }
         Returns: boolean

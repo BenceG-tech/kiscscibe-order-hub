@@ -349,41 +349,39 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const applyCoupon = async (code: string): Promise<{ success: boolean; message: string }> => {
     try {
       const trimmedCode = code.trim().toUpperCase();
-      const { data, error } = await supabase
-        .from('coupons')
-        .select('*')
-        .eq('code', trimmedCode)
-        .eq('is_active', true)
-        .maybeSingle();
+      const { data, error } = await (supabase as any).rpc('validate_coupon_code', {
+        p_code: trimmedCode,
+        p_order_total: state.total,
+      });
 
       if (error || !data) return { success: false, message: 'Érvénytelen kupon kód' };
 
-      // Check expiry
-      if (data.valid_until && new Date(data.valid_until) < new Date()) {
-        return { success: false, message: 'Ez a kupon lejárt' };
-      }
+      const result = data as {
+        success: boolean;
+        message?: string;
+        code?: string;
+        discount_type?: 'percentage' | 'fixed';
+        discount_value?: number;
+      };
 
-      // Check usage limit
-      if (data.max_uses !== null && data.used_count >= data.max_uses) {
-        return { success: false, message: 'Ez a kupon elfogyott' };
-      }
-
-      // Check minimum order
-      if (state.total < data.min_order_huf) {
-        return { success: false, message: `Minimum rendelési érték: ${data.min_order_huf.toLocaleString()} Ft` };
+      if (!result.success) {
+        return { success: false, message: result.message || 'Érvénytelen kupon kód' };
       }
 
       dispatch({
         type: "SET_COUPON",
         payload: {
-          code: data.code,
-          discount_type: data.discount_type as 'percentage' | 'fixed',
-          discount_value: data.discount_value,
-          discount_huf: 0, // will be calculated by reducer
+          code: result.code!,
+          discount_type: result.discount_type!,
+          discount_value: result.discount_value!,
+          discount_huf: 0,
         }
       });
 
-      return { success: true, message: `Kupon alkalmazva: ${data.discount_type === 'percentage' ? `${data.discount_value}%` : `${data.discount_value} Ft`} kedvezmény` };
+      return {
+        success: true,
+        message: `Kupon alkalmazva: ${result.discount_type === 'percentage' ? `${result.discount_value}%` : `${result.discount_value} Ft`} kedvezmény`,
+      };
     } catch (err) {
       return { success: false, message: 'Hiba a kupon ellenőrzésekor' };
     }
