@@ -1,3 +1,4 @@
+import SEO from "@/components/SEO";
 import ModernNavigation from "@/components/ModernNavigation";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,11 @@ import ContactForm from "@/components/contact/ContactForm";
 const Contact = () => {
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Kapcsolat — Kiscsibe Reggeliző & Étterem, 1141 Budapest"
+        description="Kiscsibe Étterem elérhetősége: 1141 Budapest, Vezér u. 110. Nyitvatartás, térkép és üzenetküldés. Email: info@kiscsibeetterem.hu."
+        path="/contact"
+      />
       <ModernNavigation />
       <main className="pt-20">
         {/* Hero Section with image */}

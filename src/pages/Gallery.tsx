@@ -1,4 +1,5 @@
 import { useState } from "react";
+import SEO from "@/components/SEO";
 import ModernNavigation from "@/components/ModernNavigation";
 import Footer from "@/components/Footer";
 import FoodGallery from "@/components/gallery/FoodGallery";
