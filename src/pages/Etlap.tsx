@@ -21,6 +21,7 @@ import heroImage from "@/assets/hero-desktop.png";
 import SEO from "@/components/SEO";
 import DailyMenuPanel from "@/components/DailyMenuPanel";
 import AlwaysAvailableSection from "@/components/sections/AlwaysAvailableSection";
+import BreakfastSection from "@/components/sections/BreakfastSection";
 import FavoriteOrdersPanel from "@/components/FavoriteOrdersPanel";
 import OrderHistoryLookup from "@/components/OrderHistoryLookup";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -321,6 +322,8 @@ const Etlap = () => {
         {/* Content Section */}
         <section className="py-6 pb-24">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+            {/* Breakfast - prominent always-on block */}
+            <BreakfastSection />
             {/* Favorite Orders */}
             <FavoriteOrdersPanel />
             {/* Date Title */}
@@ -474,7 +477,7 @@ const Etlap = () => {
             )}
 
             {/* Always Available Items */}
-            <AlwaysAvailableSection />
+            <AlwaysAvailableSection excludeCategoryNames={["Reggeli"]} />
 
             {/* Order History */}
             <Collapsible>
