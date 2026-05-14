@@ -32,12 +32,14 @@ interface AlwaysAvailableSectionProps {
   featuredOnly?: boolean;
   maxItems?: number;
   title?: string;
+  excludeCategoryNames?: string[];
 }
 
 const AlwaysAvailableSection = ({
   featuredOnly = false,
   maxItems,
   title = "Mindig elérhető",
+  excludeCategoryNames = [],
 }: AlwaysAvailableSectionProps) => {
   const { toast } = useToast();
   const { addItem } = useCart();
@@ -89,7 +91,9 @@ const AlwaysAvailableSection = ({
 
   const displayItems = maxItems ? items.slice(0, maxItems) : items;
 
+  const excludeSet = new Set(excludeCategoryNames.map((n) => n.toLowerCase()));
   const grouped = categories
+    .filter((cat) => !excludeSet.has(cat.name.toLowerCase()))
     .map((cat) => ({
       category: cat,
       items: displayItems.filter((item) => item.category_id === cat.id),

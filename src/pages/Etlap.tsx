@@ -21,6 +21,7 @@ import heroImage from "@/assets/hero-desktop.png";
 import SEO from "@/components/SEO";
 import DailyMenuPanel from "@/components/DailyMenuPanel";
 import AlwaysAvailableSection from "@/components/sections/AlwaysAvailableSection";
+import BreakfastSection from "@/components/sections/BreakfastSection";
 import FavoriteOrdersPanel from "@/components/FavoriteOrdersPanel";
 import OrderHistoryLookup from "@/components/OrderHistoryLookup";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
