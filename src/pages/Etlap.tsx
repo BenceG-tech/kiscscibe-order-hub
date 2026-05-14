@@ -322,6 +322,8 @@ const Etlap = () => {
         {/* Content Section */}
         <section className="py-6 pb-24">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+            {/* Breakfast - prominent always-on block */}
+            <BreakfastSection />
             {/* Favorite Orders */}
             <FavoriteOrdersPanel />
             {/* Date Title */}
@@ -475,7 +477,7 @@ const Etlap = () => {
             )}
 
             {/* Always Available Items */}
-            <AlwaysAvailableSection />
+            <AlwaysAvailableSection excludeCategoryNames={["Reggeli"]} />
 
             {/* Order History */}
             <Collapsible>
