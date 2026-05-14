@@ -1,6 +1,7 @@
 import SEO from "@/components/SEO";
 import ModernNavigation from "@/components/ModernNavigation";
 import AlwaysAvailableSection from "@/components/sections/AlwaysAvailableSection";
+import BreakfastSection from "@/components/sections/BreakfastSection";
 import AnnouncementPopup from "@/components/AnnouncementPopup";
 import HeroSection from "@/components/sections/HeroSection";
 import DailyMenuSection from "@/components/sections/DailyMenuSection";
@@ -26,6 +27,7 @@ const Index = () => {
       <ModernNavigation />
       <main className="pt-20">
         <HeroSection />
+        <BreakfastSection variant="homepage" />
         <div className="bg-primary/5">
           <DailyMenuSection />
         </div>
