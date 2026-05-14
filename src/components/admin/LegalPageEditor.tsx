@@ -49,7 +49,7 @@ const DEFAULT_CONTENT: Record<LegalPageKey, LegalPageContent> = {
         id: "kapcsolat",
         title: "Kapcsolattartási adatok",
         content: `**Telefon:** +36 1 234 5678
-**E-mail:** [kiscsibeetterem@gmail.com](mailto:kiscsibeetterem@gmail.com)
+**E-mail:** [info@kiscsibeetterem.hu](mailto:info@kiscsibeetterem.hu)
 **Weboldal:** [kiscsibe.hu](/)`,
       },
       {
@@ -81,7 +81,7 @@ const DEFAULT_CONTENT: Record<LegalPageKey, LegalPageContent> = {
         title: "1. Az adatkezelő",
         content: `Kiscsibe Reggeliző & Étterem Kft. (székhely: 1145 Budapest, Vezér utca 12., cégjegyzékszám: [Töltse ki], adószám: [Töltse ki])
 
-**E-mail:** [kiscsibeetterem@gmail.com](mailto:kiscsibeetterem@gmail.com)
+**E-mail:** [info@kiscsibeetterem.hu](mailto:info@kiscsibeetterem.hu)
 **Telefon:** +36 1 234 5678`,
       },
       {
@@ -114,7 +114,7 @@ const DEFAULT_CONTENT: Record<LegalPageKey, LegalPageContent> = {
 - **Tiltakozás joga**
 - **Hozzájárulás visszavonása**
 
-Jogai gyakorlásához írjon a [kiscsibeetterem@gmail.com](mailto:kiscsibeetterem@gmail.com) címre.`,
+Jogai gyakorlásához írjon a [info@kiscsibeetterem.hu](mailto:info@kiscsibeetterem.hu) címre.`,
       },
       {
         id: "tovabbitas",
@@ -253,7 +253,7 @@ Jelenleg weboldalunk **nem használ** analitikai vagy marketing célú sütiket.
       {
         id: "info",
         title: "4. További információ",
-        content: `Az adatkezelés részleteiről az [Adatvédelmi Tájékoztatónkban](/adatvedelem) tájékozódhat. Kérdés esetén írjon a [kiscsibeetterem@gmail.com](mailto:kiscsibeetterem@gmail.com) címre.`,
+        content: `Az adatkezelés részleteiről az [Adatvédelmi Tájékoztatónkban](/adatvedelem) tájékozódhat. Kérdés esetén írjon a [info@kiscsibeetterem.hu](mailto:info@kiscsibeetterem.hu) címre.`,
       },
     ],
   },

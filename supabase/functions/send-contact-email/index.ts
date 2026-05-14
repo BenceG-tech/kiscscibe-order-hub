@@ -63,7 +63,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Send notification to restaurant
     await resend.emails.send({
       from: "Kiscsibe Weboldal <onboarding@resend.dev>",
-      to: ["kiscsibeetterem@gmail.com"],
+      to: ["info@kiscsibeetterem.hu"],
       subject: `Új üzenet a weboldalról - ${safeName}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -115,7 +115,7 @@ const handler = async (req: Request): Promise<Response> => {
             <p style="margin: 4px 0;"><strong>Kiscsibe Reggeliző & Étterem</strong></p>
             <p style="margin: 4px 0;">📍 1145 Budapest, Vezér utca 12.</p>
             
-            <p style="margin: 4px 0;">✉️ kiscsibeetterem@gmail.com</p>
+            <p style="margin: 4px 0;">✉️ info@kiscsibeetterem.hu</p>
           </div>
         </div>
       `,

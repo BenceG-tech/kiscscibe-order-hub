@@ -155,8 +155,8 @@ const Footer = ({ className }: FooterProps) => {
               </li>
               <li className="flex items-center gap-1.5">
                 <Mail className="h-4 w-4 text-primary shrink-0" />
-                <a href="mailto:kiscsibeetterem@gmail.com" className="text-xs hover:text-primary transition-colors break-all">
-                  kiscsibeetterem@gmail.com
+                <a href="mailto:info@kiscsibeetterem.hu" className="text-xs hover:text-primary transition-colors break-all">
+                  info@kiscsibeetterem.hu
                 </a>
               </li>
             </ul>
@@ -254,8 +254,8 @@ const Footer = ({ className }: FooterProps) => {
               </li>
               <li className="flex items-center justify-center md:justify-start gap-2">
                 <Mail className="h-5 w-5 text-primary shrink-0" />
-                <a href="mailto:kiscsibeetterem@gmail.com" className="text-sm hover:text-primary transition-colors">
-                  kiscsibeetterem@gmail.com
+                <a href="mailto:info@kiscsibeetterem.hu" className="text-sm hover:text-primary transition-colors">
+                  info@kiscsibeetterem.hu
                 </a>
               </li>
             </ul>
