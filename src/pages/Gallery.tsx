@@ -14,6 +14,11 @@ const Gallery = () => {
 
   return (
     <div className="min-h-screen bg-background relative">
+      <SEO
+        title="Galéria — Ételeink és éttermünk fotói | Kiscsibe"
+        description="Tekintsd meg a Kiscsibe Étterem fotóit: friss házi ételek, hangulatos belső tér Zuglóban. Ételek és éttermi galéria."
+        path="/gallery"
+      />
       {/* Decorative background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
