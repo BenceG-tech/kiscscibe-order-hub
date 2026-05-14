@@ -18,6 +18,7 @@ import { getSmartInitialDate, getContentLabel } from "@/lib/dateUtils";
 import { capitalizeFirst, cn } from "@/lib/utils";
 import kiscsibeLogo from "@/assets/kiscsibe_logo_round.png";
 import heroImage from "@/assets/hero-desktop.png";
+import SEO from "@/components/SEO";
 import DailyMenuPanel from "@/components/DailyMenuPanel";
 import AlwaysAvailableSection from "@/components/sections/AlwaysAvailableSection";
 import FavoriteOrdersPanel from "@/components/FavoriteOrdersPanel";
@@ -268,6 +269,11 @@ const Etlap = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Napi ajánlat & étlap — Online rendelés | Kiscsibe Étterem"
+        description="Mai napi menü, levesek, főételek és állandó kedvencek. Rendelj online a Kiscsibe Étteremtől, gyors átvétellel Zuglóban."
+        path="/etlap"
+      />
       <ModernNavigation />
       <main className="pt-20">
         {/* Table number badge */}

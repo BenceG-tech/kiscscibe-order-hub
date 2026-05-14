@@ -58,6 +58,11 @@ const About = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Rólunk — A Kiscsibe Reggeliző & Étterem története"
+        description="Ismerd meg a Kiscsibe Étterem csapatát, értékeit és történetét. Friss házi ízek minden hétköznap Zuglóban."
+        path="/about"
+      />
       <ModernNavigation />
       <main className="pt-20">
         {/* Hero Section */}
