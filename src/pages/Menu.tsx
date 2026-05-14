@@ -1,4 +1,5 @@
 import ModernNavigation from "@/components/ModernNavigation";
+import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
@@ -6,6 +7,11 @@ import { ArrowLeft } from "lucide-react";
 const Menu = () => {
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Étlap — Kiscsibe Reggeliző & Étterem"
+        description="A Kiscsibe Étterem teljes étlap oldala hamarosan. Addig nézd meg a napi ajánlatot és állandó kedvenceinket."
+        path="/menu"
+      />
       <ModernNavigation />
       
       <div className="pt-20 pb-12">
