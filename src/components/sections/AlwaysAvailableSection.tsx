@@ -134,9 +134,16 @@ const AlwaysAvailableSection = ({
         return (
           <div key={group.category.id} className="space-y-3">
             {grouped.length > 1 && (
-              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                {group.category.name}
-              </h4>
+              <div className="space-y-1">
+                <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                  {group.category.name}
+                </h4>
+                {group.category.name.toLowerCase() === "reggeli" && (
+                  <p className="text-xs text-primary/90 font-medium">
+                    Hétköznap 7 – 10 óra között elérhető
+                  </p>
+                )}
+              </div>
             )}
 
             {showImages ? (
