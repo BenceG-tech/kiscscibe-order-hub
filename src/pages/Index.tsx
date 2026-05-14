@@ -1,3 +1,4 @@
+import SEO from "@/components/SEO";
 import ModernNavigation from "@/components/ModernNavigation";
 import AlwaysAvailableSection from "@/components/sections/AlwaysAvailableSection";
 import AnnouncementPopup from "@/components/AnnouncementPopup";
@@ -17,6 +18,11 @@ import Footer from "@/components/Footer";
 const Index = () => {
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Kiscsibe Étterem — Napi menü és online rendelés Zuglóban"
+        description="Friss házi reggeli és napi menü Zuglóban. Levesek, főételek, gyors átvétel. Hétfő-péntek 7-16. Rendelj online a Kiscsibe Étteremtől!"
+        path="/"
+      />
       <ModernNavigation />
       <main className="pt-20">
         <HeroSection />

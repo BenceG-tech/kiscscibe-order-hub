@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import SEO from "@/components/SEO";
 import ModernNavigation from "@/components/ModernNavigation";
 import Footer from "@/components/Footer";
 import { Card, CardContent } from "@/components/ui/card";
@@ -57,6 +58,11 @@ const About = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Rólunk — A Kiscsibe Reggeliző & Étterem története"
+        description="Ismerd meg a Kiscsibe Étterem csapatát, értékeit és történetét. Friss házi ízek minden hétköznap Zuglóban."
+        path="/about"
+      />
       <ModernNavigation />
       <main className="pt-20">
         {/* Hero Section */}

@@ -17,3 +17,5 @@ Disallow: /staff/
 Disallow: /auth
 Disallow: /checkout
 Disallow: /order-confirmation
+
+Sitemap: https://kiscsibe-etterem.hu/sitemap.xml

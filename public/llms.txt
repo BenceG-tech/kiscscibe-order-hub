@@ -1,0 +1,21 @@
+# Kiscsibe Reggeliző & Étterem
+
+> Családias étterem a XIV. kerületben (Zugló), friss házi reggelivel és napi menüvel. Hétköznap nyitva, online rendeléssel és gyors átvétellel.
+
+Cím: 1141 Budapest, Vezér u. 110. — Email: info@kiscsibeetterem.hu
+
+## Pages
+
+- [Főoldal](/): Napi ajánlat, vélemények, galéria és gyors rendelés.
+- [Napi ajánlat](/etlap): Aktuális napi menü, levesek, főételek és online rendelés.
+- [Étlap](/menu): Teljes kínálat és állandó kedvencek.
+- [Galéria](/gallery): Ételeink és éttermünk fotói.
+- [Rólunk](/about): Történetünk, csapatunk és értékeink.
+- [Kapcsolat](/contact): Cím, nyitvatartás, térkép és üzenetküldés.
+
+## Optional
+
+- [Impresszum](/impresszum)
+- [Adatvédelmi tájékoztató](/adatvedelem)
+- [ÁSZF](/aszf)
+- [Süti szabályzat](/cookie-szabalyzat)
