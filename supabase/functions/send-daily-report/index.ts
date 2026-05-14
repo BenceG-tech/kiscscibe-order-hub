@@ -201,7 +201,7 @@ serve(async (req) => {
 
     await resend.emails.send({
       from: 'Kiscsibe Rendszer <rendeles@kiscsibe-etterem.hu>',
-      to: ['kiscsibeetterem@gmail.com', 'gataibence@gmail.com'],
+      to: ['info@kiscsibeetterem.hu', 'gataibence@gmail.com'],
       subject: `Kiscsibe napi riport — ${reportDate} — ${totalRevenue.toLocaleString()} Ft`,
       html: emailHtml,
     });

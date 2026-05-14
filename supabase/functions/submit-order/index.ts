@@ -802,7 +802,7 @@ serve(async (req) => {
       await resend.emails.send({
         from: 'Kiscsibe Étterem <rendeles@kiscsibe-etterem.hu>',
         to: [customer.email],
-        bcc: ['kiscsibeetterem@gmail.com', 'gataibence@gmail.com'], // Admin copies
+        bcc: ['info@kiscsibeetterem.hu', 'gataibence@gmail.com'], // Admin copies
         subject: `Kiscsibe – rendelés visszaigazolás #${orderCode}`,
         html: emailHtml,
         text: emailText,

@@ -53,11 +53,11 @@ const handler = async (req: Request): Promise<Response> => {
             <p style="margin: 4px 0;"><strong>Kiscsibe Reggeliző & Étterem</strong></p>
             <p style="margin: 4px 0;">📍 1145 Budapest, Vezér utca 12.</p>
             <p style="margin: 4px 0;">📞 +36 1 234 5678</p>
-            <p style="margin: 4px 0;">✉️ kiscsibeetterem@gmail.com</p>
+            <p style="margin: 4px 0;">✉️ info@kiscsibeetterem.hu</p>
           </div>
           
           <p style="font-size: 11px; color: #999; text-align: center; margin-top: 20px;">
-            Ha nem te iratkoztál fel, vagy le szeretnél iratkozni, kérjük írj nekünk a kiscsibeetterem@gmail.com címre.
+            Ha nem te iratkoztál fel, vagy le szeretnél iratkozni, kérjük írj nekünk a info@kiscsibeetterem.hu címre.
           </p>
         </div>
       `,

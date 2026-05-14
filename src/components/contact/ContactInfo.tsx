@@ -36,8 +36,8 @@ const ContactInfo = () => {
           </div>
           <div className="flex items-center gap-3">
             <Mail className="h-5 w-5 text-primary" />
-            <a href="mailto:kiscsibeetterem@gmail.com" className="hover:text-primary transition-colors">
-              kiscsibeetterem@gmail.com
+            <a href="mailto:info@kiscsibeetterem.hu" className="hover:text-primary transition-colors">
+              info@kiscsibeetterem.hu
             </a>
           </div>
           

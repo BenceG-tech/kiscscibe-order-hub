@@ -83,7 +83,7 @@ const Impresszum = () => {
                       <h2 className="text-2xl font-sofia font-bold text-foreground mb-4">Kapcsolattartási adatok</h2>
                       <div className="space-y-2">
                         <p><strong className="text-foreground">Telefon:</strong> +36 1 234 5678</p>
-                        <p><strong className="text-foreground">E-mail:</strong> <a href="mailto:kiscsibeetterem@gmail.com" className="text-primary hover:underline">kiscsibeetterem@gmail.com</a></p>
+                        <p><strong className="text-foreground">E-mail:</strong> <a href="mailto:info@kiscsibeetterem.hu" className="text-primary hover:underline">info@kiscsibeetterem.hu</a></p>
                       </div>
                     </section>
                     <div className="border-t border-border pt-6 mt-8">
