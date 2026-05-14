@@ -1,44 +1,32 @@
-## Cél
+## Probléma
 
-Felvenni a táblán szereplő reggeli tételeket fix tételekként (minden hétköznap elérhetők), külön „Reggeli" kategóriába, jó megjelenéssel a kezdőlapon és a Fix tételek admin felületen — szerkeszthető, AI képgenerálóval, mint a többi fix tétel.
+A 7 reggeli tétel létezik az adatbázisban (`is_always_available = true`), de:
 
-## 1. Új „Reggeli" kategória
+- A **főoldalon** az `AlwaysAvailableSection` `featuredOnly` módban fut, és a reggeli tételek `is_featured = false` — ezért nem látszanak.
+- Az **Étlap / Napi ajánlat** oldalon megjelennek az "Mindig elérhető" alatt, de elvesznek a többi kategória között, nem hangsúlyosak.
+- Sehol nincs dedikált, jól látható "Reggeli" blokk az időszak (7–10) feltüntetésével.
 
-Migráció létrehoz egy új `menu_categories` rekordot:
-- név: `Reggeli`
-- `sort: 0` (legelső kategória legyen az étlapon és a fix tétel admin felületen)
+## Megoldás
 
-## 2. Reggeli tételek felvitele (fix tételek)
+Egy új, dedikált **`BreakfastSection`** komponens, amely a Reggeli kategória tételeit emeli ki saját design-nal (idő-badge, meleg színek, 2 oszlop mobilon).
 
-Adatbázis insert a `menu_items` táblába, mind `is_always_available = true`, `is_active = true`, `category_id = Reggeli`:
+### Hol jelenjen meg
 
-| Név | Ár (Ft) | Leírás |
-|---|---|---|
-| Bundáskenyér | 1 270 | Választható kenegetőssel (+490 Ft): pestós-sajtos, csokiöntetes, sajtos-tejfölös, magyaros (tejföl, kolbász, lilahagyma) |
-| Töltött bundáskenyér (1 db) | 1 250 | Sajttal-sonkával töltve |
-| Töltött bundáskenyér (2 db) | 2 350 | Sajttal-sonkával töltve |
-| Óriás melegszendvics | 1 750 | Pl. házi gombakrémes, sajtos-sonkás, szalámis |
-| Ham & Eggs | 1 770 | 3 tojásból |
-| Omlett | 1 770 | 3 tojásból, két feltéttel: pl. kolbászos-hagymás, baconos-hagymás, sonkás-sajtos |
-| Szendvicsek (többféle) | 1 290 | Választékunktól függően 1 290 – 1 750 Ft |
+1. **Főoldal (`Index.tsx`)** — a Hero alatt, a napi ajánlat fölött, hogy reggel azonnal látható legyen.
+2. **Étlap oldal (`Etlap.tsx`)** — a napi menü panel fölött, kiemelt blokként (a meglévő `AlwaysAvailableSection` megmarad, de a Reggeli kategória onnan kiszűrve, mert már fent szerepel).
 
-A „1 db / 2 db" és az „1290–1750" eseteket külön tételként / tartomány-leírással oldjuk meg, hogy minden tétel önálló kosárba-tehető legyen.
+### Komponens viselkedés
 
-## 3. Megjelenés a vendégoldalon
+- Lekéri a `Reggeli` kategória aktív tételeit `menu_items`-ből.
+- Cím: "Reggeli" + alcím "Hétköznap 7 – 10 óra között" + óra ikon.
+- 2 oszlop mobilon, 3 oszlop desktopon, 4:3 képek, ár-badge, "Kosárba" gomb.
+- Kosárhoz adás a meglévő `useCart().addItem` logikával.
+- Ha nincs aktív reggeli tétel → komponens nem renderel semmit.
 
-- A meglévő `AlwaysAvailableSection` automatikusan megjeleníti a Reggeli kategóriát (kategória név fejléccel, képes kártyákkal), így a logika változatlan.
-- Új elem: egy kis info-csík a Reggeli kategória fejléce alá: **„Reggeli kínálatunk hétköznap 7 – 10 óra között elérhető"** (`AlwaysAvailableSection.tsx`, csak a Reggeli csoportnál).
-- Opcionális finomítás: a Reggeli kategória mindig kapja a képes nézetet (`displaySettings` default).
+### Technikai részletek
 
-## 4. Admin (Fix tételek)
-
-Nincs külön munka — a `/admin/fix-items` oldal a kategóriát automatikusan listázza:
-- minden tétel szerkeszthető (név, ár, leírás, allergének, kép, aktív/inaktív)
-- AI képgenerátor gomb minden tételnél működik (`AIGenerateImageButton`)
-- drag-and-drop sorrend, tömeges AI generálás működik
-
-## 5. Technikai részletek
-
-- 1 migráció: kategória + 7 menu_item insert (display_order 1..7).
-- 1 frontend edit: `src/components/sections/AlwaysAvailableSection.tsx` — feltételes „7–10 óra" alcímke a Reggeli csoportnál (kategória neve alapján).
-- Nincs séma-változás, nincs új komponens.
+- Új fájl: `src/components/sections/BreakfastSection.tsx` (az `AlwaysAvailableSection` mintájára, de Reggeli-specifikus, képes layout, idő-badge-dzsel).
+- `src/pages/Index.tsx` — `<BreakfastSection />` beszúrása a Hero után.
+- `src/pages/Etlap.tsx` — `<BreakfastSection />` a `WeeklyDateStrip` alá, a `<DailyMenuPanel>` fölé.
+- `src/components/sections/AlwaysAvailableSection.tsx` — opcionális prop `excludeCategoryNames?: string[]` hozzáadása, és az Étlapon `excludeCategoryNames={["Reggeli"]}` átadása, hogy ne duplikálódjon.
+- **Nincs DB-változás**, nincs backend módosítás — tisztán frontend / megjelenítés.
