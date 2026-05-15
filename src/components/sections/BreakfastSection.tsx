@@ -103,7 +103,7 @@ const BreakfastSection = ({ variant = "page" }: BreakfastSectionProps) => {
               className="group border-0 bg-card/95 backdrop-blur-sm shadow-md rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
             >
               <CardContent className="p-0">
-                <div className="aspect-[4/3] overflow-hidden">
+                <div className="relative aspect-square md:aspect-[4/3] overflow-hidden">
                   {item.image_url ? (
                     <img
                       src={item.image_url}
@@ -120,32 +120,27 @@ const BreakfastSection = ({ variant = "page" }: BreakfastSectionProps) => {
                       />
                     </div>
                   )}
+                  <Badge className="absolute top-2 right-2 bg-primary text-primary-foreground font-bold text-xs shadow-lg px-2 py-1">
+                    {item.price_huf} Ft
+                  </Badge>
                 </div>
                 <div className="p-3 space-y-2">
                   <h3 className="font-semibold text-sm leading-tight line-clamp-2 min-h-[2.5rem]">
                     {capitalizeFirst(item.name)}
                   </h3>
                   {item.description && (
-                    <p className="text-xs text-muted-foreground line-clamp-2">
+                    <p className="text-xs text-muted-foreground line-clamp-1">
                       {item.description}
                     </p>
                   )}
-                  <div className="flex items-center justify-between gap-2 pt-1">
-                    <Badge
-                      variant="secondary"
-                      className="bg-primary/15 text-primary font-bold text-xs shrink-0"
-                    >
-                      {item.price_huf} Ft
-                    </Badge>
-                    <Button
-                      onClick={() => handleAdd(item)}
-                      size="sm"
-                      className="h-8 px-2.5 text-xs"
-                    >
-                      <ShoppingCart className="h-3.5 w-3.5 mr-1" />
-                      Kosárba
-                    </Button>
-                  </div>
+                  <Button
+                    onClick={() => handleAdd(item)}
+                    size="sm"
+                    className="w-full h-9 text-xs font-semibold"
+                  >
+                    <ShoppingCart className="h-3.5 w-3.5 mr-1.5" />
+                    Kosárba
+                  </Button>
                 </div>
               </CardContent>
             </Card>

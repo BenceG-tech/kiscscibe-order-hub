@@ -283,7 +283,7 @@ export default function WeeklyMenuGrid() {
     },
     onError: (error) => {
       console.error("Error adding item:", error);
-      toast.error("Hiba történt az étel hozzáadásakor");
+      toast.error(`Hiba: ${(error as any)?.message || "ismeretlen"}`);
     },
   });
 
@@ -303,7 +303,7 @@ export default function WeeklyMenuGrid() {
     },
     onError: (error) => {
       console.error("Error removing item:", error);
-      toast.error("Hiba történt az étel eltávolításakor");
+      toast.error(`Hiba: ${(error as any)?.message || "ismeretlen"}`);
     },
   });
 
@@ -350,7 +350,7 @@ export default function WeeklyMenuGrid() {
     },
     onError: (error) => {
       console.error("Error updating price:", error);
-      toast.error("Hiba történt az ár mentésekor");
+      toast.error(`Hiba: ${(error as any)?.message || "ismeretlen"}`);
     },
   });
 
@@ -371,7 +371,7 @@ export default function WeeklyMenuGrid() {
     },
     onError: (error) => {
       console.error("Error updating item price:", error);
-      toast.error("Hiba történt az ár mentésekor");
+      toast.error(`Hiba: ${(error as any)?.message || "ismeretlen"}`);
     },
   });
 
@@ -491,7 +491,7 @@ export default function WeeklyMenuGrid() {
     },
     onError: (error) => {
       console.error("Error updating menu part:", error);
-      toast.error("Hiba történt a menü beállításakor");
+      toast.error(`Hiba: ${(error as any)?.message || "ismeretlen"}`);
     },
   });
 
