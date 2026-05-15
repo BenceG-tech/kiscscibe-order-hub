@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, Loader2, ImageIcon, Pause, Play } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { invokeWithAuth } from "@/lib/invokeAuth";
 import { toast } from "sonner";
 
 interface MenuItem {
@@ -57,8 +57,9 @@ const AIBatchImageGenerator = ({ items, onComplete }: AIBatchImageGeneratorProps
       const results = await Promise.allSettled(
         batch.map(async (item) => {
           setCurrentItem(item.name);
-          const { data, error } = await supabase.functions.invoke("generate-food-image", {
-            body: { item_id: item.id, item_name: item.name },
+          const { data, error } = await invokeWithAuth<any>("generate-food-image", {
+            item_id: item.id,
+            item_name: item.name,
           });
           if (error || data?.error) throw new Error(data?.error || error?.message);
           return data;

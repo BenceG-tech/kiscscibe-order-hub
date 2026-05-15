@@ -100,7 +100,7 @@ const InvoiceFileUpload = ({ fileUrls, onChange, onExtracted }: Props) => {
         body = { ...body, image_url: url, source };
       }
 
-      const { data, error } = await supabase.functions.invoke("extract-invoice-data", { body });
+      const { data, error } = await invokeWithAuth<any>("extract-invoice-data", body);
       if (error) throw error;
 
       if (data?.success && data?.data) {

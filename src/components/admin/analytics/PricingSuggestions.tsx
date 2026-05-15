@@ -24,9 +24,7 @@ const PricingSuggestions = () => {
     setLoading(true);
     setMessage(null);
     try {
-      const { data, error } = await supabase.functions.invoke("ai-pricing-suggestions", {
-        body: {},
-      });
+      const { data, error } = await invokeWithAuth<any>("ai-pricing-suggestions", {});
 
       if (error) throw error;
 

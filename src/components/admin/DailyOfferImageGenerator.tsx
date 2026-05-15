@@ -575,8 +575,11 @@ const DailyOfferImageGenerator = () => {
   const generatePostText = async () => {
     setPostLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("generate-facebook-post", {
-        body: { date: selectedDate, tone: postTone, postType, style: postStyle },
+      const { data, error } = await invokeWithAuth<any>("generate-facebook-post", {
+        date: selectedDate,
+        tone: postTone,
+        postType,
+        style: postStyle,
       });
       if (error) {
         toast.error("Hiba a poszt generálásakor");
