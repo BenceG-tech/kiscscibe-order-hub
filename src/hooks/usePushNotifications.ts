@@ -41,17 +41,17 @@ export const usePushNotifications = () => {
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
       });
 
-      // Register with backend
-      const response = await fetch(
-        "https://gvtsbnivuysunnjrpndk.supabase.co/functions/v1/register-push",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ phone, subscription: sub.toJSON() }),
-        }
-      );
-
-      if (!response.ok) throw new Error("Registration failed");
+      // Register with backend (requires authenticated user)
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.warn("Push registration requires sign-in");
+        return false;
+      }
+      const { error: invokeError } = await supabase.functions.invoke("register-push", {
+        body: { phone, subscription: sub.toJSON() },
+      });
+      if (invokeError) throw invokeError;
       setIsSubscribed(true);
       return true;
     } catch (err) {
