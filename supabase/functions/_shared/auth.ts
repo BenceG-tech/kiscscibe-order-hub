@@ -71,13 +71,17 @@ export async function requireAdmin(
  * Internal-call check: caller must present X-Internal-Secret matching the
  * service role key. Edge-function-to-edge-function calls supply this header.
  */
+export function hasInternalSecret(req: Request): boolean {
+  const provided = req.headers.get("x-internal-secret");
+  const expected = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  return !!provided && !!expected && provided === expected;
+}
+
 export function requireInternalSecret(
   req: Request,
   corsHeaders: Record<string, string>,
 ): AuthFailure | { ok: true } {
-  const provided = req.headers.get("x-internal-secret");
-  const expected = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!provided || !expected || provided !== expected) {
+  if (!hasInternalSecret(req)) {
     return {
       ok: false,
       response: new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -86,5 +90,16 @@ export function requireInternalSecret(
       }),
     };
   }
+  return { ok: true };
+}
+
+/** Allow either admin auth OR internal secret (for cron/scheduled callers). */
+export async function requireAdminOrInternal(
+  req: Request,
+  corsHeaders: Record<string, string>,
+): Promise<AuthFailure | { ok: true }> {
+  if (hasInternalSecret(req)) return { ok: true };
+  const auth = await requireAdmin(req, corsHeaders);
+  if (!auth.ok) return auth;
   return { ok: true };
 }
