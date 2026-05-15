@@ -64,7 +64,7 @@ serve(async (req) => {
       });
     }
 
-    const token = generateToken(order_id);
+    const token = await generateToken(order_id);
     const siteUrl = "https://kiscscibe-order-hub.lovable.app";
 
     // Fetch Google Review URL
