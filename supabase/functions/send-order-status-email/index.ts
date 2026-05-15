@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { Resend } from "npm:resend@2.0.0";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
+import { hasInternalSecret, requireAdmin } from "../_shared/auth.ts";
 
 interface StatusEmailRequest {
   order_id: string;
@@ -33,6 +34,12 @@ serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
   const preflight = handleCorsPreflightRequest(req);
   if (preflight) return preflight;
+
+  // Allow either internal-secret (server-to-server) or admin/staff auth (dashboard)
+  if (!hasInternalSecret(req)) {
+    const auth = await requireAdmin(req, corsHeaders, { allowStaff: true });
+    if (!auth.ok) return auth.response;
+  }
 
   try {
     const { order_id, new_status }: StatusEmailRequest = await req.json();
