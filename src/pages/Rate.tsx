@@ -69,16 +69,20 @@ const Rate = () => {
     setLoading(true);
     setError("");
     try {
-      const { error: insertError } = await supabase.from("order_ratings").insert({
-        order_id: orderId,
-        rating,
-        comment: comment.trim() || null,
+      const { data, error: invokeError } = await supabase.functions.invoke("submit-rating", {
+        body: {
+          order_id: orderId,
+          token,
+          rating,
+          comment: comment.trim() || null,
+        },
       });
-      if (insertError) {
-        if (insertError.code === "23505") {
+      if (invokeError || (data && (data as any).error)) {
+        const errCode = (data as any)?.error;
+        if (errCode === "already_rated") {
           setError("Ezt a rendelést már értékelted.");
         } else {
-          throw insertError;
+          throw invokeError || new Error(errCode || "submit failed");
         }
       } else {
         setSubmitted(true);
