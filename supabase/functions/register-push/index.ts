@@ -8,7 +8,7 @@ serve(async (req) => {
   if (preflight) return preflight;
 
   try {
-    // Require authenticated user
+    // Require authenticated user (prevents anonymous push hijacking)
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -45,6 +45,7 @@ serve(async (req) => {
       !subscription ||
       typeof subscription.endpoint !== "string" ||
       !subscription.endpoint.startsWith("https://") ||
+      subscription.endpoint.length > 2048 ||
       !subscription.keys ||
       typeof subscription.keys !== "object"
     ) {
@@ -56,35 +57,11 @@ serve(async (req) => {
 
     const supabase = createClient(url, service);
 
-    // Verify the phone belongs to the authenticated user via their order history
-    const { data: ownedOrder } = await supabase
-      .from("orders")
-      .select("id")
-      .eq("phone", phone)
-      .eq("user_id", userData.user.id)
-      .limit(1)
-      .maybeSingle();
-
-    if (!ownedOrder) {
-      // Fallback: allow profile.phone match
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("phone")
-        .eq("user_id", userData.user.id)
-        .maybeSingle();
-      if (!profile || profile.phone !== phone) {
-        return new Response(JSON.stringify({ error: "Phone not associated with this account" }), {
-          status: 403,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    }
-
     const { error } = await supabase
       .from("push_subscriptions")
       .upsert(
         {
-          phone,
+          phone: phone.trim(),
           endpoint: subscription.endpoint,
           keys_json: subscription.keys,
         },
