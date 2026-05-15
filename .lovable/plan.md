@@ -1,40 +1,37 @@
 ## Cél
 
-Pótolni a május 18–22-i heti ajánlatból kihagyott 11 tételt: új `menu_items` rekordok létrehozása az Excel pontos név + ár alapján, majd hozzákapcsolás a megfelelő napi ajánlathoz `daily_offer_items`-ként.
+A `BreakfastSection` (főoldal + Étlap) másodlagos súlyú legyen a napi ajánlathoz képest — kompakt vízszintes lista kis képpel balra, név + ár + kosár gomb jobbra. Funkció (kosárba tétel, lekérdezés) változatlan.
 
-(A „Zöldfűszeres-fokhagymás sertésragu" már be lett illesztve az előző importnál, így a 12-ből csak 11 marad.)
+## Változtatás
 
-## Új menu_items (11 db)
+Csak `src/components/sections/BreakfastSection.tsx` (frontend, prezentáció).
 
-Mindegyik: `is_active = true`, `is_temporary = true`, allergének és kép üresek (admin később pótolja).
+**Wrapper / fejléc:**
+- Marad a halvány keret, de visszafogottabb: vékonyabb border, kisebb padding (`p-4 md:p-5`).
+- Cím kisebb: `text-xl md:text-2xl` (nagy `text-2xl md:text-3xl` helyett).
+- Ikon konténer kisebb: `h-9 w-9` (jelenleg `h-11 w-11`).
+- Alcím opcionálisan elrejtve mobilon.
 
-| Új menu_item név | Ár (Ft) | Kategória |
-|---|---|---|
-| Sajtos bundában rántott csirkemell szeletek | 2450 | Rántott ételek |
-| Mediterrán csirkés penne sült paprikával | 2450 | Tészta ételek |
-| Rozmaringos sült karaj hagymás pecsenyelével | 2350 | Főételek |
-| Stefánia gombóc | 1290 | Főzelék feltét |
-| Menzás piskóta csokoládé öntettel | 1350 | Desszertek |
-| Zöldfűszeres fetasajttal töltött rántott szelet | 2450 | Rántott ételek |
-| Omlós csirkemell paradicsomos-tejszínes szószban | 2450 | Csirkés-zöldséges ételek |
-| Mézes-teriyaki csirkecomb pirított zöldségekkel | 2350 | Csirkés-zöldséges ételek |
-| Kertész szelet | 2350 | Főételek |
-| Sült tarjaszeletek lecsós-gombás feltéttel | 2350 | Főételek |
-| Fokhagymás-tejszínes sertésszelet | 2350 | Főételek |
+**Tételek — új layout:**
+- Grid: mobilon 1 oszlop, `sm:grid-cols-2`, `lg:grid-cols-3` (jelenleg 2/3 nagy kártya).
+- Minden tétel egy vízszintes sor: kis kép (64×64 vagy 72×72 px, `rounded-xl`) balra, középen név + opcionális leírás 1 sorban (`line-clamp-1`), ár chip és kis kosár gomb (icon-only, `h-8 w-8`) jobbra.
+- Card padding: `p-2`, gap: `gap-3`.
+- Nincs aspect-ratio kép-blokk, nincs hover-scale.
 
-## Daily offer hozzárendelés
+**Méretarány — vizuális hierarchia:**
+- A reggeli sávok kb. 72px magasak lesznek (jelenleg ~220px kártyák).
+- A napi ajánlat (DailyMenuPanel + extra item kártyák a 16:9 képekkel) így vizuálisan dominánsabbá válik.
 
-Mindegyik `is_menu_part = false` (nem combo-rész), csak választható extra a napi kínálatban.
+## Mit NEM változtatunk
 
-- **Kedd 05-19**: Sajtos bundában rántott csirkemell szeletek
-- **Szerda 05-20**: Mediterrán csirkés penne, Rozmaringos sült karaj, Stefánia gombóc, Menzás piskóta, Zöldfűszeres fetasajttal töltött rántott szelet
-- **Csütörtök 05-21**: Omlós csirkemell paradicsomos-tejszínes szószban, Mézes-teriyaki csirkecomb, Kertész szelet
-- **Péntek 05-22**: Sült tarjaszeletek lecsós-gombás feltéttel, Fokhagymás-tejszínes sertésszelet
+- `useQuery` lekérdezés, kategória szűrés, `addItem` hívás, toast — érintetlen.
+- Brand színek, dark theme tokenek, Sofia font — változatlan.
+- A jelenlegi ár/kosár logika, a homepage/page variant kapcsoló is marad.
 
-## Végrehajtás
+## Érintett fájl
 
-Egyetlen migration:
-1. `INSERT INTO menu_items (...) VALUES (...) RETURNING id` — 11 új tétel
-2. `INSERT INTO daily_offer_items (daily_offer_id, item_id, is_menu_part, portions_needed)` — 11 új sor, a megfelelő `daily_offers.id`-hez (a dátum alapján kiválasztva)
+- `src/components/sections/BreakfastSection.tsx` — átírt JSX/Tailwind a fent leírt elrendezésre.
 
-A meglévő combo (leves + főétel 2200 Ft) érintetlen marad.
+## Verifikáció
+
+Vizuális ellenőrzés mobilon (402×700) és desktopon (1080×848) az `/etlap` és `/` oldalakon.

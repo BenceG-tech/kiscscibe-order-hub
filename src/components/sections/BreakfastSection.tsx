@@ -1,12 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/components/ui/use-toast";
 import { capitalizeFirst } from "@/lib/utils";
-import { Coffee, Clock, ShoppingCart } from "lucide-react";
+import { Coffee, Clock, Plus } from "lucide-react";
 import kiscsibeLogo from "@/assets/kiscsibe_logo_round.png";
 
 interface BreakfastItem {
@@ -68,82 +67,89 @@ const BreakfastSection = ({ variant = "page" }: BreakfastSectionProps) => {
 
   const Wrapper = ({ children }: { children: React.ReactNode }) =>
     variant === "homepage" ? (
-      <section className="py-10 md:py-14">
+      <section className="py-6 md:py-10">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">{children}</div>
       </section>
     ) : (
-      <div className="space-y-4">{children}</div>
+      <div className="space-y-3">{children}</div>
     );
 
   return (
     <Wrapper>
-      <div className="rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-5 md:p-7 space-y-5 shadow-lg">
-        <div className="flex items-start justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-3">
-            <div className="h-11 w-11 rounded-2xl bg-primary/20 flex items-center justify-center">
-              <Coffee className="h-6 w-6 text-primary" />
+      <div className="rounded-2xl border border-primary/20 bg-primary/[0.04] p-4 md:p-5 space-y-4">
+        {/* Compact header */}
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-2.5">
+            <div className="h-9 w-9 rounded-xl bg-primary/15 flex items-center justify-center">
+              <Coffee className="h-4.5 w-4.5 text-primary" />
             </div>
             <div>
-              <h2 className="text-2xl md:text-3xl font-sofia font-bold text-foreground leading-tight">
+              <h2 className="text-xl md:text-2xl font-sofia font-bold text-foreground leading-tight">
                 Reggeli
               </h2>
-              <p className="text-sm text-muted-foreground">Friss, házias reggeli ajánlatunk</p>
+              <p className="hidden sm:block text-xs text-muted-foreground">
+                Friss, házias reggeli ajánlatunk
+              </p>
             </div>
           </div>
-          <Badge className="bg-primary text-primary-foreground gap-1.5 px-3 py-1.5 text-xs font-semibold">
-            <Clock className="h-3.5 w-3.5" />
-            Hétköznap 7 – 10
+          <Badge className="bg-primary/90 text-primary-foreground gap-1 px-2.5 py-1 text-[11px] font-semibold">
+            <Clock className="h-3 w-3" />
+            H–P 7–10
           </Badge>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+        {/* Compact horizontal list */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
           {items.map((item) => (
-            <Card
+            <div
               key={item.id}
-              className="group border-0 bg-card/95 backdrop-blur-sm shadow-md rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
+              className="flex items-center gap-3 p-2 rounded-xl bg-card/95 border border-border/50 shadow-sm hover:shadow-md transition-shadow"
             >
-              <CardContent className="p-0">
-                <div className="relative aspect-square md:aspect-[4/3] overflow-hidden">
-                  {item.image_url ? (
+              {/* Small image */}
+              <div className="h-16 w-16 shrink-0 rounded-lg overflow-hidden bg-muted">
+                {item.image_url ? (
+                  <img
+                    src={item.image_url}
+                    alt={item.name}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
                     <img
-                      src={item.image_url}
-                      alt={item.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      loading="lazy"
+                      src={kiscsibeLogo}
+                      alt="Kiscsibe"
+                      className="h-[60%] w-auto object-contain opacity-70"
                     />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
-                      <img
-                        src={kiscsibeLogo}
-                        alt="Kiscsibe"
-                        className="h-[60%] w-auto object-contain opacity-70"
-                      />
-                    </div>
-                  )}
-                  <Badge className="absolute top-2 right-2 bg-primary text-primary-foreground font-bold text-xs shadow-lg px-2 py-1">
-                    {item.price_huf} Ft
-                  </Badge>
-                </div>
-                <div className="p-3 space-y-2">
-                  <h3 className="font-semibold text-sm leading-tight line-clamp-2 min-h-[2.5rem]">
-                    {capitalizeFirst(item.name)}
-                  </h3>
-                  {item.description && (
-                    <p className="text-xs text-muted-foreground line-clamp-1">
-                      {item.description}
-                    </p>
-                  )}
-                  <Button
-                    onClick={() => handleAdd(item)}
-                    size="sm"
-                    className="w-full h-9 text-xs font-semibold"
-                  >
-                    <ShoppingCart className="h-3.5 w-3.5 mr-1.5" />
-                    Kosárba
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                  </div>
+                )}
+              </div>
+
+              {/* Name + description */}
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-semibold leading-tight truncate">
+                  {capitalizeFirst(item.name)}
+                </h3>
+                {item.description && (
+                  <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
+                    {item.description}
+                  </p>
+                )}
+                <p className="text-sm font-bold text-primary mt-1">
+                  {item.price_huf} Ft
+                </p>
+              </div>
+
+              {/* Icon-only add button */}
+              <Button
+                onClick={() => handleAdd(item)}
+                size="icon"
+                className="h-8 w-8 shrink-0 rounded-full"
+                aria-label={`${item.name} kosárba`}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
           ))}
         </div>
       </div>
