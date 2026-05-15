@@ -26,6 +26,10 @@ serve(async (req) => {
   const preflight = handleCorsPreflightRequest(req);
   if (preflight) return preflight;
 
+  const { requireAdminOrInternal } = await import("../_shared/auth.ts");
+  const auth = await requireAdminOrInternal(req, corsHeaders);
+  if (!auth.ok) return auth.response;
+
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;

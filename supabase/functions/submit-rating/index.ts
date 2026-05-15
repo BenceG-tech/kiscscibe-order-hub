@@ -2,15 +2,28 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 
-function generateToken(orderId: string): string {
-  let hash = 0;
-  const str = orderId + "kiscsibe-rating-salt";
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
-  }
-  return Math.abs(hash).toString(36);
+async function generateToken(orderId: string): Promise<string> {
+  const secret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, enc.encode(`rating:${orderId}`));
+  const bytes = new Uint8Array(sig);
+  let bin = "";
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "").slice(0, 32);
+}
+
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < a.length; i++) mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return mismatch === 0;
 }
 
 serve(async (req) => {
@@ -28,7 +41,8 @@ serve(async (req) => {
       });
     }
 
-    if (token !== generateToken(order_id)) {
+    const expected = await generateToken(order_id);
+    if (typeof token !== "string" || !timingSafeEqual(token, expected)) {
       return new Response(JSON.stringify({ error: "Invalid token" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

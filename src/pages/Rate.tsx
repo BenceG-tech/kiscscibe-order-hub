@@ -32,21 +32,9 @@ const Rate = () => {
       });
   }, []);
 
-  // Simple token validation: hash of order_id
-  const validateToken = () => {
-    if (!orderId || !token) return false;
-    // Simple hash check - same logic as edge function
-    let hash = 0;
-    const str = orderId + "kiscsibe-rating-salt";
-    for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash;
-    }
-    return token === Math.abs(hash).toString(36);
-  };
-
-  if (!orderId || !token || !validateToken()) {
+  // Token validation is performed server-side by the submit-rating edge
+  // function. The client only checks that the URL has both params present.
+  if (!orderId || !token) {
     return (
       <div className="min-h-screen bg-background">
         <ModernNavigation />

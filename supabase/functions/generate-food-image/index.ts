@@ -1,10 +1,14 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
+import { requireAdmin } from "../_shared/auth.ts";
 
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
   const preflight = handleCorsPreflightRequest(req);
   if (preflight) return preflight;
+
+  const auth = await requireAdmin(req, corsHeaders);
+  if (!auth.ok) return auth.response;
 
   try {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
