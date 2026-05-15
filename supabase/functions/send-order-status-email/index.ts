@@ -108,7 +108,7 @@ serve(async (req) => {
     const itemsHtml = (items || []).map(item => `
       <tr>
         <td style="padding: 8px; border-bottom: 1px solid #eee;">
-          <strong>${item.name_snapshot}</strong> × ${item.qty}
+          <strong>${escapeHtml(item.name_snapshot)}</strong> × ${item.qty}
         </td>
         <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">
           ${item.line_total_huf.toLocaleString()} Ft
