@@ -123,12 +123,12 @@ serve(async (req) => {
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #333;">${config.emoji} ${config.heading}</h2>
-        <p>Kedves ${order.name}!</p>
+        <p>Kedves ${escapeHtml(order.name)}!</p>
         <p>${config.message}</p>
         
         <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <h3 style="margin-top: 0;">Rendelés részletei</h3>
-          <p><strong>Rendelés kód:</strong> ${order.code}</p>
+          <p><strong>Rendelés kód:</strong> ${escapeHtml(order.code)}</p>
           <p><strong>${pickupInfo}</strong></p>
           <p><strong>Fizetés:</strong> ${order.payment_method === 'cash' ? 'Készpénz' : 'Kártya'}</p>
         </div>
