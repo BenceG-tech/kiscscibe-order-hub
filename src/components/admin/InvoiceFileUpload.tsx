@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Camera, CheckCircle2, FileText, Loader2, RefreshCw, Upload, X, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeWithAuth } from "@/lib/invokeAuth";
 import { toast } from "sonner";
 import { extractInvoicePdfContent } from "@/lib/pdfInvoiceExtract";
 
