@@ -1,24 +1,48 @@
-# Jövő heti ajánlat mentés javítása
 
-## Probléma
+# Jövő heti napi ajánlatok feltöltése (2026-05-18 — 2026-05-22)
 
-A toast pontosan ezt mutatja: **"Hiba: permission denied for function is_weekend"**.
+## Cél
 
-A `daily_offer_items` táblán lévő `validate_daily_item_date` trigger meghívja a `public.is_weekend(date)` függvényt, hogy ellenőrizze, hétvégére esik-e az új tétel. A függvényre azonban csak a `postgres` és `service_role` szerepköröknek van EXECUTE joga — az `authenticated` (admin felhasználó) szerepkörnek nincs, így a trigger elhasal és semmit nem lehet menteni.
+A csatolt Excel (`2026.05.18.-05.22..xlsx`) napi tételeit felviszem a `daily_offers` / `daily_offer_items` / `daily_offer_menus` táblákba **kizárólag a meglévő `menu_items` rekordokra hivatkozva** — új menu_item NEM jön létre.
 
-## Megoldás
+## Megközelítés
 
-Egyetlen migráció, ami megadja az EXECUTE jogot a hiányzó függvényekre:
+1. **Tétel-egyeztetés**: minden Excel-soron végigfutok és a `menu_items`-re ékezet-érzéketlen + pg_trgm hasonlóság alapján keresem meg a meglévő párját. A találatokat egy egyeztető táblázatban itt a chatben elétárlak elfogadásra (név + DB-beli név + DB-beli ár), mielőtt bármit is mentek.
+2. **Egyértelmű találatok**: ahol a hasonlóság ≥ 0.85 és csak 1 találat van, automatikusan elfogadom.
+3. **Bizonytalan / hiányzó tételek**: ha nincs legalább 0.6 hasonlóságú találat (pl. `Rétes`, `Gundel palacsinta`, `rántottak` címke, esetleg `Kertés szelet` / `Kolbászos lecsó` / `Tarhonyás hús` ha nincs DB-ben), azokat **kihagyom** és a chatben listázom — új tételt nem hozok létre.
+4. **Árak**: Az Excel-ben szereplő árakat **nem** írom be a `menu_items`-be (megőrzöm a meglévő árakat), de a `daily_offer_items`-en megjelenítendő ár a meglévő `menu_items.price_huf` lesz. Ha másképp szeretnéd, szólj.
 
-```sql
-GRANT EXECUTE ON FUNCTION public.is_weekend(date) TO authenticated, anon;
-GRANT EXECUTE ON FUNCTION public.validate_daily_item_date() TO authenticated, anon;
+## Adatszerkezet napi szinten
+
+Minden napra (hétfő–péntek):
+
+```text
+daily_offers (date, price_huf=2200, max_portions=50)
+└── daily_offer_menus (menu_price_huf=2200, max_portions=30)   ← combo csomag
+└── daily_offer_items
+      ├── 1 leves   → is_menu_part=true, menu_role='leves'   (a "Menü" sor levese)
+      ├── 1 főétel  → is_menu_part=true, menu_role='főétel'  (a "Menü" sor főétele)
+      └── többi tétel → is_menu_part=false (Tészta, sütőben, combo, főzelék, főzelék feltét, Desszert, extra rántott, extra köret)
 ```
 
-Ezek SECURITY DEFINER függvények, tehát a végrehajtási jog megadása nem ad új adathozzáférést — csak engedi meghívni őket a trigger láncon keresztül.
+**Menü combo párosítás napokra** (ezt fogom használni a `is_menu_part`-hoz):
 
-## Várt eredmény
+| Nap | Leves | Főétel (combo) |
+|---|---|---|
+| H 05-18 | Magyaros sertésragu leves | Milánói spagetti |
+| K 05-19 | Tejfölös karfiolleves | Csülökpörkölt |
+| Sz 05-20 | Zöldborsóleves | Zöldfűszeres-fokhagymás sertésragu |
+| Cs 05-21 | Húsleves | Paradicsomos húsgombóc |
+| P 05-22 | Bableves | Tarhonyás hús |
 
-- A heti rácsban (Napi ajánlatok → Ajánlatok) a tételek hozzáadása/módosítása újra menthető hétköznapokra
-- Hétvégi dátumok továbbra is el lesznek utasítva a trigger logikája szerint
-- A korábbi munka során bevezetett dinamikus hibaüzenet (`error.message`) megmarad jövőbeli debug-hoz
+## Tisztázandó kérdések (mielőtt mentek)
+
+1. **Combo ár**: a menü combo ára maradjon **2200 Ft** (memóriában rögzített default), vagy az Excel `Menü` sor leves-árát (1300–1390 Ft) használjam?
+2. **Bizonytalan tételek (`Rétes`, `Gundel palacsinta`, `Kertés szelet` stb.)**: ha nincs DB-ben pontos megfelelő, kihagyom, vagy keressek egy "legközelebbi" tételt?
+3. **Felülírás**: ha május 18–22-re már létezik `daily_offer`, **töröljem és újra építsem**, vagy hagyjam érintetlenül?
+
+## Lépések megerősítés után
+
+1. Kérdéseidre adott válaszok alapján létrehozom a 5 nap `daily_offers` + `daily_offer_menus` rekordjait egyetlen SQL `INSERT`-tel.
+2. A `daily_offer_items`-be beszúrom a párosított `menu_items.id`-kat (kb. 50–55 sor) `is_menu_part` / `menu_role` jelöléssel.
+3. Bemutatom a chatben: hány tétel ment fel naponta, melyek lettek kihagyva.
