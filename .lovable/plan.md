@@ -1,48 +1,40 @@
-
-# Jövő heti napi ajánlatok feltöltése (2026-05-18 — 2026-05-22)
-
 ## Cél
 
-A csatolt Excel (`2026.05.18.-05.22..xlsx`) napi tételeit felviszem a `daily_offers` / `daily_offer_items` / `daily_offer_menus` táblákba **kizárólag a meglévő `menu_items` rekordokra hivatkozva** — új menu_item NEM jön létre.
+Pótolni a május 18–22-i heti ajánlatból kihagyott 11 tételt: új `menu_items` rekordok létrehozása az Excel pontos név + ár alapján, majd hozzákapcsolás a megfelelő napi ajánlathoz `daily_offer_items`-ként.
 
-## Megközelítés
+(A „Zöldfűszeres-fokhagymás sertésragu" már be lett illesztve az előző importnál, így a 12-ből csak 11 marad.)
 
-1. **Tétel-egyeztetés**: minden Excel-soron végigfutok és a `menu_items`-re ékezet-érzéketlen + pg_trgm hasonlóság alapján keresem meg a meglévő párját. A találatokat egy egyeztető táblázatban itt a chatben elétárlak elfogadásra (név + DB-beli név + DB-beli ár), mielőtt bármit is mentek.
-2. **Egyértelmű találatok**: ahol a hasonlóság ≥ 0.85 és csak 1 találat van, automatikusan elfogadom.
-3. **Bizonytalan / hiányzó tételek**: ha nincs legalább 0.6 hasonlóságú találat (pl. `Rétes`, `Gundel palacsinta`, `rántottak` címke, esetleg `Kertés szelet` / `Kolbászos lecsó` / `Tarhonyás hús` ha nincs DB-ben), azokat **kihagyom** és a chatben listázom — új tételt nem hozok létre.
-4. **Árak**: Az Excel-ben szereplő árakat **nem** írom be a `menu_items`-be (megőrzöm a meglévő árakat), de a `daily_offer_items`-en megjelenítendő ár a meglévő `menu_items.price_huf` lesz. Ha másképp szeretnéd, szólj.
+## Új menu_items (11 db)
 
-## Adatszerkezet napi szinten
+Mindegyik: `is_active = true`, `is_temporary = true`, allergének és kép üresek (admin később pótolja).
 
-Minden napra (hétfő–péntek):
-
-```text
-daily_offers (date, price_huf=2200, max_portions=50)
-└── daily_offer_menus (menu_price_huf=2200, max_portions=30)   ← combo csomag
-└── daily_offer_items
-      ├── 1 leves   → is_menu_part=true, menu_role='leves'   (a "Menü" sor levese)
-      ├── 1 főétel  → is_menu_part=true, menu_role='főétel'  (a "Menü" sor főétele)
-      └── többi tétel → is_menu_part=false (Tészta, sütőben, combo, főzelék, főzelék feltét, Desszert, extra rántott, extra köret)
-```
-
-**Menü combo párosítás napokra** (ezt fogom használni a `is_menu_part`-hoz):
-
-| Nap | Leves | Főétel (combo) |
+| Új menu_item név | Ár (Ft) | Kategória |
 |---|---|---|
-| H 05-18 | Magyaros sertésragu leves | Milánói spagetti |
-| K 05-19 | Tejfölös karfiolleves | Csülökpörkölt |
-| Sz 05-20 | Zöldborsóleves | Zöldfűszeres-fokhagymás sertésragu |
-| Cs 05-21 | Húsleves | Paradicsomos húsgombóc |
-| P 05-22 | Bableves | Tarhonyás hús |
+| Sajtos bundában rántott csirkemell szeletek | 2450 | Rántott ételek |
+| Mediterrán csirkés penne sült paprikával | 2450 | Tészta ételek |
+| Rozmaringos sült karaj hagymás pecsenyelével | 2350 | Főételek |
+| Stefánia gombóc | 1290 | Főzelék feltét |
+| Menzás piskóta csokoládé öntettel | 1350 | Desszertek |
+| Zöldfűszeres fetasajttal töltött rántott szelet | 2450 | Rántott ételek |
+| Omlós csirkemell paradicsomos-tejszínes szószban | 2450 | Csirkés-zöldséges ételek |
+| Mézes-teriyaki csirkecomb pirított zöldségekkel | 2350 | Csirkés-zöldséges ételek |
+| Kertész szelet | 2350 | Főételek |
+| Sült tarjaszeletek lecsós-gombás feltéttel | 2350 | Főételek |
+| Fokhagymás-tejszínes sertésszelet | 2350 | Főételek |
 
-## Tisztázandó kérdések (mielőtt mentek)
+## Daily offer hozzárendelés
 
-1. **Combo ár**: a menü combo ára maradjon **2200 Ft** (memóriában rögzített default), vagy az Excel `Menü` sor leves-árát (1300–1390 Ft) használjam?
-2. **Bizonytalan tételek (`Rétes`, `Gundel palacsinta`, `Kertés szelet` stb.)**: ha nincs DB-ben pontos megfelelő, kihagyom, vagy keressek egy "legközelebbi" tételt?
-3. **Felülírás**: ha május 18–22-re már létezik `daily_offer`, **töröljem és újra építsem**, vagy hagyjam érintetlenül?
+Mindegyik `is_menu_part = false` (nem combo-rész), csak választható extra a napi kínálatban.
 
-## Lépések megerősítés után
+- **Kedd 05-19**: Sajtos bundában rántott csirkemell szeletek
+- **Szerda 05-20**: Mediterrán csirkés penne, Rozmaringos sült karaj, Stefánia gombóc, Menzás piskóta, Zöldfűszeres fetasajttal töltött rántott szelet
+- **Csütörtök 05-21**: Omlós csirkemell paradicsomos-tejszínes szószban, Mézes-teriyaki csirkecomb, Kertész szelet
+- **Péntek 05-22**: Sült tarjaszeletek lecsós-gombás feltéttel, Fokhagymás-tejszínes sertésszelet
 
-1. Kérdéseidre adott válaszok alapján létrehozom a 5 nap `daily_offers` + `daily_offer_menus` rekordjait egyetlen SQL `INSERT`-tel.
-2. A `daily_offer_items`-be beszúrom a párosított `menu_items.id`-kat (kb. 50–55 sor) `is_menu_part` / `menu_role` jelöléssel.
-3. Bemutatom a chatben: hány tétel ment fel naponta, melyek lettek kihagyva.
+## Végrehajtás
+
+Egyetlen migration:
+1. `INSERT INTO menu_items (...) VALUES (...) RETURNING id` — 11 új tétel
+2. `INSERT INTO daily_offer_items (daily_offer_id, item_id, is_menu_part, portions_needed)` — 11 új sor, a megfelelő `daily_offers.id`-hez (a dátum alapján kiválasztva)
+
+A meglévő combo (leves + főétel 2200 Ft) érintetlen marad.
