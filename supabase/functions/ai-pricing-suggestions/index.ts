@@ -1,11 +1,15 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
+import { requireAdmin } from "../_shared/auth.ts";
 
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
   const preflight = handleCorsPreflightRequest(req);
   if (preflight) return preflight;
+
+  const auth = await requireAdmin(req, corsHeaders);
+  if (!auth.ok) return auth.response;
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
