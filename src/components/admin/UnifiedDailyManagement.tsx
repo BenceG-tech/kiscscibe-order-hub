@@ -292,11 +292,11 @@ const UnifiedDailyManagement = () => {
 
       setIsOfferDialogOpen(false);
       fetchData();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving offer:', error);
       toast({
-        title: "Hiba",
-        description: "Nem sikerült menteni a napi ajánlatot",
+        title: "Hiba a mentésnél",
+        description: error?.message || error?.details || "Ismeretlen hiba történt",
         variant: "destructive"
       });
     } finally {
