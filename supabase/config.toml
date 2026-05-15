@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.generate-facebook-post]
 verify_jwt = false
+
+[functions.submit-rating]
+verify_jwt = false
