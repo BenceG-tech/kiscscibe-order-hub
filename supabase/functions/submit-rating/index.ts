@@ -41,7 +41,8 @@ serve(async (req) => {
       });
     }
 
-    if (token !== generateToken(order_id)) {
+    const expected = await generateToken(order_id);
+    if (typeof token !== "string" || !timingSafeEqual(token, expected)) {
       return new Response(JSON.stringify({ error: "Invalid token" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
