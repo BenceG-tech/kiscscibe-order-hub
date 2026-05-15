@@ -187,16 +187,15 @@ serve(async (req) => {
     if (new_status === 'completed') {
       try {
         const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-        const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-        // Fire and forget - call send-rating-request after 60 minutes
-        // In production, use pg_cron. For now, we call it immediately as a simpler approach.
+        const internalSecret = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
         setTimeout(async () => {
           try {
             await fetch(`${supabaseUrl}/functions/v1/send-rating-request`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${supabaseAnonKey}`,
+                'Authorization': `Bearer ${internalSecret}`,
+                'x-internal-secret': internalSecret,
               },
               body: JSON.stringify({ order_id }),
             });
@@ -204,7 +203,7 @@ serve(async (req) => {
           } catch (e) {
             console.error('Rating request trigger failed:', e);
           }
-        }, 60 * 60 * 1000); // 60 minutes
+        }, 60 * 60 * 1000);
       } catch (e) {
         console.error('Failed to schedule rating request:', e);
       }

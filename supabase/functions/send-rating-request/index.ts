@@ -19,6 +19,10 @@ serve(async (req) => {
   const preflight = handleCorsPreflightRequest(req);
   if (preflight) return preflight;
 
+  const { requireInternalSecret } = await import("../_shared/auth.ts");
+  const auth = requireInternalSecret(req, corsHeaders);
+  if (!auth.ok) return auth.response;
+
   try {
     const { order_id } = await req.json();
     if (!order_id) throw new Error("Missing order_id");
