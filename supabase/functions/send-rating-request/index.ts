@@ -89,8 +89,8 @@ serve(async (req) => {
     const emailHtml = `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
         <h2 style="color:#333;">Hogy ízlett? 🍽️</h2>
-        <p>Kedves ${order.name}!</p>
-        <p>Reméljük ízlett a rendelésed (#${order.code})! Kérjük értékeld az élményed:</p>
+        <p>Kedves ${escapeHtml(order.name)}!</p>
+        <p>Reméljük ízlett a rendelésed (#${escapeHtml(order.code)})! Kérjük értékeld az élményed:</p>
         <div style="text-align:center;margin:30px 0;">
           ${stars}
         </div>
