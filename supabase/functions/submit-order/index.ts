@@ -701,13 +701,13 @@ serve(async (req) => {
       
       const itemsHtml = validatedItems.map(item => {
         const modifiersHtml = item.modifiers.length > 0 
-          ? `<br><small style="color: #666;">+ ${item.modifiers.map(mod => mod.label_snapshot).join(', ')}</small>`
+          ? `<br><small style="color: #666;">+ ${item.modifiers.map(mod => escapeHtml(mod.label_snapshot)).join(', ')}</small>`
           : '';
         
         return `
           <tr>
             <td style="padding: 8px; border-bottom: 1px solid #eee;">
-              <strong>${item.name_snapshot}</strong> × ${item.qty}${modifiersHtml}
+              <strong>${escapeHtml(item.name_snapshot)}</strong> × ${item.qty}${modifiersHtml}
             </td>
             <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">
               ${item.line_total_huf.toLocaleString()} Ft
