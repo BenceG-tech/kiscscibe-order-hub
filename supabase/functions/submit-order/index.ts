@@ -3,6 +3,15 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { Resend } from "npm:resend@2.0.0";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 
+function escapeHtml(s: unknown): string {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 interface OrderModifier {
   label_snapshot: string;
   price_delta_huf: number;
@@ -692,13 +701,13 @@ serve(async (req) => {
       
       const itemsHtml = validatedItems.map(item => {
         const modifiersHtml = item.modifiers.length > 0 
-          ? `<br><small style="color: #666;">+ ${item.modifiers.map(mod => mod.label_snapshot).join(', ')}</small>`
+          ? `<br><small style="color: #666;">+ ${item.modifiers.map(mod => escapeHtml(mod.label_snapshot)).join(', ')}</small>`
           : '';
         
         return `
           <tr>
             <td style="padding: 8px; border-bottom: 1px solid #eee;">
-              <strong>${item.name_snapshot}</strong> × ${item.qty}${modifiersHtml}
+              <strong>${escapeHtml(item.name_snapshot)}</strong> × ${item.qty}${modifiersHtml}
             </td>
             <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">
               ${item.line_total_huf.toLocaleString()} Ft
@@ -723,16 +732,16 @@ serve(async (req) => {
       const emailHtml = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #333;">Kiscsibe – Rendelés visszaigazolás</h2>
-          <p>Kedves ${customer.name}!</p>
+          <p>Kedves ${escapeHtml(customer.name)}!</p>
           <p>Köszönjük rendelését! Az alábbi részletekkel rögzítettük:</p>
           
           <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
             <h3 style="margin-top: 0;">Rendelés részletei</h3>
-            <p><strong>Rendelés kód:</strong> ${orderCode}</p>
-            <p><strong>Telefonszám:</strong> ${customer.phone}</p>
-            ${date && time ? `<p><strong>Átvétel:</strong> ${date} ${time}</p>` : '<p><strong>Átvétel:</strong> Amilyen hamar lehet</p>'}
+            <p><strong>Rendelés kód:</strong> ${escapeHtml(orderCode)}</p>
+            <p><strong>Telefonszám:</strong> ${escapeHtml(customer.phone)}</p>
+            ${date && time ? `<p><strong>Átvétel:</strong> ${escapeHtml(date)} ${escapeHtml(time)}</p>` : '<p><strong>Átvétel:</strong> Amilyen hamar lehet</p>'}
             <p><strong>Fizetés:</strong> ${payment_method === 'cash' ? 'Készpénz' : 'Kártya'}</p>
-            ${customer.notes ? `<p><strong>Megjegyzés:</strong> ${customer.notes}</p>` : ''}
+            ${customer.notes ? `<p><strong>Megjegyzés:</strong> ${escapeHtml(customer.notes)}</p>` : ''}
           </div>
 
           <h3>Rendelt termékek</h3>

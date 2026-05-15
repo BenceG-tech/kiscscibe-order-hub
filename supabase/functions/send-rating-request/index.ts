@@ -3,6 +3,12 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { Resend } from "npm:resend@2.0.0";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 
+function escapeHtml(s: unknown): string {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 async function generateToken(orderId: string): Promise<string> {
   const secret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   const enc = new TextEncoder();
@@ -83,8 +89,8 @@ serve(async (req) => {
     const emailHtml = `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
         <h2 style="color:#333;">Hogy ízlett? 🍽️</h2>
-        <p>Kedves ${order.name}!</p>
-        <p>Reméljük ízlett a rendelésed (#${order.code})! Kérjük értékeld az élményed:</p>
+        <p>Kedves ${escapeHtml(order.name)}!</p>
+        <p>Reméljük ízlett a rendelésed (#${escapeHtml(order.code)})! Kérjük értékeld az élményed:</p>
         <div style="text-align:center;margin:30px 0;">
           ${stars}
         </div>

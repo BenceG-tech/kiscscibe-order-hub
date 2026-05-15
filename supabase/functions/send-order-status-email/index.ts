@@ -4,6 +4,12 @@ import { Resend } from "npm:resend@2.0.0";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { hasInternalSecret, requireAdmin } from "../_shared/auth.ts";
 
+function escapeHtml(s: unknown): string {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 interface StatusEmailRequest {
   order_id: string;
   new_status: string;
@@ -108,7 +114,7 @@ serve(async (req) => {
     const itemsHtml = (items || []).map(item => `
       <tr>
         <td style="padding: 8px; border-bottom: 1px solid #eee;">
-          <strong>${item.name_snapshot}</strong> × ${item.qty}
+          <strong>${escapeHtml(item.name_snapshot)}</strong> × ${item.qty}
         </td>
         <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">
           ${item.line_total_huf.toLocaleString()} Ft
@@ -123,12 +129,12 @@ serve(async (req) => {
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #333;">${config.emoji} ${config.heading}</h2>
-        <p>Kedves ${order.name}!</p>
+        <p>Kedves ${escapeHtml(order.name)}!</p>
         <p>${config.message}</p>
         
         <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <h3 style="margin-top: 0;">Rendelés részletei</h3>
-          <p><strong>Rendelés kód:</strong> ${order.code}</p>
+          <p><strong>Rendelés kód:</strong> ${escapeHtml(order.code)}</p>
           <p><strong>${pickupInfo}</strong></p>
           <p><strong>Fizetés:</strong> ${order.payment_method === 'cash' ? 'Készpénz' : 'Kártya'}</p>
         </div>
