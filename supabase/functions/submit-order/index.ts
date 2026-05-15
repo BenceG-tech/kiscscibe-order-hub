@@ -732,16 +732,16 @@ serve(async (req) => {
       const emailHtml = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #333;">Kiscsibe – Rendelés visszaigazolás</h2>
-          <p>Kedves ${customer.name}!</p>
+          <p>Kedves ${escapeHtml(customer.name)}!</p>
           <p>Köszönjük rendelését! Az alábbi részletekkel rögzítettük:</p>
           
           <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
             <h3 style="margin-top: 0;">Rendelés részletei</h3>
-            <p><strong>Rendelés kód:</strong> ${orderCode}</p>
-            <p><strong>Telefonszám:</strong> ${customer.phone}</p>
-            ${date && time ? `<p><strong>Átvétel:</strong> ${date} ${time}</p>` : '<p><strong>Átvétel:</strong> Amilyen hamar lehet</p>'}
+            <p><strong>Rendelés kód:</strong> ${escapeHtml(orderCode)}</p>
+            <p><strong>Telefonszám:</strong> ${escapeHtml(customer.phone)}</p>
+            ${date && time ? `<p><strong>Átvétel:</strong> ${escapeHtml(date)} ${escapeHtml(time)}</p>` : '<p><strong>Átvétel:</strong> Amilyen hamar lehet</p>'}
             <p><strong>Fizetés:</strong> ${payment_method === 'cash' ? 'Készpénz' : 'Kártya'}</p>
-            ${customer.notes ? `<p><strong>Megjegyzés:</strong> ${customer.notes}</p>` : ''}
+            ${customer.notes ? `<p><strong>Megjegyzés:</strong> ${escapeHtml(customer.notes)}</p>` : ''}
           </div>
 
           <h3>Rendelt termékek</h3>
