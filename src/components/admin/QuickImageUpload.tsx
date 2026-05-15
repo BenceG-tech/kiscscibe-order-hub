@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { ImageIcon, Upload, Loader2, X, Sparkles, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeWithAuth } from "@/lib/invokeAuth";
 import { toast } from "sonner";
 import ZoomableImage from "./ZoomableImage";
 
@@ -78,8 +79,9 @@ export function QuickImageUpload({
   const handleGenerateAI = async () => {
     setIsGenerating(true);
     try {
-      const { data, error } = await supabase.functions.invoke("generate-food-image", {
-        body: { item_id: itemId, item_name: itemName },
+      const { data, error } = await invokeWithAuth<any>("generate-food-image", {
+        item_id: itemId,
+        item_name: itemName,
       });
 
       if (error) throw error;

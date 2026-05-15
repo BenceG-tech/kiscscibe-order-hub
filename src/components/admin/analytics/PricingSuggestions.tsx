@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeWithAuth } from "@/lib/invokeAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,9 +25,7 @@ const PricingSuggestions = () => {
     setLoading(true);
     setMessage(null);
     try {
-      const { data, error } = await supabase.functions.invoke("ai-pricing-suggestions", {
-        body: {},
-      });
+      const { data, error } = await invokeWithAuth<any>("ai-pricing-suggestions", {});
 
       if (error) throw error;
 

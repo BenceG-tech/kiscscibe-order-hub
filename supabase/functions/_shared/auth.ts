@@ -22,6 +22,7 @@ export async function requireAdmin(
 ): Promise<AuthFailure | AuthSuccess> {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
+    console.warn("[auth] missing Bearer header");
     return {
       ok: false,
       response: new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -32,15 +33,15 @@ export async function requireAdmin(
   }
 
   const url = Deno.env.get("SUPABASE_URL")!;
-  const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
   const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const token = authHeader.replace(/^Bearer\s+/i, "");
 
-  const userClient = createClient(url, anon, {
-    global: { headers: { Authorization: authHeader } },
-  });
-
-  const { data: userData, error: userErr } = await userClient.auth.getUser();
+  // Use the service-role client to validate the token. This avoids edge cases
+  // where the anon key is shorter-lived under the signing-keys system.
+  const admin = createClient(url, service);
+  const { data: userData, error: userErr } = await admin.auth.getUser(token);
   if (userErr || !userData?.user) {
+    console.warn("[auth] getUser failed:", userErr?.message);
     return {
       ok: false,
       response: new Response(JSON.stringify({ error: "Invalid token" }), {
@@ -50,10 +51,15 @@ export async function requireAdmin(
     };
   }
 
-  const admin = createClient(url, service);
   const rpcName = opts.allowStaff ? "is_admin_or_staff" : "is_admin";
   const argName = opts.allowStaff ? "_user_id" : "check_user_id";
-  const { data: ok } = await admin.rpc(rpcName as any, { [argName]: userData.user.id } as any);
+  const { data: ok, error: rpcErr } = await admin.rpc(
+    rpcName as any,
+    { [argName]: userData.user.id } as any,
+  );
+  if (rpcErr) {
+    console.warn(`[auth] ${rpcName} rpc error:`, rpcErr.message);
+  }
   if (!ok) {
     return {
       ok: false,

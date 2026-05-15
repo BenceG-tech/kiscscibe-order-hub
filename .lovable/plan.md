@@ -1,37 +1,46 @@
-## Cél
+## Probléma
 
-A `BreakfastSection` (főoldal + Étlap) másodlagos súlyú legyen a napi ajánlathoz képest — kompakt vízszintes lista kis képpel balra, név + ár + kosár gomb jobbra. Funkció (kosárba tétel, lekérdezés) változatlan.
+Az "AI kép generálása" gomb most "Edge Function returned a non-2xx status code" hibát ad. A logok alapján minden POST kérés **401 Unauthorized** választ kap, miközben a felhasználó (Bence Gatai) admin szerepkörrel be van jelentkezve.
 
-## Változtatás
+A hiba a legutóbbi biztonsági frissítésből ered — bevezettük a `requireAdmin` helpert (`supabase/functions/_shared/auth.ts`), amely `Authorization: Bearer <user JWT>` fejlécet vár. A `supabase.functions.invoke()` hívás bizonyos esetekben (különösen ha `verify_jwt = false`) az anon kulcsot küldi Bearer-ként a felhasználói access token helyett, így a `getUser()` érvénytelen tokent jelez.
 
-Csak `src/components/sections/BreakfastSection.tsx` (frontend, prezentáció).
+## Megoldás
 
-**Wrapper / fejléc:**
-- Marad a halvány keret, de visszafogottabb: vékonyabb border, kisebb padding (`p-4 md:p-5`).
-- Cím kisebb: `text-xl md:text-2xl` (nagy `text-2xl md:text-3xl` helyett).
-- Ikon konténer kisebb: `h-9 w-9` (jelenleg `h-11 w-11`).
-- Alcím opcionálisan elrejtve mobilon.
+### 1. Diagnosztika hozzáadása (ideiglenes)
+Kibővítjük a `_shared/auth.ts`-t console.log sorral, hogy lássuk: érkezik-e Bearer, és getUser() mit ad vissza. Ebből megerősítjük a pontos okot a függvény logokban.
 
-**Tételek — új layout:**
-- Grid: mobilon 1 oszlop, `sm:grid-cols-2`, `lg:grid-cols-3` (jelenleg 2/3 nagy kártya).
-- Minden tétel egy vízszintes sor: kis kép (64×64 vagy 72×72 px, `rounded-xl`) balra, középen név + opcionális leírás 1 sorban (`line-clamp-1`), ár chip és kis kosár gomb (icon-only, `h-8 w-8`) jobbra.
-- Card padding: `p-2`, gap: `gap-3`.
-- Nincs aspect-ratio kép-blokk, nincs hover-scale.
+### 2. Frontend javítás — explicit token átadás
+Az AI képgeneráló komponensekben (`AIGenerateImageButton.tsx` és `AIBatchImageGenerator.tsx`) a `supabase.functions.invoke()` hívást kiegészítjük explicit Authorization fejléccel:
 
-**Méretarány — vizuális hierarchia:**
-- A reggeli sávok kb. 72px magasak lesznek (jelenleg ~220px kártyák).
-- A napi ajánlat (DailyMenuPanel + extra item kártyák a 16:9 képekkel) így vizuálisan dominánsabbá válik.
+```ts
+const { data: { session } } = await supabase.auth.getSession();
+if (!session) { toast.error("Be kell jelentkezned"); return; }
+const { data, error } = await supabase.functions.invoke("generate-food-image", {
+  body: { ... },
+  headers: { Authorization: `Bearer ${session.access_token}` },
+});
+```
 
-## Mit NEM változtatunk
+Ez biztosítja, hogy mindig a felhasználó JWT-je menjen Authorization fejlécként, nem az anon kulcs.
 
-- `useQuery` lekérdezés, kategória szűrés, `addItem` hívás, toast — érintetlen.
-- Brand színek, dark theme tokenek, Sofia font — változatlan.
-- A jelenlegi ár/kosár logika, a homepage/page variant kapcsoló is marad.
+### 3. Ugyanazt a mintát alkalmazzuk a többi admin-only edge function hívóinál
+Átnézzük és javítjuk a többi olyan helyet, ahol a security frissítés óta ugyanez a probléma jelentkezhet:
+- `ai-pricing-suggestions` hívók (`PricingSuggestions.tsx`)
+- `extract-invoice-data` hívók (`InvoiceFileUpload.tsx`, `InvoiceFormDialog.tsx`)
+- `generate-facebook-post` hívók (`DailyOfferImageGenerator.tsx`)
+- `process-recurring-invoices` hívók (`RecurringInvoices.tsx`)
 
-## Érintett fájl
+### 4. Logok ellenőrzése + diagnosztikai log eltávolítása
+Miután a UI újra működik, eltávolítjuk az ideiglenes console.log-ot az `_shared/auth.ts`-ből.
 
-- `src/components/sections/BreakfastSection.tsx` — átírt JSX/Tailwind a fent leírt elrendezésre.
+## Érintett fájlok
+- `supabase/functions/_shared/auth.ts` (átmeneti log + esetleg fallback)
+- `src/components/admin/AIGenerateImageButton.tsx`
+- `src/components/admin/AIBatchImageGenerator.tsx`
+- `src/components/admin/analytics/PricingSuggestions.tsx`
+- `src/components/admin/InvoiceFileUpload.tsx`
+- `src/components/admin/InvoiceFormDialog.tsx`
+- `src/components/admin/DailyOfferImageGenerator.tsx`
+- `src/components/admin/RecurringInvoices.tsx`
 
-## Verifikáció
-
-Vizuális ellenőrzés mobilon (402×700) és desktopon (1080×848) az `/etlap` és `/` oldalakon.
+Backend szerkezeti változás nincs — csak a frontend hívások javítása + 1 helper.

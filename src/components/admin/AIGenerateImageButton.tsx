@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { invokeWithAuth } from "@/lib/invokeAuth";
 
 interface AIGenerateImageButtonProps {
   itemName: string;
@@ -38,8 +38,9 @@ const AIGenerateImageButton = ({
     }
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("generate-food-image", {
-        body: { item_id: itemId, item_name: itemName.trim() },
+      const { data, error } = await invokeWithAuth<any>("generate-food-image", {
+        item_id: itemId,
+        item_name: itemName.trim(),
       });
       if (error) throw new Error(error.message);
       if (data?.error) throw new Error(data.error);
