@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { Resend } from "npm:resend@2.0.0";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 
@@ -16,10 +17,35 @@ const handler = async (req: Request): Promise<Response> => {
 
     const resend = new Resend(resendApiKey);
     const body = await req.json();
-    const email = typeof body.email === "string" ? body.email.trim() : "";
+    const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
 
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       throw new Error("Érvénytelen email cím.");
+    }
+
+    // Anti-abuse: only send the welcome email if the address has actually
+    // been registered as a subscriber within the last 5 minutes. This prevents
+    // attackers from using this endpoint to send branded phishing emails to
+    // arbitrary addresses.
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+
+    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const { data: sub, error: subErr } = await supabase
+      .from("subscribers")
+      .select("email, created_at")
+      .ilike("email", email)
+      .gte("created_at", fiveMinAgo)
+      .maybeSingle();
+
+    if (subErr || !sub) {
+      console.warn("send-welcome-newsletter: no recent subscriber row for", email);
+      return new Response(
+        JSON.stringify({ error: "Nem található friss feliratkozás ezzel az email címmel." }),
+        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } },
+      );
     }
 
     await resend.emails.send({
