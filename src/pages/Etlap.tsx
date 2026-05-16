@@ -477,7 +477,9 @@ const Etlap = () => {
             )}
 
             {/* Always Available Items */}
-            <AlwaysAvailableSection excludeCategoryNames={["Reggeli"]} />
+            <div id="mindig-elerheto" className="scroll-mt-24">
+              <AlwaysAvailableSection excludeCategoryNames={["Reggeli"]} />
+            </div>
 
             {/* Order History */}
             <Collapsible>
