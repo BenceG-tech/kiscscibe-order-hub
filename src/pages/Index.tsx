@@ -1,6 +1,6 @@
 import SEO from "@/components/SEO";
 import ModernNavigation from "@/components/ModernNavigation";
-import AlwaysAvailableSection from "@/components/sections/AlwaysAvailableSection";
+import AlwaysAvailableTeaser from "@/components/sections/AlwaysAvailableTeaser";
 import BreakfastSection from "@/components/sections/BreakfastSection";
 import AnnouncementPopup from "@/components/AnnouncementPopup";
 import HeroSection from "@/components/sections/HeroSection";
@@ -31,11 +31,7 @@ const Index = () => {
         <div className="bg-primary/5">
           <DailyMenuSection />
         </div>
-        <section className="py-8">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-            <AlwaysAvailableSection featuredOnly maxItems={6} title="Mindig elérhető kedvenceink" />
-          </div>
-        </section>
+        <AlwaysAvailableTeaser />
         <USPSection />
         <div className="bg-primary/5">
           <ReviewsSection />
