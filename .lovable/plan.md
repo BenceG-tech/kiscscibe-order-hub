@@ -1,46 +1,49 @@
-## Probléma
+## Cél
 
-Az "AI kép generálása" gomb most "Edge Function returned a non-2xx status code" hibát ad. A logok alapján minden POST kérés **401 Unauthorized** választ kap, miközben a felhasználó (Bence Gatai) admin szerepkörrel be van jelentkezve.
+A főoldalon a napi ajánlat után jelenjen meg egy **figyelemfelkeltő, kattintható CTA banner**, ami jelzi, hogy a napi menün kívül is vannak állandóan elérhető tételek (italok, savanyúságok, reggeli stb.), és átvisz az étlap megfelelő részére.
 
-A hiba a legutóbbi biztonsági frissítésből ered — bevezettük a `requireAdmin` helpert (`supabase/functions/_shared/auth.ts`), amely `Authorization: Bearer <user JWT>` fejlécet vár. A `supabase.functions.invoke()` hívás bizonyos esetekben (különösen ha `verify_jwt = false`) az anon kulcsot küldi Bearer-ként a felhasználói access token helyett, így a `getUser()` érvénytelen tokent jelez.
+## Mit cserélünk
 
-## Megoldás
+Jelenlegi `src/pages/Index.tsx`-ben:
 
-### 1. Diagnosztika hozzáadása (ideiglenes)
-Kibővítjük a `_shared/auth.ts`-t console.log sorral, hogy lássuk: érkezik-e Bearer, és getUser() mit ad vissza. Ebből megerősítjük a pontos okot a függvény logokban.
-
-### 2. Frontend javítás — explicit token átadás
-Az AI képgeneráló komponensekben (`AIGenerateImageButton.tsx` és `AIBatchImageGenerator.tsx`) a `supabase.functions.invoke()` hívást kiegészítjük explicit Authorization fejléccel:
-
-```ts
-const { data: { session } } = await supabase.auth.getSession();
-if (!session) { toast.error("Be kell jelentkezned"); return; }
-const { data, error } = await supabase.functions.invoke("generate-food-image", {
-  body: { ... },
-  headers: { Authorization: `Bearer ${session.access_token}` },
-});
+```tsx
+<section className="py-8">
+  <AlwaysAvailableSection featuredOnly maxItems={6} title="Mindig elérhető kedvenceink" />
+</section>
 ```
 
-Ez biztosítja, hogy mindig a felhasználó JWT-je menjen Authorization fejlécként, nem az anon kulcs.
+Ez kiírja a kiemelt fix tételeket képpel, árral — a user szerint **ne legyen kiírva**, csak egy kattintható elem.
 
-### 3. Ugyanazt a mintát alkalmazzuk a többi admin-only edge function hívóinál
-Átnézzük és javítjuk a többi olyan helyet, ahol a security frissítés óta ugyanez a probléma jelentkezhet:
-- `ai-pricing-suggestions` hívók (`PricingSuggestions.tsx`)
-- `extract-invoice-data` hívók (`InvoiceFileUpload.tsx`, `InvoiceFormDialog.tsx`)
-- `generate-facebook-post` hívók (`DailyOfferImageGenerator.tsx`)
-- `process-recurring-invoices` hívók (`RecurringInvoices.tsx`)
+## Mit építünk
 
-### 4. Logok ellenőrzése + diagnosztikai log eltávolítása
-Miután a UI újra működik, eltávolítjuk az ideiglenes console.log-ot az `_shared/auth.ts`-ből.
+Új komponens: `src/components/sections/AlwaysAvailableTeaser.tsx`
+
+Egy kompakt, prémium érzetű CTA kártya/banner a következőkkel:
+- **Bal oldal**: kis ikon (Package / Coffee) + cím "Mindig elérhető kedvenceink" + alszöveg "Italok, reggeli, savanyúságok és további fix tételek bármikor"
+- **Jobb oldal**: chevron/arrow ikon
+- **Mini preview**: 3–4 darab fix tétel apró kerek thumbnail képe egymásra csúsztatva (avatar stack stílusban) + "+N további" badge — vizuális utalás, hogy van mit nézni, de nincs kiírva
+- A teljes kártya egy `<Link to="/etlap#mindig-elerheto">` (vagy `/etlap` + scroll), `hover:scale-[1.01]`, brand gold accent, kerek (`rounded-2xl`), brand színekkel.
+
+Data: ugyanaz a query mint `AlwaysAvailableSection` (max 4 kiemelt képpel + összdarabszám), csak thumbnail strip-ként rendereljük.
+
+## Integráció
+
+`src/pages/Index.tsx`:
+- A jelenlegi `AlwaysAvailableSection`-t tartalmazó `<section>`-t cseréljük az új `<AlwaysAvailableTeaser />`-re.
+- A `bg-primary/5` váltakozó háttér-ritmus marad.
+
+## Étlap oldal
+
+Ellenőrizzük, hogy az `/etlap` oldalon van-e `id="mindig-elerheto"` horgony a fix tételek szekciójánál; ha nincs, hozzáadjuk, hogy a kattintás odagörgessen. (Tisztán UI, nincs backend változás.)
+
+## Mit NEM változtatunk
+
+- Az `AlwaysAvailableSection` komponens marad, máshol (pl. `/etlap`) tovább használjuk.
+- Semmilyen backend / query logika / RLS / DB nem módosul.
+- A `BreakfastSection` és a többi főoldal szekció érintetlen.
 
 ## Érintett fájlok
-- `supabase/functions/_shared/auth.ts` (átmeneti log + esetleg fallback)
-- `src/components/admin/AIGenerateImageButton.tsx`
-- `src/components/admin/AIBatchImageGenerator.tsx`
-- `src/components/admin/analytics/PricingSuggestions.tsx`
-- `src/components/admin/InvoiceFileUpload.tsx`
-- `src/components/admin/InvoiceFormDialog.tsx`
-- `src/components/admin/DailyOfferImageGenerator.tsx`
-- `src/components/admin/RecurringInvoices.tsx`
 
-Backend szerkezeti változás nincs — csak a frontend hívások javítása + 1 helper.
+- ÚJ: `src/components/sections/AlwaysAvailableTeaser.tsx`
+- MÓD: `src/pages/Index.tsx` (1 szekció csere)
+- MÓD (ha kell): `src/pages/Etlap.tsx` (anchor id hozzáadás)
