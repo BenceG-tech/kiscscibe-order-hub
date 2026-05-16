@@ -1,6 +1,6 @@
 import SEO from "@/components/SEO";
 import ModernNavigation from "@/components/ModernNavigation";
-import AlwaysAvailableSection from "@/components/sections/AlwaysAvailableSection";
+import AlwaysAvailableTeaser from "@/components/sections/AlwaysAvailableTeaser";
 import BreakfastSection from "@/components/sections/BreakfastSection";
 import AnnouncementPopup from "@/components/AnnouncementPopup";
 import HeroSection from "@/components/sections/HeroSection";
