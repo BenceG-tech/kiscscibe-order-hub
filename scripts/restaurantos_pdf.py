@@ -222,7 +222,7 @@ def screenshot_placeholder(label, h_mm=70):
 def bullet_list(items, styles):
     out = []
     for it in items:
-        out.append(Paragraph(f"<font color='{BRAND['accent'].hexval()[2:]}'>▸</font>&nbsp;&nbsp;{it}", styles["bullet"]))
+        out.append(Paragraph(f"<font color='#F6C22D'>▸</font>&nbsp;&nbsp;{it}", styles["bullet"]))
     return out
 
 
