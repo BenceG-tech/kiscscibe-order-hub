@@ -6,13 +6,15 @@ import { getSmartWeekStart, getSmartInitialDayIndex } from "@/lib/dateUtils";
 import { hu } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 
-import { ChevronLeft, ChevronRight, Loader2, Check, Download, Ban, Copy, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, Check, Download, Ban, Copy, Trash2, FileSpreadsheet } from "lucide-react";
 import { CopyMenuDialog } from "./CopyMenuDialog";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { WeeklyGridCell } from "./WeeklyGridCell";
 import { WeeklyGridMobile } from "./WeeklyGridMobile";
 import { DailyPriceInput } from "./DailyPriceInput";
+import QuickEntryBar from "./QuickEntryBar";
+import WeeklyExcelImport from "./WeeklyExcelImport";
 import * as XLSX from "xlsx";
 import {
   AlertDialog,
@@ -589,6 +591,7 @@ export default function WeeklyMenuGrid() {
 
   // Copy dialog state
   const [copyDialogOpen, setCopyDialogOpen] = useState(false);
+  const [excelImportOpen, setExcelImportOpen] = useState(false);
 
   // Clear day mutation
   const clearDayMutation = useMutation({
@@ -704,12 +707,32 @@ export default function WeeklyMenuGrid() {
             onOpenChange={setCopyDialogOpen}
             currentWeekStart={currentWeekStart}
           />
+          <Button variant="outline" size="sm" onClick={() => setExcelImportOpen(true)}>
+            <FileSpreadsheet className="h-4 w-4 mr-1" />
+            Heti import
+          </Button>
           <Button variant="outline" size="sm" onClick={exportToExcel}>
             <Download className="h-4 w-4 mr-1" />
             Export
           </Button>
         </div>
       </div>
+
+      <WeeklyExcelImport
+        open={excelImportOpen}
+        onOpenChange={setExcelImportOpen}
+        weekStart={currentWeekStart}
+        menuItems={menuItems}
+        categories={foodCategories}
+      />
+
+      <QuickEntryBar
+        weekDates={weekDates}
+        initialDayIdx={initialOpenDayIndex}
+        menuItems={menuItems}
+        categories={foodCategories}
+        onAddItem={handleAddItem}
+      />
 
       {/* Day Jump Bar + Mirrored Top Scrollbar */}
       <DayJumpBar

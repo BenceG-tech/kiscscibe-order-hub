@@ -1,136 +1,125 @@
+## Cél
 
-# Audit + Master PDF csomag
+A heti napi ajánlat összeállítása ma kategória-soronkénti keresgélést igényel a `WeeklyMenuGrid`-ben. Két új belépési pontot adunk hozzá, hogy:
 
-## 1. rész — Teljes körű audit (kb. 25 perc)
+1. **Egy mezőből** bárhova bevihess ételt (a rendszer kitalálja a kategóriát)
+2. **Excel-ből** egy lépésben fel lehessen tölteni a teljes heti tervet
 
-### A. Publikus oldal (vevői szemszögből, browser teszteléssel)
-Végigmegyek a következő útvonalakon `1223×854` desktop és `390×844` mobil viewporton:
-
-- `/` (főoldal) — hero, USP, napi ajánlat, AlwaysAvailableTeaser, promo, gallery, reviews, FAQ, map, newsletter, footer
-- `/etlap` — napi menü navigáció, kombó választás, fix tételek (`#mindig-elerheto` anchor), allergén ikonok, kosárba rakás
-- `/galeria` — Ételek / Éttermünk kategóriák, lightbox swipe
-- `/rolunk`, `/kapcsolat` — kontakt form elküldés (teszt email)
-- Jogi oldalak — Impresszum, Adatvédelmi, ÁSZF, Süti
-- `/auth` — bejelentkezés, jelszó nélküli flow
-- Bottom nav (mobil), sticky CTA, cookie banner, announcement popup
-
-### B. Rendelés end-to-end (valódi teszt rendelés)
-1. Kosár összeállítása (1 napi menü kombó + 1 fix tétel + 1 á la carte napi tétel modifierrel)
-2. Kupon kód validálás teszt
-3. Checkout: telefon `+36` prefix, név, email, pickup time (nyitvatartás/kapacitás validáció)
-4. Megrendelés leadás → `submit-order` edge function
-5. Visszaigazoló email megérkezése (`rendeles@kiscsibe-etterem.hu` → user + BCC admin)
-6. `OrderConfirmation` oldal nyomtatás-előnézet
-7. Admin oldalon realtime értesítés + hangjelzés + audio toast
-8. Státusz váltások: new → preparing → ready → completed. Minden lépésnél email kiküldés ellenőrzése (`send-order-status-email` logok)
-9. KDS nyomtatási nézet (`80mm/76mm`) ellenőrzése
-10. Auto-generated invoice (`create_invoice_on_order_complete` trigger) → `/admin/invoices` listában megjelenés
-11. Végül: teszt rendelés sztornózása vagy törlése (audit log)
-
-### C. Admin szemszög — minden modul (`/admin/*`)
-- **Dashboard** — DashboardAlerts, RecentOrdersFeed, stat kártyák
-- **Orders / OrdersManagement** — szűrők, exportok (CSV), kupon megjelenítés, törlés
-- **Daily Menu / MenuSchedule / DailyMenu** — WeeklyMenuGrid, gyors árszerkesztés, sold-out toggle, kombó validáció
-- **Menu / MenuItemManagement** — étlap CRUD, allergén auto-assign, kép upload, AI képgenerátor (egyedi + batch)
-- **FixItems** — mindig elérhető tételek
-- **Gallery** — multi upload, kategóriák
-- **Capacity** — időslot-ok, sablonok, blackout napok, heat coloring
-- **Coupons** — % és fix kedvezmény, felhasználási limit
-- **Invoices / Partners** — bejövő/kimenő, AI OCR feltöltés, ÁFA összesítő export, partner CRUD
-- **Analytics** — bevétel, rendelések, étlap, ügyfél, AI árazási javaslatok
-- **Waste tracking** — napi naplózás
-- **About / Legal / Faq / Announcement editorok** — élő frissítés
-- **Activity** — audit log
-- **Documents** — Kiscsibe Drive (mappák, verziók, tagek)
-- **Staff layout** — `/staff` Kanban, daily summary, print
-- **Hidden access** — 5 kattintásos admin trigger ellenőrzés
-
-### D. Backend egészség
-- Supabase advisor lefuttatása (RLS, security issues)
-- Edge function logok átvizsgálása (utolsó 24 óra hibák)
-- Postgres logok hibákra
-- Cron jobok állapota (recurring invoices, reports)
-
-### E. Audit kimenet
-Egy `AUDIT_REPORT.md` fájl, ami listázza:
-- ✅ Mi működik tökéletesen
-- ⚠️ Apró kozmetikai problémák
-- 🔴 Funkcionális bugok (ha vannak)
-- 💡 Egyszerűsítési / UX javaslatok (pl. felesleges lépések, redundáns kattintások)
-- 🚀 Hiányzó funkciók (pl. SMS értesítés, online fizetés, többnyelvűség, vendég-loyalty pontrendszer, asztalfoglalás)
-
-A talált bugokat **nem javítom ki ebben a körben** — csak felsorolom. Külön körben javítjuk, amit kérsz.
+A meglévő grid és minden backend logika (`daily_offers`, `daily_offer_items`, menü auto-sync) érintetlen marad.
 
 ---
 
-## 2. rész — Master PDF csomag (whitelabel + Kiscsibe case study)
+## 1. Smart Quick Entry — "Beírom, ő tudja hova"
 
-Mindkét PDF a Python `reportlab` skillel készül `/mnt/documents/` alá. Whitelabel design: sötét navy alap, egy cserélhető arany accent (`{{BRAND_ACCENT}}`), `{{LOGO}}` és `{{BRAND_NAME}}` placeholderek a generáló scriptben, hogy más éttermek brandjére könnyen átszínezhető legyen. Minden oldalon visual QA (kép-export + inspekció).
+Egy új **"Gyors bevitel"** sáv kerül a `WeeklyMenuGrid` tetejére (a hetes navigátor alá).
 
-### PDF #1 — `RestaurantOS_SalesDeck.pdf` (~12 oldal)
-1. Címlap — "RestaurantOS — Komplett digitális kifőzde-rendszer"
-2. A probléma — miért szenvednek a kifőzdék (papír, telefon, Excel, elveszett rendelések, túlrendelés, ÁFA káosz)
-3. A megoldás — egy platform, amit a vendég, a konyha és a tulaj egyaránt szeret
-4. Vevői élmény — screenshotok a főoldalról, étlapról, checkoutról
-5. Konyhai élmény — Kanban, KDS print, hangjelzés, realtime
-6. Tulajdonosi élmény — analytics, AI árazás, ÁFA export, kapacitáskezelés
-7. AI funkciók — képgenerálás, számla OCR, árazási javaslatok, időjárás-alapú forecast
-8. Email + jogi megfelelőség — automatikus visszaigazolás, GDPR, ÁSZF, cookie consent, EU allergének
-9. Mobil-first — PWA, push, bottom nav
-10. Bevezetési idő — 1-2 hét, brand átszínezés 1 nap
-11. Árajánlat-sáv — egyszeri setup + havi licenc + extra modulok (placeholder árakkal, hogy te töltsd ki)
-12. CTA + kapcsolat
+**Folyamat egy ételhez:**
 
-### PDF #2 — `RestaurantOS_FeatureCatalog.pdf` (~32 oldal)
-Modulonként 1-2 oldal részletes leírással. Minden modulnál: mit tud, kinek szól, üzleti érték, képernyőkép-hely (placeholder box).
+1. Választasz egy napot (Hétfő–Péntek pirulák — alapból a mai)
+2. Egy keresőmezőbe gépelsz: pl. `gulyásleves`
+3. Lenyíló javaslatlista (autocomplete) a teljes `menu_items` táblából, ékezet-érzéketlen kereséssel (`accent-insensitive-search` util)
+4. Minden javaslat mellett ott a kategória színes badge-e (Levesek, Főételek, stb.) — látszik, hova fog kerülni
+5. Enter / kattintás → bekerül a megfelelő nap megfelelő kategória cellájába (ugyanaz az `addItemMutation`, mint most)
+6. Toast: "Gulyásleves → Hétfő / Levesek"
 
-**Tartalomjegyzék:**
-1. Architektúra áttekintés (technológiai stack, Supabase, edge functions, RLS)
-2. Szerepkörök (owner / admin / staff / customer)
-3. Étlap-kezelés (Master Library 500+ tétel, kategóriák, modifier, allergének)
-4. Napi ajánlat & kombó rendszer (soup + main, auto-sync, fix items)
-5. Kapacitáskezelés (időslot, sablon, blackout, heat map)
-6. Rendelés-leadás (kosár, kupon, telefon validáció, nyitvatartás)
-7. Rendelés-kezelés (Kanban, státusz, realtime, hang, KDS print)
-8. Email automatizáció (4 trigger pont, brandelt template)
-9. Számlázás (bejövő/kimenő, AI OCR Gemini, ÁFA, partner, recurring, order receipt trigger)
-10. Analytics (revenue, orders, customers, menu)
-11. AI Business Intelligence (pricing suggestions)
-12. Kuponok és kedvezmények
-13. Hulladékkövetés
-14. Forecasting (időjárás + 4 hetes átlag)
-15. Loyalty program (5/10/20 rendelés után)
-16. PWA & push értesítések
-17. Gallery & Branding
-18. Tartalomszerkesztő (About / Legal / FAQ / Announcement, Markdown editor)
-19. Dokumentumtár (Kiscsibe Drive)
-20. Audit log
-21. Multi-format image generator (FB/IG post/story)
-22. Biztonság & GDPR (RLS, audit, cookie consent, EU allergének)
-23. Whitelabel & testreszabás (brand színek, logó, font, tartomány)
-24. Onboarding & support csomag
-25. **Esettanulmány: Kiscsibe Étterem** (1-2 oldal — eredeti brand színek, mit hozott a rendszer, számok ha vannak)
+**Extra: új étel létrehozása helyben**
 
-### Whitelabel script
-A PDF generátor `restaurantos_pdf.py` script egy `BRAND` dict-ből dolgozik:
-```python
-BRAND = {
-  "name": "RestaurantOS",          # cserélhető
-  "tagline": "...",
-  "primary": "#F6C22D",            # arany accent
-  "bg": "#0F172A",                  # sötét navy
-  "text_on_dark": "#FFF8E6",
-  "logo_path": "/mnt/documents/logo.png",  # opcionális
-}
+Ha a beírt név nem található:
+- A lista alján: **"+ Új étel létrehozása: 'xxx'"**
+- Egy mini popoverben csak a **kategóriát** kell kiválasztani (a többi mező — ár, kép — később az étlapnál pótolható, vagy üresen marad)
+- Mentés → `menu_items` insert + azonnali hozzáadás a kiválasztott naphoz
+
+**Tömeges mód (több sor egyszerre):**
+
+A mező mellett **"Több sor"** toggle. Bekapcsolva textarea jelenik meg:
 ```
-Egy paranccsal újragenerálható bármely partner brandjével.
+gulyásleves
+rántott szelet
+házi limonádé
+```
+Minden sor egy étel → bekerül a kiválasztott napra, kategória auto-felismerés. A végén egy összesítő dialógus: hány étel ment át, hány nem volt felismerhető (ezeket egy listából lehet kategóriához rendelni).
 
 ---
 
-## Mit kapsz a végén
-1. `AUDIT_REPORT.md` — találatok listája
-2. `RestaurantOS_SalesDeck.pdf` — eladásra
-3. `RestaurantOS_FeatureCatalog.pdf` — onboardingra / részletes prezentációra
-4. `restaurantos_pdf.py` — generátor script, amivel új partner brandjére 1 perc alatt át tudod színezni mindkét PDF-et
+## 2. Heti Excel Import
 
-**Nem módosítok semmilyen alkalmazás-kódot ebben a körben.** Ha az audit során talált bugok közül bármelyiket javítanám akarod, külön kérésre megcsinálom.
+Új gomb a `WeeklyMenuGrid` toolbar-jában: **"Heti import (Excel)"** (a `Copy` / `Download` gombok mellé).
+
+**Sablon formátum** (letölthető `.xlsx`):
+
+| Nap | Levesek | Főételek | Köret | Desszert | Ár (Ft) |
+|---|---|---|---|---|---|
+| Hétfő | Gulyásleves | Rántott szelet | Sült krumpli | Somlói galuska | 2200 |
+| Kedd | Húsleves | Pörkölt | Nokedli | | 2200 |
+| ... | | | | | |
+
+A sablon **az aktuálisan kiválasztott hét dátumaival** generálódik a fejlécbe (Hétfő (jan 15) stb.), így a felhasználó látja, melyik hetet tölti fel.
+
+**Import folyamat (ugyanabban a dialógusban):**
+
+1. **Feltöltés** — drag & drop / file picker (.xlsx, .xls), újrahasználjuk a `MasterMenuImport` parser mintáját
+2. **Előnézet** — táblázatos nézet napokra bontva, minden cellában:
+   - ✅ zöld pipa: étel megtalálva a `menu_items`-ben
+   - 🟡 sárga: hasonló név talált (pl. `Gulyás leves` → `Gulyásleves`) — egy kattintással elfogadható
+   - 🔴 piros: nem található → "Új étel létrehozása" gomb (kategória választóval)
+3. **Konfliktus-kezelés** — ha az adott napon már van ajánlat:
+   - Választható: **Hozzáadás** / **Felülírás** (az addigi tételek törlése először)
+4. **Importálás** — egy progress bar-ral végigfut a heten, dátumonként:
+   - upsert `daily_offers` (`date`, `price_huf`)
+   - insert `daily_offer_items` minden cellához
+   - menü auto-sync ugyanúgy fut, mint kézi bevitelnél (a meglévő trigger logikával)
+5. **Eredmény toast**: "5 nap, 23 étel importálva. 2 új étel létrehozva."
+
+**Export gomb** — a már meglévő grid állapotot is le lehet tölteni ugyanebben a formátumban → ezt aztán szerkesztve vissza-importálni a következő hétre (heti sablonozás Excelből).
+
+---
+
+## 3. UI elhelyezés
+
+`WeeklyMenuGrid` jelenlegi toolbar bővítése:
+
+```text
+[<] Hét: jan 15–19 [>]   [📋 Gyors bevitel]  [📥 Excel import]  [📤 Export]  [📋 Másolás]
+─────────────────────────────────────────────────
+[Gyors bevitel sáv — kollapszálható, alapból nyitva mobilon zárva]
+  Nap: (H)(K)(Sze)(Cs)(P)   [🔍 keresőmező…………]  [Több sor]
+─────────────────────────────────────────────────
+[meglévő grid / mobilnézet változatlan]
+```
+
+A meglévő kategóriás cellás bevitel **megmarad** — ez kiegészítés, nem csere. Aki úgy szokta, használja továbbra is.
+
+---
+
+## 4. Technikai részletek
+
+**Új fájlok:**
+- `src/components/admin/QuickEntryBar.tsx` — keresőmező + napválasztó + "új étel" popover + tömeges textarea
+- `src/components/admin/WeeklyExcelImport.tsx` — dialógus a heti import/export flow-hoz
+- `src/lib/weeklyExcelTemplate.ts` — sablon generálás (`xlsx.utils.aoa_to_sheet`), parser, fuzzy matcher
+- `src/lib/categoryMatcher.ts` — közös ékezet-érzéketlen név→`menu_item` és név→`category` fuzzy lookup (a `MasterMenuImport.findCategoryId` általánosított verziója)
+
+**Módosított fájlok:**
+- `src/components/admin/WeeklyMenuGrid.tsx` — toolbar gombok + Quick Entry sáv beszúrása, `handleAddItem` újrahasználata
+- `src/components/admin/MasterMenuImport.tsx` — `findCategoryId` kiemelése a közös `categoryMatcher`-be (refaktor, nem viselkedés-változás)
+
+**Adatbázis:** nincs séma-változás. A meglévő `daily_offers`, `daily_offer_items`, `menu_items` táblákat használjuk a meglévő RLS-szel és a meglévő mutációkkal (`addItemMutation`, `updatePriceMutation`, menu auto-sync).
+
+**Fuzzy matching:** Levenshtein distance < 3 + ékezet-strip → "hasonló név" jelzés. A felhasználó dönti el, elfogadja-e.
+
+**Edge case-ek:**
+- Hétvégi dátum az Excelben → kihagyás + warning
+- Múltbéli hét → admin bypass már működik (`is_admin` trigger), import továbbra is megy
+- Duplikátum (ugyanaz az étel ugyanazon a napon kétszer az Excelben) → 1× kerül be, warning
+- Üres ár cella → meglévő ár megmarad
+
+---
+
+## 5. Mit NEM csinálunk most
+
+- Drag & drop ételeket napok közt a gridben (későbbi iteráció)
+- AI alapú heti terv generálás (későbbi)
+- Étel kép automatikus generálás importnál (megvan külön a `AIBatchImageGenerator`)
+- Heti sablon mentése DB-be (`daily_offer_templates` már van, de azt a meglévő flow használja)
+
+Ez a két új belépő (Quick Entry + Excel) önmagában 5–10×-ére gyorsítja a heti összeállítást anélkül, hogy bármit elromlana a jelenleg jól működő részeken.
