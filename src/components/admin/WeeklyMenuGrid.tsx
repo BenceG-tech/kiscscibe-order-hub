@@ -591,6 +591,7 @@ export default function WeeklyMenuGrid() {
 
   // Copy dialog state
   const [copyDialogOpen, setCopyDialogOpen] = useState(false);
+  const [excelImportOpen, setExcelImportOpen] = useState(false);
 
   // Clear day mutation
   const clearDayMutation = useMutation({
