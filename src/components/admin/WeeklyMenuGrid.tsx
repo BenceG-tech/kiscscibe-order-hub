@@ -707,12 +707,32 @@ export default function WeeklyMenuGrid() {
             onOpenChange={setCopyDialogOpen}
             currentWeekStart={currentWeekStart}
           />
+          <Button variant="outline" size="sm" onClick={() => setExcelImportOpen(true)}>
+            <FileSpreadsheet className="h-4 w-4 mr-1" />
+            Heti import
+          </Button>
           <Button variant="outline" size="sm" onClick={exportToExcel}>
             <Download className="h-4 w-4 mr-1" />
             Export
           </Button>
         </div>
       </div>
+
+      <WeeklyExcelImport
+        open={excelImportOpen}
+        onOpenChange={setExcelImportOpen}
+        weekStart={currentWeekStart}
+        menuItems={menuItems}
+        categories={foodCategories}
+      />
+
+      <QuickEntryBar
+        weekDates={weekDates}
+        initialDayIdx={initialOpenDayIndex}
+        menuItems={menuItems}
+        categories={foodCategories}
+        onAddItem={handleAddItem}
+      />
 
       {/* Day Jump Bar + Mirrored Top Scrollbar */}
       <DayJumpBar
