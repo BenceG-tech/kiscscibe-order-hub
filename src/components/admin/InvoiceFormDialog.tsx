@@ -403,6 +403,7 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
       update.mutate({ id: invoice.id, ...payload }, {
         onSuccess: async () => {
           await saveItems(invoice.id);
+          draft.clear();
           onOpenChange(false);
         },
       });
@@ -410,6 +411,7 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
       create.mutate(payload, {
         onSuccess: async (data: any) => {
           if (data?.id) await saveItems(data.id);
+          draft.clear();
           onOpenChange(false);
         },
       });
