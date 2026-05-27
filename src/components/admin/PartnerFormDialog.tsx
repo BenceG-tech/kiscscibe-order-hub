@@ -69,6 +69,15 @@ const PartnerFormDialog = ({ open, onOpenChange, partner, onCreated }: Props) =>
 
   const set = (key: string, val: string) => setForm((f) => ({ ...f, [key]: val }));
 
+  // Draft persistence (new partner only)
+  const draft = useDraftPersistence({
+    key: "partner-draft-new",
+    value: form,
+    isNew: !isEdit,
+    open,
+    onRestore: (data) => setForm(data),
+  });
+
   const handleSave = () => {
     if (!form.name.trim()) return;
     const payload = {
@@ -92,16 +101,25 @@ const PartnerFormDialog = ({ open, onOpenChange, partner, onCreated }: Props) =>
 
     if (isEdit && partner) {
       update.mutate({ id: partner.id, ...payload }, {
-        onSuccess: () => onOpenChange(false),
+        onSuccess: () => { draft.clear(); onOpenChange(false); },
       });
     } else {
       create.mutate(payload, {
         onSuccess: (data) => {
+          draft.clear();
           onCreated?.(data);
           onOpenChange(false);
         },
       });
     }
+  };
+
+  const isDirty = !isEdit && JSON.stringify(form) !== JSON.stringify(defaultForm);
+  const handleOpenChange = (next: boolean) => {
+    if (!next && isDirty) {
+      // Draft is auto-saved; just close silently — user can resume later
+    }
+    onOpenChange(next);
   };
 
   const isPending = create.isPending || update.isPending;
