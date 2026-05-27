@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCreatePartner, useUpdatePartner, PARTNER_CATEGORIES, PAYMENT_TERMS, type Partner } from "@/hooks/usePartners";
+import { useDraftPersistence } from "@/hooks/useDraftPersistence";
+import { DraftRestoreBanner, DraftSavedIndicator } from "./DraftRestoreBanner";
 
 interface Props {
   open: boolean;
@@ -67,6 +69,15 @@ const PartnerFormDialog = ({ open, onOpenChange, partner, onCreated }: Props) =>
 
   const set = (key: string, val: string) => setForm((f) => ({ ...f, [key]: val }));
 
+  // Draft persistence (new partner only)
+  const draft = useDraftPersistence({
+    key: "partner-draft-new",
+    value: form,
+    isNew: !isEdit,
+    open,
+    onRestore: (data) => setForm(data),
+  });
+
   const handleSave = () => {
     if (!form.name.trim()) return;
     const payload = {
@@ -90,11 +101,12 @@ const PartnerFormDialog = ({ open, onOpenChange, partner, onCreated }: Props) =>
 
     if (isEdit && partner) {
       update.mutate({ id: partner.id, ...payload }, {
-        onSuccess: () => onOpenChange(false),
+        onSuccess: () => { draft.clear(); onOpenChange(false); },
       });
     } else {
       create.mutate(payload, {
         onSuccess: (data) => {
+          draft.clear();
           onCreated?.(data);
           onOpenChange(false);
         },
@@ -102,19 +114,43 @@ const PartnerFormDialog = ({ open, onOpenChange, partner, onCreated }: Props) =>
     }
   };
 
+  const isDirty = !isEdit && JSON.stringify(form) !== JSON.stringify(defaultForm);
+  const handleOpenChange = (next: boolean) => {
+    if (!next && isDirty) {
+      // Draft is auto-saved; just close silently — user can resume later
+    }
+    onOpenChange(next);
+  };
+
   const isPending = create.isPending || update.isPending;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg flex flex-col max-h-[calc(100dvh-2rem)] overflow-hidden">
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent
+        className="max-w-lg flex flex-col max-h-[calc(100dvh-2rem)] overflow-hidden"
+        onPointerDownOutside={(e) => { if (isDirty) e.preventDefault(); }}
+        onInteractOutside={(e) => { if (isDirty) e.preventDefault(); }}
+      >
         <DialogHeader className="shrink-0">
           <DialogTitle>{isEdit ? "Partner szerkesztése" : "Új partner"}</DialogTitle>
-          <DialogDescription>
-            {isEdit ? "Módosítsd a partner adatait." : "Add meg az új partner adatait."}
+          <DialogDescription className="flex items-center justify-between gap-2">
+            <span>{isEdit ? "Módosítsd a partner adatait." : "Add meg az új partner adatait."}</span>
+            <DraftSavedIndicator lastSavedAt={draft.lastSavedAt} />
           </DialogDescription>
         </DialogHeader>
 
+        {draft.hasDraft && (
+          <div className="shrink-0">
+            <DraftRestoreBanner
+              savedAt={draft.hasDraft.savedAt}
+              onRestore={draft.restore}
+              onDiscard={draft.discard}
+            />
+          </div>
+        )}
+
         <div className="flex-1 overflow-y-auto py-2">
+
           <Tabs defaultValue="basic">
             <TabsList className="mb-4 w-full">
               <TabsTrigger value="basic" className="flex-1">Alapadatok</TabsTrigger>

@@ -2,7 +2,7 @@ import { format } from "date-fns";
 import { hu } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronLeft, ChevronRight, ChevronDown, Loader2, Check, Download } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Loader2, Check, Download, Upload } from "lucide-react";
 import { WeeklyGridCell } from "./WeeklyGridCell";
 import { DailyPriceInput } from "./DailyPriceInput";
 import { useState, useEffect } from "react";
@@ -53,6 +53,7 @@ interface WeeklyGridMobileProps {
   isLoading: boolean;
   isPending: boolean;
   onExport?: () => void;
+  onOpenImport?: () => void;
   initialOpenDayIndex?: number;
 }
 
@@ -78,6 +79,7 @@ export function WeeklyGridMobile({
   isLoading,
   isPending,
   onExport,
+  onOpenImport,
   initialOpenDayIndex = 0,
 }: WeeklyGridMobileProps) {
   const [openDays, setOpenDays] = useState<Record<number, boolean>>({ [initialOpenDayIndex]: true });
@@ -113,6 +115,11 @@ export function WeeklyGridMobile({
         </div>
         
         <div className="flex items-center gap-1">
+          {onOpenImport && (
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={onOpenImport} title="Heti Excel import">
+              <Upload className="h-4 w-4" />
+            </Button>
+          )}
           {onExport && (
             <Button variant="outline" size="icon" className="h-8 w-8" onClick={onExport} title="Excel export">
               <Download className="h-4 w-4" />

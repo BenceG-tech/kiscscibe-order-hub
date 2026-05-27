@@ -31,6 +31,8 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Invoice, InvoiceItem } from "@/hooks/useInvoices";
 import PartnerSelector from "./PartnerSelector";
 import type { Partner } from "@/hooks/usePartners";
+import { useDraftPersistence } from "@/hooks/useDraftPersistence";
+import { DraftRestoreBanner, DraftSavedIndicator } from "./DraftRestoreBanner";
 
 interface Props {
   open: boolean;
@@ -401,6 +403,7 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
       update.mutate({ id: invoice.id, ...payload }, {
         onSuccess: async () => {
           await saveItems(invoice.id);
+          draft.clear();
           onOpenChange(false);
         },
       });
@@ -408,6 +411,7 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
       create.mutate(payload, {
         onSuccess: async (data: any) => {
           if (data?.id) await saveItems(data.id);
+          draft.clear();
           onOpenChange(false);
         },
       });
@@ -438,13 +442,45 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
 
   const isPending = create.isPending || update.isPending || del.isPending;
 
+  // Draft persistence (new invoice only)
+  const draftValue = useMemo(() => ({
+    form,
+    selectedPartnerId,
+    specialVat,
+    lineItems,
+  }), [form, selectedPartnerId, specialVat, lineItems]);
+
+  const draft = useDraftPersistence({
+    key: "invoice-draft-new",
+    value: draftValue,
+    isNew: !isEdit,
+    open,
+    onRestore: (data: any) => {
+      if (data?.form) setForm(data.form);
+      if (data?.selectedPartnerId !== undefined) setSelectedPartnerId(data.selectedPartnerId);
+      if (data?.specialVat !== undefined) setSpecialVat(data.specialVat);
+      if (Array.isArray(data?.lineItems)) setLineItems(data.lineItems);
+    },
+  });
+
+  const isDirty = !isEdit && (
+    JSON.stringify(form) !== JSON.stringify(defaultForm) ||
+    lineItems.length > 0 ||
+    !!selectedPartnerId
+  );
+
+
   const aiCn = (field: string) => aiFilledFields.has(field) ? aiHighlight : "";
 
   const fmt = (n: number) => n.toLocaleString("hu-HU");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl flex flex-col max-h-[calc(100dvh-2rem)] overflow-hidden">
+      <DialogContent
+        className="max-w-2xl flex flex-col max-h-[calc(100dvh-2rem)] overflow-hidden"
+        onPointerDownOutside={(e) => { if (isDirty) e.preventDefault(); }}
+        onInteractOutside={(e) => { if (isDirty) e.preventDefault(); }}
+      >
         <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
             {isEdit ? "Bizonylat szerkesztése" : "Új bizonylat"}
@@ -455,14 +491,28 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
               </Badge>
             )}
           </DialogTitle>
-          <DialogDescription>
-            {isReadonly
-              ? "Ez a bizonylat automatikusan jött létre egy rendelésből. Csak megtekintésre szolgál."
-              : "Töltsd ki az adatokat és csatolj fájlokat."}
+          <DialogDescription className="flex items-center justify-between gap-2">
+            <span>
+              {isReadonly
+                ? "Ez a bizonylat automatikusan jött létre egy rendelésből. Csak megtekintésre szolgál."
+                : "Töltsd ki az adatokat és csatolj fájlokat."}
+            </span>
+            <DraftSavedIndicator lastSavedAt={draft.lastSavedAt} />
           </DialogDescription>
         </DialogHeader>
 
+        {draft.hasDraft && (
+          <div className="shrink-0">
+            <DraftRestoreBanner
+              savedAt={draft.hasDraft.savedAt}
+              onRestore={draft.restore}
+              onDiscard={draft.discard}
+            />
+          </div>
+        )}
+
         <div className="flex-1 overflow-y-auto space-y-4 py-2 pr-1">
+
           {/* Type */}
           <div className="space-y-1.5">
             <Label>Típus</Label>
