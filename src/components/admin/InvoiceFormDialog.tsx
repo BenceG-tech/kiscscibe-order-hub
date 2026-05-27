@@ -476,7 +476,11 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl flex flex-col max-h-[calc(100dvh-2rem)] overflow-hidden">
+      <DialogContent
+        className="max-w-2xl flex flex-col max-h-[calc(100dvh-2rem)] overflow-hidden"
+        onPointerDownOutside={(e) => { if (isDirty) e.preventDefault(); }}
+        onInteractOutside={(e) => { if (isDirty) e.preventDefault(); }}
+      >
         <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
             {isEdit ? "Bizonylat szerkesztése" : "Új bizonylat"}
@@ -487,14 +491,28 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
               </Badge>
             )}
           </DialogTitle>
-          <DialogDescription>
-            {isReadonly
-              ? "Ez a bizonylat automatikusan jött létre egy rendelésből. Csak megtekintésre szolgál."
-              : "Töltsd ki az adatokat és csatolj fájlokat."}
+          <DialogDescription className="flex items-center justify-between gap-2">
+            <span>
+              {isReadonly
+                ? "Ez a bizonylat automatikusan jött létre egy rendelésből. Csak megtekintésre szolgál."
+                : "Töltsd ki az adatokat és csatolj fájlokat."}
+            </span>
+            <DraftSavedIndicator lastSavedAt={draft.lastSavedAt} />
           </DialogDescription>
         </DialogHeader>
 
+        {draft.hasDraft && (
+          <div className="shrink-0">
+            <DraftRestoreBanner
+              savedAt={draft.hasDraft.savedAt}
+              onRestore={draft.restore}
+              onDiscard={draft.discard}
+            />
+          </div>
+        )}
+
         <div className="flex-1 overflow-y-auto space-y-4 py-2 pr-1">
+
           {/* Type */}
           <div className="space-y-1.5">
             <Label>Típus</Label>
