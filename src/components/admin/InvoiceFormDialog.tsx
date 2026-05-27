@@ -31,6 +31,8 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Invoice, InvoiceItem } from "@/hooks/useInvoices";
 import PartnerSelector from "./PartnerSelector";
 import type { Partner } from "@/hooks/usePartners";
+import { useDraftPersistence } from "@/hooks/useDraftPersistence";
+import { DraftRestoreBanner, DraftSavedIndicator } from "./DraftRestoreBanner";
 
 interface Props {
   open: boolean;
