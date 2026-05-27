@@ -125,16 +125,32 @@ const PartnerFormDialog = ({ open, onOpenChange, partner, onCreated }: Props) =>
   const isPending = create.isPending || update.isPending;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg flex flex-col max-h-[calc(100dvh-2rem)] overflow-hidden">
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent
+        className="max-w-lg flex flex-col max-h-[calc(100dvh-2rem)] overflow-hidden"
+        onPointerDownOutside={(e) => { if (isDirty) e.preventDefault(); }}
+        onInteractOutside={(e) => { if (isDirty) e.preventDefault(); }}
+      >
         <DialogHeader className="shrink-0">
           <DialogTitle>{isEdit ? "Partner szerkesztése" : "Új partner"}</DialogTitle>
-          <DialogDescription>
-            {isEdit ? "Módosítsd a partner adatait." : "Add meg az új partner adatait."}
+          <DialogDescription className="flex items-center justify-between gap-2">
+            <span>{isEdit ? "Módosítsd a partner adatait." : "Add meg az új partner adatait."}</span>
+            <DraftSavedIndicator lastSavedAt={draft.lastSavedAt} />
           </DialogDescription>
         </DialogHeader>
 
+        {draft.hasDraft && (
+          <div className="shrink-0">
+            <DraftRestoreBanner
+              savedAt={draft.hasDraft.savedAt}
+              onRestore={draft.restore}
+              onDiscard={draft.discard}
+            />
+          </div>
+        )}
+
         <div className="flex-1 overflow-y-auto py-2">
+
           <Tabs defaultValue="basic">
             <TabsList className="mb-4 w-full">
               <TabsTrigger value="basic" className="flex-1">Alapadatok</TabsTrigger>
