@@ -637,30 +637,69 @@ export default function WeeklyMenuGrid() {
 
   if (isMobile) {
     return (
-      <WeeklyGridMobile
-        weekDates={weekDates}
-        categories={foodCategories}
-        itemsByCategory={itemsByCategory}
-        gridData={gridData}
-        priceData={priceData}
-        categoryColors={Object.fromEntries(Object.entries(CATEGORY_COLORS).map(([k, v]) => [k, v.row]))}
-        onAddItem={handleAddItem}
-        onRemoveItem={handleRemoveItem}
-        onDailyPriceChange={handleDailyPriceChange}
-        onItemPriceChange={handleItemPriceChange}
-        onImageUpdated={handleImageUpdated}
-        onMenuPartToggle={handleMenuPartToggle}
-        onPreviousWeek={goToPreviousWeek}
-        onNextWeek={goToNextWeek}
-        onCurrentWeek={goToCurrentWeek}
-        isCurrentWeek={isCurrentWeek}
-        isLoading={isLoading}
-        isPending={isPending}
-        onExport={exportToExcel}
-        initialOpenDayIndex={initialOpenDayIndex}
-      />
+      <>
+        <WeeklyGridMobile
+          weekDates={weekDates}
+          categories={foodCategories}
+          itemsByCategory={itemsByCategory}
+          gridData={gridData}
+          priceData={priceData}
+          categoryColors={Object.fromEntries(Object.entries(CATEGORY_COLORS).map(([k, v]) => [k, v.row]))}
+          onAddItem={handleAddItem}
+          onRemoveItem={handleRemoveItem}
+          onDailyPriceChange={handleDailyPriceChange}
+          onItemPriceChange={handleItemPriceChange}
+          onImageUpdated={handleImageUpdated}
+          onMenuPartToggle={handleMenuPartToggle}
+          onPreviousWeek={goToPreviousWeek}
+          onNextWeek={goToNextWeek}
+          onCurrentWeek={goToCurrentWeek}
+          isCurrentWeek={isCurrentWeek}
+          isLoading={isLoading}
+          isPending={isPending}
+          onExport={exportToExcel}
+          onOpenImport={() => setExcelImportOpen(true)}
+          initialOpenDayIndex={initialOpenDayIndex}
+        />
+
+        {/* Floating quick entry FAB (above bottom nav) */}
+        <Button
+          size="lg"
+          onClick={() => setQuickEntryOpen(true)}
+          className="fixed bottom-20 right-4 z-40 h-14 w-14 rounded-full p-0 shadow-2xl"
+          aria-label="Gyors bevitel"
+        >
+          <Plus className="h-6 w-6" />
+        </Button>
+
+        <Sheet open={quickEntryOpen} onOpenChange={setQuickEntryOpen}>
+          <SheetContent side="bottom" className="max-h-[85dvh] overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle>Gyors bevitel</SheetTitle>
+            </SheetHeader>
+            <div className="mt-3">
+              <QuickEntryBar
+                weekDates={weekDates}
+                initialDayIdx={initialOpenDayIndex}
+                menuItems={menuItems}
+                categories={foodCategories}
+                onAddItem={handleAddItem}
+              />
+            </div>
+          </SheetContent>
+        </Sheet>
+
+        <WeeklyExcelImport
+          open={excelImportOpen}
+          onOpenChange={setExcelImportOpen}
+          weekStart={currentWeekStart}
+          menuItems={menuItems}
+          categories={foodCategories}
+        />
+      </>
     );
   }
+
 
   return (
     <div className="space-y-4">
