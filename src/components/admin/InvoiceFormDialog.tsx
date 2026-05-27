@@ -442,6 +442,34 @@ const InvoiceFormDialog = ({ open, onOpenChange, invoice }: Props) => {
 
   const isPending = create.isPending || update.isPending || del.isPending;
 
+  // Draft persistence (new invoice only)
+  const draftValue = useMemo(() => ({
+    form,
+    selectedPartnerId,
+    specialVat,
+    lineItems,
+  }), [form, selectedPartnerId, specialVat, lineItems]);
+
+  const draft = useDraftPersistence({
+    key: "invoice-draft-new",
+    value: draftValue,
+    isNew: !isEdit,
+    open,
+    onRestore: (data: any) => {
+      if (data?.form) setForm(data.form);
+      if (data?.selectedPartnerId !== undefined) setSelectedPartnerId(data.selectedPartnerId);
+      if (data?.specialVat !== undefined) setSpecialVat(data.specialVat);
+      if (Array.isArray(data?.lineItems)) setLineItems(data.lineItems);
+    },
+  });
+
+  const isDirty = !isEdit && (
+    JSON.stringify(form) !== JSON.stringify(defaultForm) ||
+    lineItems.length > 0 ||
+    !!selectedPartnerId
+  );
+
+
   const aiCn = (field: string) => aiFilledFields.has(field) ? aiHighlight : "";
 
   const fmt = (n: number) => n.toLocaleString("hu-HU");
