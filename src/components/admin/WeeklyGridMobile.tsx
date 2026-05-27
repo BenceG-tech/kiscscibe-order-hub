@@ -53,6 +53,7 @@ interface WeeklyGridMobileProps {
   isLoading: boolean;
   isPending: boolean;
   onExport?: () => void;
+  onOpenImport?: () => void;
   initialOpenDayIndex?: number;
 }
 
