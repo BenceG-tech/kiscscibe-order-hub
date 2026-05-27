@@ -1,63 +1,39 @@
-## 1. Mobil: Gyors bevitel és Excel import a heti ajánlatnál
+## Cél
 
-Jelenleg a `WeeklyGridMobile` csak a heti rácsot mutatja — a `QuickEntryBar` és `WeeklyExcelImport` csak desktopon jelenik meg. Mobilra is kiterjesztjük, érintőbarát formában.
+A `kiscsibeetterem@gmail.com` fiók jelenleg csak `staff` szerepkörrel rendelkezik, ezért a `requireAdmin` által védett admin oldalak (számlák, partnerek, heti menü kezelő, kupon, dokumentumok, analitika, gyűjtemény, hulladék, beállítások stb.) átirányítják a főoldalra. A megoldás: kapja meg az `admin` szerepkört, így mindent lát és módosíthat ugyanúgy, mint a tulajdonos.
 
-**Excel import (mobil):**
-- Új gomb a mobil fejlécben (a meglévő Export gomb mellé, ikon-only `Upload`).
-- Megnyit egy bottom sheet-et (`Sheet` komponens, `side="bottom"`), benne a meglévő `WeeklyExcelImport` UI — sablon letöltés + fájl feltöltés + előnézet + import.
-- Ugyanaz a logika és validáció mint desktopon, csak nagyobb gombok, vertikális elrendezés, scrollozható preview.
+## Lépések
 
-**Gyors bevitel (mobil):**
-- Lebegő FAB (jobb alsó sarok, sticky, a bottom navigation fölött, `bottom-20 right-4`) `Plus` ikonnal.
-- Kattintásra bottom sheet nyílik:
-  - Nap választó chip-sor (H/K/Sze/Cs/P) — alapból a jelenleg nyitott nap.
-  - Keresőmező (autofókusz) — élő kereső a `useMasterFoodLibrary` listán, ékezetfüggetlen.
-  - Találati lista nagy érintőkártyákkal (kép + név + ár + kategória badge).
-  - Kategória automatikusan kitalálva (`categoryMatcher`), a felhasználónak nem kell választania.
-  - Tap a kártyán → hozzáadás, toast visszajelzés, kereső kiürül, sheet nyitva marad (lehet többet hozzáadni).
-- Új étel létrehozás: ha nincs találat, „Új étel létrehozása '{search}' néven" gomb (ugyanúgy mint desktop).
+1. **Allowlist frissítés** — `admin_email_allowlist` táblában a `kiscsibeetterem@gmail.com` sor `role` mezőjét `staff`-ról `admin`-ra állítjuk (vagy új sort szúrunk be, ha még nem létezik). Így jövőbeli új bejelentkezéskor a `claim_admin_access` RPC automatikusan admin szerepet ad.
 
-## 2. Űrlap-állapot megőrzés (számla + partner bevitel)
+2. **Azonnali szerepkör hozzáadás** — beszúrunk egy új sort a `user_roles` táblába (`user_id` = a kiscsibeetterem fiók ID-je, `role` = `admin`), `ON CONFLICT DO NOTHING`. A meglévő `staff` sort meghagyjuk (nem zavar, de eltávolítható ha szeretnéd).
 
-**Probléma:** Ha az asszisztens véletlenül bezárja a `InvoiceFormDialog` vagy `PartnerFormDialog` ablakot (overlay-re tap, Esc, telefonhívás, browser back), elveszik az addig bevitt adat és előlről kell kezdeni.
+3. **Ellenőrzés** — query-vel megerősítjük hogy a fiók most már mindkét szerepkört (vagy csak admin-t) viseli, és a `is_admin()` RPC `true`-t ad vissza neki.
 
-**Megoldás: piszkozat auto-mentés `localStorage`-ba.**
+## Mit fog ezután látni
 
-Új hook: `src/hooks/useDraftPersistence.ts`
-- Generikus: `useDraftPersistence<T>(key, form, options)`.
-- Debounced (500ms) write minden form-változásnál.
-- Mount-kor: ha van mentett piszkozat **és** nincs `editingId` (új rekord), megjelenít egy bannert az ablak tetején: „Mentetlen piszkozat található — Folytatás | Elvetés".
-- Sikeres submit után automatikusan törli a piszkozatot.
-- TTL: 7 nap után lejár.
+- `/admin` (dashboard), `/admin/daily-menu` (heti menü + új mobil quick entry / excel import), `/admin/invoices` (számlák + új draft persistence), `/admin/partners` (partnerek + új draft persistence), `/admin/menu`, `/admin/gallery`, `/admin/coupons`, `/admin/analytics`, `/admin/documents`, `/admin/legal`, `/admin/about`, `/admin/faq`, `/admin/fix-items`, `/admin/capacity`, `/admin/activity` — mind elérhető lesz.
+- A rejtett admin belépés (5 kattintás a fejlécre/logóra) változatlan.
 
-**Beépítés a számla űrlapba (`InvoiceFormDialog.tsx`):**
-- Kulcs: `invoice-draft-new` (új) vagy `invoice-draft-{id}` (szerkesztés esetén — opcionális).
-- Mentett mezők: az összes form state (partner, dátumok, tételek, áfa, fájl metadata — a feltöltött fájlt nem, csak a nevét/figyelmeztetést).
-- Ablak bezárás védelme: ha van piszkozat (dirty form), `onOpenChange`-ben confirm dialógus: „Bezárod? A piszkozat megmarad és bármikor folytathatod."
-- Kívülre kattintás letiltva új bevitelnél: `<DialogContent onPointerDownOutside={e => isDirty && e.preventDefault()}>` — csak az X gombbal vagy Mégse-vel lehet bezárni, így nem zárul be véletlenül.
+## Megjegyzés a memóriához
 
-**Beépítés a partner űrlapba (`PartnerFormDialog.tsx`):**
-- Ugyanaz a logika, kulcs: `partner-draft-new`.
-- Kisebb form, de ugyanúgy bosszantó újrakezdeni — ugyanazt a hookot használja.
-
-**Bónusz: globális mentés indikátor**
-- Az űrlap fejlécében kis szöveg: „Piszkozat mentve {időpont}" (mint Google Docs).
-- Megnyugtatja a felhasználót hogy nem vész el semmi.
+A projekt memory jelenleg úgy rögzíti hogy `kiscsibeetterem@gmail.com` = staff. A módosítás után a memóriát is frissítem (`mem://auth/hidden-administrative-access`), hogy tükrözze: ez az email mostantól teljes admin.
 
 ## Technikai részletek
 
-```text
-Új/módosítandó fájlok:
-  src/components/admin/WeeklyGridMobile.tsx       (Excel + FAB gombok hozzáadása)
-  src/components/admin/MobileQuickEntrySheet.tsx  (új — mobil quick entry)
-  src/components/admin/MobileExcelImportSheet.tsx (új — wrapper sheet)
-  src/components/admin/WeeklyMenuGrid.tsx         (mobil sheet-ek átadása)
-  src/hooks/useDraftPersistence.ts                (új — generikus draft hook)
-  src/components/admin/InvoiceFormDialog.tsx      (draft + outside-click védelem)
-  src/components/admin/PartnerFormDialog.tsx      (draft + outside-click védelem)
+```sql
+-- 1. Allowlist: staff → admin (vagy új sor)
+INSERT INTO public.admin_email_allowlist (email, role, label, is_active)
+VALUES ('kiscsibeetterem@gmail.com', 'admin', 'Étterem fő admin', true)
+ON CONFLICT (email) DO UPDATE
+  SET role = 'admin', is_active = true, updated_at = now();
+
+-- 2. Azonnali admin szerepkör
+INSERT INTO public.user_roles (user_id, role)
+SELECT u.id, 'admin'::app_role
+FROM auth.users u
+WHERE u.email = 'kiscsibeetterem@gmail.com'
+ON CONFLICT (user_id, role) DO NOTHING;
 ```
 
-- A meglévő `QuickEntryBar` és `WeeklyExcelImport` logikája újrahasznosul (shared belső függvények kiemelve, ha kell), nincs duplikálás.
-- A bottom sheet a meglévő shadcn `Sheet` komponensre épül, követve a `mem://tech/dialog-accessibility-standard` szabályait (max-h, flex-col, scrollable body).
-- A draft hook nem ír gyakran (debounced), és csak akkor olvas mount-kor, ha az űrlap valóban új rekord.
-- Funkcionálisan semmi nem változik — csak hozzáférés és kényelem javul (megfelel a `preserve-functionality` szabálynak).
+A migráció DB-only — kódváltozás nem szükséges. A felhasználónak ki kell jelentkeznie és vissza, hogy az új szerepkör betöltődjön az AuthContext-be (vagy egyszerűen frissíteni az oldalt).
