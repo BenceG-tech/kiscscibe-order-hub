@@ -79,6 +79,7 @@ export function WeeklyGridMobile({
   isLoading,
   isPending,
   onExport,
+  onOpenImport,
   initialOpenDayIndex = 0,
 }: WeeklyGridMobileProps) {
   const [openDays, setOpenDays] = useState<Record<number, boolean>>({ [initialOpenDayIndex]: true });
