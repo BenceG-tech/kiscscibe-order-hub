@@ -115,6 +115,11 @@ export function WeeklyGridMobile({
         </div>
         
         <div className="flex items-center gap-1">
+          {onOpenImport && (
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={onOpenImport} title="Heti Excel import">
+              <Upload className="h-4 w-4" />
+            </Button>
+          )}
           {onExport && (
             <Button variant="outline" size="icon" className="h-8 w-8" onClick={onExport} title="Excel export">
               <Download className="h-4 w-4" />
