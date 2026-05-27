@@ -1,0 +1,10 @@
+GRANT EXECUTE ON FUNCTION public.is_admin_or_staff(uuid) TO authenticated, anon;
+GRANT EXECUTE ON FUNCTION public.is_admin(uuid) TO authenticated, anon;
+GRANT EXECUTE ON FUNCTION public.is_owner(uuid) TO authenticated, anon;
+GRANT EXECUTE ON FUNCTION public.is_staff(uuid) TO authenticated, anon;
+GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) TO authenticated, anon;
+GRANT EXECUTE ON FUNCTION public.is_weekend(date) TO authenticated, anon;
+GRANT EXECUTE ON FUNCTION public.is_date_in_past(date) TO authenticated, anon;
+GRANT EXECUTE ON FUNCTION public.bootstrap_first_admin() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.claim_admin_access() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_user_role(uuid) TO authenticated;
