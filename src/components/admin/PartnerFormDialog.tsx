@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCreatePartner, useUpdatePartner, PARTNER_CATEGORIES, PAYMENT_TERMS, type Partner } from "@/hooks/usePartners";
+import { useDraftPersistence } from "@/hooks/useDraftPersistence";
+import { DraftRestoreBanner, DraftSavedIndicator } from "./DraftRestoreBanner";
 
 interface Props {
   open: boolean;
