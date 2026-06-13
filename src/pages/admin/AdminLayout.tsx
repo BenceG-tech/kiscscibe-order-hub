@@ -30,7 +30,8 @@ import {
   FolderOpen,
   MoreHorizontal,
   ChevronDown,
-  Pin
+  Pin,
+  Star
 } from "lucide-react";
 import { HelpFloatingButton } from "@/components/admin/HelpFloatingButton";
 
@@ -70,6 +71,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     { href: "/admin/about", label: "Rólunk oldal", mobileLabel: "Rólunk", icon: Info, badgeCount: 0 },
     { href: "/admin/faq", label: "GYIK", mobileLabel: "GYIK", icon: HelpCircle, badgeCount: 0 },
     { href: "/admin/legal", label: "Jogi oldalak", mobileLabel: "Jogi", icon: FileText, badgeCount: 0 },
+    { href: "/admin/reviews", label: "Vélemények", mobileLabel: "Vélem.", icon: Star, badgeCount: 0 },
   ];
 
   const allNavItems = [...primaryNavItems, ...secondaryNavItems];

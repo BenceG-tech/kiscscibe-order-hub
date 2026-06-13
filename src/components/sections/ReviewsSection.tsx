@@ -8,54 +8,71 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import useEmblaCarousel from "embla-carousel-react";
 import { useCallback, useEffect, useState } from "react";
 
+interface Review {
+  name: string;
+  rating: number;
+  text: string;
+  verified: boolean;
+}
+
+const FALLBACK_REVIEWS: Review[] = [
+  {
+    name: "Kovács János",
+    rating: 5,
+    text: "Fantasztikus reggelik és kedves kiszolgálás! A rántotta tejszínes volt és a kávé tökéletes. Minden nap ide járok munkába menet.",
+    verified: true
+  },
+  {
+    name: "Nagy Éva",
+    rating: 5,
+    text: "A napi menü mindig friss és finom. Az árak teljesen korrektek, a kiszolgálás pedig gyors. Családbarát hely, gyerekekkel is szívesen látnak.",
+    verified: true
+  },
+  {
+    name: "Szabó Péter",
+    rating: 5,
+    text: "Jó ár-érték arány, bőséges adagok. A guláslevest különösen ajánlom! Az étterem kellemes, tiszta környezet.",
+    verified: false
+  },
+  {
+    name: "Molnár Andrea",
+    rating: 5,
+    text: "Hihetetlenül finom húsgombóc leves! Mindig van valami jó napi ajánlat. A személyzet nagyon kedves és figyelmes.",
+    verified: true
+  },
+  {
+    name: "Tóth Márk",
+    rating: 5,
+    text: "Kiváló helyi étterem a környéken. A schnitzel nagyszerű volt, és a köretek is finomak. Tiszta, rendezett hely.",
+    verified: false
+  },
+  {
+    name: "Kiss Zsuzsanna",
+    rating: 5,
+    text: "Minden alkalommal elégedett vagyok! Friss alapanyagok, otthonos ízek. A csirkemell grillezve különösen finom volt.",
+    verified: true
+  }
+];
+
 const ReviewsSection = () => {
   const { ref, isVisible } = useScrollFadeIn();
   const isMobile = useIsMobile();
 
-  const reviews = [
-    {
-      name: "Kovács János",
-      rating: 5,
-      date: "2 hete",
-      text: "Fantasztikus reggelik és kedves kiszolgálás! A rántotta tejszínes volt és a kávé tökéletes. Minden nap ide járok munkába menet.",
-      verified: true
-    },
-    {
-      name: "Nagy Éva",
-      rating: 5,
-      date: "1 hónapja", 
-      text: "A napi menü mindig friss és finom. Az árak teljesen korrektek, a kiszolgálás pedig gyors. Családbarát hely, gyerekekkel is szívesen látnak.",
-      verified: true
-    },
-    {
-      name: "Szabó Péter",
-      rating: 5,
-      date: "3 hete",
-      text: "Jó ár-érték arány, bőséges adagok. A guláslevest különösen ajánlom! Az étterem kellemes, tiszta környezet.",
-      verified: false
-    },
-    {
-      name: "Molnár Andrea",
-      rating: 5,
-      date: "1 hete",
-      text: "Hihetetlenül finom húsgombóc leves! Mindig van valami jó napi ajánlat. A személyzet nagyon kedves és figyelmes.",
-      verified: true
-    },
-    {
-      name: "Tóth Márk",
-      rating: 5,
-      date: "2 hónapja",
-      text: "Kiváló helyi étterem a környéken. A schnitzel nagyszerű volt, és a köretek is finomak. Tiszta, rendezett hely.",
-      verified: false
-    },
-    {
-      name: "Kiss Zsuzsanna",
-      rating: 5,
-      date: "3 napja",
-      text: "Minden alkalommal elégedett vagyok! Friss alapanyagok, otthonos ízek. A csirkemell grillezve különösen finom volt.",
-      verified: true
-    }
-  ];
+  const [reviews, setReviews] = useState<Review[]>(FALLBACK_REVIEWS);
+
+  useEffect(() => {
+    import("@/integrations/supabase/client").then(({ supabase }) => {
+      supabase
+        .from("settings")
+        .select("value_json")
+        .eq("key", "homepage_reviews")
+        .maybeSingle()
+        .then(({ data }) => {
+          const arr = Array.isArray(data?.value_json) ? (data!.value_json as unknown as Review[]) : null;
+          if (arr && arr.length > 0) setReviews(arr);
+        });
+    });
+  }, []);
 
   const averageRating = 5.0;
   const totalReviews = 127;
