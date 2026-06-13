@@ -122,7 +122,6 @@ const ReviewsSection = () => {
                   </Badge>
                 )}
               </div>
-              <p className="text-[10px] md:text-sm text-muted-foreground">{review.date}</p>
             </div>
           </div>
           
