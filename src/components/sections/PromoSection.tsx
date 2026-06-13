@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { UtensilsCrossed, Package, GraduationCap, ArrowRight, Clock } from "lucide-react";
+import { UtensilsCrossed, Package, ArrowRight, Clock } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -103,10 +103,6 @@ const PromoSection = () => {
                     <Package className="h-4 w-4 text-primary" />
                     <span className="text-sm font-medium">+200 Ft elvitel</span>
                   </div>
-                  <div className="bg-primary/10 rounded-xl px-4 py-2 flex items-center gap-2">
-                    <GraduationCap className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-medium">-10% diák 11:30-13:00</span>
-                  </div>
                 </div>
               </div>
 
@@ -149,10 +145,6 @@ const PromoSection = () => {
                 <div className="bg-primary/10 rounded-xl px-3 py-2 flex items-center gap-1.5 flex-1">
                   <Package className="h-3.5 w-3.5 text-primary flex-shrink-0" />
                   <p className="text-xs font-medium">+200 Ft elvitel</p>
-                </div>
-                <div className="bg-primary/10 rounded-xl px-3 py-2 flex items-center gap-1.5 flex-1">
-                  <GraduationCap className="h-3.5 w-3.5 text-primary flex-shrink-0" />
-                  <p className="text-xs font-medium">-10% 11:30-13:00</p>
                 </div>
               </div>
 

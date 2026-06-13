@@ -45,6 +45,7 @@ const AdminPartners = React.lazy(() => import("./pages/admin/Partners"));
 const AdminFaq = React.lazy(() => import("./pages/admin/Faq"));
 const AdminDocuments = React.lazy(() => import("./pages/admin/Documents"));
 const AdminActivity = React.lazy(() => import("./pages/admin/Activity"));
+const AdminReviews = React.lazy(() => import("./pages/admin/Reviews"));
 
 const StaffOrders = React.lazy(() => import("./pages/staff/StaffOrders"));
 
@@ -176,6 +177,11 @@ const App = () => (
               <Route path="/admin/activity" element={
                 <ProtectedRoute requireAdmin>
                   <Suspense fallback={<LazyFallback />}><AdminActivity /></Suspense>
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/reviews" element={
+                <ProtectedRoute requireAdmin>
+                  <Suspense fallback={<LazyFallback />}><AdminReviews /></Suspense>
                 </ProtectedRoute>
               } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
