@@ -146,10 +146,6 @@ const PromoSection = () => {
                   <Package className="h-3.5 w-3.5 text-primary flex-shrink-0" />
                   <p className="text-xs font-medium">+200 Ft elvitel</p>
                 </div>
-                <div className="bg-primary/10 rounded-xl px-3 py-2 flex items-center gap-1.5 flex-1">
-                  <GraduationCap className="h-3.5 w-3.5 text-primary flex-shrink-0" />
-                  <p className="text-xs font-medium">-10% 11:30-13:00</p>
-                </div>
               </div>
 
               {/* CTA */}
