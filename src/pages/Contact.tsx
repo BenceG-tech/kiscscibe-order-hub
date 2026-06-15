@@ -1,6 +1,7 @@
 import SEO from "@/components/SEO";
 import ModernNavigation from "@/components/ModernNavigation";
 import Footer from "@/components/Footer";
+import MobileBottomNav from "@/components/MobileBottomNav";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -70,6 +71,8 @@ const Contact = () => {
         </div>
       </main>
       <Footer />
+      <MobileBottomNav />
+      <div className="h-16 md:h-0" />
     </div>
   );
 };

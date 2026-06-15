@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import ModernNavigation from "@/components/ModernNavigation";
 import Footer from "@/components/Footer";
+import MobileBottomNav from "@/components/MobileBottomNav";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -396,7 +397,7 @@ const Etlap = () => {
                           )}
                         >
                           <CardContent className="p-0">
-                            <div className="aspect-video overflow-hidden">
+                            <div className="aspect-[4/3] overflow-hidden">
                               {item.item_image_url ? (
                                 <img 
                                   src={item.item_image_url} 
@@ -501,6 +502,8 @@ const Etlap = () => {
         </section>
       </main>
       <Footer />
+      <MobileBottomNav />
+      <div className="h-16 md:h-0" />
       <CartDialog open={isCartOpen} onOpenChange={setIsCartOpen} />
       
       {/* Side Picker Modal for main courses */}
