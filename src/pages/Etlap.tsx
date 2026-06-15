@@ -397,12 +397,12 @@ const Etlap = () => {
                           )}
                         >
                           <CardContent className="p-0">
-                            <div className="aspect-[4/3] overflow-hidden">
+                            <div className="aspect-square overflow-hidden">
                               {item.item_image_url ? (
                                 <img 
                                   src={item.item_image_url} 
                                   alt={item.item_name}
-                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                  className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
                                 />
                               ) : (
                                 <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center">
