@@ -37,12 +37,12 @@ interface DailyMenuPanelProps {
 
 const MenuItemCard = ({ item, label }: { item: MenuItem; label: string }) => (
   <div className="bg-card rounded-2xl md:rounded-3xl overflow-hidden shadow-lg ring-1 ring-black/5 dark:ring-white/5 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300">
-    <div className="aspect-[4/3] md:aspect-[16/9] w-full overflow-hidden">
+    <div className="aspect-square md:aspect-[4/3] w-full overflow-hidden">
       {item.item_image_url ? (
         <img 
           src={item.item_image_url} 
           alt={item.item_name}
-          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+          className="w-full h-full object-cover hover:scale-[1.02] transition-transform duration-300"
         />
       ) : (
         <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center">
