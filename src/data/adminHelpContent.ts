@@ -112,6 +112,7 @@ export const QUICK_MAP: QuickMapEntry[] = [
   { icon: "ℹ️", title: "Rólunk", route: "/admin/about", description: "A Rólunk oldal tartalma — szöveg, számok, képek." },
   { icon: "❓", title: "GYIK", route: "/admin/faq", description: "Gyakori kérdések szerkesztése a publikus oldalon." },
   { icon: "📜", title: "Jogi oldalak", route: "/admin/legal", description: "Impresszum, ÁSZF, Adatvédelem, Süti — Markdown szerkesztővel." },
+  { icon: "⭐", title: "Vélemények", route: "/admin/reviews", description: "A főoldalon megjelenő vendég-vélemények szerkesztése (mindig 5 csillag publikusan)." },
 ];
 
 // Daily / weekly routines (todo-style)
