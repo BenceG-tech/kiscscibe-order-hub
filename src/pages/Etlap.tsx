@@ -502,6 +502,8 @@ const Etlap = () => {
         </section>
       </main>
       <Footer />
+      <MobileBottomNav />
+      <div className="h-16 md:h-0" />
       <CartDialog open={isCartOpen} onOpenChange={setIsCartOpen} />
       
       {/* Side Picker Modal for main courses */}
