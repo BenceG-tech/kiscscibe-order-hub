@@ -156,6 +156,8 @@ const About = () => {
         </div>
       </main>
       <Footer />
+      <MobileBottomNav />
+      <div className="h-16 md:h-0" />
     </div>
   );
 };
