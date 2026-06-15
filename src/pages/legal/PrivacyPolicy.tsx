@@ -1,5 +1,6 @@
 import ModernNavigation from "@/components/ModernNavigation";
 import Footer from "@/components/Footer";
+import MobileBottomNav from "@/components/MobileBottomNav";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLegalContent } from "@/hooks/useLegalContent";
@@ -85,6 +86,8 @@ const PrivacyPolicy = () => {
         </div>
       </main>
       <Footer />
+      <MobileBottomNav />
+      <div className="h-16 md:h-0" />
     </div>
   );
 };
