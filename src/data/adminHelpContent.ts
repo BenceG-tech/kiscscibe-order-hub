@@ -72,6 +72,7 @@ export const HELP_PAGE_GROUPS: HelpPageGroup[] = [
   { id: "legal", tabGroup: "content", title: "Jogi oldalak", icon: "📜", route: "/admin/legal", description: "Impresszum, ÁSZF, Adatvédelem" },
   { id: "documents", tabGroup: "content", title: "Dokumentumok", icon: "📁", route: "/admin/documents", description: "Drive — szerződések, NAV iratok" },
   { id: "activity-log", tabGroup: "content", title: "Módosítási napló", icon: "🧾", route: "/admin/activity", description: "Ki, mikor, mit módosított" },
+  { id: "reviews", tabGroup: "content", title: "Vélemények", icon: "⭐", route: "/admin/reviews", description: "Főoldali vendég-vélemények szerkesztése" },
   { id: "pwa-push", tabGroup: "content", title: "Mobil app & értesítések", icon: "📱", description: "PWA telepítés, push értesítések" },
   { id: "troubleshoot", tabGroup: "content", title: "Mit tegyek ha…", icon: "🆘", description: "Hibakeresés, gyakori problémák" },
 ];
