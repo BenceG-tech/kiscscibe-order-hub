@@ -2,6 +2,7 @@ import { useState } from "react";
 import SEO from "@/components/SEO";
 import ModernNavigation from "@/components/ModernNavigation";
 import Footer from "@/components/Footer";
+import MobileBottomNav from "@/components/MobileBottomNav";
 import FoodGallery from "@/components/gallery/FoodGallery";
 import InteriorGallery from "@/components/gallery/InteriorGallery";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
