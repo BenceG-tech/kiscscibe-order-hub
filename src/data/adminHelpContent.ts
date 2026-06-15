@@ -72,6 +72,7 @@ export const HELP_PAGE_GROUPS: HelpPageGroup[] = [
   { id: "legal", tabGroup: "content", title: "Jogi oldalak", icon: "📜", route: "/admin/legal", description: "Impresszum, ÁSZF, Adatvédelem" },
   { id: "documents", tabGroup: "content", title: "Dokumentumok", icon: "📁", route: "/admin/documents", description: "Drive — szerződések, NAV iratok" },
   { id: "activity-log", tabGroup: "content", title: "Módosítási napló", icon: "🧾", route: "/admin/activity", description: "Ki, mikor, mit módosított" },
+  { id: "reviews", tabGroup: "content", title: "Vélemények", icon: "⭐", route: "/admin/reviews", description: "Főoldali vendég-vélemények szerkesztése" },
   { id: "pwa-push", tabGroup: "content", title: "Mobil app & értesítések", icon: "📱", description: "PWA telepítés, push értesítések" },
   { id: "troubleshoot", tabGroup: "content", title: "Mit tegyek ha…", icon: "🆘", description: "Hibakeresés, gyakori problémák" },
 ];
@@ -111,6 +112,7 @@ export const QUICK_MAP: QuickMapEntry[] = [
   { icon: "ℹ️", title: "Rólunk", route: "/admin/about", description: "A Rólunk oldal tartalma — szöveg, számok, képek." },
   { icon: "❓", title: "GYIK", route: "/admin/faq", description: "Gyakori kérdések szerkesztése a publikus oldalon." },
   { icon: "📜", title: "Jogi oldalak", route: "/admin/legal", description: "Impresszum, ÁSZF, Adatvédelem, Süti — Markdown szerkesztővel." },
+  { icon: "⭐", title: "Vélemények", route: "/admin/reviews", description: "A főoldalon megjelenő vendég-vélemények szerkesztése (mindig 5 csillag publikusan)." },
 ];
 
 // Daily / weekly routines (todo-style)
@@ -618,6 +620,21 @@ export const HELP_CATEGORIES: HelpCategory[] = [
           "A popup csak a süti elfogadás után jelenik meg, és csak egyszer/munkamenet.",
         ],
         whyItHelps: "Direkt üzenet a vendégeknek — ünnepek, változások, új ajánlatok kommunikálása.",
+      },
+      {
+        id: "reviews-editor",
+        pageGroup: "reviews",
+        title: "Vélemények szerkesztése",
+        routes: ["/admin/reviews"],
+        whatItDoes: "A főoldalon megjelenő vendég-vélemények szabadon szerkeszthetők — új vélemény vehető fel, sorrend állítható, aktív/inaktív kapcsolóval rejthető. A publikus oldalon minden vélemény mindig 5 csillagos.",
+        howToUse: [
+          "Vélemények admin → 'Új vélemény' gomb.",
+          "Add meg a vendég nevét, a véleményt és a sorrendet (kisebb szám = előrébb).",
+          "Aktív kapcsolóval rejtheted vagy visszahozhatod.",
+          "Mentés után azonnal frissül a főoldalon.",
+        ],
+        whyItHelps: "Friss, releváns vendég-visszajelzések → erősebb bizalom és több rendelés a főoldalon.",
+        commonMistake: "Ne írj kitalált neveket — ha kérdés érkezik egy vélemény hitelességéről, legyen mögötte valós vendég.",
       },
     ],
   },
