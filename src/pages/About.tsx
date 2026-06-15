@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import SEO from "@/components/SEO";
 import ModernNavigation from "@/components/ModernNavigation";
 import Footer from "@/components/Footer";
+import MobileBottomNav from "@/components/MobileBottomNav";
 import { Card, CardContent } from "@/components/ui/card";
 import { CalendarDays, Users, ChefHat, Star, Heart, Clock, Leaf, Award, Coffee, Utensils, MapPin, ThumbsUp, type LucideIcon } from "lucide-react";
 import heroImage from "@/assets/hero-desktop.png";
