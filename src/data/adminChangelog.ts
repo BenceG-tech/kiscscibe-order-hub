@@ -12,6 +12,38 @@ export interface ChangelogEntry {
 // Newest first
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: "2026-06-15",
+    title: "Vélemények szerkesztő admin felület",
+    description:
+      "Új /admin/vélemények oldal: a főoldalon megjelenő vendég-vélemények tetszőlegesen szerkeszthetők, új vélemény vehető fel, sorrend állítható, aktív/inaktív kapcsolóval rejthető. A publikus oldalon továbbra is minden vélemény 5 csillagos.",
+    type: "new",
+    tabGroup: "content",
+  },
+  {
+    date: "2026-06-15",
+    title: "Mobil alsó menü minden aloldalon",
+    description:
+      "Az alsó sticky navigáció (Főoldal / Étlap / Galéria / Több) mostantól minden publikus aloldalon elérhető — Étlap, Galéria, Rólunk, Kapcsolat és a jogi oldalakon is. Nincs többé visszanavigálás a főoldalra a menüsor miatt.",
+    type: "improved",
+    tabGroup: "content",
+  },
+  {
+    date: "2026-06-15",
+    title: "Ételképek megjelenítésének javítása az Étlap oldalon",
+    description:
+      "A napi ételek kártyáin a képek már nem vannak túlzottan ráközelítve. A négyzet alakú AI képek 1:1 arányban jelennek meg (további napi ételek), a fő napi menü képe pedig mobilon 1:1, asztali nézetben 4:3 arányú — sokkal kevésbé vágódik le az étel.",
+    type: "fixed",
+    tabGroup: "menu",
+  },
+  {
+    date: "2026-06-15",
+    title: "Akciós szekció átláthatóbb lett",
+    description:
+      "Az akciós szekcióban már nincs félrevezető áthúzott ár. 16:00-tól ketyeg a visszaszámláló a következő nyitvatartási napra, így a vendég pontosan látja meddig rendelhet.",
+    type: "improved",
+    tabGroup: "marketing",
+  },
+  {
     date: "2026-04-22",
     title: "PDF és képfájl alapú számlafelismerés",
     description:
