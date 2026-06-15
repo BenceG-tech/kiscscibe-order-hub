@@ -621,6 +621,21 @@ export const HELP_CATEGORIES: HelpCategory[] = [
         ],
         whyItHelps: "Direkt üzenet a vendégeknek — ünnepek, változások, új ajánlatok kommunikálása.",
       },
+      {
+        id: "reviews-editor",
+        pageGroup: "reviews",
+        title: "Vélemények szerkesztése",
+        routes: ["/admin/reviews"],
+        whatItDoes: "A főoldalon megjelenő vendég-vélemények szabadon szerkeszthetők — új vélemény vehető fel, sorrend állítható, aktív/inaktív kapcsolóval rejthető. A publikus oldalon minden vélemény mindig 5 csillagos.",
+        howToUse: [
+          "Vélemények admin → 'Új vélemény' gomb.",
+          "Add meg a vendég nevét, a véleményt és a sorrendet (kisebb szám = előrébb).",
+          "Aktív kapcsolóval rejtheted vagy visszahozhatod.",
+          "Mentés után azonnal frissül a főoldalon.",
+        ],
+        whyItHelps: "Friss, releváns vendég-visszajelzések → erősebb bizalom és több rendelés a főoldalon.",
+        commonMistake: "Ne írj kitalált neveket — ha kérdés érkezik egy vélemény hitelességéről, legyen mögötte valós vendég.",
+      },
     ],
   },
   {
