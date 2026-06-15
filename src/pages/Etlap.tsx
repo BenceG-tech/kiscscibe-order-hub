@@ -396,7 +396,7 @@ const Etlap = () => {
                           )}
                         >
                           <CardContent className="p-0">
-                            <div className="aspect-video overflow-hidden">
+                            <div className="aspect-[4/3] overflow-hidden">
                               {item.item_image_url ? (
                                 <img 
                                   src={item.item_image_url} 
