@@ -858,9 +858,18 @@ const Checkout = () => {
                           <div className="flex justify-center py-4">
                             <LoadingSpinner className="h-6 w-6" />
                           </div>
+                        ) : timeSlots.length === 0 ? (
+                          <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground space-y-1">
+                            <p>Nincs elérhető időpont ehhez a rendeléshez.</p>
+                            <p className="text-xs">Próbálja újra később, vagy válasszon másik napra.</p>
+                          </div>
                         ) : (
                           <Select
-                            value={`${formData.pickup_date}|${formData.pickup_time}`}
+                            value={
+                              formData.pickup_date && formData.pickup_time
+                                ? `${formData.pickup_date}|${formData.pickup_time}`
+                                : undefined
+                            }
                             onValueChange={(value) => {
                               const [date, time] = value.split("|");
                               setFormData(prev => ({ 
@@ -874,47 +883,36 @@ const Checkout = () => {
                               <SelectValue placeholder="Válasszon időpontot" />
                             </SelectTrigger>
                             <SelectContent>
-                              {timeSlots.length === 0 ? (
-                                <div className="p-3 text-sm text-muted-foreground space-y-2">
-                                  <p>Nincs elérhető időpont ehhez a rendeléshez.</p>
-                                  {loading && <p className="text-xs">Betöltés...</p>}
-                                  {!loading && (
-                                    <p className="text-xs">
-                                      Próbálja újra később, vagy válasszon másik napra.
-                                    </p>
-                                  )}
-                                </div>
-                              ) : (
-                                timeSlots.map((slot) => {
-                                  const isFull = slot.available_capacity <= 0;
-                                  const isAlmostFull = slot.utilization_percent >= 80 && !isFull;
-                                  
-                                  return (
-                                    <SelectItem 
-                                      key={`${slot.date}|${slot.timeslot}`}
-                                      value={`${slot.date}|${slot.timeslot}`}
-                                      disabled={isFull}
-                                      className={isFull ? "opacity-50" : ""}
-                                    >
-                                      <span className="flex items-center gap-2">
-                                        {formatTimeSlot(slot.date, slot.timeslot)}
-                                        {isFull ? (
-                                          <Badge variant="destructive" className="text-xs">Tele</Badge>
-                                        ) : isAlmostFull ? (
-                                          <Badge className="text-xs bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 border-yellow-500/30">Majdnem tele!</Badge>
-                                        ) : (
-                                          <Badge variant="outline" className="text-xs">{slot.available_capacity} hely</Badge>
-                                        )}
-                                      </span>
-                                    </SelectItem>
-                                  );
-                                })
-                              )}
+                              {timeSlots.map((slot) => {
+                                const isFull = slot.available_capacity <= 0;
+                                const isAlmostFull = slot.utilization_percent >= 80 && !isFull;
+                                
+                                return (
+                                  <SelectItem 
+                                    key={`${slot.date}|${slot.timeslot}`}
+                                    value={`${slot.date}|${slot.timeslot}`}
+                                    disabled={isFull}
+                                    className={isFull ? "opacity-50" : ""}
+                                  >
+                                    <span className="flex items-center gap-2">
+                                      {formatTimeSlot(slot.date, slot.timeslot)}
+                                      {isFull ? (
+                                        <Badge variant="destructive" className="text-xs">Tele</Badge>
+                                      ) : isAlmostFull ? (
+                                        <Badge className="text-xs bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 border-yellow-500/30">Majdnem tele!</Badge>
+                                      ) : (
+                                        <Badge variant="outline" className="text-xs">{slot.available_capacity} hely</Badge>
+                                      )}
+                                    </span>
+                                  </SelectItem>
+                                );
+                              })}
                             </SelectContent>
                           </Select>
                         )}
                       </div>
                     )}
+
                   </div>
                   
                   <Separator />
