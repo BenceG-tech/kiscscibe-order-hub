@@ -554,7 +554,7 @@ const ActiveOrderCard = ({
     <Card
       className={cn(
         "hover:shadow-lg transition-all duration-300",
-        isNew && "border-2 border-blue-500/70 shadow-[0_0_0_4px_rgba(59,130,246,0.15)] animate-pulse-soft"
+        isNew && "border-2 border-blue-500/70 shadow-[0_0_0_4px_rgba(59,130,246,0.15)]"
       )}
     >
       <CardHeader className="pb-3">
