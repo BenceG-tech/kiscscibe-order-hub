@@ -8,6 +8,7 @@ interface OrderNotificationsContextType {
   clearNewOrdersCount: () => void;
   playNotificationSound: () => void;
   audioUnlocked: boolean;
+  lastNewOrderAt: string | null;
 }
 
 const OrderNotificationsContext = createContext<OrderNotificationsContextType>({
@@ -15,6 +16,7 @@ const OrderNotificationsContext = createContext<OrderNotificationsContextType>({
   clearNewOrdersCount: () => {},
   playNotificationSound: () => {},
   audioUnlocked: false,
+  lastNewOrderAt: null,
 });
 
 export const useOrderNotifications = () => useContext(OrderNotificationsContext);
@@ -31,12 +33,14 @@ export const OrderNotificationsProvider = ({ children }: { children: React.React
     dismissNotification,
     playNotificationSound,
     audioUnlocked,
+    lastNewOrderAt,
   } = useGlobalOrderNotifications(enabled);
 
   const navigateTo = isAdmin ? '/admin/orders' : '/staff/orders';
 
   return (
-    <OrderNotificationsContext.Provider value={{ newOrdersCount, clearNewOrdersCount, playNotificationSound, audioUnlocked }}>
+    <OrderNotificationsContext.Provider value={{ newOrdersCount, clearNewOrdersCount, playNotificationSound, audioUnlocked, lastNewOrderAt }}>
+
       {enabled && currentNotification && (
         <OrderNotificationModal
           order={currentNotification}
