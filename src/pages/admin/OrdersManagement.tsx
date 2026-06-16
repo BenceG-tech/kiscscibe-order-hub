@@ -1072,6 +1072,18 @@ const PastOrderAdminCard = ({
 
             {/* Actions */}
             <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  onReactivate(order.id, order.status === "cancelled" ? "new" : "ready")
+                }
+                className="border-blue-500/50 text-blue-600 hover:bg-blue-500/10 hover:text-blue-700"
+                title="Visszahelyezés az aktív rendelések közé"
+              >
+                <RotateCcw className="h-4 w-4 mr-1" />
+                Visszaaktiválás
+              </Button>
               {!isArchived && (
                 <Button
                   variant="outline"
