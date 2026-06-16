@@ -86,8 +86,9 @@ const validateName = (v: string): string | undefined => {
 
 const validatePhone = (v: string): string | undefined => {
   if (!v) return undefined;
-  const digits = v.replace(/\s/g, "");
-  if (!/^\d{9}$/.test(digits)) return "Kérjük, adj meg egy érvényes telefonszámot";
+  // Allow spaces, dashes, leading 0; require 8-9 digits after stripping
+  const digits = v.replace(/\D/g, "").replace(/^0+/, "");
+  if (digits.length < 8 || digits.length > 9) return "Kérjük, adj meg egy érvényes telefonszámot (pl. 30 123 4567)";
   return undefined;
 };
 
@@ -430,15 +431,46 @@ const Checkout = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Run validation as safety net
+    // Mark all fields touched and run validation
+    setTouched({ name: true, phone: true, email: true });
     const nameErr = validateName(formData.name);
     const phoneErr = validatePhone(formData.phone);
     const emailErr = validateEmail(formData.email);
-    if (nameErr || phoneErr || emailErr) {
-      setTouched({ name: true, phone: true, email: true });
-      setFieldErrors({ name: nameErr, phone: phoneErr, email: emailErr });
+
+    // Required-field checks with explicit user feedback
+    const missing: string[] = [];
+    if (!formData.name) missing.push("Név");
+    if (!formData.phone) missing.push("Telefonszám");
+    if (!formData.email) missing.push("E-mail cím");
+
+    if (missing.length > 0) {
+      toast({
+        title: "Hiányzó adatok",
+        description: `Kérjük töltsd ki: ${missing.join(", ")}`,
+        variant: "destructive",
+      });
       return;
     }
+
+    if (nameErr || phoneErr || emailErr) {
+      setFieldErrors({ name: nameErr, phone: phoneErr, email: emailErr });
+      toast({
+        title: "Hibás adatok",
+        description: nameErr || phoneErr || emailErr,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (formData.pickup_type === "scheduled" && (!formData.pickup_date || !formData.pickup_time)) {
+      toast({
+        title: "Válassz időpontot",
+        description: "Az átvételhez kérjük válassz egy elérhető időpontot a listából.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     
     console.log('=== RENDELÉS LEADÁS DEBUG ===');
     console.log('Form data:', formData);
@@ -502,12 +534,13 @@ const Checkout = () => {
 
     try {
       console.log('Calling submit-order edge function...');
+      const normalizedPhone = formData.phone.replace(/\D/g, "").replace(/^0+/, "");
       
       const { data, error } = await supabase.functions.invoke("submit-order", {
         body: {
           customer: {
             name: formData.name,
-            phone: `+36${formData.phone.replace(/\s/g, '')}`,
+            phone: `+36${normalizedPhone}`,
             email: formData.email,
             notes: (tableNumber ? `[Asztal: ${tableNumber}] ` : '') + (formData.notes || '') || null
           },
@@ -541,7 +574,7 @@ const Checkout = () => {
       if (error) throw error;
       
       clearCart();
-      navigate(`/order-confirmation?code=${data.order_code}&phone=${encodeURIComponent(`+36${formData.phone.replace(/\s/g, '')}`)}&email=${encodeURIComponent(formData.email)}`);
+      navigate(`/order-confirmation?code=${data.order_code}&phone=${encodeURIComponent(`+36${normalizedPhone}`)}&email=${encodeURIComponent(formData.email)}`);
       
     } catch (error: any) {
       console.error("Order submission error:", error);
@@ -934,24 +967,19 @@ const Checkout = () => {
                     
                     <Button
                       type="submit"
-                      className="w-full bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm disabled:opacity-40 disabled:cursor-not-allowed"
-                      disabled={
-                        isSubmitting || 
-                        hasMultipleDailyDates() ||
-                        hasValidationErrors ||
-                        requiredFieldsMissing ||
-                        (formData.pickup_type === "scheduled" && (!formData.pickup_date || !formData.pickup_time))
-                      }
+                      className="w-full bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm"
+                      disabled={isSubmitting}
                     >
                       {isSubmitting ? (
                         <>
                           <LoadingSpinner className="h-4 w-4 mr-2" />
-                          Rendelés leadása...
+                          Rendelés feldolgozása…
                         </>
                       ) : (
                         `Rendelés leadása - ${cart.totalAfterDiscount.toLocaleString()} Ft`
                       )}
                     </Button>
+
                   </div>
                 </form>
               </CardContent>
