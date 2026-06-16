@@ -885,6 +885,7 @@ const PastOrdersTab = ({
                   order={order}
                   onArchive={onArchive}
                   onDelete={onDelete}
+                  onReactivate={onReactivate}
                   selected={selectedIds.has(order.id)}
                   onToggleSelect={() => toggleSelect(order.id)}
                 />
@@ -902,12 +903,14 @@ const PastOrderAdminCard = ({
   order,
   onArchive,
   onDelete,
+  onReactivate,
   selected,
   onToggleSelect,
 }: {
   order: Order;
   onArchive: (id: string) => void;
   onDelete: (id: string) => void;
+  onReactivate: (id: string, status: string) => void;
   selected: boolean;
   onToggleSelect: () => void;
 }) => {
