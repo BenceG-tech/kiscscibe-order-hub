@@ -431,15 +431,46 @@ const Checkout = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Run validation as safety net
+    // Mark all fields touched and run validation
+    setTouched({ name: true, phone: true, email: true });
     const nameErr = validateName(formData.name);
     const phoneErr = validatePhone(formData.phone);
     const emailErr = validateEmail(formData.email);
-    if (nameErr || phoneErr || emailErr) {
-      setTouched({ name: true, phone: true, email: true });
-      setFieldErrors({ name: nameErr, phone: phoneErr, email: emailErr });
+
+    // Required-field checks with explicit user feedback
+    const missing: string[] = [];
+    if (!formData.name) missing.push("Név");
+    if (!formData.phone) missing.push("Telefonszám");
+    if (!formData.email) missing.push("E-mail cím");
+
+    if (missing.length > 0) {
+      toast({
+        title: "Hiányzó adatok",
+        description: `Kérjük töltsd ki: ${missing.join(", ")}`,
+        variant: "destructive",
+      });
       return;
     }
+
+    if (nameErr || phoneErr || emailErr) {
+      setFieldErrors({ name: nameErr, phone: phoneErr, email: emailErr });
+      toast({
+        title: "Hibás adatok",
+        description: nameErr || phoneErr || emailErr,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (formData.pickup_type === "scheduled" && (!formData.pickup_date || !formData.pickup_time)) {
+      toast({
+        title: "Válassz időpontot",
+        description: "Az átvételhez kérjük válassz egy elérhető időpontot a listából.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     
     console.log('=== RENDELÉS LEADÁS DEBUG ===');
     console.log('Form data:', formData);
@@ -936,24 +967,19 @@ const Checkout = () => {
                     
                     <Button
                       type="submit"
-                      className="w-full bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm disabled:opacity-40 disabled:cursor-not-allowed"
-                      disabled={
-                        isSubmitting || 
-                        hasMultipleDailyDates() ||
-                        hasValidationErrors ||
-                        requiredFieldsMissing ||
-                        (formData.pickup_type === "scheduled" && (!formData.pickup_date || !formData.pickup_time))
-                      }
+                      className="w-full bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm"
+                      disabled={isSubmitting}
                     >
                       {isSubmitting ? (
                         <>
                           <LoadingSpinner className="h-4 w-4 mr-2" />
-                          Rendelés leadása...
+                          Rendelés feldolgozása…
                         </>
                       ) : (
                         `Rendelés leadása - ${cart.totalAfterDiscount.toLocaleString()} Ft`
                       )}
                     </Button>
+
                   </div>
                 </form>
               </CardContent>
