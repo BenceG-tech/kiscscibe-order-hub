@@ -12,6 +12,30 @@ export interface ChangelogEntry {
 // Newest first
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: "2026-06-16",
+    title: "Rendelési fázisok visszaléptetése",
+    description:
+      "Az admin felületen most már minden rendelésnél elérhető a „Vissza" gomb: véletlenül átállított Készítés/Kész/Átvéve állapot egy kattintással visszahelyezhető. A vendég ilyenkor NEM kap automata e-mailt. A múltbeli rendelések is visszaaktiválhatók („Visszaaktiválás" gomb).",
+    type: "new",
+    tabGroup: "orders",
+  },
+  {
+    date: "2026-06-16",
+    title: "Tisztább új-rendelés kártya",
+    description:
+      "Az új rendelések most kék keretes kiemelést kapnak, a tetején egy „lényeg-sávban" azonnal látszik a kód, név, telefon, átvétel és összeg. A fő státusz-akció gombok nagyobbak és könnyebben elérhetők mobilon.",
+    type: "improved",
+    tabGroup: "orders",
+  },
+  {
+    date: "2026-06-16",
+    title: "Checkout: érthető hibajelzések",
+    description:
+      "Ha a vendég nem tud továbblépni a rendelésnél (hibás telefonszám, hiányzó adat, választatlan időpont), most piros toast üzenet pontosan megmondja, miért. A „Rendelés leadása" gomb nem szürkül le néma módon, és a telefonszám-validáció elfogadja a vezető 0-t és a szóközöket.",
+    type: "fixed",
+    tabGroup: "orders",
+  },
+
     date: "2026-06-15",
     title: "Vélemények szerkesztő admin felület",
     description:
