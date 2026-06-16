@@ -1,75 +1,51 @@
-# Tablet értesítések ellenőrzése + tulajdonosi útmutató
+# Cél
 
-## 1. Mit teszek (technikai rész röviden)
+Minden új rendelésnél MINDIG szóljon a hangjelzés és jelenjen meg a felugró ablak — ne csak akkor, amikor a Realtime csatorna "épp működik".
 
-A `useGlobalOrderNotifications` hook már tartalmazza a tablet-fixeket (audio unlock néma bufferrel, missed-orders sweep, vibráció, 60 mp-es safety sweep). Nem írok új kódot — csak **end-to-end tesztet** futtatok a `browser` toolokkal:
+# Miért nem szól most mindig?
 
-- iPad viewport (820×1180) → `/admin/orders` megnyitása, képernyőkattintás (audio unlock), majd új teszt rendelés leadása másik tabon → ellenőrzöm: jön-e popup + hang.
-- Android tablet viewport (1024×768) → ugyanaz.
-- Console logok átnézése (`[Notifications]` prefix) a sweep és subscribe státuszokhoz.
-- Ha bármi nem stimmel, javítom (pl. extra resume hívás, sweep idő).
+Három valódi hibát találtam a `useGlobalOrderNotifications` hookban és az `OrdersManagement` oldalban:
 
-## 2. Tulajdonosi útmutató (nem technikai, étterembe kinyomtatható)
+**1. Versengő Realtime csatornák ugyanarra a táblára**
+Az `OrdersManagement.tsx` saját csatornát nyit (`orders-updates`), a globális értesítő hook pedig egy másikat (`order-notifications-…`). Mindkettő ugyanazt az `orders` INSERT eseményt figyeli. A Supabase Realtime ilyenkor időnként az egyiknek kézbesít, a másiknak nem — ezért látod a rendelést a listában, de hang/popup nem jön.
 
-### A) Egyszeri beállítás a tableten (induláskor)
+**2. Indulási versenyhelyzet ("a rendelés már ismert")**
+Induláskor a hook betölti a legutóbbi 100 rendelés azonosítóját `knownOrderIdsRef`-be, hogy ne pittyegjen vissza a régiekre. Ha egy új rendelés pont a betöltés és a csatorna `SUBSCRIBED` állapota közti pár másodpercben érkezik, az ID-ja bekerül az "ismert" halmazba — utána sem a csatorna, sem a 60 mp-es söprés nem szólal meg rá, mert a dedupe szűrő kidobja.
 
-1. **Nyisd meg** a böngészőben: `kiscscibe-order-hub.lovable.app/admin/orders` (vagy a saját domain).
-2. **Jelentkezz be** admin fiókkal (`gataibence@gmail.com`).
-3. **Koppints egyszer a képernyőre** — ez engedélyezi a hangjelzést. (iPad/iPhone csak így enged hangot lejátszani.)
-4. **Állítsd a tablet hangerejét maximumra**, kapcsold ki a néma módot.
-5. **Tartsd nyitva a böngésző fület.** Ha bezárod, nem jön értesítés.
-6. **Tablet ne aludjon el:** Beállítások → Képernyő → Auto-lock → **Soha**.
-7. *(Opcionális)* iPaden: Megosztás → **„Hozzáadás a kezdőképernyőhöz"** — így alkalmazásként indul, kevésbé alszik el.
+**3. A `CLOSED` állapotot nem kezeljük**
+A retry csak `CHANNEL_ERROR` és `TIMED_OUT` esetén indul újra. Token frissítéskor vagy átmeneti hálózati hibánál a csatorna `CLOSED` állapotba mehet és ott marad a következő tab-váltásig — közben hangjelzés sincs.
 
-### B) Mi történik amikor jön egy rendelés?
+# Javítás
 
-- **Hangjelzés**: kétszer megszólal egy emelkedő csengőhang (kb. 1,5 mp).
-- **Rezgés**: Android tableten/telefonon a készülék is rezeg.
-- **Felugró ablak**: középen megjelenik a rendelés száma + összeg + átvételi idő. Itt két gomb:
-  - **„Megnyitás"** → átvisz a rendelés részleteihez
-  - **„Bezárás"** → eltünteti a popupot (a rendelés továbbra is ott marad az „Új" oszlopban)
+## 1. Egy közös csatorna, kurzor-alapú söprés
+- Töröljük az `OrdersManagement.tsx`-beli külön Realtime csatornát. Helyette az `OrderNotificationsContext` ad ki egy `lastNewOrderAt` jelzést, amire az `OrdersManagement` reagálva újrahívja a `fetchOrders`-t. Egy csatorna marad, kevesebb ütközés.
+- A duplikátum-szűrést azonosító-halmaz helyett **`created_at` kurzorra** állítjuk: csak az `lastSeenAtRef`-nél későbbi rendelések szólalnak meg. Így az indulási résben érkező rendelés is biztosan értesít.
+- Az indulási `known IDs` betöltést megtartjuk, de csak a kurzor inicializálására használjuk (a legfrissebb `created_at`-et vesszük), nem ID-halmazként.
 
-### C) Mit kell tenni a rendeléssel? (4 fázis)
+## 2. `CLOSED` retry + heartbeat
+- A `subscribe()` callbackben a `CLOSED` állapotra is exponenciális retry induljon.
+- A meglévő 60 mp-es safety sweep mellé bekerül egy **30 mp-es ping**: ha a csatorna utolsó `SUBSCRIBED` óta > 90 mp telt el INSERT esemény nélkül, automatikusan újrasubscribe.
 
-A `/admin/orders` oldalon minden rendelés egy kártya. A státusz alapján más-más gomb van rajta:
+## 3. Söprés mindig értesít a kurzorhoz képest
+A `sweepMissedOrders` jelenleg `handleNewOrder`-on át megy, ami az ID-szűrő miatt elnyelheti az eseményt. Az új kurzor-logikával ez megszűnik: minden a `lastSeenAtRef`-nél újabb rendelés értesít, függetlenül attól, hogy a csatorna már látta-e.
 
-| Fázis | Mit látsz | Mit nyomj | Mi történik |
-|---|---|---|---|
-| 1. **Új** | Sárga kártya | **„Nyomtatás"** → kinyomtat egy konyhai bizonylatot 80mm-es printerre. **„Készítés megkezdése"** | A vendég emailt kap: „Megkezdtük a rendelésed elkészítését" |
-| 2. **Készítés alatt** | Kék kártya | **„Elkészült"** | A vendég emailt kap: „A rendelésed átvehető" |
-| 3. **Elkészült** | Zöld kártya | **„Átadva"** | A vendég emailt kap: „Köszönjük, jó étvágyat" + értékelő linket kap |
-| 4. **Átadva** | Szürke kártya | (nincs teendő) | Lezárt rendelés |
+# Technikai részletek
 
-➡️ **Minden gombnyomás automatikusan emailt küld a vendégnek** — nem kell külön értesíteni.
+Érintett fájlok:
+- `src/hooks/useGlobalOrderNotifications.tsx` — kurzor-alapú dedupe, `CLOSED` kezelés, 30 mp heartbeat, közös `lastNewOrderAt` kiadása.
+- `src/contexts/OrderNotificationsContext.tsx` — `lastNewOrderAt: string | null` mező hozzáadása a contexthez.
+- `src/pages/admin/OrdersManagement.tsx` — a saját Realtime csatorna eltávolítása; helyette `useEffect` a context `lastNewOrderAt` változására, ami `fetchOrders()`-t hív.
+- `src/pages/staff/StaffOrders.tsx` — ha van saját csatornája, ugyanígy átállítjuk (ellenőrzöm implementáláskor).
 
-### D) Nyomtatás (új funkció)
+Nem módosítom:
+- a hangjelzés és vibráció logikáját (működik),
+- a felugró modal UI-t,
+- az audio-unlock kezelést,
+- a backend / edge function / DB részt.
 
-- Az **„Új"** státuszú kártyán megjelenik egy **„Nyomtatás"** gomb.
-- Megnyomásra felugrik a böngésző nyomtatási ablaka egy 80 mm-es konyhai bizonylattal (rendelésszám, vendég, tételek, megjegyzés).
-- Válaszd ki a konyhai termoprintert → **Nyomtatás**.
-- *(Tipp: állítsd be a böngészőben alapértelmezett printerként, hogy egy kattintás legyen.)*
+# Ellenőrzés implementálás után
 
-### E) Ha mégse jön hang/popup
-
-1. Frissítsd az oldalt (pull-to-refresh vagy F5).
-2. Koppints újra a képernyőre (audio újra-engedélyezés).
-3. Ellenőrizd a tablet hangerőt és néma kapcsolót.
-4. Ha 1 perce nyitva volt a tab és aludt: a rendszer 60 másodpercenként magától ellenőrzi az új rendeléseket — várj fél percet.
-
-### F) Mit NEM kell csinálni
-
-- ❌ Ne zárd be a böngésző fület munkaidő alatt.
-- ❌ Ne navigálj el az `/admin/orders` oldalról hosszú időre (más admin oldalon is jön értesítés, de biztosabb itt maradni).
-- ❌ Ne kapcsold ki a wifi-t — Realtime kapcsolat kell.
-
----
-
-## Tesztelési lépések (amit én futtatok)
-
-1. iPad viewport megnyitása → admin login → console log ellenőrzés (`Audio unlocked`).
-2. Új rendelés szimulálása másik tabról.
-3. Popup + hang + vibráció megjelenés ellenőrzése.
-4. Tab elrejtés 5 mp-re, vissza → sweep lefut-e.
-5. Android tablet viewporton ugyanez.
-
-Ha bármi hibázik, kis frontend-fixet csinálok (nem érintve backend logikát).
+1. Böngészőben `/admin/orders` megnyitva, console-ban: `[Notifications] ✅ Successfully subscribed` látszik.
+2. Új rendelés leadása másik tabon → hang + popup azonnal.
+3. Tab háttérbe küldése 2 percre, új rendelés közben → visszatéréskor sweep elsüti a hangot és popup-ot.
+4. Hálózat ki-be kapcsolása → automatikus reconnect logban, és a közben érkezett rendelés értesít.
