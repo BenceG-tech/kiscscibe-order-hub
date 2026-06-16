@@ -42,6 +42,8 @@ import {
   Download,
   X,
   Tag,
+  Undo2,
+  RotateCcw,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -490,7 +492,8 @@ const OrdersManagement = () => {
                     key={order.id}
                     order={order}
                     getStatusConfig={getStatusConfig}
-                    onStatusChange={updateOrderStatus}
+                    onStatusChange={(id, status) => updateOrderStatus(id, status)}
+                    onRevertStatus={(id, status) => updateOrderStatus(id, status, { silent: true })}
                   />
                 ))}
                 {getFilteredOrders(tabValue).length === 0 && (
@@ -532,6 +535,7 @@ const ActiveOrderCard = ({
   order,
   getStatusConfig,
   onStatusChange,
+  onRevertStatus,
 }: {
   order: Order;
   getStatusConfig: (s: string) => {
@@ -540,17 +544,46 @@ const ActiveOrderCard = ({
     icon: any;
   };
   onStatusChange: (id: string, status: string) => void;
+  onRevertStatus: (id: string, status: string) => void;
 }) => {
   const statusConfig = getStatusConfig(order.status);
   const StatusIcon = statusConfig.icon;
+  const isNew = order.status === "new";
 
   return (
-    <Card className="hover:shadow-lg transition-all duration-300">
+    <Card
+      className={cn(
+        "hover:shadow-lg transition-all duration-300",
+        isNew && "border-2 border-blue-500/70 shadow-[0_0_0_4px_rgba(59,130,246,0.15)] animate-pulse-soft"
+      )}
+    >
       <CardHeader className="pb-3">
+        {/* Essence bar - mobile friendly summary */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm mb-2 pb-2 border-b border-border/50">
+          <span className="font-bold text-base">#{order.code}</span>
+          <span className="text-muted-foreground">·</span>
+          <span className="font-medium">{order.name}</span>
+          <a
+            href={`tel:${order.phone}`}
+            className="text-muted-foreground hover:text-primary inline-flex items-center gap-1"
+          >
+            <Phone className="h-3.5 w-3.5" />
+            {order.phone}
+          </a>
+          {order.pickup_time && (
+            <span className="text-muted-foreground inline-flex items-center gap-1">
+              <Clock className="h-3.5 w-3.5" />
+              {new Date(order.pickup_time).toLocaleString("hu-HU", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+            </span>
+          )}
+          <span className="ml-auto font-bold text-primary">
+            {order.total_huf.toLocaleString("hu-HU")} Ft
+          </span>
+        </div>
+
         <div className="flex items-start justify-between">
           <div>
             <CardTitle className="flex items-center gap-3">
-              <span className="text-lg">#{order.code}</span>
               <Badge className={statusConfig.color}>
                 <StatusIcon className="h-3 w-3 mr-1" />
                 {statusConfig.label}
@@ -562,9 +595,6 @@ const ActiveOrderCard = ({
             </p>
           </div>
           <div className="text-right">
-            <p className="text-2xl font-bold text-primary">
-              {order.total_huf.toLocaleString("hu-HU")} Ft
-            </p>
             {order.coupon_code && order.discount_huf && order.discount_huf > 0 && (
               <p className="text-xs text-green-600 dark:text-green-400 flex items-center justify-end gap-1 mt-0.5">
                 <Tag className="h-3 w-3" />
@@ -582,24 +612,10 @@ const ActiveOrderCard = ({
       <CardContent className="pt-0">
         <div className="grid md:grid-cols-2 gap-4 mb-4">
           <div>
-            <h4 className="font-semibold mb-2">Vevő adatok:</h4>
-            <p className="text-sm">
-              <strong>Név:</strong> {order.name}
-            </p>
-            <p className="text-sm">
-              <Phone className="h-4 w-4 inline mr-1" />
-              {order.phone}
-            </p>
             {order.email && (
               <p className="text-sm">
                 <Mail className="h-4 w-4 inline mr-1" />
                 {order.email}
-              </p>
-            )}
-            {order.pickup_time && (
-              <p className="text-sm">
-                <Clock className="h-4 w-4 inline mr-1" />
-                Átvétel: {new Date(order.pickup_time).toLocaleString("hu-HU")}
               </p>
             )}
           </div>
@@ -651,12 +667,36 @@ const ActiveOrderCard = ({
           </div>
         )}
 
-        <div className="flex gap-2 flex-wrap">
+        {/* Status action bar — bigger, both directions */}
+        <div className="flex gap-2 flex-wrap items-center pt-2 border-t border-border/50">
+          {/* Revert (back) buttons */}
+          {order.status === "preparing" && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onRevertStatus(order.id, "new")}
+              title="Vissza Új állapotba"
+            >
+              <Undo2 className="h-4 w-4 mr-1" /> Vissza: Új
+            </Button>
+          )}
+          {order.status === "ready" && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onRevertStatus(order.id, "preparing")}
+              title="Vissza Készítés alatt állapotba"
+            >
+              <Undo2 className="h-4 w-4 mr-1" /> Vissza: Készítés
+            </Button>
+          )}
+
+          {/* Forward buttons */}
           {order.status === "new" && (
             <Button
               size="sm"
               onClick={() => onStatusChange(order.id, "preparing")}
-              className="bg-yellow-600 hover:bg-yellow-700"
+              className="bg-yellow-600 hover:bg-yellow-700 h-10"
             >
               Készítés megkezdése
             </Button>
@@ -665,7 +705,7 @@ const ActiveOrderCard = ({
             <Button
               size="sm"
               onClick={() => onStatusChange(order.id, "ready")}
-              className="bg-green-600 hover:bg-green-700"
+              className="bg-green-600 hover:bg-green-700 h-10"
             >
               Kész jelölése
             </Button>
@@ -674,7 +714,7 @@ const ActiveOrderCard = ({
             <Button
               size="sm"
               onClick={() => onStatusChange(order.id, "completed")}
-              className="bg-gray-600 hover:bg-gray-700"
+              className="bg-gray-600 hover:bg-gray-700 h-10"
             >
               Átvéve
             </Button>
@@ -688,7 +728,7 @@ const ActiveOrderCard = ({
               Lemondás
             </Button>
           )}
-          <Button size="sm" variant="outline" asChild>
+          <Button size="sm" variant="outline" asChild className="ml-auto">
             <a href={`tel:${order.phone}`}>
               <Phone className="h-4 w-4 mr-1" />
               Hívás
@@ -699,6 +739,7 @@ const ActiveOrderCard = ({
     </Card>
   );
 };
+
 
 /* ─── Past Orders Tab ─── */
 const PastOrdersTab = ({
