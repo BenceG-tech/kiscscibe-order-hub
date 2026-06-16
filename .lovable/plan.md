@@ -1,52 +1,75 @@
-# Rendelés nyomtatás + tablet értesítések javítása
+# Tablet értesítések ellenőrzése + tulajdonosi útmutató
 
-## 1. Nyomtatás gomb az "Új" fázisú rendelésekhez
+## 1. Mit teszek (technikai rész röviden)
 
-`src/pages/admin/OrdersManagement.tsx` → `OrderCard` komponens:
-- Új `Nyomtatás` gomb a státusz akció sávba, **csak akkor jelenjen meg, ha `order.status === "new"`** (a "Készítés megkezdése" gomb mellé).
-- Kattintásra megnyílik egy rejtett, nyomtatásra optimalizált blokk és `window.print()` fut le — vagy egy új ablakban renderelünk egy 80 mm-es konyhai bizonylatot (a meglévő KDS receipt mintát követve, a `kitchen-display-system-kds-v2` memóriával összhangban: 80 mm szélesség, monospace, nagy tételnevek, mennyiség, módosítók `↳`-val, megjegyzés, átvételi idő, rendelésszám barcode-szerű kiemeléssel).
-- A printelt tartalom: `#kód`, vendég neve + telefon, átvételi idő, fizetési mód, tételek (qty × név, módosítók, ár), végösszeg, kupon (ha van), megjegyzés.
-- Print CSS biztosítja, hogy az admin UI-ból semmi más ne nyomtatódjon (`@media print { body > *:not(.print-receipt) { display: none } }`), a meglévő `print:hidden` mintát követve.
+A `useGlobalOrderNotifications` hook már tartalmazza a tablet-fixeket (audio unlock néma bufferrel, missed-orders sweep, vibráció, 60 mp-es safety sweep). Nem írok új kódot — csak **end-to-end tesztet** futtatok a `browser` toolokkal:
 
-## 2. Tablet értesítések (hang + popup) javítása
+- iPad viewport (820×1180) → `/admin/orders` megnyitása, képernyőkattintás (audio unlock), majd új teszt rendelés leadása másik tabon → ellenőrzöm: jön-e popup + hang.
+- Android tablet viewport (1024×768) → ugyanaz.
+- Console logok átnézése (`[Notifications]` prefix) a sweep és subscribe státuszokhoz.
+- Ha bármi nem stimmel, javítom (pl. extra resume hívás, sweep idő).
 
-### Diagnózis
-- **Hang**: iPadOS/Android tabletek Safari/Chrome szigorúan korlátozzák a `AudioContext`-et. A jelenlegi `useGlobalOrderNotifications`:
-  - Csak `click`/`keydown`/`touchstart`-ra unlockol, de **csak akkor próbálja inicializálni az AudioContextet**, ha még nincs. Tableten gyakran a `touchstart` után suspended marad — kell egy néma `oscillator.start()` az unlock pillanatában (silent buffer trükk), különben az első tényleges `playNotificationSound()` hangtalan.
-  - `audio.play()` az iPadOS-en némán elbukik, ha a tab háttérbe került és visszajött → kell egy `resume()` minden `visibilitychange`-re is.
-- **Vizuális értesítés / realtime**: a Realtime channel a tablet "alvása" alatt lezár; a `visibilitychange` újra-subscribe már megvan, de **a "missed orders" lekérdezés hiányzik** — ha a tablet 5 percig aludt, az alatt érkezett rendelésekről soha nem jön notifikáció. Be kell tölteni a `created_at > lastSeenAt` rendeléseket reconnect után, és lejátszani rájuk a hangot/popupot.
-- **Service Worker / PWA**: ha a tablet a published app-ot PWA-ként használja, érdemes a `usePushNotifications` hookkal push értesítést is küldeni (már létezik a rendszer), hogy zárt képernyőn is jelezzen.
+## 2. Tulajdonosi útmutató (nem technikai, étterembe kinyomtatható)
 
-### Változtatások
+### A) Egyszeri beállítás a tableten (induláskor)
 
-**`src/hooks/useGlobalOrderNotifications.tsx`**
-- Audio unlock során: létrehoz egy 1-mintás néma `AudioBuffer`-t és `start()`-olja → ez ténylegesen feloldja az `AudioContext`-et iOS-en.
-- `visibilitychange` handler: `audioContextRef.current?.resume()` minden visszatéréskor.
-- Új `lastSeenAtRef` (init: `new Date().toISOString()`). A subscription `SUBSCRIBED` callbackjében és minden `visibilitychange`-nél (visible) lekérdezi: `orders` ahol `created_at > lastSeenAt AND status = 'new'` → minden hiányzó rendelésre meghívja `handleNewOrder`-t (popup + hang), majd frissíti `lastSeenAt`-et.
-- Hozzáad egy fallback `<audio>` elemet base64 WAV-val a DOM-ba (rejtve), és ha az `AudioContext` nem érhető el, ezt játssza le — Android Chromen néha megbízhatóbb.
+1. **Nyisd meg** a böngészőben: `kiscscibe-order-hub.lovable.app/admin/orders` (vagy a saját domain).
+2. **Jelentkezz be** admin fiókkal (`gataibence@gmail.com`).
+3. **Koppints egyszer a képernyőre** — ez engedélyezi a hangjelzést. (iPad/iPhone csak így enged hangot lejátszani.)
+4. **Állítsd a tablet hangerejét maximumra**, kapcsold ki a néma módot.
+5. **Tartsd nyitva a böngésző fület.** Ha bezárod, nem jön értesítés.
+6. **Tablet ne aludjon el:** Beállítások → Képernyő → Auto-lock → **Soha**.
+7. *(Opcionális)* iPaden: Megosztás → **„Hozzáadás a kezdőképernyőhöz"** — így alkalmazásként indul, kevésbé alszik el.
 
-**Tablet-specifikus UX (`OrderNotificationModal.tsx`)**
-- A modal már 2-es border-rel kiemelt, de ellenőrizzük, hogy tableten (768-1024 px) ne tűnjön el a viewport mögé. Vibrációs API hozzáadása: `navigator.vibrate?.([200, 100, 200, 100, 400])` amikor érkezik új rendelés — tableten/mobilon érezhető visszajelzés.
+### B) Mi történik amikor jön egy rendelés?
 
-### Tesztelés a `browser` toolokkal
-- `view_preview` 820×1180 (iPad) viewport-tal, bejelentkezés admin felhasználóval (`gataibence@gmail.com`).
-- `/admin/orders` megnyitása, képernyőkattintással audio unlock.
-- Új teszt rendelés leadása másik tabon (`view_preview` 390×844) → ellenőrizzük: hang + popup megjelenik az iPad viewportban.
-- Tab elrejtés (másik route navigáció + vissza) → a "missed orders" sweep hoz-e popupot, ha közben jött rendelés.
+- **Hangjelzés**: kétszer megszólal egy emelkedő csengőhang (kb. 1,5 mp).
+- **Rezgés**: Android tableten/telefonon a készülék is rezeg.
+- **Felugró ablak**: középen megjelenik a rendelés száma + összeg + átvételi idő. Itt két gomb:
+  - **„Megnyitás"** → átvisz a rendelés részleteihez
+  - **„Bezárás"** → eltünteti a popupot (a rendelés továbbra is ott marad az „Új" oszlopban)
 
-## Technikai részletek
+### C) Mit kell tenni a rendeléssel? (4 fázis)
 
-- A "missed orders" lekérdezés a meglévő RLS-szel (`is_admin_or_staff`) működik, nem kell új migráció.
-- Nem nyúlunk a backend `submit-order` / `send-order-status-email` edge functionhöz — csak frontend változás.
-- A jelenlegi `audio.play()` a `useRealtimeOrders` hookban érintetlen marad (nem ez a fő útvonal — a globális hook szolgáltatja az értesítést).
+A `/admin/orders` oldalon minden rendelés egy kártya. A státusz alapján más-más gomb van rajta:
 
-## Érintett fájlok
+| Fázis | Mit látsz | Mit nyomj | Mi történik |
+|---|---|---|---|
+| 1. **Új** | Sárga kártya | **„Nyomtatás"** → kinyomtat egy konyhai bizonylatot 80mm-es printerre. **„Készítés megkezdése"** | A vendég emailt kap: „Megkezdtük a rendelésed elkészítését" |
+| 2. **Készítés alatt** | Kék kártya | **„Elkészült"** | A vendég emailt kap: „A rendelésed átvehető" |
+| 3. **Elkészült** | Zöld kártya | **„Átadva"** | A vendég emailt kap: „Köszönjük, jó étvágyat" + értékelő linket kap |
+| 4. **Átadva** | Szürke kártya | (nincs teendő) | Lezárt rendelés |
 
-```text
-src/pages/admin/OrdersManagement.tsx        # Print gomb + print CSS + receipt komponens
-src/components/admin/OrderReceiptPrint.tsx  # ÚJ: nyomtatható 80 mm-es bizonylat
-src/hooks/useGlobalOrderNotifications.tsx   # Audio unlock fix + missed-orders sweep + vibráció
-src/index.css                                # @media print szabályok (ha nem helyileg oldjuk meg)
-.lovable/plan.md                             # munkajegyzet frissítése
-src/data/adminChangelog.ts                   # új bejegyzés
-```
+➡️ **Minden gombnyomás automatikusan emailt küld a vendégnek** — nem kell külön értesíteni.
+
+### D) Nyomtatás (új funkció)
+
+- Az **„Új"** státuszú kártyán megjelenik egy **„Nyomtatás"** gomb.
+- Megnyomásra felugrik a böngésző nyomtatási ablaka egy 80 mm-es konyhai bizonylattal (rendelésszám, vendég, tételek, megjegyzés).
+- Válaszd ki a konyhai termoprintert → **Nyomtatás**.
+- *(Tipp: állítsd be a böngészőben alapértelmezett printerként, hogy egy kattintás legyen.)*
+
+### E) Ha mégse jön hang/popup
+
+1. Frissítsd az oldalt (pull-to-refresh vagy F5).
+2. Koppints újra a képernyőre (audio újra-engedélyezés).
+3. Ellenőrizd a tablet hangerőt és néma kapcsolót.
+4. Ha 1 perce nyitva volt a tab és aludt: a rendszer 60 másodpercenként magától ellenőrzi az új rendeléseket — várj fél percet.
+
+### F) Mit NEM kell csinálni
+
+- ❌ Ne zárd be a böngésző fület munkaidő alatt.
+- ❌ Ne navigálj el az `/admin/orders` oldalról hosszú időre (más admin oldalon is jön értesítés, de biztosabb itt maradni).
+- ❌ Ne kapcsold ki a wifi-t — Realtime kapcsolat kell.
+
+---
+
+## Tesztelési lépések (amit én futtatok)
+
+1. iPad viewport megnyitása → admin login → console log ellenőrzés (`Audio unlocked`).
+2. Új rendelés szimulálása másik tabról.
+3. Popup + hang + vibráció megjelenés ellenőrzése.
+4. Tab elrejtés 5 mp-re, vissza → sweep lefut-e.
+5. Android tablet viewporton ugyanez.
+
+Ha bármi hibázik, kis frontend-fixet csinálok (nem érintve backend logikát).
