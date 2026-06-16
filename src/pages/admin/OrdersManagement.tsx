@@ -44,7 +44,9 @@ import {
   Tag,
   Undo2,
   RotateCcw,
+  Printer,
 } from "lucide-react";
+import { printOrderReceipt } from "@/lib/printOrderReceipt";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
