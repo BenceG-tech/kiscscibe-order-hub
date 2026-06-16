@@ -522,7 +522,9 @@ const OrdersManagement = () => {
               onArchive={archiveOrder}
               onDelete={deleteOrder}
               onArchiveAll={archiveAllPast}
+              onReactivate={(id, status) => updateOrderStatus(id, status, { silent: true })}
             />
+
           </TabsContent>
         </Tabs>
       </div>
