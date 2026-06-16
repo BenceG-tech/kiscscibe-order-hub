@@ -13,6 +13,22 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-06-16",
+    title: "Nyomtatás gomb az új rendeléseknél",
+    description:
+      "Az Új fázisban lévő rendelések most külön Nyomtatás gombot kaptak: egy kattintásra megnyílik egy 80 mm-es konyhai bizonylat (rendelésszám, vendég, átvétel, tételek, módosítók, kupon, végösszeg, megjegyzés) és automatikusan elindul a nyomtatás.",
+    type: "new",
+    tabGroup: "orders",
+  },
+  {
+    date: "2026-06-16",
+    title: "Tablet értesítések megbízhatóbbak",
+    description:
+      "iPad/Android tableteken most már megbízhatóan hangot ad és vibrál az új rendelés értesítő. Ha a tablet aludt vagy elveszett a kapcsolat, az ébredés után automatikusan lekérdezi a kimaradt rendeléseket és értesít róluk. 60 másodpercenként háttér-ellenőrzés is fut biztonsági szempontból.",
+    type: "fixed",
+    tabGroup: "orders",
+  },
+  {
+    date: "2026-06-16",
     title: "Rendelési fázisok visszaléptetése",
     description:
       "Az admin felületen most már minden rendelésnél elérhető a Vissza gomb: véletlenül átállított Készítés/Kész/Átvéve állapot egy kattintással visszahelyezhető. A vendég ilyenkor NEM kap automata e-mailt. A múltbeli rendelések is visszaaktiválhatók a Visszaaktiválás gombbal.",
