@@ -1583,6 +1583,17 @@ export type Database = {
           total_huf: number
         }[]
       }
+      get_customer_order_items: {
+        Args: { customer_phone: string; order_code: string }
+        Returns: {
+          id: string
+          line_total_huf: number
+          name_snapshot: string
+          options: Json
+          qty: number
+          unit_price_huf: number
+        }[]
+      }
       get_customer_order_secure: {
         Args: { customer_phone: string; order_code: string }
         Returns: {
