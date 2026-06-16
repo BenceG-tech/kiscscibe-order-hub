@@ -1,43 +1,57 @@
-# Krisztian észrevételeinek javítása
+## Mit találtam
 
-## Mit látok jelenleg
+Elindítottam egy ügyfél-szimulációt mobil nézetben (402px). Hozzáadtam a Bundáskenyeret a kosárhoz, bementem a fizetéshez, kitöltöttem az adatokat — de amikor a **„Időpont foglalása"** opcióra kattintottam, az egész Checkout oldal **összeomlott** ezzel a hibával:
 
-1. **„Nem megy végig a rendelési folyamata"** — a backend működik (S82942, Z82817 ma bejött), de a `Checkout` „Véglegesítés" gombja **némán letiltódik**, ha pl. a telefon nem pontosan 9 számjegy, vagy nincs időpont kiválasztva. A felhasználó nem látja, miért szürke a gomb. A hibajelzések csak a böngésző konzolba mennek (lásd `useEffect` 149–166. sor).
-2. **„Nem lehet a rendelési fázisokat visszajelölni"** — `ActiveOrderCard` (OrdersManagement.tsx 642–678) csak előre vezet: `new → preparing → ready → completed`. Visszalépés nincs.
-3. **„Nem jó az admin felület, ahova beérkezik a rendelés"** — kompaktság / áttekinthetőség hiány: a státusz-akciók kis gombok, a fő infók (tételek, átvétel, telefon) szétszórtak, és nincs egy „lényeg" sáv az új rendeléseken.
+```
+NotFoundError: Failed to execute 'removeChild' on 'Node':
+The node to be removed is not a child of this node.
+(Select component, Checkout.tsx)
+```
+
+Ez egy **rendelést blokkoló kritikus bug**: ha az ügyfél előre szeretne időpontot foglalni (és a „Minél hamarabb" sokszor „Zárva" badge-et mutat), egyáltalán nem tud rendelést leadni.
+
+### Gyökérok
+
+`src/pages/Checkout.tsx` 862-914. sorok:
+
+1. A `<SelectContent>` belsejében egy üres állapot esetén `<div className="p-3...">` van renderelve, nem `<SelectItem>` — a Radix Select ezt nem támogatja és törléskor `removeChild` hibát dob.
+2. A `value={`${formData.pickup_date}|${formData.pickup_time}`}` érvénytelen `"|"`-ra értékelődik kiválasztás előtt — Radixban a Select értéknek `undefined`-nek kell lennie, ha nincs választva.
 
 ## Mit fogok csinálni
 
-### 1. Checkout: a felhasználó mindig tudja, miért nem megy tovább
-- A „Rendelés véglegesítése" gomb **nem lesz letiltva** validációs okból — kattintásra futtatjuk a validációt és **piros toast + inline hibaüzenet** mutatja a pontos okot („Hiányzó email", „Telefonszám 9 számjegyű legyen", „Válassz időpontot", stb.).
-- A `+36` prefixes telefon-ellenőrzés engedékenyebb: 8–9 számjegyet és vezető 0-t is elfogad, normalizálva küldjük.
-- Az időpont kiválasztó fölött piros mező jelzi, ha nincs választott slot, amikor „Időpont foglalása" van bekapcsolva.
-- A submit-button szövege a state szerint változik („Rendelés feldolgozása…" spinner-rel).
+### 1. Bug javítása `src/pages/Checkout.tsx`
 
-### 2. Admin: státusz oda-vissza kapcsolható
-- Az `ActiveOrderCard` minden státusznál kap egy **„↶ Vissza"** kiegészítő gombot:
-  - `preparing` → vissza `new`
-  - `ready` → vissza `preparing`
-  - `completed` → vissza `ready` (a „Múltbeli" fülről is)
-  - `cancelled` → újraaktiválás `new` (a „Múltbeli" fülről is)
-- A státusz-email automatika **nem** fut le visszaléptetésnél (hogy a vendég ne kapjon zavaros mailt) — `updateOrderStatus`-ba `silent` paraméter.
-- Egy kis admin-audit log bejegyzés készül minden visszaléptetésnél (`admin_audit_log` táblába, ami már létezik).
+- A „nincs elérhető időpont" üzenetet **kiveszem a `<SelectContent>`-ből** és a Select **alá/helyére** renderelem normál `<p>`-ként.
+- A Select `value` propot csak akkor adom meg, ha mind `pickup_date`, mind `pickup_time` ki van töltve — különben `undefined`.
+- Ha `timeSlots.length === 0`, egyáltalán nem rendereljem a Selectet, helyette egy informatív üres állapotot mutatok („Nincs szabad időpont, válasszon másik napot").
 
-### 3. Admin: tisztább, gyorsabb rendelés-kártya
-- Új rendelés (`new`) kártya **pulzáló kék keretet** kap, hogy ránézésre észrevehető legyen.
-- Egy „lényeg" sáv a kártya tetején: `#kód · név · telefon · átvétel ideje · összeg` (mobilon is jól olvasható).
-- A státusz-akció gombok nagyobbak (h-10), egymás mellett: balra a „**Vissza**", jobbra a fő „**Tovább**".
-- Mobilon a kártya alján sticky akció-sáv (csak `new`/`preparing` állapotnál), hogy egy kattintásra elérhető legyen a továbblépés.
-- A „Múltbeli" tab kollapszált kártyáira is kerül egy 3-pontos menüből elérhető „Visszaaktiválás" akció.
+### 2. End-to-end teszt folytatása (ügyfél oldal)
+
+A javítás után újra végigmegyek a folyamaton browser tooll:
+- Kosárba teszek 1 napi ajánlat ételt
+- Checkoutban kitöltöm: név, telefon (+36 30 123 4567), email, „Időpont foglalása" → kiválasztok egy slot-ot
+- Készpénz fizetés → **Rendelés leadása**
+- Ellenőrzöm az `Összesítő` képernyőt (megerősítő kód, részletek)
+- DB-ben `supabase--read_query`-vel megnézem, hogy a rendelés tényleg bekerült-e (orders + order_items)
+- Ellenőrzöm az `email_send_log`-ot (visszaigazoló email)
+
+### 3. Admin oldali végigtesztelés
+
+- Belépek admin nézetbe → **`/admin/orders`**
+- Ellenőrzöm, hogy az új rendelés megjelenik (realtime), helyes adatokkal, és pulzáló kék border van
+- Végigmegyek minden fázison: **új → készül → kész → kész szállítva** és visszafelé is (Vissza gomb)
+- Ellenőrzöm a fülek (Aktív / Múlt) tartalmát
+- KDS (kitchen display) printer view ellenőrzése, ha elérhető
+- A „Visszaaktiválás" gomb tesztje a múlt rendelésnél
+- Ellenőrzöm az `admin_audit_log`-ot (státusz változások nyomon követhetők-e)
+
+### 4. Jelentés
+
+A teszt végén szöveges összefoglalót adok arról, hogy minden fázis működik-e, és listázom a talált további problémákat (ha vannak). Csak akkor módosítok további kódot, ha újabb blokkoló hibát találok — egyébként összegyűjtöm őket egy listába és megkérdezem, melyiket javítsam.
 
 ## Érintett fájlok
 
-- `src/pages/Checkout.tsx` — submit-button mindig kattintható + inline + toast hibák, telefon normalizálás.
-- `src/pages/admin/OrdersManagement.tsx` — `updateOrderStatus(orderId, status, opts?)` + `ActiveOrderCard`-ban „Vissza" gombok + új lényeg-sáv + pulzáló új-rendelés keret + sticky mobil akció + `PastOrderAdminCard`-ban „Visszaaktiválás".
-- `src/data/adminChangelog.ts` — új bejegyzés a javításokról.
+- `src/pages/Checkout.tsx` — Select bug javítása (kb. 10-15 sor)
+- (csak ha újabb bugot találok: további fájlok, de erről előtte értesítelek)
 
-## Amit NEM változtatok
-
-- Nem nyúlok az `submit-order` edge funkcióhoz, a DB-hez, a rendelés-számításhoz, készlethez, kuponhoz.
-- Nem változik az értesítő hang / globális realtime / OrderNotificationModal.
-- A márka színek és tipográfia érintetlen.
+Nem módosítom: backend logikát, edge function-öket, DB sémát, business logikát.

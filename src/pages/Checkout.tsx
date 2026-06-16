@@ -858,63 +858,55 @@ const Checkout = () => {
                           <div className="flex justify-center py-4">
                             <LoadingSpinner className="h-6 w-6" />
                           </div>
+                        ) : timeSlots.length === 0 ? (
+                          <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground space-y-1">
+                            <p>Nincs elérhető időpont ehhez a rendeléshez.</p>
+                            <p className="text-xs">Próbálja újra később, vagy válasszon másik napra.</p>
+                          </div>
                         ) : (
-                          <Select
-                            value={`${formData.pickup_date}|${formData.pickup_time}`}
-                            onValueChange={(value) => {
-                              const [date, time] = value.split("|");
-                              setFormData(prev => ({ 
-                                ...prev, 
-                                pickup_date: date, 
-                                pickup_time: time 
-                              }));
-                            }}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Válasszon időpontot" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {timeSlots.length === 0 ? (
-                                <div className="p-3 text-sm text-muted-foreground space-y-2">
-                                  <p>Nincs elérhető időpont ehhez a rendeléshez.</p>
-                                  {loading && <p className="text-xs">Betöltés...</p>}
-                                  {!loading && (
-                                    <p className="text-xs">
-                                      Próbálja újra később, vagy válasszon másik napra.
-                                    </p>
-                                  )}
-                                </div>
-                              ) : (
-                                timeSlots.map((slot) => {
-                                  const isFull = slot.available_capacity <= 0;
-                                  const isAlmostFull = slot.utilization_percent >= 80 && !isFull;
-                                  
-                                  return (
-                                    <SelectItem 
-                                      key={`${slot.date}|${slot.timeslot}`}
-                                      value={`${slot.date}|${slot.timeslot}`}
-                                      disabled={isFull}
-                                      className={isFull ? "opacity-50" : ""}
-                                    >
-                                      <span className="flex items-center gap-2">
-                                        {formatTimeSlot(slot.date, slot.timeslot)}
-                                        {isFull ? (
-                                          <Badge variant="destructive" className="text-xs">Tele</Badge>
-                                        ) : isAlmostFull ? (
-                                          <Badge className="text-xs bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 border-yellow-500/30">Majdnem tele!</Badge>
-                                        ) : (
-                                          <Badge variant="outline" className="text-xs">{slot.available_capacity} hely</Badge>
-                                        )}
-                                      </span>
-                                    </SelectItem>
-                                  );
-                                })
-                              )}
-                            </SelectContent>
-                          </Select>
+                          <div className="space-y-3">
+                            <p className="text-sm text-muted-foreground">Válasszon átvételi időpontot:</p>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-72 overflow-y-auto pr-1">
+                              {timeSlots.map((slot) => {
+                                const isFull = slot.available_capacity <= 0;
+                                const isAlmostFull = slot.utilization_percent >= 80 && !isFull;
+                                const isSelected = formData.pickup_date === slot.date && formData.pickup_time === slot.timeslot;
+                                return (
+                                  <button
+                                    type="button"
+                                    key={`${slot.date}|${slot.timeslot}`}
+                                    disabled={isFull}
+                                    onClick={() =>
+                                      setFormData(prev => ({
+                                        ...prev,
+                                        pickup_date: slot.date,
+                                        pickup_time: slot.timeslot,
+                                      }))
+                                    }
+                                    className={`flex flex-col items-start gap-1 rounded-md border px-3 py-2 text-left text-sm transition-colors ${
+                                      isSelected
+                                        ? "border-primary bg-primary/10 ring-1 ring-primary"
+                                        : "border-border hover:bg-accent"
+                                    } ${isFull ? "opacity-50 cursor-not-allowed" : ""}`}
+                                  >
+                                    <span className="font-medium">{formatTimeSlot(slot.date, slot.timeslot)}</span>
+                                    {isFull ? (
+                                      <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Tele</Badge>
+                                    ) : isAlmostFull ? (
+                                      <Badge className="text-[10px] px-1.5 py-0 bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 border-yellow-500/30">Majdnem tele</Badge>
+                                    ) : (
+                                      <Badge variant="outline" className="text-[10px] px-1.5 py-0">{slot.available_capacity} hely</Badge>
+                                    )}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
                         )}
                       </div>
                     )}
+
+
                   </div>
                   
                   <Separator />
