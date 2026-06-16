@@ -33,12 +33,14 @@ export const OrderNotificationsProvider = ({ children }: { children: React.React
     dismissNotification,
     playNotificationSound,
     audioUnlocked,
+    lastNewOrderAt,
   } = useGlobalOrderNotifications(enabled);
 
   const navigateTo = isAdmin ? '/admin/orders' : '/staff/orders';
 
   return (
-    <OrderNotificationsContext.Provider value={{ newOrdersCount, clearNewOrdersCount, playNotificationSound, audioUnlocked }}>
+    <OrderNotificationsContext.Provider value={{ newOrdersCount, clearNewOrdersCount, playNotificationSound, audioUnlocked, lastNewOrderAt }}>
+
       {enabled && currentNotification && (
         <OrderNotificationModal
           order={currentNotification}
