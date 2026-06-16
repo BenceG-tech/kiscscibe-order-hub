@@ -10,40 +10,51 @@ interface PendingOrder {
   created_at: string;
 }
 
-const MAX_RETRIES = 5;
+const MAX_RETRIES = 8;
 const BASE_DELAY_MS = 2000;
+const HEARTBEAT_MS = 30_000;
+const STALE_SUBSCRIBED_MS = 90_000;
 
 /**
  * Global order notification hook.
- * @param enabled – when false every hook still runs (consistent hook count)
- *                   but side-effects are skipped.
+ *
+ * Dedupe strategy: cursor-based on `created_at`.
+ *   - Any order with `created_at > lastSeenAtRef` fires a notification exactly once
+ *     (firedIdsRef prevents double-fire when both Realtime + sweep see it).
+ *   - This eliminates the start-up race where an order arriving between the
+ *     initial fetch and the channel SUBSCRIBED event would be silently
+ *     classified as "old".
  */
 export const useGlobalOrderNotifications = (enabled: boolean = true) => {
   const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([]);
   const [newOrdersCount, setNewOrdersCount] = useState(0);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
+  const [lastNewOrderAt, setLastNewOrderAt] = useState<string | null>(null);
+
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioUnlockedRef = useRef(false);
-  const knownOrderIdsRef = useRef<Set<string>>(new Set());
+  const firedIdsRef = useRef<Set<string>>(new Set());
   const initializedRef = useRef(false);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const retryCountRef = useRef(0);
   const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const enabledRef = useRef(enabled);
   enabledRef.current = enabled;
-  // Track last time we checked for orders; used for missed-orders sweep after sleep
-  const lastSeenAtRef = useRef<string>(new Date().toISOString());
+  // Cursor: only orders strictly newer than this fire a notification.
+  const lastSeenAtRef = useRef<string>(new Date(0).toISOString());
+  // Last time we received a SUBSCRIBED ack — used by the heartbeat to detect a wedged channel.
+  const lastSubscribedAtRef = useRef<number>(0);
 
   const currentNotification = pendingOrders[0] || null;
 
-  // ── Reset initializedRef when enabled goes false ──
+  // ── Reset on disable ──
   useEffect(() => {
     if (!enabled) {
       initializedRef.current = false;
     }
   }, [enabled]);
 
-  // ── Unlock audio on first user interaction (iOS/iPad safe) ──
+  // ── Audio unlock (iOS/iPad safe) ──
   useEffect(() => {
     if (!enabled) return;
 
@@ -54,53 +65,37 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
         if (!Ctx) return;
         const ctx = new Ctx();
         audioContextRef.current = ctx;
-        // Play a 1-sample silent buffer inside the gesture to actually unlock iOS Safari
         const buffer = ctx.createBuffer(1, 1, 22050);
         const source = ctx.createBufferSource();
         source.buffer = buffer;
         source.connect(ctx.destination);
         source.start(0);
-        if (ctx.state === 'suspended') {
-          ctx.resume().catch(() => {});
-        }
+        if (ctx.state === 'suspended') ctx.resume().catch(() => {});
         audioUnlockedRef.current = true;
         setAudioUnlocked(true);
-        console.log('[Notifications] Audio unlocked (silent buffer played)');
+        console.log('[Notifications] Audio unlocked');
       } catch (err) {
         console.log('[Notifications] Audio unlock failed:', err);
       }
     };
 
-    document.addEventListener('click', unlockAudio);
-    document.addEventListener('keydown', unlockAudio);
-    document.addEventListener('touchstart', unlockAudio);
-    document.addEventListener('touchend', unlockAudio);
-    document.addEventListener('pointerdown', unlockAudio);
-
-    return () => {
-      document.removeEventListener('click', unlockAudio);
-      document.removeEventListener('keydown', unlockAudio);
-      document.removeEventListener('touchstart', unlockAudio);
-      document.removeEventListener('touchend', unlockAudio);
-      document.removeEventListener('pointerdown', unlockAudio);
-    };
+    const events = ['click', 'keydown', 'touchstart', 'touchend', 'pointerdown'];
+    events.forEach((e) => document.addEventListener(e, unlockAudio));
+    return () => events.forEach((e) => document.removeEventListener(e, unlockAudio));
   }, [enabled]);
 
-  // ── Play notification sound (+ vibration for tablets/phones) ──
+  // ── Play sound + vibration ──
   const playNotificationSound = useCallback(() => {
-    try {
-      navigator.vibrate?.([200, 100, 200, 100, 400]);
-    } catch { /* ignore */ }
+    try { navigator.vibrate?.([200, 100, 200, 100, 400]); } catch { /* ignore */ }
 
     if (!audioContextRef.current) {
       try {
         const Ctx = (window.AudioContext || (window as any).webkitAudioContext);
         if (Ctx) audioContextRef.current = new Ctx();
-      } catch {
-        console.log('[Notifications] Cannot create AudioContext');
-      }
+      } catch { /* ignore */ }
     }
     const ctx = audioContextRef.current;
+    if (!ctx) return;
 
     const playWithWebAudio = (ctx: AudioContext) => {
       const playTone = (frequency: number, startTime: number, duration: number) => {
@@ -127,12 +122,10 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
     };
 
     try {
-      if (ctx) {
-        if (ctx.state === 'suspended') {
-          ctx.resume().then(() => playWithWebAudio(ctx)).catch(() => {});
-        } else {
-          playWithWebAudio(ctx);
-        }
+      if (ctx.state === 'suspended') {
+        ctx.resume().then(() => playWithWebAudio(ctx)).catch(() => {});
+      } else {
+        playWithWebAudio(ctx);
       }
     } catch (err) {
       console.log('[Notifications] Could not play sound:', err);
@@ -143,25 +136,26 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
     setPendingOrders(prev => prev.slice(1));
   }, []);
 
-  const clearNewOrdersCount = useCallback(() => {
-    setNewOrdersCount(0);
-  }, []);
+  const clearNewOrdersCount = useCallback(() => setNewOrdersCount(0), []);
 
-  // ── Handle incoming new order ──
-  const handleNewOrder = useCallback((newOrder: PendingOrder) => {
+  // ── Notify on a new order (cursor + per-id dedupe) ──
+  const notifyIfNew = useCallback((o: PendingOrder) => {
     if (!enabledRef.current) return;
-    if (knownOrderIdsRef.current.has(newOrder.id)) return;
-    console.log('[Notifications] 🔔 New order:', newOrder.code);
-    knownOrderIdsRef.current.add(newOrder.id);
-    lastSeenAtRef.current = newOrder.created_at > lastSeenAtRef.current
-      ? newOrder.created_at
-      : lastSeenAtRef.current;
+    if (o.created_at <= lastSeenAtRef.current) return; // older than cursor — ignore
+    if (firedIdsRef.current.has(o.id)) return;          // already fired (race protection)
+    firedIdsRef.current.add(o.id);
+    // Trim memory: keep firedIds bounded.
+    if (firedIdsRef.current.size > 500) {
+      firedIdsRef.current = new Set(Array.from(firedIdsRef.current).slice(-250));
+    }
+    console.log('[Notifications] 🔔 New order:', o.code);
     playNotificationSound();
-    setPendingOrders(prev => [...prev, newOrder]);
+    setPendingOrders(prev => [...prev, o]);
     setNewOrdersCount(prev => prev + 1);
+    setLastNewOrderAt(o.created_at);
   }, [playNotificationSound]);
 
-  // ── Missed orders sweep: catch any orders that arrived while sleeping/disconnected ──
+  // ── Sweep: fetch anything newer than cursor, advance cursor at the end ──
   const sweepMissedOrders = useCallback(async () => {
     if (!enabledRef.current) return;
     try {
@@ -176,36 +170,38 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
         console.log('[Notifications] sweep error:', error);
         return;
       }
-      if (data && data.length) {
-        console.log(`[Notifications] Sweep found ${data.length} missed orders since ${since}`);
-        data.forEach((o) => handleNewOrder(o as PendingOrder));
+      if (data?.length) {
+        console.log(`[Notifications] Sweep found ${data.length} new since ${since}`);
+        data.forEach((o) => notifyIfNew(o as PendingOrder));
+        lastSeenAtRef.current = data[data.length - 1].created_at;
       }
     } catch (e) {
       console.log('[Notifications] sweep exception:', e);
     }
-  }, [handleNewOrder]);
+  }, [notifyIfNew]);
 
-  // ── Initialize known order IDs (once per enable cycle) ──
+  // ── Init cursor (once per enable cycle): set lastSeenAt to most recent existing order ──
   useEffect(() => {
-    if (!enabled) return;
-    if (initializedRef.current) return;
+    if (!enabled || initializedRef.current) return;
     initializedRef.current = true;
-
     (async () => {
       const { data } = await supabase
         .from('orders')
-        .select('id, created_at')
+        .select('created_at')
         .order('created_at', { ascending: false })
-        .limit(100);
-      if (data) {
-        knownOrderIdsRef.current = new Set(data.map(o => o.id));
-        if (data[0]?.created_at) lastSeenAtRef.current = data[0].created_at;
-        console.log(`[Notifications] Loaded ${data.length} existing order IDs`);
+        .limit(1);
+      if (data?.[0]?.created_at) {
+        lastSeenAtRef.current = data[0].created_at;
+      } else {
+        lastSeenAtRef.current = new Date().toISOString();
       }
+      console.log(`[Notifications] Cursor initialized at ${lastSeenAtRef.current}`);
+      // Immediate sweep in case orders arrived during init.
+      sweepMissedOrders();
     })();
-  }, [enabled]);
+  }, [enabled, sweepMissedOrders]);
 
-  // ── Create subscription with retry ──
+  // ── Create / re-create subscription ──
   const createSubscription = useCallback(async () => {
     if (channelRef.current) {
       await supabase.removeChannel(channelRef.current);
@@ -214,7 +210,7 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
 
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
-      console.warn('[Notifications] No active session, deferring subscription');
+      console.warn('[Notifications] No session, deferring subscription');
       return;
     }
 
@@ -223,30 +219,33 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
 
     const channel = supabase
       .channel(channelName)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' },
-        (payload: any) => handleNewOrder(payload.new as PendingOrder))
+      .on('postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'orders' },
+        (payload: any) => notifyIfNew(payload.new as PendingOrder))
       .subscribe((status, err) => {
         console.log(`[Notifications] Subscription status: ${status}`, err || '');
         if (status === 'SUBSCRIBED') {
-          console.log('[Notifications] ✅ Successfully subscribed');
+          console.log('[Notifications] ✅ Subscribed');
           retryCountRef.current = 0;
-          // Sweep anything that came in between disconnect/reconnect
+          lastSubscribedAtRef.current = Date.now();
+          // Catch anything that arrived during the (re)connect.
           sweepMissedOrders();
         }
-        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          console.error(`[Notifications] ❌ Subscription failed: ${status}`, err);
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          console.error(`[Notifications] ❌ Subscription ${status}`, err);
           if (retryCountRef.current < MAX_RETRIES) {
-            const delay = BASE_DELAY_MS * Math.pow(2, retryCountRef.current);
+            const delay = BASE_DELAY_MS * Math.pow(2, Math.min(retryCountRef.current, 5));
             retryCountRef.current += 1;
+            if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
             retryTimeoutRef.current = setTimeout(() => createSubscription(), delay);
           }
         }
       });
 
     channelRef.current = channel;
-  }, [handleNewOrder, sweepMissedOrders]);
+  }, [notifyIfNew, sweepMissedOrders]);
 
-  // ── Set up subscription + re-subscribe on auth changes ──
+  // ── Subscribe + re-subscribe on auth changes ──
   useEffect(() => {
     if (!enabled) {
       if (channelRef.current) {
@@ -263,11 +262,9 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
         retryCountRef.current = 0;
         createSubscription();
       }
-      if (event === 'SIGNED_OUT') {
-        if (channelRef.current) {
-          supabase.removeChannel(channelRef.current);
-          channelRef.current = null;
-        }
+      if (event === 'SIGNED_OUT' && channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
       }
     });
 
@@ -281,38 +278,44 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
     };
   }, [enabled, createSubscription]);
 
-  // ── Reconnect on visibility change + sweep missed orders + resume audio ──
+  // ── Visibility / focus: resume audio, sweep, re-subscribe ──
   useEffect(() => {
     if (!enabled) return;
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        console.log('[Notifications] Tab visible — resume audio + sweep + re-subscribe');
-        audioContextRef.current?.resume?.().catch(() => {});
-        retryCountRef.current = 0;
-        sweepMissedOrders();
-        createSubscription();
-      }
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      console.log('[Notifications] Tab visible — resume + sweep + re-subscribe');
+      audioContextRef.current?.resume?.().catch(() => {});
+      retryCountRef.current = 0;
+      sweepMissedOrders();
+      createSubscription();
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleVisibilityChange);
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+    window.addEventListener('online', onVisible);
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleVisibilityChange);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
+      window.removeEventListener('online', onVisible);
     };
   }, [enabled, createSubscription, sweepMissedOrders]);
 
-  // ── Periodic safety sweep every 60s (covers Realtime stalls on tablets) ──
+  // ── Heartbeat: every 30s sweep; if channel hasn't SUBSCRIBED in >90s, force reconnect ──
   useEffect(() => {
     if (!enabled) return;
     const interval = setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        sweepMissedOrders();
+      if (document.visibilityState !== 'visible') return;
+      sweepMissedOrders();
+      const sinceAck = Date.now() - lastSubscribedAtRef.current;
+      if (lastSubscribedAtRef.current === 0 || sinceAck > STALE_SUBSCRIBED_MS) {
+        console.warn(`[Notifications] Heartbeat: stale subscription (${sinceAck}ms), reconnecting`);
+        retryCountRef.current = 0;
+        createSubscription();
       }
-    }, 60_000);
+    }, HEARTBEAT_MS);
     return () => clearInterval(interval);
-  }, [enabled, sweepMissedOrders]);
+  }, [enabled, sweepMissedOrders, createSubscription]);
 
   return {
     currentNotification,
@@ -323,5 +326,6 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
     clearNewOrdersCount,
     audioUnlocked,
     playNotificationSound,
+    lastNewOrderAt,
   };
 };
