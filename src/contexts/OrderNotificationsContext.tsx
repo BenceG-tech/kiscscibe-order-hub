@@ -8,6 +8,7 @@ interface OrderNotificationsContextType {
   clearNewOrdersCount: () => void;
   playNotificationSound: () => void;
   audioUnlocked: boolean;
+  lastNewOrderAt: string | null;
 }
 
 const OrderNotificationsContext = createContext<OrderNotificationsContextType>({
@@ -15,6 +16,7 @@ const OrderNotificationsContext = createContext<OrderNotificationsContextType>({
   clearNewOrdersCount: () => {},
   playNotificationSound: () => {},
   audioUnlocked: false,
+  lastNewOrderAt: null,
 });
 
 export const useOrderNotifications = () => useContext(OrderNotificationsContext);
