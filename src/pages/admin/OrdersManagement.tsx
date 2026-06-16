@@ -192,7 +192,11 @@ const OrdersManagement = () => {
     setLoading(false);
   };
 
-  const updateOrderStatus = async (orderId: string, newStatus: string) => {
+  const updateOrderStatus = async (
+    orderId: string,
+    newStatus: string,
+    opts: { silent?: boolean } = {}
+  ) => {
     const { error } = await supabase
       .from("orders")
       .update({ status: newStatus })
@@ -207,16 +211,24 @@ const OrdersManagement = () => {
       return;
     }
 
-    toast({ title: "Siker", description: "Rendelés állapota frissítve" });
+    toast({
+      title: opts.silent ? "Visszaléptetve" : "Siker",
+      description: opts.silent
+        ? "Az állapot visszaállítva (vendég nem kap értesítést)"
+        : "Rendelés állapota frissítve",
+    });
 
-    supabase.functions
-      .invoke("send-order-status-email", {
-        body: { order_id: orderId, new_status: newStatus },
-      })
-      .catch((err) => console.error("Status email error:", err));
+    if (!opts.silent) {
+      supabase.functions
+        .invoke("send-order-status-email", {
+          body: { order_id: orderId, new_status: newStatus },
+        })
+        .catch((err) => console.error("Status email error:", err));
+    }
 
     fetchOrders();
   };
+
 
   const archiveOrder = async (orderId: string) => {
     const { error } = await supabase
