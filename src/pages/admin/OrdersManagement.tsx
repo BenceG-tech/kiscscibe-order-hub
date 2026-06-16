@@ -751,6 +751,7 @@ const PastOrdersTab = ({
   onArchive,
   onDelete,
   onArchiveAll,
+  onReactivate,
 }: {
   orders: Order[];
   showArchived: boolean;
@@ -758,6 +759,7 @@ const PastOrdersTab = ({
   onArchive: (id: string) => void;
   onDelete: (id: string) => void;
   onArchiveAll: () => void;
+  onReactivate: (id: string, status: string) => void;
 }) => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const grouped = groupByDate(orders);
