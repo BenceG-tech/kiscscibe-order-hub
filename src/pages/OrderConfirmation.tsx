@@ -82,9 +82,10 @@ const OrderConfirmation = () => {
       setOrder(order);
       
       const { data: itemsData, error: itemsError } = await supabase
-        .from('order_items')
-        .select('*, order_item_options(*)')
-        .eq('order_id', order.id);
+        .rpc('get_customer_order_items', {
+          order_code: orderCode,
+          customer_phone: phone,
+        });
 
       if (itemsError) {
         console.error('Error fetching order items:', itemsError);
@@ -97,9 +98,7 @@ const OrderConfirmation = () => {
         unit_price_huf: item.unit_price_huf,
         qty: item.qty,
         line_total_huf: item.line_total_huf,
-        options: (item.order_item_options || []).filter(
-          (opt: any) => opt.option_type !== 'daily_meta'
-        ),
+        options: Array.isArray(item.options) ? item.options : [],
       }));
 
       setOrderItems(mappedItems);
