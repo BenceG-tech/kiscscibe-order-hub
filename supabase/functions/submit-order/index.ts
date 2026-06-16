@@ -495,7 +495,7 @@ serve(async (req) => {
         total_huf: calculatedTotal,
         status: 'new',
         payment_method,
-        pickup_time: pickup_time || (date && time ? new Date(`${date}T${time.slice(0, 5)}`).toISOString() : null),
+        pickup_time: pickup_time || (date && time ? budapestWallTimeToUtcIso(date, time.slice(0, 5)) : null),
         notes: customer.notes || null,
         coupon_code: appliedCouponCode,
         discount_huf: discountHuf,
