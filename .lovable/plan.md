@@ -1,57 +1,44 @@
-## Mit találtam
+# Terv — Confirmation javítás + Admin rendelés-kezelés ellenőrzés
 
-Elindítottam egy ügyfél-szimulációt mobil nézetben (402px). Hozzáadtam a Bundáskenyeret a kosárhoz, bementem a fizetéshez, kitöltöttem az adatokat — de amikor a **„Időpont foglalása"** opcióra kattintottam, az egész Checkout oldal **összeomlott** ezzel a hibával:
+## 1. Confirmation oldal — "Rendelt tételek" üres
 
-```
-NotFoundError: Failed to execute 'removeChild' on 'Node':
-The node to be removed is not a child of this node.
-(Select component, Checkout.tsx)
-```
+**Ok:** `order_items` RLS csak admin/staff számára engedélyezi az olvasást, vásárló nem látja.
 
-Ez egy **rendelést blokkoló kritikus bug**: ha az ügyfél előre szeretne időpontot foglalni (és a „Minél hamarabb" sokszor „Zárva" badge-et mutat), egyáltalán nem tud rendelést leadni.
+**Fix:** Új security-definer RPC `get_customer_order_items(order_code, customer_phone)` ami `code + phone` egyezés alapján visszaadja az adott rendelés tételeit + opcióit (JSON). Az `OrderConfirmation.tsx` ezt hívja közvetlen `order_items` select helyett. RLS érintetlen marad.
 
-### Gyökérok
+## 2. Confirmation oldal — Átvétel ideje 00:00 / rossz óra
 
-`src/pages/Checkout.tsx` 862-914. sorok:
+**Ok:** A `submit-order` edge function a 07:00-t úgy menti az adatbázisba mintha UTC lenne, így Budapest időzónában 09:00-ként jelenik meg. A `formatPickupTime` a böngésző helyi időzónáját használja.
 
-1. A `<SelectContent>` belsejében egy üres állapot esetén `<div className="p-3...">` van renderelve, nem `<SelectItem>` — a Radix Select ezt nem támogatja és törléskor `removeChild` hibát dob.
-2. A `value={`${formData.pickup_date}|${formData.pickup_time}`}` érvénytelen `"|"`-ra értékelődik kiválasztás előtt — Radixban a Select értéknek `undefined`-nek kell lennie, ha nincs választva.
+**Fix (kettős):**
+- `supabase/functions/submit-order/index.ts`: a `pickup_time` összerakásánál a kiválasztott `YYYY-MM-DD HH:mm`-t **Európa/Budapest** zónaként értelmezzük és UTC-be konvertálva mentjük.
+- `OrderConfirmation.tsx` (és az admin/KDS kijelzések, ahol `formatPickupTime`-szerű hívás van) `toLocaleString('hu-HU', { ..., timeZone: 'Europe/Budapest' })` kényszerrel jelenítse meg — így a meglévő jó rekordok minden böngészőben jól látszanak.
+- A korábbi hibás teszt-rekord (L89860) kiigazítása migrációval nem szükséges, mivel teszt adat.
 
-## Mit fogok csinálni
+## 3. Admin rendelés-kezelés végigtesztelése böngészővel
 
-### 1. Bug javítása `src/pages/Checkout.tsx`
+A felhasználó már be van jelentkezve a previewban (owner: gataibence@gmail.com). Tesztforgatókönyv:
 
-- A „nincs elérhető időpont" üzenetet **kiveszem a `<SelectContent>`-ből** és a Select **alá/helyére** renderelem normál `<p>`-ként.
-- A Select `value` propot csak akkor adom meg, ha mind `pickup_date`, mind `pickup_time` ki van töltve — különben `undefined`.
-- Ha `timeSlots.length === 0`, egyáltalán nem rendereljem a Selectet, helyette egy informatív üres állapotot mutatok („Nincs szabad időpont, válasszon másik napot").
+1. `/admin/orders` megnyitása, ellenőrzés hogy a friss `L89860` rendelés megjelenik az "Aktív" tabon, pulzáló kék border + összesítő sáv (kód, név, telefon, átvétel, összeg).
+2. Fázis-gombok kattintásos tesztje és valódi hatás ellenőrzése DB-ben (`orders.status`) + `admin_audit_log` + `email_send_log` táblákban:
+   - **"Készítés alá veszem"** → `new → prepping`, audit log bejegyzés, email kimegy a vásárlónak.
+   - **"Elkészült"** → `prepping → ready`, audit, email.
+   - **"Átadva"** → `ready → completed`, audit, email, és a `create_invoice_on_order_complete` trigger létrehoz egy `invoices` rekordot.
+3. **"Vissza" gombok**: `ready → prepping`, `prepping → new` — silent (nincs email), audit log igen.
+4. **Past tab → "Visszaaktiválás"** ellenőrzése egy completed/cancelled renden.
+5. Hibakezelés: konzol, `supabase--edge_function_logs` (send-order-status-email), network panel.
 
-### 2. End-to-end teszt folytatása (ügyfél oldal)
-
-A javítás után újra végigmegyek a folyamaton browser tooll:
-- Kosárba teszek 1 napi ajánlat ételt
-- Checkoutban kitöltöm: név, telefon (+36 30 123 4567), email, „Időpont foglalása" → kiválasztok egy slot-ot
-- Készpénz fizetés → **Rendelés leadása**
-- Ellenőrzöm az `Összesítő` képernyőt (megerősítő kód, részletek)
-- DB-ben `supabase--read_query`-vel megnézem, hogy a rendelés tényleg bekerült-e (orders + order_items)
-- Ellenőrzöm az `email_send_log`-ot (visszaigazoló email)
-
-### 3. Admin oldali végigtesztelés
-
-- Belépek admin nézetbe → **`/admin/orders`**
-- Ellenőrzöm, hogy az új rendelés megjelenik (realtime), helyes adatokkal, és pulzáló kék border van
-- Végigmegyek minden fázison: **új → készül → kész → kész szállítva** és visszafelé is (Vissza gomb)
-- Ellenőrzöm a fülek (Aktív / Múlt) tartalmát
-- KDS (kitchen display) printer view ellenőrzése, ha elérhető
-- A „Visszaaktiválás" gomb tesztje a múlt rendelésnél
-- Ellenőrzöm az `admin_audit_log`-ot (státusz változások nyomon követhetők-e)
-
-### 4. Jelentés
-
-A teszt végén szöveges összefoglalót adok arról, hogy minden fázis működik-e, és listázom a talált további problémákat (ha vannak). Csak akkor módosítok további kódot, ha újabb blokkoló hibát találok — egyébként összegyűjtöm őket egy listába és megkérdezem, melyiket javítsam.
+Ha bármelyik fázis nem működik (gomb nem reagál, status nem változik, email nem megy ki, audit nem készül) — javítás az érintett komponensben (`OrdersManagement.tsx`, `updateOrderStatus` hook, vagy `send-order-status-email` edge fn) és újrateszt.
 
 ## Érintett fájlok
 
-- `src/pages/Checkout.tsx` — Select bug javítása (kb. 10-15 sor)
-- (csak ha újabb bugot találok: további fájlok, de erről előtte értesítelek)
+- `supabase/migrations/<új>.sql` — `get_customer_order_items` RPC (security definer, grant `anon` + `authenticated`).
+- `src/pages/OrderConfirmation.tsx` — RPC hívás + `timeZone: 'Europe/Budapest'`.
+- `supabase/functions/submit-order/index.ts` — pickup_time Budapest→UTC konverzió.
+- `src/pages/admin/OrdersManagement.tsx` / hookok — csak ha a tesztelés problémát talál.
 
-Nem módosítom: backend logikát, edge function-öket, DB sémát, business logikát.
+## Mit NEM változtatok
+
+- Üzleti logika, árszámítás, kapacitás, rendelés-séma érintetlen.
+- `order_items` RLS-t nem lazítok (külön RPC-vel oldjuk meg).
+- A `formatPickupTime` jelenlegi naptári formátumát megtartom, csak a TZ-t fixálom.

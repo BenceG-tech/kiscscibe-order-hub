@@ -82,9 +82,10 @@ const OrderConfirmation = () => {
       setOrder(order);
       
       const { data: itemsData, error: itemsError } = await supabase
-        .from('order_items')
-        .select('*, order_item_options(*)')
-        .eq('order_id', order.id);
+        .rpc('get_customer_order_items', {
+          order_code: orderCode,
+          customer_phone: phone,
+        });
 
       if (itemsError) {
         console.error('Error fetching order items:', itemsError);
@@ -97,9 +98,7 @@ const OrderConfirmation = () => {
         unit_price_huf: item.unit_price_huf,
         qty: item.qty,
         line_total_huf: item.line_total_huf,
-        options: (item.order_item_options || []).filter(
-          (opt: any) => opt.option_type !== 'daily_meta'
-        ),
+        options: Array.isArray(item.options) ? item.options : [],
       }));
 
       setOrderItems(mappedItems);
@@ -114,7 +113,7 @@ const OrderConfirmation = () => {
   const getStatusText = (status: string) => {
     switch (status) {
       case 'new': return 'Új rendelés';
-      case 'prepping': return 'Készítés alatt';
+      case 'preparing': return 'Készítés alatt';
       case 'ready': return 'Átvehető';
       case 'completed': return 'Kész';
       case 'cancelled': return 'Lemondva';
@@ -125,7 +124,7 @@ const OrderConfirmation = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'new': return 'bg-blue-100 text-blue-800';
-      case 'prepping': return 'bg-yellow-100 text-yellow-800';
+      case 'preparing': return 'bg-yellow-100 text-yellow-800';
       case 'ready': return 'bg-green-100 text-green-800';
       case 'completed': return 'bg-gray-100 text-gray-800';
       case 'cancelled': return 'bg-red-100 text-red-800';
@@ -140,7 +139,8 @@ const OrderConfirmation = () => {
       month: 'long',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      timeZone: 'Europe/Budapest',
     });
   };
 

@@ -12,6 +12,23 @@ function escapeHtml(s: unknown): string {
     .replace(/'/g, '&#39;');
 }
 
+// Interpret a YYYY-MM-DD HH:mm wall-clock time as Europe/Budapest and return its UTC ISO string.
+function budapestWallTimeToUtcIso(date: string, time: string): string {
+  const naive = new Date(`${date}T${time}:00Z`);
+  const dtf = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Budapest',
+    timeZoneName: 'longOffset',
+  });
+  const parts = dtf.formatToParts(naive);
+  const offsetPart = parts.find((p) => p.type === 'timeZoneName')?.value || 'GMT+01:00';
+  const m = offsetPart.match(/GMT([+-])(\d{2}):?(\d{2})?/);
+  const sign = m && m[1] === '-' ? -1 : 1;
+  const hh = m ? parseInt(m[2], 10) : 0;
+  const mm = m && m[3] ? parseInt(m[3], 10) : 0;
+  const offsetMin = sign * (hh * 60 + mm);
+  return new Date(naive.getTime() - offsetMin * 60_000).toISOString();
+}
+
 interface OrderModifier {
   label_snapshot: string;
   price_delta_huf: number;
@@ -495,7 +512,7 @@ serve(async (req) => {
         total_huf: calculatedTotal,
         status: 'new',
         payment_method,
-        pickup_time: pickup_time || (date && time ? new Date(`${date}T${time.slice(0, 5)}`).toISOString() : null),
+        pickup_time: pickup_time || (date && time ? budapestWallTimeToUtcIso(date, time.slice(0, 5)) : null),
         notes: customer.notes || null,
         coupon_code: appliedCouponCode,
         discount_huf: discountHuf,
