@@ -86,8 +86,9 @@ const validateName = (v: string): string | undefined => {
 
 const validatePhone = (v: string): string | undefined => {
   if (!v) return undefined;
-  const digits = v.replace(/\s/g, "");
-  if (!/^\d{9}$/.test(digits)) return "Kérjük, adj meg egy érvényes telefonszámot";
+  // Allow spaces, dashes, leading 0; require 8-9 digits after stripping
+  const digits = v.replace(/\D/g, "").replace(/^0+/, "");
+  if (digits.length < 8 || digits.length > 9) return "Kérjük, adj meg egy érvényes telefonszámot (pl. 30 123 4567)";
   return undefined;
 };
 
@@ -502,12 +503,13 @@ const Checkout = () => {
 
     try {
       console.log('Calling submit-order edge function...');
+      const normalizedPhone = formData.phone.replace(/\D/g, "").replace(/^0+/, "");
       
       const { data, error } = await supabase.functions.invoke("submit-order", {
         body: {
           customer: {
             name: formData.name,
-            phone: `+36${formData.phone.replace(/\s/g, '')}`,
+            phone: `+36${normalizedPhone}`,
             email: formData.email,
             notes: (tableNumber ? `[Asztal: ${tableNumber}] ` : '') + (formData.notes || '') || null
           },
@@ -541,7 +543,7 @@ const Checkout = () => {
       if (error) throw error;
       
       clearCart();
-      navigate(`/order-confirmation?code=${data.order_code}&phone=${encodeURIComponent(`+36${formData.phone.replace(/\s/g, '')}`)}&email=${encodeURIComponent(formData.email)}`);
+      navigate(`/order-confirmation?code=${data.order_code}&phone=${encodeURIComponent(`+36${normalizedPhone}`)}&email=${encodeURIComponent(formData.email)}`);
       
     } catch (error: any) {
       console.error("Order submission error:", error);
