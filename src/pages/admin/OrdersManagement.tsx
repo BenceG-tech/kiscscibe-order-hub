@@ -44,7 +44,9 @@ import {
   Tag,
   Undo2,
   RotateCcw,
+  Printer,
 } from "lucide-react";
+import { printOrderReceipt } from "@/lib/printOrderReceipt";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
@@ -695,13 +697,24 @@ const ActiveOrderCard = ({
 
           {/* Forward buttons */}
           {order.status === "new" && (
-            <Button
-              size="sm"
-              onClick={() => onStatusChange(order.id, "preparing")}
-              className="bg-yellow-600 hover:bg-yellow-700 h-10"
-            >
-              Készítés megkezdése
-            </Button>
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => printOrderReceipt(order)}
+                className="h-10"
+                title="Nyomtatás (konyhai bizonylat)"
+              >
+                <Printer className="h-4 w-4 mr-1" /> Nyomtatás
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => onStatusChange(order.id, "preparing")}
+                className="bg-yellow-600 hover:bg-yellow-700 h-10"
+              >
+                Készítés megkezdése
+              </Button>
+            </>
           )}
           {order.status === "preparing" && (
             <Button
