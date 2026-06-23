@@ -79,11 +79,33 @@ serve(async (req) => {
   const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   console.log(`[${requestId}] Starting order submission...`);
 
+  // Hoisted so the catch block can log a failed attempt with full context
+  let attemptCtx: {
+    supabase: any | null;
+    customer: CustomerInfo | null;
+    items: OrderItem[];
+    payment_method: string | null;
+    pickup_date: string | null;
+    pickup_time_slot: string | null;
+    session_id: string | null;
+    userAgent: string;
+  } = {
+    supabase: null,
+    customer: null,
+    items: [],
+    payment_method: null,
+    pickup_date: null,
+    pickup_time_slot: null,
+    session_id: null,
+    userAgent: req.headers.get('user-agent') || '',
+  };
+
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    attemptCtx.supabase = supabase;
 
     const {
       customer,
@@ -92,8 +114,16 @@ serve(async (req) => {
       pickup_date,
       pickup_time_slot,
       items,
-      coupon_code
+      coupon_code,
+      session_id,
     }: OrderRequest = await req.json();
+
+    attemptCtx.customer = customer;
+    attemptCtx.items = items || [];
+    attemptCtx.payment_method = payment_method;
+    attemptCtx.pickup_date = pickup_date || null;
+    attemptCtx.pickup_time_slot = pickup_time_slot || null;
+    attemptCtx.session_id = session_id || null;
 
     console.log(`[${requestId}] Processing order for:`, customer.name, 'with', items.length, 'items');
 
