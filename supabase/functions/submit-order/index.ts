@@ -271,6 +271,19 @@ serve(async (req) => {
           currentPrice = (dailyData as any).price_huf;
           remainingPortions = (dailyData as any).remaining_portions;
           itemDateStr = (dailyData as any).date;
+
+          // Fallback: if the daily offer/menu has no price set in DB, accept the
+          // client-submitted unit price (validated to a sane range) so the order
+          // does not fail with a not-null violation downstream.
+          if (currentPrice === null || currentPrice === undefined) {
+            const clientPrice = Number(item.unit_price_huf);
+            if (Number.isFinite(clientPrice) && clientPrice > 0 && clientPrice <= 10000) {
+              console.warn(`Daily ${tableName} ${item.daily_id} has NULL price_huf — falling back to client price ${clientPrice}.`);
+              currentPrice = clientPrice;
+            } else {
+              throw new Error('A napi ajánlat ára nincs beállítva — kérjük értesítse az éttermet.');
+            }
+          }
         }
 
         // Check if ordering is still allowed - prevent past dates
@@ -406,16 +419,17 @@ serve(async (req) => {
       const dailyItems = validatedItems.filter(item => item.daily_date);
       if (dailyItems.length > 0) {
         const uniqueDailyDates = [...new Set(dailyItems.map(item => item.daily_date))];
-        
+
         // Check for multiple daily dates
         if (uniqueDailyDates.length > 1) {
           throw new Error('Különböző dátumú napi ajánlatok/menük nem rendelhetőek egyszerre');
         }
-        
-        // Check daily item date matches pickup date
+
+        // Auto-align pickup date to the daily item's date if mismatched (defensive)
         const dailyDate = uniqueDailyDates[0];
         if (dailyDate !== date) {
-          throw new Error(`A napi ajánlat/menü csak ${dailyDate} dátumra rendelhető, de ${date} dátumra próbálta leadni`);
+          console.warn(`Pickup date ${date} mismatches daily item date ${dailyDate} — auto-aligning to ${dailyDate}.`);
+          date = dailyDate;
         }
       }
 

@@ -335,7 +335,12 @@ const Checkout = () => {
       
       const availableSlots = finalSlots.filter(s => s.available_capacity > 0);
       if (availableSlots.length > 0 && !formData.pickup_time) {
-        const firstSlot = availableSlots[0];
+        // If there is exactly one daily-item date in cart, force the auto-selected
+        // slot to that date so pickup_date can never diverge from the daily date.
+        const forcedDate = dailyDates.length === 1 ? dailyDates[0] : null;
+        const firstSlot = forcedDate
+          ? (availableSlots.find(s => s.date === forcedDate) || availableSlots[0])
+          : availableSlots[0];
         setFormData(prev => ({
           ...prev,
           pickup_date: firstSlot.date,
@@ -545,7 +550,9 @@ const Checkout = () => {
             notes: (tableNumber ? `[Asztal: ${tableNumber}] ` : '') + (formData.notes || '') || null
           },
           payment_method: formData.payment_method,
-          pickup_date: formData.pickup_type === "asap" ? null : formData.pickup_date,
+          pickup_date: formData.pickup_type === "asap"
+            ? null
+            : (dailyDates.length === 1 ? dailyDates[0] : formData.pickup_date),
           pickup_time_slot: formData.pickup_type === "asap" ? null : formData.pickup_time,
           coupon_code: cart.coupon?.code || null,
           items: cart.items.map(item => ({
