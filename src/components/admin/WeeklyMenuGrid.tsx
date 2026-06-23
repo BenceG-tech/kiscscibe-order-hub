@@ -929,6 +929,37 @@ export default function WeeklyMenuGrid() {
                   );
                 })}
               </tr>
+
+              {/* Publish Status Row */}
+              <tr className="bg-amber-50/40 dark:bg-amber-950/20">
+                <td className="sticky left-0 z-20 bg-amber-50 dark:bg-amber-950/40 border-b border-r p-3 font-medium text-sm">
+                  Publikálás
+                </td>
+                {weekDates.map((date, idx) => {
+                  const dateStr = format(date, "yyyy-MM-dd");
+                  const pub = publishData[dateStr];
+                  const hasOffer = !!pub;
+                  return (
+                    <td key={idx} className="border-b border-l p-2 text-center">
+                      {hasOffer ? (
+                        <Button
+                          variant={pub.isPublished ? "default" : "outline"}
+                          size="sm"
+                          className={`text-xs h-7 ${pub.isPublished ? "" : "border-amber-500 text-amber-700 dark:text-amber-300"}`}
+                          disabled={publishMutation.isPending}
+                          onClick={() => publishMutation.mutate({ dates: [dateStr], value: !pub.isPublished })}
+                          title={pub.isPublished ? "Publikálva — kattints a visszavonáshoz" : "Piszkozat — kattints a publikáláshoz"}
+                        >
+                          {pub.isPublished ? "Publikálva ✓" : "Piszkozat"}
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+
               
               {/* Category Rows */}
               {foodCategories.map(category => {
