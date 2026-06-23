@@ -83,6 +83,7 @@ interface DailyOffer {
   price_huf: number | null;
   max_portions: number | null;
   remaining_portions: number | null;
+  is_published: boolean;
   daily_offer_items: DailyOfferItem[];
 }
 
