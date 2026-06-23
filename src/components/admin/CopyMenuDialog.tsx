@@ -19,8 +19,67 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Loader2, Copy, Calendar } from "lucide-react";
+import { Loader2, Copy, Calendar, Utensils, Soup, ChefHat } from "lucide-react";
 import { toast } from "sonner";
+
+const WEEKDAY_SHORT = ["H", "K", "Sze", "Cs", "P"];
+
+type PreviewItem = {
+  is_menu_part: boolean;
+  menu_role: string | null;
+  menu_items: { name: string } | null;
+};
+type PreviewOffer = {
+  date: string;
+  price_huf: number | null;
+  is_published: boolean;
+  daily_offer_items: PreviewItem[];
+};
+
+function DayPreview({ offer, dateLabel }: { offer?: PreviewOffer; dateLabel: string }) {
+  if (!offer || !offer.daily_offer_items?.length) {
+    return (
+      <div className="flex items-center justify-between py-1.5 text-xs">
+        <span className="font-medium text-muted-foreground w-20">{dateLabel}</span>
+        <span className="text-muted-foreground italic">Nincs ajánlat</span>
+      </div>
+    );
+  }
+  const soup = offer.daily_offer_items.find(i => i.is_menu_part && i.menu_role === "leves")?.menu_items?.name;
+  const main = offer.daily_offer_items.find(i => i.is_menu_part && i.menu_role === "főétel")?.menu_items?.name;
+  const others = offer.daily_offer_items
+    .filter(i => !i.is_menu_part)
+    .map(i => i.menu_items?.name)
+    .filter(Boolean) as string[];
+
+  return (
+    <div className="py-1.5 text-xs space-y-0.5 border-b last:border-0">
+      <div className="flex items-center gap-2">
+        <span className="font-semibold w-20 shrink-0">{dateLabel}</span>
+        {offer.price_huf && (
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+            {offer.price_huf} Ft
+          </span>
+        )}
+        {!offer.is_published && (
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300">
+            piszkozat
+          </span>
+        )}
+      </div>
+      <div className="pl-20 space-y-0.5">
+        {soup && <div className="flex gap-1.5"><Soup className="h-3 w-3 mt-0.5 text-amber-600" /><span>{soup}</span></div>}
+        {main && <div className="flex gap-1.5"><ChefHat className="h-3 w-3 mt-0.5 text-orange-600" /><span>{main}</span></div>}
+        {others.length > 0 && (
+          <div className="flex gap-1.5"><Utensils className="h-3 w-3 mt-0.5 text-muted-foreground" /><span className="text-muted-foreground">{others.join(", ")}</span></div>
+        )}
+        {!soup && !main && others.length === 0 && (
+          <div className="text-muted-foreground italic">Üres</div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 interface CopyMenuDialogProps {
   open: boolean;
