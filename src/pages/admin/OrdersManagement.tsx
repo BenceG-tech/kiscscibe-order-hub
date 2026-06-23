@@ -46,6 +46,7 @@ import {
   RotateCcw,
   Printer,
   Stethoscope,
+  RefreshCw,
 } from "lucide-react";
 import { printOrderReceipt } from "@/lib/printOrderReceipt";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -130,6 +131,8 @@ const OrdersManagement = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
+  const [refreshing, setRefreshing] = useState(false);
+
   useEffect(() => {
     fetchOrders();
 
@@ -140,10 +143,27 @@ const OrdersManagement = () => {
         { event: "*", schema: "public", table: "orders" },
         () => fetchOrders()
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          console.warn("[OrdersManagement] realtime status:", status, "- falling back to polling");
+        }
+      });
+
+    // Polling fallback: refresh every 30s in case realtime drops
+    const pollInterval = setInterval(() => {
+      fetchOrders();
+    }, 30000);
+
+    // Refresh immediately when tab becomes visible again
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") fetchOrders();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
       supabase.removeChannel(channel);
+      clearInterval(pollInterval);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);
 
@@ -172,9 +192,10 @@ const OrdersManagement = () => {
       .order("created_at", { ascending: false });
 
     if (error) {
+      console.warn("[OrdersManagement] fetchOrders error:", error);
       toast({
         title: "Hiba",
-        description: "Nem sikerült betölteni a rendeléseket",
+        description: `Nem sikerült betölteni a rendeléseket: ${error.message}`,
         variant: "destructive",
       });
       return;
@@ -408,6 +429,21 @@ const OrdersManagement = () => {
             <InfoTip text="Kezeld a bejövő rendeléseket: fogadd el, állítsd készre, vagy mondd le." />
           </h1>
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={async () => {
+                setRefreshing(true);
+                await fetchOrders();
+                setRefreshing(false);
+                toast({ title: "Frissítve", description: "Rendelések listája naprakész." });
+              }}
+              disabled={refreshing}
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+              <span className="hidden sm:inline">Frissítés</span>
+            </Button>
             <Dialog>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2">
