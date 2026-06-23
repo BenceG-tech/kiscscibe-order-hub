@@ -35,6 +35,7 @@ import {
   AlertTriangle
 } from "lucide-react";
 import { HelpFloatingButton } from "@/components/admin/HelpFloatingButton";
+import { AdminUpdatesBanner } from "@/components/admin/AdminUpdatesBanner";
 
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
@@ -232,6 +233,8 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
           </ul>
         </div>
       </nav>
+
+      <AdminUpdatesBanner />
 
       {/* Page Content */}
       <main className="mx-auto max-w-screen-xl px-3 sm:px-4">
