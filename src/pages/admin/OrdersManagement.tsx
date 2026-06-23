@@ -529,18 +529,6 @@ const OrdersManagement = () => {
               onArchiveAll={archiveAllPast}
               onReactivate={(id, status) => updateOrderStatus(id, status, { silent: true })}
             />
-
-          <TabsContent value="past" className="mt-6">
-            <PastOrdersTab
-              orders={getFilteredOrders("past")}
-              showArchived={showArchived}
-              onToggleArchived={setShowArchived}
-              onArchive={archiveOrder}
-              onDelete={deleteOrder}
-              onArchiveAll={archiveAllPast}
-              onReactivate={(id, status) => updateOrderStatus(id, status, { silent: true })}
-            />
-
           </TabsContent>
 
           <TabsContent value="failed" className="mt-6">
