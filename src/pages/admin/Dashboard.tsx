@@ -15,6 +15,7 @@ import PaymentReminders from "@/components/admin/PaymentReminders";
 import WeatherForecast from "@/components/admin/WeatherForecast";
 import { useOverdueInvoices } from "@/hooks/useOverdueInvoices";
 import InfoTip from "@/components/admin/InfoTip";
+import { SystemHealthCheck } from "@/components/admin/SystemHealthCheck";
 
 interface Stats {
   todayOrders: number;
@@ -116,6 +117,10 @@ const Dashboard = () => {
 
         {/* Alerts */}
         <DashboardAlerts />
+
+        {/* System health check */}
+        <SystemHealthCheck />
+
 
         {/* Stat Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
