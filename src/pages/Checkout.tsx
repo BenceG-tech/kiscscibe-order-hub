@@ -15,6 +15,7 @@ import { LoadingSpinner } from "@/components/ui/loading";
 import { Badge } from "@/components/ui/badge";
 import ModernNavigation from "@/components/ModernNavigation";
 import { ArrowLeft, Check, Clock, CreditCard, ShoppingCart, User, FileText } from "lucide-react";
+import { useAbandonedCartTracking } from "@/hooks/useAbandonedCartTracking";
 
 // --- Progress Indicator Component ---
 const CheckoutProgress = () => {
@@ -122,6 +123,16 @@ const Checkout = () => {
   const [couponCode, setCouponCode] = useState("");
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponMessage, setCouponMessage] = useState<{ success: boolean; text: string } | null>(null);
+
+  // Track abandoned carts while the user fills in checkout
+  const cartSessionId = useAbandonedCartTracking({
+    cartItems: cart.items,
+    totalHuf: cart.totalAfterDiscount || cart.total,
+    name: formData.name,
+    phone: formData.phone,
+    email: formData.email,
+    step: "details",
+  });
 
   // --- Inline validation state ---
   const [fieldErrors, setFieldErrors] = useState<{ name?: string; phone?: string; email?: string }>({});
@@ -555,6 +566,7 @@ const Checkout = () => {
             : (dailyDates.length === 1 ? dailyDates[0] : formData.pickup_date),
           pickup_time_slot: formData.pickup_type === "asap" ? null : formData.pickup_time,
           coupon_code: cart.coupon?.code || null,
+          session_id: cartSessionId,
           items: cart.items.map(item => ({
             item_id: item.id,
             name_snapshot: item.name,

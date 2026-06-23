@@ -68,6 +68,7 @@ interface OrderRequest {
   pickup_time_slot?: string | null;
   items: OrderItem[];
   coupon_code?: string | null;
+  session_id?: string | null;
 }
 
 serve(async (req) => {
@@ -78,11 +79,33 @@ serve(async (req) => {
   const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   console.log(`[${requestId}] Starting order submission...`);
 
+  // Hoisted so the catch block can log a failed attempt with full context
+  let attemptCtx: {
+    supabase: any | null;
+    customer: CustomerInfo | null;
+    items: OrderItem[];
+    payment_method: string | null;
+    pickup_date: string | null;
+    pickup_time_slot: string | null;
+    session_id: string | null;
+    userAgent: string;
+  } = {
+    supabase: null,
+    customer: null,
+    items: [],
+    payment_method: null,
+    pickup_date: null,
+    pickup_time_slot: null,
+    session_id: null,
+    userAgent: req.headers.get('user-agent') || '',
+  };
+
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    attemptCtx.supabase = supabase;
 
     const {
       customer,
@@ -91,8 +114,16 @@ serve(async (req) => {
       pickup_date,
       pickup_time_slot,
       items,
-      coupon_code
+      coupon_code,
+      session_id,
     }: OrderRequest = await req.json();
+
+    attemptCtx.customer = customer;
+    attemptCtx.items = items || [];
+    attemptCtx.payment_method = payment_method;
+    attemptCtx.pickup_date = pickup_date || null;
+    attemptCtx.pickup_time_slot = pickup_time_slot || null;
+    attemptCtx.session_id = session_id || null;
 
     console.log(`[${requestId}] Processing order for:`, customer.name, 'with', items.length, 'items');
 
@@ -855,7 +886,19 @@ serve(async (req) => {
     }
 
     console.log(`[${requestId}] Order completed successfully:`, orderCode);
-    
+
+    // Mark abandoned cart as converted (non-fatal)
+    if (attemptCtx.session_id) {
+      try {
+        await attemptCtx.supabase
+          .from('abandoned_carts')
+          .update({ converted_order_id: orderId, last_activity_at: new Date().toISOString() })
+          .eq('session_id', attemptCtx.session_id);
+      } catch (e) {
+        console.warn(`[${requestId}] Could not mark abandoned cart converted:`, e);
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -872,7 +915,34 @@ serve(async (req) => {
 
   } catch (error: any) {
     console.error(`[${requestId}] Submit order error:`, error);
-    
+
+    // Log the failed attempt for admin visibility (non-fatal)
+    try {
+      if (attemptCtx.supabase) {
+        const totalGuess = (attemptCtx.items || []).reduce((sum, it: any) => {
+          const q = Number(it?.qty) || 0;
+          const p = Number(it?.unit_price_huf) || 0;
+          return sum + q * p;
+        }, 0);
+
+        await attemptCtx.supabase.from('order_attempts').insert({
+          customer_name: attemptCtx.customer?.name || null,
+          customer_phone: attemptCtx.customer?.phone || null,
+          customer_email: attemptCtx.customer?.email || null,
+          cart_snapshot: attemptCtx.items || [],
+          total_huf: totalGuess || null,
+          error_message: error?.message || 'Ismeretlen hiba',
+          error_code: error?.code || null,
+          payment_method: attemptCtx.payment_method,
+          pickup_date: attemptCtx.pickup_date,
+          pickup_time_slot: attemptCtx.pickup_time_slot,
+          user_agent: attemptCtx.userAgent,
+        });
+      }
+    } catch (logError) {
+      console.error(`[${requestId}] Failed to log order attempt:`, logError);
+    }
+
     // Determine appropriate HTTP status code based on error type
     let statusCode = 400;
     if (error.message.includes('betelt') || error.message.includes('elfogyott')) {
