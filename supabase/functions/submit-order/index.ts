@@ -68,6 +68,7 @@ interface OrderRequest {
   pickup_time_slot?: string | null;
   items: OrderItem[];
   coupon_code?: string | null;
+  session_id?: string | null;
 }
 
 serve(async (req) => {
