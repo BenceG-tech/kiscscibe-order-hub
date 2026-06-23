@@ -96,6 +96,56 @@ export function CopyMenuDialog({ open, onOpenChange, currentWeekStart }: CopyMen
   const [selectedSourceDay, setSelectedSourceDay] = useState<string>("");
   const [selectedTargetDay, setSelectedTargetDay] = useState<string>("");
 
+  // Preview for selected source week
+  const weekPreviewDates = useMemo(() => {
+    if (!selectedSourceWeek) return [];
+    const start = new Date(selectedSourceWeek + "T12:00:00");
+    return Array.from({ length: 5 }, (_, i) => format(addDays(start, i), "yyyy-MM-dd"));
+  }, [selectedSourceWeek]);
+
+  const { data: weekPreview, isLoading: weekPreviewLoading } = useQuery({
+    queryKey: ["copy-preview-week", selectedSourceWeek],
+    enabled: !!selectedSourceWeek && open,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("daily_offers")
+        .select("date, price_huf, is_published, daily_offer_items(is_menu_part, menu_role, menu_items(name))")
+        .in("date", weekPreviewDates);
+      if (error) throw error;
+      return data as unknown as PreviewOffer[];
+    },
+  });
+
+  // Preview for selected source day
+  const { data: dayPreview, isLoading: dayPreviewLoading } = useQuery({
+    queryKey: ["copy-preview-day", selectedSourceDay],
+    enabled: !!selectedSourceDay && open,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("daily_offers")
+        .select("date, price_huf, is_published, daily_offer_items(is_menu_part, menu_role, menu_items(name))")
+        .eq("date", selectedSourceDay)
+        .maybeSingle();
+      if (error) throw error;
+      return data as unknown as PreviewOffer | null;
+    },
+  });
+
+  // Preview for target day (what's already there)
+  const { data: targetPreview, isLoading: targetPreviewLoading } = useQuery({
+    queryKey: ["copy-preview-target", selectedTargetDay],
+    enabled: !!selectedTargetDay && open,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("daily_offers")
+        .select("date, price_huf, is_published, daily_offer_items(is_menu_part, menu_role, menu_items(name))")
+        .eq("date", selectedTargetDay)
+        .maybeSingle();
+      if (error) throw error;
+      return data as unknown as PreviewOffer | null;
+    },
+  });
+
   // Generate past 8 weeks for selection
   const pastWeeks = useMemo(() => {
     const weeks: { label: string; value: string; start: Date }[] = [];
