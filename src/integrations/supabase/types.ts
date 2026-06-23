@@ -14,6 +14,59 @@ export type Database = {
   }
   public: {
     Tables: {
+      abandoned_carts: {
+        Row: {
+          cart_snapshot: Json
+          converted_order_id: string | null
+          created_at: string
+          customer_email: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          id: string
+          last_activity_at: string
+          session_id: string
+          step: string | null
+          total_huf: number | null
+          user_agent: string | null
+        }
+        Insert: {
+          cart_snapshot?: Json
+          converted_order_id?: string | null
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          id?: string
+          last_activity_at?: string
+          session_id: string
+          step?: string | null
+          total_huf?: number | null
+          user_agent?: string | null
+        }
+        Update: {
+          cart_snapshot?: Json
+          converted_order_id?: string | null
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          id?: string
+          last_activity_at?: string
+          session_id?: string
+          step?: string | null
+          total_huf?: number | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "abandoned_carts_converted_order_id_fkey"
+            columns: ["converted_order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_audit_log: {
         Row: {
           action: string
@@ -1161,6 +1214,57 @@ export type Database = {
           },
         ]
       }
+      order_attempts: {
+        Row: {
+          cart_snapshot: Json
+          created_at: string
+          customer_email: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          error_code: string | null
+          error_message: string | null
+          id: string
+          ip_address: string | null
+          payment_method: string | null
+          pickup_date: string | null
+          pickup_time_slot: string | null
+          total_huf: number | null
+          user_agent: string | null
+        }
+        Insert: {
+          cart_snapshot?: Json
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          ip_address?: string | null
+          payment_method?: string | null
+          pickup_date?: string | null
+          pickup_time_slot?: string | null
+          total_huf?: number | null
+          user_agent?: string | null
+        }
+        Update: {
+          cart_snapshot?: Json
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          ip_address?: string | null
+          payment_method?: string | null
+          pickup_date?: string | null
+          pickup_time_slot?: string | null
+          total_huf?: number | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       order_item_options: {
         Row: {
           id: string
@@ -1567,6 +1671,7 @@ export type Database = {
       audit_module_for_table: { Args: { table_name: string }; Returns: string }
       bootstrap_first_admin: { Args: never; Returns: boolean }
       claim_admin_access: { Args: never; Returns: boolean }
+      cleanup_old_order_tracking: { Args: never; Returns: undefined }
       gen_order_code: { Args: never; Returns: string }
       get_customer_order: {
         Args: { customer_phone: string; order_code: string }
