@@ -13,6 +13,22 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-06-23",
+    title: "Átvételi időpontok csak ebédidőben (10:30-tól)",
+    description:
+      "Az átvételi időpont választó mostantól csak 10:30 és 14:30 között kínál fel időpontokat, 30 percenként. Hétvégén zárva. Ezzel megelőzhető, hogy reggeli időpontra (pl. 07:00 vagy 08:00) érkezzen rendelés. A változás szerver oldalon is védve van (validate_pickup_time), és a korábban legenerált, de még senki által nem foglalt 10:30 előtti idősávok el lettek távolítva.",
+    type: "improved",
+    tabGroup: "orders",
+  },
+  {
+    date: "2026-06-23",
+    title: "Rendelések lista automatikus frissítése + manuális frissítés gomb",
+    description:
+      "Előfordult, hogy az 'Új rendelések' fülön nem jelent meg azonnal egy frissen leadott rendelés (pl. ha a böngésző fül a háttérben volt és a realtime kapcsolat megszakadt). Mostantól a lista 30 másodpercenként automatikusan frissül a háttérben, és a fejlécbe került egy 'Frissítés' gomb is, amivel azonnal újratölthető a teljes lista.",
+    type: "fixed",
+    tabGroup: "orders",
+  },
+  {
+    date: "2026-06-23",
     title: "Egyklikkes javítás és részletes hibaleírás a rendszerellenőrzésnél",
     description:
       "A Rendszer önellenőrzés minden hiba / figyelmeztetés mellé tett egy 'Javítás' gombot, ami automatikusan rendbe teszi a problémát (pl. mai napi ajánlat létrehozása sablonból, idősávok feltöltése, ragadt rendelések lemondása, kifogyott tételek visszaállítása). A 'Részletek' gomb felugró ablakban mutatja, mit ellenőriz a rendszer, mik a lehetséges okok és hogyan tudod manuálisan megoldani. Van egy 'Hibák javítása' gomb is a fejlécben, ami egyszerre próbálja az összes javítható hibát orvosolni.",

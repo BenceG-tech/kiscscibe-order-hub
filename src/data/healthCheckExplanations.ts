@@ -33,7 +33,7 @@ export const HEALTH_CHECK_EXPLANATIONS: Record<string, HealthCheckExplanation> =
     ],
     manualSteps: [
       "Nyisd meg az Admin → Kapacitás oldalt.",
-      "Válaszd ki a mai napot és állíts be 11:00–15:30 közötti idősávokat 30 percenként.",
+      "Válaszd ki a mai napot és állíts be 10:30–14:30 közötti idősávokat 30 percenként.",
       "Mentsd el – a vásárlók ezek közül választhatnak átvételi időpontot.",
     ],
     link: { label: "Kapacitás kezelése", href: "/admin/capacity" },

@@ -121,13 +121,13 @@ serve(async (req) => {
         }
       }
     } else if (checkId === "capacity") {
-      // Create default slots 11:00 - 15:30 every 30 min
+      // Create default lunch slots 10:30 - 14:30 every 30 min
       const slots: string[] = [];
-      for (let h = 11; h < 16; h++) {
-        slots.push(`${String(h).padStart(2, "0")}:00:00`);
-        if (h < 15) slots.push(`${String(h).padStart(2, "0")}:30:00`);
+      for (let m = 10 * 60 + 30; m < 15 * 60; m += 30) {
+        const h = Math.floor(m / 60);
+        const mm = m % 60;
+        slots.push(`${String(h).padStart(2, "0")}:${String(mm).padStart(2, "0")}:00`);
       }
-      slots.push("15:30:00");
 
       const { data: existing } = await admin
         .from("capacity_slots")
@@ -151,7 +151,7 @@ serve(async (req) => {
         if (error) throw error;
         result = {
           success: true,
-          message: `${toInsert.length} idősáv létrehozva 11:00 – 15:30 között.`,
+          message: `${toInsert.length} idősáv létrehozva 10:30 – 14:30 között.`,
         };
       }
     } else if (checkId === "stuck") {
