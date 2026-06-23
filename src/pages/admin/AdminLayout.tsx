@@ -36,6 +36,8 @@ import {
 } from "lucide-react";
 import { HelpFloatingButton } from "@/components/admin/HelpFloatingButton";
 import { AdminUpdatesBanner } from "@/components/admin/AdminUpdatesBanner";
+import { AdminUpdatesDialog } from "@/components/admin/AdminUpdatesDialog";
+
 
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
@@ -132,6 +134,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
                 {profile.role}
               </Badge>
             )}
+            <AdminUpdatesDialog />
             <Button 
               variant="outline" 
               size="sm" 
@@ -141,6 +144,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
               <LogOut className="h-4 w-4" />
               <span className="hidden sm:inline ml-2 text-sm">Kijelentkezés</span>
             </Button>
+
           </div>
         </div>
       </header>
