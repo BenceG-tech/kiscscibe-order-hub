@@ -566,7 +566,7 @@ const Checkout = () => {
             : (dailyDates.length === 1 ? dailyDates[0] : formData.pickup_date),
           pickup_time_slot: formData.pickup_type === "asap" ? null : formData.pickup_time,
           coupon_code: cart.coupon?.code || null,
-          items: cart.items.map(item => ({
+          session_id: cartSessionId,
             item_id: item.id,
             name_snapshot: item.name,
             qty: item.quantity,
