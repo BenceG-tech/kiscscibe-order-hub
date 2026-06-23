@@ -250,6 +250,30 @@ export default function WeeklyMenuGrid() {
     return lookup;
   }, [dailyOffers]);
 
+  // Build publish lookup: date -> { offerId, isPublished }
+  const publishData = useMemo(() => {
+    const lookup: Record<string, { offerId: string; isPublished: boolean }> = {};
+    dailyOffers.forEach(offer => {
+      lookup[offer.date] = { offerId: offer.id, isPublished: !!offer.is_published };
+    });
+    return lookup;
+  }, [dailyOffers]);
+
+  const publishMutation = useMutation({
+    mutationFn: async ({ dates, value }: { dates: string[]; value: boolean }) => {
+      const { error } = await supabase
+        .from("daily_offers")
+        .update({ is_published: value })
+        .in("date", dates);
+      if (error) throw error;
+    },
+    onSuccess: (_data, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["daily-offers-week"] });
+      toast.success(vars.value ? "Publikálva" : "Visszavonva piszkozatba");
+    },
+    onError: (err: any) => toast.error("Hiba: " + (err?.message || "ismeretlen")),
+  });
+
   // Mutation to add item
   const addItemMutation = useMutation({
     mutationFn: async ({ date, itemId }: { date: string; itemId: string }) => {
