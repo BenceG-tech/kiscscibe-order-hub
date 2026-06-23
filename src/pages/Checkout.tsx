@@ -567,6 +567,7 @@ const Checkout = () => {
           pickup_time_slot: formData.pickup_type === "asap" ? null : formData.pickup_time,
           coupon_code: cart.coupon?.code || null,
           session_id: cartSessionId,
+          items: cart.items.map(item => ({
             item_id: item.id,
             name_snapshot: item.name,
             qty: item.quantity,
