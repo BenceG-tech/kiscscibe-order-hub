@@ -127,7 +127,7 @@ const Checkout = () => {
   // Track abandoned carts while the user fills in checkout
   const cartSessionId = useAbandonedCartTracking({
     cartItems: cart.items,
-    totalHuf: cart.total_huf,
+    totalHuf: cart.totalAfterDiscount || cart.total,
     name: formData.name,
     phone: formData.phone,
     email: formData.email,
