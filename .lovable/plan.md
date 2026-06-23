@@ -1,35 +1,56 @@
-## Problémák
+## Cél
 
-1. **Túl nagy helyet foglal** a sáv, és mobilon a hosszú leírás még mindig nehezen olvasható egyben.
-2. **A "Megtekintve" véglegesen eltüntette** egy bejegyzést — nincs visszavonás, és nincs olyan hely, ahol később vissza lehetne nézni az újításokat.
+A rendszer önellenőrzés után minden hiba/figyelmeztetés mellé kerüljön egy **"Javítás"** gomb (ahol van automatikus megoldás), illetve egy **"Részletek"** gomb, amely felugró ablakban mutatja a hiba pontos okát, technikai részleteit, és egy lépésről-lépésre útmutatót, hogyan lehet manuálisan rendbe tenni.
 
-> Megjegyzés: a "Megtekintve" eddig is csak az adott eszközön (böngészőben) rejtette el — a többi admin saját gépén továbbra is látja. A probléma inkább az, hogy **te** nem tudod visszahozni amit véletlenül kikattintottál.
+## Funkció
 
-## Javaslat
+### 1. "Javítás" gomb (csak ahol van értelme)
+Minden ellenőrzési pont mellé — ha a státusz `warn` vagy `fail` — kis **Javítás** gomb kerül, amely az adott hibára szabott automatikus műveletet futtat.
 
-### 1) Kompakt, kihajtható sáv
-- Alapból **egysoros** "csík": kis ikon + típuscímke + cím + "1/N" + jobbra egy ✕ a teljes elrejtéshez és egy lefelé chevron ("Részletek").
-- A leírás csak akkor látszik, ha a felhasználó **rákattint a sávra vagy a chevronra** (kihajtható).
-- A "Megtekintve" gomb **csak a kibontott állapotban** látszik — így nem lehet véletlenül kikattintani.
-- Magasság becsült alapesetben: ~36 px (jelenleg ~80–110 px).
+| Ellenőrzés | Javítás művelet |
+|---|---|
+| `daily_offer` – nincs mai napi ajánlat | A legutóbbi sablon másolása mára (ha létezik); különben az admin /admin/menu-schedule oldalra navigálás. |
+| `daily_offer` – létezik, de nincs tétel | Navigálás a mai napi ajánlat szerkesztőjére. |
+| `capacity` – kevés idősáv | Az alapértelmezett idősáv-sablonból feltölti a mai napot (capacity_slots insert 11:00-15:30 között 30 percenként). |
+| `submit_order` – nem elérhető | Csak újra futtatás (retry) gomb. |
+| `db_write` – sikertelen | Csak újra futtatás. |
+| `email` – RESEND nincs / nem elérhető | Link a Supabase secrets oldalra. |
+| `stuck` – régóta nyitott rendelések | Modal: listázza a régi rendeléseket, és gombokkal lehet `cancelled` állapotba állítani őket (vagy egyenként megnyitni az OrdersManagement-ben). |
+| `sold_out` – minden tétel kifogyott | Egy kattintással visszaállítja az `is_sold_out = false` értéket a mai napi ajánlat összes tételén. |
 
-### 2) "Frissítések" központi nézet — visszanézés és visszavonás
-- Az admin fejlécben (a Kijelentkezés mellett) egy kis **harang/szikra ikon** ("Frissítések"), ami egy dialógust nyit.
-- A dialógus mutatja a **teljes elmúlt 30 nap** changelogját, kategorizálva (ÚJ / FEJLESZTÉS / JAVÍTÁS), olvasható formátumban.
-- Minden tétel mellett "Megtekintve / Visszaállítás" toggle — a véletlen kattintás visszavonható.
-- Egy "Mind visszaállítása" gomb is van a dialógus tetején.
-- A fejléc ikon piros pötty jelzést kap, ha van új, meg nem nézett bejegyzés.
+A javításokat egy új edge function végzi: **`system-health-fix`**, amely paraméterül kapja a `check_id`-t és elvégzi a megfelelő SERVICE_ROLE szintű műveletet. Ezzel biztonságosan, ellenőrzött kódból futtatjuk a javítást (nem a böngészőből).
 
-### 3) Toast a "Megtekintve" után
-- Amikor valaki rákattint a "Megtekintve"-re, egy toast jelenik meg "Elrejtve – Visszavonás" gombbal (5 mp), hogy azonnal vissza lehessen csinálni.
+A javítás után automatikusan újra fut az ellenőrzés, hogy lássuk az eredményt.
+
+### 2. "Részletek" gomb
+Minden ellenőrzési pont mellett (státusztól függetlenül) megjelenik egy kis **info ikon / Részletek** link, amely egy **Dialog**-ot nyit meg a következőkkel:
+- Ellenőrzés neve és státusza
+- Mit ellenőriz (rövid leírás, magyarul)
+- Aktuális üzenet és technikai részlet (ha van: `detail` mező)
+- Lehetséges okok (előre megírt magyarázat ellenőrzésenként)
+- Mit lehet tenni manuálisan (lépésről lépésre)
+- (Ha van) Közvetlen link az érintett admin oldalra
+
+A magyarázatokat egy `healthCheckExplanations.ts` adatfájlban tartjuk, hogy könnyen bővíthető legyen.
+
+### 3. Tömeges "Mindent javítani próbál" gomb
+A kártya tetejére kerül egy másodlagos **"Hibák javítása"** gomb (csak akkor jelenik meg, ha van `warn` vagy `fail`), amely sorban végigfut minden javítható ponton és lefuttatja a javítást, majd újra ellenőrzést indít.
 
 ## Érintett fájlok
 
-- `src/components/admin/AdminUpdatesBanner.tsx` — kompakt + kihajtható + toast-tal
-- `src/components/admin/AdminUpdatesDialog.tsx` *(új)* — teljes lista + visszaállítás
-- `src/pages/admin/AdminLayout.tsx` — fejlécben harang/szikra ikon piros pöttyel
+**Módosítás:**
+- `src/components/admin/SystemHealthCheck.tsx` – per-row "Javítás" és "Részletek" gombok, tömeges javítás gomb, dialog kezelés
+- `supabase/functions/system-health-check/index.ts` – minden check kap egy `fixable: boolean` mezőt, hogy a UI tudja, mit lehet javítani
 
-## Nincs benne
+**Új fájlok:**
+- `src/data/healthCheckExplanations.ts` – ellenőrzésenkénti magyarázatok és manuális lépések
+- `src/components/admin/HealthCheckDetailDialog.tsx` – a Részletek dialog
+- `supabase/functions/system-health-fix/index.ts` – új edge function a javításokra
 
-- Per-user szinkronizálás adatbázisban (a dismiss állapot továbbra is localStorage-ban marad — minden admin saját gépén külön nézi, így másokat nem érint, ha te elrejted).
-- A changelog tartalmának módosítása.
+**Nincs DB migráció**, mert csak meglévő táblákon írunk (mint a `capacity_slots`, `daily_offer_items`, `orders`).
+
+## Hatókör
+
+- Nem érintünk üzleti logikát rendelés vagy menü kezelés területén — csak az admin ellenőrző felületet bővítjük.
+- A `daily_offer` "másolás sablonból" csak akkor működik, ha legalább egy `daily_offer_templates` rekord létezik; különben átirányítás.
+- Minden javítás csak admin/owner jogosultsággal fut (a fix edge function ellenőrzi a JWT-t).
