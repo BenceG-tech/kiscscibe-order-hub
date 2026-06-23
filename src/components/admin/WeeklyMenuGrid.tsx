@@ -174,6 +174,7 @@ export default function WeeklyMenuGrid() {
           price_huf,
           max_portions,
           remaining_portions,
+          is_published,
           daily_offer_items (
             id,
             daily_offer_id,
