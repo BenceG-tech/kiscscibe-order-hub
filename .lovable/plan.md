@@ -1,74 +1,30 @@
-## Cél
+## Probléma
 
-Két új funkció a heti/napi ajánlatok adminisztrációjához:
+1. **Az értesítő sáv elcsúszik mobilon** — az `AdminUpdatesBanner` egy sorba próbálja zsúfolni a címet, dátumot, "1/N" számlálót, két nyilat, "Megtekintve" gombot és X-et. 402px-es kijelzőn ez kifut, a gombok átfednek a szöveggel.
 
-1. **Piszkozat → Publikálás munkafolyamat**: Új napi ajánlatok alapból piszkozatként készüljenek, ne jelenjenek meg a publikus oldalon, amíg nincsenek kifejezetten publikálva.
-2. **Másolás előnézet**: A „Menü másolása" dialógusban látni lehessen, hogy a kiválasztott forrás hét / nap milyen tételeket tartalmaz, mielőtt rákattintunk a másolásra.
+2. **Nem található a rendelésellenőrző** — a `SystemHealthCheck` jelenleg csak az **Irányítópult** oldalon, a Riasztások alatt egy kártyaként jelenik meg, cím vagy kiemelés nélkül. A felhasználó a Rendelések oldalon kereste, és ott egyáltalán nincs.
 
----
+## Javaslat
 
-## 1. Piszkozat / Publikálás rendszer
+### 1) `AdminUpdatesBanner` mobil layout javítás
+- Két sorra bontás mobilon: felül a badge + cím + dátum, alatta a leírás, és **külön alsó akciósor** a navigációval ("‹ 1/3 ›") és a gombokkal ("Megtekintve", X).
+- Desktopon (sm+) marad az egysoros elrendezés, de `flex-wrap`-pel, hogy ne csússzon el.
+- A "Megtekintve" gomb mobilon csak ikon (✓), tooltippel; desktopon szöveges.
 
-### Adatbázis
-- Új oszlop: `daily_offers.is_published boolean NOT NULL DEFAULT false`.
-- Migráció a meglévő rekordokhoz: minden korábbi `daily_offers` sor `is_published = true` legyen (visszamenőleg ne tűnjön el semmi a publikus oldalról).
-- RLS frissítés: a publikus (anon + customer) SELECT policy a `daily_offers` és kapcsolt `daily_offer_items`, `daily_offer_menus` táblákon csak akkor adja vissza a sort, ha `is_published = true`. Az admin/staff policy változatlan: mindent lát.
-
-### Admin felület
-- `WeeklyMenuGrid.tsx` napi oszlopok fejlécében egy új státusz-badge és kapcsoló:
-  - „Piszkozat" (sárga) / „Publikálva" (zöld).
-  - Gomb: „Publikálás" / „Visszavonás piszkozatba".
-- Heti szintű gyors művelet a fejlécben: „Egész hét publikálása" / „Egész hét piszkozatba".
-- `CopyMenuDialog` másolás után a célnapokat továbbra is piszkozatként hozza létre — a felhasználó utólag dönt a publikálásról.
-- `UnifiedDailyManagement` és `StreamlinedDailyOffers` napi nézetekben is ugyanaz a badge + gomb.
-
-### Publikus oldal
-- Minden olyan komponensben, ami a `daily_offers` táblát olvassa az anon kulccsal (`Etlap.tsx`, `UnifiedDailySection.tsx`, `DailyOfferCalendar.tsx`), `eq("is_published", true)` szűrő — biztonsági öv az RLS mellett.
-- Ha egy napra nincs publikált ajánlat: a meglévő „nincs napi ajánlat" üres állapot jelenik meg (nem hibaüzenet).
-
-### Admin kézikönyv (`adminHelpContent.ts`) + changelog
-- Új rövid szekció: „Piszkozat és publikálás" — hogyan készítsünk előre jövő heti menüt anélkül, hogy a vendégek látnák.
-
----
-
-## 2. Másolás előnézet a `CopyMenuDialog`-ban
-
-### „Hét másolása" tab
-- A forrás hét kiválasztása után (Select onChange) automatikus lekérdezés a `daily_offers` + `daily_offer_items` + `menu_items.name` táblákból az 5 napra.
-- Alatta egy kompakt előnézet kártya:
-  - 5 nap egymás alatt (H/K/Sze/Cs/P, dátum).
-  - Naponként: Leves (menü rész), Főétel (menü rész), egyéb à la carte tételek listája — csak nevek, vesszővel.
-  - Üres nap: halvány „Nincs ajánlat" felirat.
-- Loading skeleton az előnézet alatt, amíg a query fut.
-
-### „Nap másolása" tab
-- A forrás nap kiválasztása után ugyanaz a kis kártya: 1 nap részletes tartalma (leves, főétel, à la carte).
-- A cél nap kiválasztása után második kártya: mi van most a célnapon (ha valami már létezik), hogy lássuk mit fog kiegészíteni a másolás.
-
-### Technikai megvalósítás
-- React Query `useQuery` az előnézethez, kulcs: `["copy-preview", sourceDate(s)]`, így a dialóg újranyitás gyors cache-ből.
-- Új kis komponens: `CopyMenuPreviewCard.tsx` (egy nap megjelenítése), újrahasznosítva a hét és nap tabon.
-
----
+### 2) Rendszerellenőrző láthatóvá tétele
+- **Irányítópult**: a `SystemHealthCheck` kapjon egy saját szekciócímet ("Rendszerellenőrzés" + InfoTip), és kerüljön közvetlenül a Gyors műveletek fölé, vastag keretes kiemelt kártyában — így nem vész el a Riasztások és statisztika között.
+- **Rendelések kezelése oldal**: a fejlécbe (a `OrdersManagement` tetejére, a tabs mellé) kerüljön egy **"Rendszerellenőrzés"** gomb (Stethoscope ikonnal), amely megnyit egy Dialógust, és ott futtatja ugyanazt a `SystemHealthCheck`-et. Így a rendelésekkel dolgozva is egy kattintással elérhető.
+- A `SystemHealthCheck` komponens kapjon opcionális `compact` propot, hogy dialógusban is jól mutasson.
 
 ## Érintett fájlok
 
-**Új:**
-- `supabase/migrations/<új>.sql` — `is_published` oszlop + RLS frissítés.
-- `src/components/admin/CopyMenuPreviewCard.tsx`
-- `src/components/admin/PublishStatusToggle.tsx` (badge + gomb, újrahasznosítható)
+- `src/components/admin/AdminUpdatesBanner.tsx` — mobil reszponzív átszervezés
+- `src/components/admin/SystemHealthCheck.tsx` — opcionális `compact` prop, cím
+- `src/pages/admin/Dashboard.tsx` — szekciócím + áthelyezés
+- `src/pages/admin/OrdersManagement.tsx` — fejléc gomb + Dialog wrapper
+- `src/data/adminChangelog.ts` — új bejegyzés a javításokról
 
-**Módosítás:**
-- `src/components/admin/CopyMenuDialog.tsx` — előnézet query + kártyák.
-- `src/components/admin/WeeklyMenuGrid.tsx` — publikálás badge/gomb napi és heti szinten.
-- `src/components/admin/UnifiedDailyManagement.tsx`, `StreamlinedDailyOffers.tsx` — publikálás badge.
-- `src/pages/Etlap.tsx`, `src/components/UnifiedDailySection.tsx`, `src/components/DailyOfferCalendar.tsx` — `is_published = true` szűrő.
-- `src/integrations/supabase/types.ts` — automatikusan frissül a migráció után.
-- `src/data/adminHelpContent.ts`, `src/data/adminChangelog.ts` — dokumentáció + új bejegyzés.
+## Nincs benne
 
----
-
-## Mit NEM csinálunk most
-- Nem vezetünk be több szintű jóváhagyást (pl. szerkesztő → tulajdonos). Egy gomb = publikálás.
-- Nem ütemezett publikálás (időzítve). Ha kéred, külön körben hozzáadható.
-- A `daily_menus` / `daily_offer_menus` rekordok automatikusan követik a szülő `daily_offers.is_published` értékét — külön kapcsoló nem kell.
+- Backend / RLS / edge function változtatás (a `system-health-check` függvény marad ahogy van).
+- Az értesítő tartalmának vagy logikájának módosítása (csak a layout javul).
