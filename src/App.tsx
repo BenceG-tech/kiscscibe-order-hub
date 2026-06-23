@@ -30,7 +30,6 @@ import Rate from "./pages/Rate";
 // Lazy-loaded admin & staff pages
 const AdminDashboard = React.lazy(() => import("./pages/admin/Dashboard"));
 const AdminOrders = React.lazy(() => import("./pages/admin/Orders"));
-const AdminFailedOrders = React.lazy(() => import("./pages/admin/FailedOrders"));
 const AdminMenu = React.lazy(() => import("./pages/admin/Menu"));
 const AdminFixItems = React.lazy(() => import("./pages/admin/FixItems"));
 const AdminMenuSchedule = React.lazy(() => import("./pages/admin/MenuSchedule"));
