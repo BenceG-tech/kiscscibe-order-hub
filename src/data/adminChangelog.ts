@@ -12,6 +12,38 @@ export interface ChangelogEntry {
 // Newest first
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: "2026-06-23",
+    title: "Rendszer önellenőrző gomb az Irányítópulton",
+    description:
+      "Új gomb az admin főoldalon: egy kattintásra végigellenőrzi, hogy minden rendben van-e a rendelési rendszerben (mai napi ajánlat, idősávok, edge function, e-mail, adatbázis írási jog). Zöld/sárga/piros állapotjelzőkkel mutatja, ha valami nem stimmel.",
+    type: "new",
+    tabGroup: "orders",
+  },
+  {
+    date: "2026-06-23",
+    title: "Sikertelen és félbehagyott rendelések követése",
+    description:
+      "A Rendelések oldalon két új fül: Sikertelen (akik megpróbáltak rendelni, de hibára futottak) és Félbehagyott (akik elkezdték, de nem fejezték be). Telefonszámra kattintva azonnal vissza lehet hívni a vendéget.",
+    type: "new",
+    tabGroup: "orders",
+  },
+  {
+    date: "2026-06-23",
+    title: "Rendelés leadás stabilizálás",
+    description:
+      "Javítva: ha a vendég a napi ajánlatot egy másik napra próbálta rendelni, a rendszer automatikusan a helyes dátumra igazítja (nem hiúsul meg a leadás). Ha a napi ajánlat ára nincs beállítva, az adatbázis nem dob hibát. A Checkout most már mindig a napi tétel dátumára küldi a rendelést.",
+    type: "fixed",
+    tabGroup: "orders",
+  },
+  {
+    date: "2026-06-23",
+    title: "Frissítések banner az admin tetején",
+    description:
+      "Az admin felület tetején új sárga banner mutatja a friss módosításokat és újdonságokat (az elmúlt 7 napban). Kattintásra elrejthető egyenként vagy egyben.",
+    type: "new",
+    tabGroup: "overview",
+  },
+  {
     date: "2026-06-16",
     title: "Nyomtatás gomb az új rendeléseknél",
     description:
