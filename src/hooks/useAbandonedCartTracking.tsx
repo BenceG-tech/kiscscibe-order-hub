@@ -1,5 +1,4 @@
 import { useEffect, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
 
 const SESSION_KEY = "kc_cart_session_id";
 
@@ -77,9 +76,20 @@ export function useAbandonedCartTracking({
     debounceTimer.current = window.setTimeout(async () => {
       lastSerialized.current = serialized;
       try {
-        await supabase
-          .from("abandoned_carts" as any)
-          .upsert(payload, { onConflict: "session_id" });
+        // Send x-session-id header so RLS can verify the row belongs to this session.
+        const SUPABASE_URL = "https://gvtsbnivuysunnjrpndk.supabase.co";
+        const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+        await fetch(`${SUPABASE_URL}/rest/v1/abandoned_carts?on_conflict=session_id`, {
+          method: "POST",
+          headers: {
+            apikey: ANON_KEY,
+            Authorization: `Bearer ${ANON_KEY}`,
+            "Content-Type": "application/json",
+            Prefer: "resolution=merge-duplicates",
+            "x-session-id": sessionId.current,
+          },
+          body: JSON.stringify(payload),
+        });
       } catch (e) {
         // non-fatal
         console.debug("abandoned cart tracking failed", e);
