@@ -13,6 +13,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-06-23",
+    title: "Egyklikkes javítás és részletes hibaleírás a rendszerellenőrzésnél",
+    description:
+      "A Rendszer önellenőrzés minden hiba / figyelmeztetés mellé tett egy 'Javítás' gombot, ami automatikusan rendbe teszi a problémát (pl. mai napi ajánlat létrehozása sablonból, idősávok feltöltése, ragadt rendelések lemondása, kifogyott tételek visszaállítása). A 'Részletek' gomb felugró ablakban mutatja, mit ellenőriz a rendszer, mik a lehetséges okok és hogyan tudod manuálisan megoldani. Van egy 'Hibák javítása' gomb is a fejlécben, ami egyszerre próbálja az összes javítható hibát orvosolni.",
+    type: "new",
+    tabGroup: "orders",
+  },
+  {
+    date: "2026-06-23",
     title: "Rendszerellenőrző gomb a Rendelések oldalon + javított értesítő sáv",
     description:
       "Mostantól a Rendelések kezelése oldal fejlécében is elérhető a 'Rendszerellenőrzés' gomb — egy kattintással ellenőrizheted a rendelési rendszer állapotát anélkül, hogy visszamennél az Irányítópultra. Az admin értesítő sáv mobilon átszervezve: a cím, a lapozó és a gombok már nem csúsznak egymásra.",
