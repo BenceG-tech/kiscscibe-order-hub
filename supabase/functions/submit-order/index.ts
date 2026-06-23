@@ -271,6 +271,19 @@ serve(async (req) => {
           currentPrice = (dailyData as any).price_huf;
           remainingPortions = (dailyData as any).remaining_portions;
           itemDateStr = (dailyData as any).date;
+
+          // Fallback: if the daily offer/menu has no price set in DB, accept the
+          // client-submitted unit price (validated to a sane range) so the order
+          // does not fail with a not-null violation downstream.
+          if (currentPrice === null || currentPrice === undefined) {
+            const clientPrice = Number(item.unit_price_huf);
+            if (Number.isFinite(clientPrice) && clientPrice > 0 && clientPrice <= 10000) {
+              console.warn(`Daily ${tableName} ${item.daily_id} has NULL price_huf — falling back to client price ${clientPrice}.`);
+              currentPrice = clientPrice;
+            } else {
+              throw new Error('A napi ajánlat ára nincs beállítva — kérjük értesítse az éttermet.');
+            }
+          }
         }
 
         // Check if ordering is still allowed - prevent past dates
