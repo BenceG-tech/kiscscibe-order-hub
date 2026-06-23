@@ -423,6 +423,21 @@ export function CopyMenuDialog({ open, onOpenChange, currentWeekStart }: CopyMen
               </Select>
             </div>
 
+            {selectedSourceDay && (
+              <div className="rounded-lg border bg-card p-3">
+                <div className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground mb-1.5">
+                  Forrás tartalma
+                </div>
+                {dayPreviewLoading ? (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Betöltés...
+                  </div>
+                ) : (
+                  <DayPreview offer={dayPreview ?? undefined} dateLabel={selectedSourceDay.slice(5)} />
+                )}
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label>Cél nap</Label>
               <Select value={selectedTargetDay} onValueChange={setSelectedTargetDay}>
@@ -438,6 +453,28 @@ export function CopyMenuDialog({ open, onOpenChange, currentWeekStart }: CopyMen
                 </SelectContent>
               </Select>
             </div>
+
+            {selectedTargetDay && (
+              <div className="rounded-lg border border-dashed bg-muted/30 p-3">
+                <div className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground mb-1.5">
+                  Mi van most a célnapon
+                </div>
+                {targetPreviewLoading ? (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Betöltés...
+                  </div>
+                ) : targetPreview ? (
+                  <DayPreview offer={targetPreview} dateLabel={selectedTargetDay.slice(5)} />
+                ) : (
+                  <div className="text-xs text-muted-foreground italic">Üres nap — minden új tétel ide kerül.</div>
+                )}
+              </div>
+            )}
+
+            <div className="p-3 rounded-lg bg-muted/50 text-xs text-muted-foreground">
+              A másolt nap <strong>piszkozatként</strong> jön létre, ha most hozzuk létre. A heti nézetben publikálhatod.
+            </div>
+
 
             <Button onClick={copyDay} disabled={isCopying || !selectedSourceDay || !selectedTargetDay} className="w-full">
               {isCopying ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Copy className="h-4 w-4 mr-2" />}
