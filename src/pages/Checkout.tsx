@@ -15,6 +15,7 @@ import { LoadingSpinner } from "@/components/ui/loading";
 import { Badge } from "@/components/ui/badge";
 import ModernNavigation from "@/components/ModernNavigation";
 import { ArrowLeft, Check, Clock, CreditCard, ShoppingCart, User, FileText } from "lucide-react";
+import { useAbandonedCartTracking } from "@/hooks/useAbandonedCartTracking";
 
 // --- Progress Indicator Component ---
 const CheckoutProgress = () => {
