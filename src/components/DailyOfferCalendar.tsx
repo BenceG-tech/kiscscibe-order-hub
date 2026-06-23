@@ -145,6 +145,7 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
               )
             )
           `)
+          .eq('is_published', true)
           .order('date', { ascending: true }),
         supabase
           .from('daily_menus')
