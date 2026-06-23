@@ -53,6 +53,7 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/comp
 import { cn } from "@/lib/utils";
 import { exportOrdersToCSV } from "@/lib/orderExport";
 import InfoTip from "@/components/admin/InfoTip";
+import { FailedAttemptsList, AbandonedCartsList } from "@/components/admin/orders/FailedAndAbandoned";
 
 interface OrderItemOption {
   id: string;
@@ -483,6 +484,8 @@ const OrdersManagement = () => {
               )}
             </TabsTrigger>
             <TabsTrigger value="all">Aktív</TabsTrigger>
+            <TabsTrigger value="failed">Sikertelen</TabsTrigger>
+            <TabsTrigger value="abandoned">Félbehagyott</TabsTrigger>
           </TabsList>
 
           {/* Active tabs: new, preparing, ready, all */}
@@ -527,6 +530,25 @@ const OrdersManagement = () => {
               onReactivate={(id, status) => updateOrderStatus(id, status, { silent: true })}
             />
 
+          <TabsContent value="past" className="mt-6">
+            <PastOrdersTab
+              orders={getFilteredOrders("past")}
+              showArchived={showArchived}
+              onToggleArchived={setShowArchived}
+              onArchive={archiveOrder}
+              onDelete={deleteOrder}
+              onArchiveAll={archiveAllPast}
+              onReactivate={(id, status) => updateOrderStatus(id, status, { silent: true })}
+            />
+
+          </TabsContent>
+
+          <TabsContent value="failed" className="mt-6">
+            <FailedAttemptsList />
+          </TabsContent>
+
+          <TabsContent value="abandoned" className="mt-6">
+            <AbandonedCartsList />
           </TabsContent>
         </Tabs>
       </div>
