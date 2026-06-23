@@ -371,9 +371,34 @@ export function CopyMenuDialog({ open, onOpenChange, currentWeekStart }: CopyMen
               </Select>
             </div>
 
-            <div className="p-3 rounded-lg bg-muted/50 text-sm text-muted-foreground">
-              A kiválasztott hét tételei az aktuális hétre ({format(currentWeekStart, "MM.dd.", { locale: hu })} – {format(addDays(currentWeekStart, 4), "MM.dd.", { locale: hu })}) másolódnak. Meglévő tételek nem törlődnek.
+            {selectedSourceWeek && (
+              <div className="rounded-lg border bg-card p-3 max-h-[260px] overflow-y-auto">
+                <div className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground mb-1.5">
+                  Előnézet — mi fog átmásolódni
+                </div>
+                {weekPreviewLoading ? (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground py-3">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Betöltés...
+                  </div>
+                ) : (
+                  weekPreviewDates.map((dateStr, i) => {
+                    const offer = weekPreview?.find(o => o.date === dateStr);
+                    return (
+                      <DayPreview
+                        key={dateStr}
+                        offer={offer}
+                        dateLabel={`${WEEKDAY_SHORT[i]} ${dateStr.slice(5)}`}
+                      />
+                    );
+                  })
+                )}
+              </div>
+            )}
+
+            <div className="p-3 rounded-lg bg-muted/50 text-xs text-muted-foreground">
+              A kiválasztott hét tételei az aktuális hétre ({format(currentWeekStart, "MM.dd.", { locale: hu })} – {format(addDays(currentWeekStart, 4), "MM.dd.", { locale: hu })}) másolódnak. Meglévő tételek nem törlődnek. A másolt napok <strong>piszkozatként</strong> jönnek létre — a heti nézetből publikálhatod őket.
             </div>
+
 
             <Button onClick={copyWeek} disabled={isCopying || !selectedSourceWeek} className="w-full">
               {isCopying ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Copy className="h-4 w-4 mr-2" />}
