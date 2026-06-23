@@ -27,7 +27,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     type: "improved",
     tabGroup: "weekly",
   },
-
+  {
     date: "2026-06-23",
     title: "Rendszer önellenőrző gomb az Irányítópulton",
     description:
