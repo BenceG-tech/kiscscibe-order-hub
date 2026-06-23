@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { CHANGELOG, type ChangelogEntry } from "@/data/adminChangelog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight, Sparkles, X } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, Sparkles, X } from "lucide-react";
+import { toast } from "sonner";
 
 const STORAGE_KEY = "admin_updates_dismissed_v1";
 const STORAGE_ALL_KEY = "admin_updates_all_dismissed_until";
@@ -38,6 +39,7 @@ export const AdminUpdatesBanner = () => {
   const [dismissed, setDismissed] = useState<string[]>([]);
   const [allDismissedUntil, setAllDismissedUntil] = useState<number>(0);
   const [index, setIndex] = useState(0);
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     setDismissed(loadDismissed());
@@ -59,7 +61,6 @@ export const AdminUpdatesBanner = () => {
     });
   }, [dismissed]);
 
-  // Reset index if it points past the list
   useEffect(() => {
     if (index >= visible.length) setIndex(0);
   }, [visible.length, index]);
@@ -70,14 +71,32 @@ export const AdminUpdatesBanner = () => {
   const current = visible[index] ?? visible[0];
   const style = typeStyle(current.type);
 
-  const dismissOne = () => {
-    const next = [...dismissed, entryId(current)];
-    setDismissed(next);
+  const persist = (next: string[]) => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch {
       /* ignore */
     }
+  };
+
+  const dismissOne = () => {
+    const id = entryId(current);
+    const prev = dismissed;
+    const next = [...prev, id];
+    setDismissed(next);
+    persist(next);
+    setExpanded(false);
+    toast("Frissítés elrejtve", {
+      description: "Csak ezen az eszközön nincs többé látható.",
+      action: {
+        label: "Visszavonás",
+        onClick: () => {
+          const restored = prev.filter((x) => x !== id);
+          setDismissed(restored);
+          persist(restored);
+        },
+      },
+    });
   };
 
   const dismissAll = () => {
@@ -92,83 +111,97 @@ export const AdminUpdatesBanner = () => {
 
   return (
     <div className="border-b bg-primary/10">
-      <div className="mx-auto max-w-screen-xl px-3 sm:px-4 py-2.5">
-        {/* Top row: icon + content */}
-        <div className="flex items-start gap-2 sm:gap-3">
-          <Sparkles className="h-4 w-4 text-primary mt-1 shrink-0" />
-          <div className="flex-1 min-w-0">
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1">
-              <Badge className={`${style.className} shrink-0 text-[10px] px-1.5 py-0`}>
-                {style.label}
-              </Badge>
-              <span className="text-sm font-semibold break-words">{current.title}</span>
-              <span className="text-[11px] text-muted-foreground">· {current.date}</span>
-            </div>
-            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-3 sm:line-clamp-none">
+      <div className="mx-auto max-w-screen-xl px-3 sm:px-4">
+        {/* Compact bar — single row, ~36px */}
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="w-full flex items-center gap-2 py-1.5 text-left"
+          aria-expanded={expanded}
+        >
+          <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
+          <Badge className={`${style.className} shrink-0 text-[10px] px-1.5 py-0 h-4`}>
+            {style.label}
+          </Badge>
+          <span className="text-xs sm:text-sm font-medium truncate flex-1 min-w-0">
+            {current.title}
+          </span>
+          {visible.length > 1 && (
+            <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">
+              {index + 1}/{visible.length}
+            </span>
+          )}
+          <ChevronDown
+            className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${expanded ? "rotate-180" : ""}`}
+          />
+          <span
+            role="button"
+            tabIndex={0}
+            onClick={(e) => {
+              e.stopPropagation();
+              dismissAll();
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                e.stopPropagation();
+                dismissAll();
+              }
+            }}
+            aria-label="Sáv elrejtése"
+            title="Sáv elrejtése"
+            className="h-6 w-6 inline-flex items-center justify-center rounded-md hover:bg-muted shrink-0"
+          >
+            <X className="h-3.5 w-3.5" />
+          </span>
+        </button>
+
+        {/* Expanded panel */}
+        {expanded && (
+          <div className="pb-3 pl-6 pr-1 space-y-2">
+            <div className="text-[11px] text-muted-foreground">{current.date}</div>
+            <p className="text-sm text-foreground whitespace-pre-wrap break-words">
               {current.description}
             </p>
+            <div className="flex items-center justify-between gap-2 pt-1">
+              <div className="flex items-center gap-1">
+                {visible.length > 1 && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() =>
+                        setIndex((i) => (i - 1 + visible.length) % visible.length)
+                      }
+                      aria-label="Előző"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => setIndex((i) => (i + 1) % visible.length)}
+                      aria-label="Következő"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </>
+                )}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 px-2 text-xs"
+                onClick={dismissOne}
+              >
+                Megtekintve
+              </Button>
+            </div>
           </div>
-          {/* Desktop-only X */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 shrink-0 hidden sm:inline-flex"
-            onClick={dismissAll}
-            aria-label="Mind elrejtése"
-            title="Mind elrejtése"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-
-        {/* Bottom action row — pager + buttons, wraps neatly on mobile */}
-        <div className="flex items-center justify-between gap-2 mt-2 pl-6">
-          <div className="flex items-center gap-1">
-            {visible.length > 1 && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={() => setIndex((i) => (i - 1 + visible.length) % visible.length)}
-                  aria-label="Előző"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <span className="text-[11px] text-muted-foreground tabular-nums">
-                  {index + 1} / {visible.length}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={() => setIndex((i) => (i + 1) % visible.length)}
-                  aria-label="Következő"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </>
-            )}
-          </div>
-          <div className="flex items-center gap-1">
-            <Button variant="outline" size="sm" className="h-7 px-2 text-xs" onClick={dismissOne}>
-              Megtekintve
-            </Button>
-            {/* Mobile-only X here so it stays reachable */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 sm:hidden"
-              onClick={dismissAll}
-              aria-label="Mind elrejtése"
-              title="Mind elrejtése"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
 };
-
