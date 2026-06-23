@@ -192,9 +192,10 @@ const OrdersManagement = () => {
       .order("created_at", { ascending: false });
 
     if (error) {
+      console.warn("[OrdersManagement] fetchOrders error:", error);
       toast({
         title: "Hiba",
-        description: "Nem sikerült betölteni a rendeléseket",
+        description: `Nem sikerült betölteni a rendeléseket: ${error.message}`,
         variant: "destructive",
       });
       return;
@@ -428,6 +429,21 @@ const OrdersManagement = () => {
             <InfoTip text="Kezeld a bejövő rendeléseket: fogadd el, állítsd készre, vagy mondd le." />
           </h1>
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={async () => {
+                setRefreshing(true);
+                await fetchOrders();
+                setRefreshing(false);
+                toast({ title: "Frissítve", description: "Rendelések listája naprakész." });
+              }}
+              disabled={refreshing}
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+              <span className="hidden sm:inline">Frissítés</span>
+            </Button>
             <Dialog>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2">
