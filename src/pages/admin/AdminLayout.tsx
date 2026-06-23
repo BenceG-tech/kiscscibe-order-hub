@@ -35,6 +35,7 @@ import {
   AlertTriangle
 } from "lucide-react";
 import { HelpFloatingButton } from "@/components/admin/HelpFloatingButton";
+import { AdminUpdatesBanner } from "@/components/admin/AdminUpdatesBanner";
 
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
@@ -65,7 +66,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
 
   // SECONDARY items — less frequently used, behind "Több" on desktop, inline on mobile
   const secondaryNavItems: typeof primaryNavItems = [
-    { href: "/admin/failed-orders", label: "Félbehagyott", mobileLabel: "Félbehagy.", icon: AlertTriangle, badgeCount: 0 },
+    
     { href: "/admin/coupons", label: "Kuponok", mobileLabel: "Kupon", icon: Tag, badgeCount: 0 },
     { href: "/admin/activity", label: "Napló", mobileLabel: "Napló", icon: FileClock, badgeCount: 0 },
     { href: "/admin/partners", label: "Partnerek", mobileLabel: "Partner", icon: Users, badgeCount: 0 },
@@ -232,6 +233,8 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
           </ul>
         </div>
       </nav>
+
+      <AdminUpdatesBanner />
 
       {/* Page Content */}
       <main className="mx-auto max-w-screen-xl px-3 sm:px-4">

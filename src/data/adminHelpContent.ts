@@ -290,6 +290,41 @@ export const HELP_CATEGORIES: HelpCategory[] = [
         ],
         whyItHelps: "Egy felület — minden rendelés, akár online akár offline.",
       },
+      {
+        id: "failed-orders",
+        pageGroup: "orders-kds",
+        title: "Sikertelen és félbehagyott rendelések",
+        routes: ["/admin/orders"],
+        whatItDoes:
+          "A Rendelések oldalon két új fül látja, ki próbált rendelni de hibára futott (Sikertelen), és ki rakott össze egy kosarat de nem véglegesítette (Félbehagyott).",
+        howToUse: [
+          "Rendelések oldal → 'Sikertelen' fül: itt látod, ha valakinek hibaüzenet jött a Rendelés leadásakor (rossz időpont, telített idősáv, érvénytelen kupon stb.). Hívd vissza és segíts neki!",
+          "Rendelések oldal → 'Félbehagyott' fül: 5+ perce nem aktív, befejezetlen kosarak. A vendég neve és telefonszáma látható, ha eljutott odáig hogy beírta.",
+          "A telefonszámra kattintva azonnal indul a hívás.",
+          "A kuka ikonnal törölheted az adott bejegyzést.",
+          "A bejegyzések 30 nap után automatikusan törlődnek.",
+        ],
+        whyItHelps:
+          "Nem vesznek el a fél-rendelések. Pl. ha valaki béna volt és nem kattintott a Rendelés leadása gombra, vissza tudod hívni és felvenni a rendelést.",
+        commonMistake:
+          "Ne aggódj minden félbehagyott kosár miatt — sokan csak nézelődnek. Ha látsz egy 4-5000 Ft-os kosarat valódi adatokkal, az érdemes egy hívásra.",
+      },
+      {
+        id: "system-health",
+        pageGroup: "orders-kds",
+        title: "Rendszer önellenőrzés",
+        routes: ["/admin"],
+        whatItDoes:
+          "Az Irányítópult tetején egy gomb (Ellenőrzés futtatása) végigellenőrzi, hogy minden rendben van-e a rendelési rendszerben.",
+        howToUse: [
+          "Admin főoldal (/admin) → Rendszer önellenőrzés kártya → 'Ellenőrzés futtatása'.",
+          "~10 mp alatt lefut és sorban kiírja: napi ajánlat, idősávok, rendelés leadás funkció, adatbázis, e-mail, régóta nyitott rendelések, készlet.",
+          "Zöld pipa = OK. Sárga háromszög = figyelmeztetés. Piros X = hiba — ezeket javítsd!",
+          "Bármikor újra futtatható.",
+        ],
+        whyItHelps:
+          "Egy gombnyomással biztos lehetsz benne, hogy minden a vendégek számára is működik. Nem kell vendégekre várni hogy kiderüljön, ha valami elromlott.",
+      },
     ],
   },
   {

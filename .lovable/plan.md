@@ -1,49 +1,57 @@
-# Félbehagyott rendelések és sikertelen próbálkozások követése
+# Admin frissítések — egyesített rendeléskezelés + új funkciók
 
-## Cél
-Lássuk az adminban, ha valaki **megpróbálta** leadni a rendelést, de hibára futott, **vagy** ha csak rakosgatott a kosárba de nem véglegesítette. Erika és hasonló esetek így nyomon követhetők.
+## 1. Félbehagyott/sikertelen rendelések ÁTHELYEZÉSE
+- A különálló `/admin/failed-orders` oldalt **megszüntetjük**
+- A meglévő `/admin/orders` (Rendelések) oldalon új fülek kerülnek a tetejére:
+  - **Aktív rendelések** (jelenlegi tartalom)
+  - **Sikertelen próbálkozások** (a hibára futott rendelések — név, telefon, kosár, hibaüzenet, „Visszahívás" gomb)
+  - **Félbehagyott kosarak** (5+ perce inaktív, nem véglegesített — név, telefon, meddig jutott)
+- A „Több" menüből kivesszük a „Félbehagyott" linket
+- App.tsx-ből kivesszük a `/admin/failed-orders` route-ot
 
-## Mit építünk
+## 2. „Frissítések" banner az admin tetején (napokig látszik)
+- Új komponens: `AdminUpdatesBanner.tsx` az admin layout tetejére (sticky header alatt)
+- A `CHANGELOG` utolsó **7 napos** bejegyzéseit mutatja, lapozható
+- „Megtekintve" gombbal egyenként elrejthető (localStorage-ban tárolva ID szerint)
+- „Mind elrejtése" gombbal egyszerre eltüntethető
+- 7 napnál régebbi bejegyzések automatikusan eltűnnek
+- Új CHANGELOG bejegyzések hozzáadva a tegnapi/mai munkáról
 
-### 1. `order_attempts` tábla — sikertelen submit-ok
-Minden alkalommal, amikor a vendég megnyomja a "Rendelés leadása" gombot, de a `submit-order` edge function hibára fut (rossz dátum, telített idősáv, fogyás, validációs hiba), elmentünk egy sort:
-- név, telefon, email
-- teljes kosár (JSON)
-- végösszeg
-- hibaüzenet (pl. „A napi ajánlat csak 2026-06-23-ra rendelhető")
-- időpont, user agent
+## 3. Rendszer önellenőrző gomb
+Új edge function: `system-health-check`
+Új admin komponens: `SystemHealthCheck.tsx` az Irányítópult tetején — „Rendszer ellenőrzés futtatása" gomb.
 
-Hely: `submit-order` edge function — minden hibaág előtt beszúrjuk a `service_role` klienssel.
+**Mit ellenőriz (egy gombnyomásra, ~10 mp):**
+1. **Napi ajánlat ma** — létezik-e mai dátumra, van-e leves+főétel, ár beállítva
+2. **Kapacitás idősávok** — vannak-e mai napra `capacity_slots`
+3. **Submit-order edge function** — teszt rendelést küld `dry_run: true` flaggel; végigfuttatja a validációt, de nem ment
+4. **Adatbázis írási jog** — próba `order_attempts` rekord beszúrása és törlése
+5. **E-mail szolgáltatás** — Resend ping
+6. **Régóta új rendelés** — > 30 perce „new" státuszban figyelmeztetés
+7. **Sold-out tételek** — figyelmeztet, ha minden napi tétel kifogyott
 
-### 2. `abandoned_carts` tábla — félbehagyott kosarak
-A Checkout oldalon, amint a vendég elkezdi kitölteni az adatait (név vagy telefon megvan ÉS van tétel a kosárban), 20 mp-enként debounce-olva upsert-elünk:
-- session_id (localStorage-ban tárolt UUID)
-- név, telefon, email (amit eddig beírt)
-- kosár tartalom (JSON), végösszeg
-- meddig jutott el (lépés: cart / details / payment)
-- `last_activity_at`, `created_at`
-- `converted_order_id` — ha sikeresen leadta, ide bekerül a rendelés id-ja (a `submit-order` állítja be), így szűrhető a „tényleg elhagyott" lista
+**UI:** zöld ✓ / sárga ⚠ / piros ✗ minden tételhez, részletes hibaüzenettel, utolsó futás időpontja.
 
-Sikeres rendelés után megjelöljük konvertáltként, nem töröljük (statisztikához hasznos).
-
-### 3. Admin UI — új fül: „Félbehagyott / Sikertelen"
-`/admin/orders` mellé új tab vagy aloldal:
-- **Sikertelen próbálkozások** lista: idő, név, telefon, összeg, hibaüzenet, kosár előnézet (kinyitható)
-- **Félbehagyott kosarak** lista (csak `converted_order_id IS NULL` és > 5 perce nincs aktivitás): idő, név, telefon, összeg, kosár, meddig jutott
-- Szűrés napra, keresés név/telefonra
-- „Visszahívás" gomb: `tel:` link a telefonszámra
-
-### 4. Adatmegőrzés és GDPR
-- 30 nap után automatikus törlés (pg_cron napi job)
-- Adatvédelmi tájékoztatóba 1 mondatos kiegészítés („technikai célból ideiglenesen tároljuk a meg nem kezdett rendelési adatokat")
+## 4. Admin kézikönyv frissítés (`adminHelpContent.ts`)
+- Új szekció: **Sikertelen / Félbehagyott rendelések** (most a Rendelések oldalon)
+- Új szekció: **Rendszer önellenőrzés** használata
+- Új szekció: **Frissítések banner** értelmezése
 
 ## Technikai részletek
-- **Migráció:** 2 új tábla + GRANT-ok + RLS (csak admin/staff olvashat, `service_role` írhat) + pg_cron törlő job
-- **Edge function:** `submit-order` kiegészítése — minden `throw` előtt `order_attempts` insert; sikeres végén `abandoned_carts.converted_order_id` update
-- **Frontend hook:** új `useAbandonedCartTracking` Checkout-ban — debounce 20mp, session_id localStorage-ban
-- **Admin oldal:** új `AdminFailedOrders.tsx` + route `/admin/failed-orders` + link a meglévő admin nav-ba
-- **Erika ügye:** sajnos visszamenőleg nem deríthető ki — a mostani logokban nincs nyoma. De holnaptól minden ilyen eset látszódni fog.
+- **Új fájlok:**
+  - `src/components/admin/AdminUpdatesBanner.tsx`
+  - `src/components/admin/SystemHealthCheck.tsx`
+  - `src/components/admin/orders/FailedAttemptsTab.tsx` (vagy inline a Orders-ben)
+  - `src/components/admin/orders/AbandonedCartsTab.tsx`
+  - `supabase/functions/system-health-check/index.ts`
+- **Módosítások:**
+  - `src/pages/admin/Orders.tsx` — Tabs hozzáadása, 3 nézet
+  - `src/pages/admin/AdminLayout.tsx` — banner + „Félbehagyott" link eltávolítása
+  - `src/pages/admin/Dashboard.tsx` — Health Check panel
+  - `src/App.tsx` — `/admin/failed-orders` route eltávolítása
+  - `src/data/adminHelpContent.ts` + `adminChangelog.ts`
+  - `supabase/functions/submit-order/index.ts` — `dry_run` opció (validál, de nem ment)
+- **Törölt fájl:** `src/pages/admin/FailedOrders.tsx`
 
 ## Mit NEM változtatunk
-- Meglévő rendelés flow, validációk, KDS, értesítések érintetlenek
-- Brand/design szín, font, layout változatlan
+- Brand, szín, font, layout, meglévő rendelés flow érintetlen
