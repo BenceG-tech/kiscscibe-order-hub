@@ -13,6 +13,22 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-06-23",
+    title: "Piszkozat / publikálás munkafolyamat a heti menüknél",
+    description:
+      "Az új napi ajánlatok mostantól piszkozatként jönnek létre — nem jelennek meg a vendégek előtt, amíg nem nyomod meg a 'Publikálás' gombot. A heti nézetben napi szintű 'Piszkozat ↔ Publikálva' kapcsoló, valamint egy 'Hét publikálása' gomb is van a fejlécben. Korábbi ajánlatok automatikusan publikáltak maradnak.",
+    type: "new",
+    tabGroup: "weekly",
+  },
+  {
+    date: "2026-06-23",
+    title: "Előnézet a menü másolásnál",
+    description:
+      "A 'Másolás' dialógusban a forrás hét / nap kiválasztása után rögtön látod, milyen levesek, főételek és à la carte tételek vannak benne, mielőtt rákattintanál a másolásra. Cél napnál azt is mutatja, mi van már most ott.",
+    type: "improved",
+    tabGroup: "weekly",
+  },
+  {
+    date: "2026-06-23",
     title: "Rendszer önellenőrző gomb az Irányítópulton",
     description:
       "Új gomb az admin főoldalon: egy kattintásra végigellenőrzi, hogy minden rendben van-e a rendelési rendszerben (mai napi ajánlat, idősávok, edge function, e-mail, adatbázis írási jog). Zöld/sárga/piros állapotjelzőkkel mutatja, ha valami nem stimmel.",

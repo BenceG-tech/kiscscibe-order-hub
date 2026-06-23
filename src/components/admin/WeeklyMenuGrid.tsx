@@ -83,6 +83,7 @@ interface DailyOffer {
   price_huf: number | null;
   max_portions: number | null;
   remaining_portions: number | null;
+  is_published: boolean;
   daily_offer_items: DailyOfferItem[];
 }
 
@@ -173,6 +174,7 @@ export default function WeeklyMenuGrid() {
           price_huf,
           max_portions,
           remaining_portions,
+          is_published,
           daily_offer_items (
             id,
             daily_offer_id,
@@ -247,6 +249,30 @@ export default function WeeklyMenuGrid() {
     });
     return lookup;
   }, [dailyOffers]);
+
+  // Build publish lookup: date -> { offerId, isPublished }
+  const publishData = useMemo(() => {
+    const lookup: Record<string, { offerId: string; isPublished: boolean }> = {};
+    dailyOffers.forEach(offer => {
+      lookup[offer.date] = { offerId: offer.id, isPublished: !!offer.is_published };
+    });
+    return lookup;
+  }, [dailyOffers]);
+
+  const publishMutation = useMutation({
+    mutationFn: async ({ dates, value }: { dates: string[]; value: boolean }) => {
+      const { error } = await supabase
+        .from("daily_offers")
+        .update({ is_published: value })
+        .in("date", dates);
+      if (error) throw error;
+    },
+    onSuccess: (_data, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["daily-offers-week"] });
+      toast.success(vars.value ? "Publikálva" : "Visszavonva piszkozatba");
+    },
+    onError: (err: any) => toast.error("Hiba: " + (err?.message || "ismeretlen")),
+  });
 
   // Mutation to add item
   const addItemMutation = useMutation({
@@ -739,6 +765,24 @@ export default function WeeklyMenuGrid() {
           {isLoading && (
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           )}
+          {(() => {
+            const weekDateStrs = weekDates.map(d => format(d, "yyyy-MM-dd"));
+            const offersInWeek = weekDateStrs.filter(d => publishData[d]);
+            const allPublished = offersInWeek.length > 0 && offersInWeek.every(d => publishData[d].isPublished);
+            const anyDrafts = offersInWeek.some(d => !publishData[d].isPublished);
+            if (offersInWeek.length === 0) return null;
+            return (
+              <Button
+                variant={anyDrafts ? "default" : "outline"}
+                size="sm"
+                disabled={publishMutation.isPending}
+                onClick={() => publishMutation.mutate({ dates: offersInWeek, value: anyDrafts })}
+                title={anyDrafts ? "Az összes piszkozat publikálása" : "Az egész hét visszavonása piszkozatba"}
+              >
+                {anyDrafts ? "Hét publikálása" : "Hét visszavonása"}
+              </Button>
+            );
+          })()}
           <Button variant="outline" size="sm" onClick={() => setCopyDialogOpen(true)}>
             <Copy className="h-4 w-4 mr-1" />
             Másolás
@@ -748,6 +792,7 @@ export default function WeeklyMenuGrid() {
             onOpenChange={setCopyDialogOpen}
             currentWeekStart={currentWeekStart}
           />
+
           <Button variant="outline" size="sm" onClick={() => setExcelImportOpen(true)}>
             <FileSpreadsheet className="h-4 w-4 mr-1" />
             Heti import
@@ -903,6 +948,37 @@ export default function WeeklyMenuGrid() {
                   );
                 })}
               </tr>
+
+              {/* Publish Status Row */}
+              <tr className="bg-amber-50/40 dark:bg-amber-950/20">
+                <td className="sticky left-0 z-20 bg-amber-50 dark:bg-amber-950/40 border-b border-r p-3 font-medium text-sm">
+                  Publikálás
+                </td>
+                {weekDates.map((date, idx) => {
+                  const dateStr = format(date, "yyyy-MM-dd");
+                  const pub = publishData[dateStr];
+                  const hasOffer = !!pub;
+                  return (
+                    <td key={idx} className="border-b border-l p-2 text-center">
+                      {hasOffer ? (
+                        <Button
+                          variant={pub.isPublished ? "default" : "outline"}
+                          size="sm"
+                          className={`text-xs h-7 ${pub.isPublished ? "" : "border-amber-500 text-amber-700 dark:text-amber-300"}`}
+                          disabled={publishMutation.isPending}
+                          onClick={() => publishMutation.mutate({ dates: [dateStr], value: !pub.isPublished })}
+                          title={pub.isPublished ? "Publikálva — kattints a visszavonáshoz" : "Piszkozat — kattints a publikáláshoz"}
+                        >
+                          {pub.isPublished ? "Publikálva ✓" : "Piszkozat"}
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+
               
               {/* Category Rows */}
               {foodCategories.map(category => {

@@ -591,6 +591,7 @@ export type Database = {
           date: string
           facebook_image_url: string | null
           id: string
+          is_published: boolean
           max_portions: number | null
           note: string | null
           price_huf: number | null
@@ -601,6 +602,7 @@ export type Database = {
           date: string
           facebook_image_url?: string | null
           id?: string
+          is_published?: boolean
           max_portions?: number | null
           note?: string | null
           price_huf?: number | null
@@ -611,6 +613,7 @@ export type Database = {
           date?: string
           facebook_image_url?: string | null
           id?: string
+          is_published?: boolean
           max_portions?: number | null
           note?: string | null
           price_huf?: number | null

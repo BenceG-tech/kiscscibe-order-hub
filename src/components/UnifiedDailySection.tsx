@@ -202,6 +202,7 @@ const UnifiedDailySection = () => {
       const { data, error } = await supabase
         .from('daily_offers')
         .select('date')
+        .eq('is_published', true)
         .gte('date', format(new Date(), 'yyyy-MM-dd'));
 
       if (error) throw error;

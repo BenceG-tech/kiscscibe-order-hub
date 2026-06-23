@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { format, addDays, subWeeks, startOfWeek } from "date-fns";
 import { hu } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -19,8 +19,67 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Loader2, Copy, Calendar } from "lucide-react";
+import { Loader2, Copy, Calendar, Utensils, Soup, ChefHat } from "lucide-react";
 import { toast } from "sonner";
+
+const WEEKDAY_SHORT = ["H", "K", "Sze", "Cs", "P"];
+
+type PreviewItem = {
+  is_menu_part: boolean;
+  menu_role: string | null;
+  menu_items: { name: string } | null;
+};
+type PreviewOffer = {
+  date: string;
+  price_huf: number | null;
+  is_published: boolean;
+  daily_offer_items: PreviewItem[];
+};
+
+function DayPreview({ offer, dateLabel }: { offer?: PreviewOffer; dateLabel: string }) {
+  if (!offer || !offer.daily_offer_items?.length) {
+    return (
+      <div className="flex items-center justify-between py-1.5 text-xs">
+        <span className="font-medium text-muted-foreground w-20">{dateLabel}</span>
+        <span className="text-muted-foreground italic">Nincs ajánlat</span>
+      </div>
+    );
+  }
+  const soup = offer.daily_offer_items.find(i => i.is_menu_part && i.menu_role === "leves")?.menu_items?.name;
+  const main = offer.daily_offer_items.find(i => i.is_menu_part && i.menu_role === "főétel")?.menu_items?.name;
+  const others = offer.daily_offer_items
+    .filter(i => !i.is_menu_part)
+    .map(i => i.menu_items?.name)
+    .filter(Boolean) as string[];
+
+  return (
+    <div className="py-1.5 text-xs space-y-0.5 border-b last:border-0">
+      <div className="flex items-center gap-2">
+        <span className="font-semibold w-20 shrink-0">{dateLabel}</span>
+        {offer.price_huf && (
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+            {offer.price_huf} Ft
+          </span>
+        )}
+        {!offer.is_published && (
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300">
+            piszkozat
+          </span>
+        )}
+      </div>
+      <div className="pl-20 space-y-0.5">
+        {soup && <div className="flex gap-1.5"><Soup className="h-3 w-3 mt-0.5 text-amber-600" /><span>{soup}</span></div>}
+        {main && <div className="flex gap-1.5"><ChefHat className="h-3 w-3 mt-0.5 text-orange-600" /><span>{main}</span></div>}
+        {others.length > 0 && (
+          <div className="flex gap-1.5"><Utensils className="h-3 w-3 mt-0.5 text-muted-foreground" /><span className="text-muted-foreground">{others.join(", ")}</span></div>
+        )}
+        {!soup && !main && others.length === 0 && (
+          <div className="text-muted-foreground italic">Üres</div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 interface CopyMenuDialogProps {
   open: boolean;
@@ -36,6 +95,56 @@ export function CopyMenuDialog({ open, onOpenChange, currentWeekStart }: CopyMen
   const [selectedSourceWeek, setSelectedSourceWeek] = useState<string>("");
   const [selectedSourceDay, setSelectedSourceDay] = useState<string>("");
   const [selectedTargetDay, setSelectedTargetDay] = useState<string>("");
+
+  // Preview for selected source week
+  const weekPreviewDates = useMemo(() => {
+    if (!selectedSourceWeek) return [];
+    const start = new Date(selectedSourceWeek + "T12:00:00");
+    return Array.from({ length: 5 }, (_, i) => format(addDays(start, i), "yyyy-MM-dd"));
+  }, [selectedSourceWeek]);
+
+  const { data: weekPreview, isLoading: weekPreviewLoading } = useQuery({
+    queryKey: ["copy-preview-week", selectedSourceWeek],
+    enabled: !!selectedSourceWeek && open,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("daily_offers")
+        .select("date, price_huf, is_published, daily_offer_items(is_menu_part, menu_role, menu_items(name))")
+        .in("date", weekPreviewDates);
+      if (error) throw error;
+      return data as unknown as PreviewOffer[];
+    },
+  });
+
+  // Preview for selected source day
+  const { data: dayPreview, isLoading: dayPreviewLoading } = useQuery({
+    queryKey: ["copy-preview-day", selectedSourceDay],
+    enabled: !!selectedSourceDay && open,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("daily_offers")
+        .select("date, price_huf, is_published, daily_offer_items(is_menu_part, menu_role, menu_items(name))")
+        .eq("date", selectedSourceDay)
+        .maybeSingle();
+      if (error) throw error;
+      return data as unknown as PreviewOffer | null;
+    },
+  });
+
+  // Preview for target day (what's already there)
+  const { data: targetPreview, isLoading: targetPreviewLoading } = useQuery({
+    queryKey: ["copy-preview-target", selectedTargetDay],
+    enabled: !!selectedTargetDay && open,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("daily_offers")
+        .select("date, price_huf, is_published, daily_offer_items(is_menu_part, menu_role, menu_items(name))")
+        .eq("date", selectedTargetDay)
+        .maybeSingle();
+      if (error) throw error;
+      return data as unknown as PreviewOffer | null;
+    },
+  });
 
   // Generate past 8 weeks for selection
   const pastWeeks = useMemo(() => {
@@ -262,9 +371,34 @@ export function CopyMenuDialog({ open, onOpenChange, currentWeekStart }: CopyMen
               </Select>
             </div>
 
-            <div className="p-3 rounded-lg bg-muted/50 text-sm text-muted-foreground">
-              A kiválasztott hét tételei az aktuális hétre ({format(currentWeekStart, "MM.dd.", { locale: hu })} – {format(addDays(currentWeekStart, 4), "MM.dd.", { locale: hu })}) másolódnak. Meglévő tételek nem törlődnek.
+            {selectedSourceWeek && (
+              <div className="rounded-lg border bg-card p-3 max-h-[260px] overflow-y-auto">
+                <div className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground mb-1.5">
+                  Előnézet — mi fog átmásolódni
+                </div>
+                {weekPreviewLoading ? (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground py-3">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Betöltés...
+                  </div>
+                ) : (
+                  weekPreviewDates.map((dateStr, i) => {
+                    const offer = weekPreview?.find(o => o.date === dateStr);
+                    return (
+                      <DayPreview
+                        key={dateStr}
+                        offer={offer}
+                        dateLabel={`${WEEKDAY_SHORT[i]} ${dateStr.slice(5)}`}
+                      />
+                    );
+                  })
+                )}
+              </div>
+            )}
+
+            <div className="p-3 rounded-lg bg-muted/50 text-xs text-muted-foreground">
+              A kiválasztott hét tételei az aktuális hétre ({format(currentWeekStart, "MM.dd.", { locale: hu })} – {format(addDays(currentWeekStart, 4), "MM.dd.", { locale: hu })}) másolódnak. Meglévő tételek nem törlődnek. A másolt napok <strong>piszkozatként</strong> jönnek létre — a heti nézetből publikálhatod őket.
             </div>
+
 
             <Button onClick={copyWeek} disabled={isCopying || !selectedSourceWeek} className="w-full">
               {isCopying ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Copy className="h-4 w-4 mr-2" />}
@@ -289,6 +423,21 @@ export function CopyMenuDialog({ open, onOpenChange, currentWeekStart }: CopyMen
               </Select>
             </div>
 
+            {selectedSourceDay && (
+              <div className="rounded-lg border bg-card p-3">
+                <div className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground mb-1.5">
+                  Forrás tartalma
+                </div>
+                {dayPreviewLoading ? (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Betöltés...
+                  </div>
+                ) : (
+                  <DayPreview offer={dayPreview ?? undefined} dateLabel={selectedSourceDay.slice(5)} />
+                )}
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label>Cél nap</Label>
               <Select value={selectedTargetDay} onValueChange={setSelectedTargetDay}>
@@ -304,6 +453,28 @@ export function CopyMenuDialog({ open, onOpenChange, currentWeekStart }: CopyMen
                 </SelectContent>
               </Select>
             </div>
+
+            {selectedTargetDay && (
+              <div className="rounded-lg border border-dashed bg-muted/30 p-3">
+                <div className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground mb-1.5">
+                  Mi van most a célnapon
+                </div>
+                {targetPreviewLoading ? (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Betöltés...
+                  </div>
+                ) : targetPreview ? (
+                  <DayPreview offer={targetPreview} dateLabel={selectedTargetDay.slice(5)} />
+                ) : (
+                  <div className="text-xs text-muted-foreground italic">Üres nap — minden új tétel ide kerül.</div>
+                )}
+              </div>
+            )}
+
+            <div className="p-3 rounded-lg bg-muted/50 text-xs text-muted-foreground">
+              A másolt nap <strong>piszkozatként</strong> jön létre, ha most hozzuk létre. A heti nézetben publikálhatod.
+            </div>
+
 
             <Button onClick={copyDay} disabled={isCopying || !selectedSourceDay || !selectedTargetDay} className="w-full">
               {isCopying ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Copy className="h-4 w-4 mr-2" />}
