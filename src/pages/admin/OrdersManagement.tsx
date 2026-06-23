@@ -46,6 +46,7 @@ import {
   RotateCcw,
   Printer,
   Stethoscope,
+  RefreshCw,
 } from "lucide-react";
 import { printOrderReceipt } from "@/lib/printOrderReceipt";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -130,6 +131,8 @@ const OrdersManagement = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
+  const [refreshing, setRefreshing] = useState(false);
+
   useEffect(() => {
     fetchOrders();
 
@@ -140,10 +143,27 @@ const OrdersManagement = () => {
         { event: "*", schema: "public", table: "orders" },
         () => fetchOrders()
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          console.warn("[OrdersManagement] realtime status:", status, "- falling back to polling");
+        }
+      });
+
+    // Polling fallback: refresh every 30s in case realtime drops
+    const pollInterval = setInterval(() => {
+      fetchOrders();
+    }, 30000);
+
+    // Refresh immediately when tab becomes visible again
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") fetchOrders();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
       supabase.removeChannel(channel);
+      clearInterval(pollInterval);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);
 
