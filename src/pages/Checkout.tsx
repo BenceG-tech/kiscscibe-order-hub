@@ -550,7 +550,9 @@ const Checkout = () => {
             notes: (tableNumber ? `[Asztal: ${tableNumber}] ` : '') + (formData.notes || '') || null
           },
           payment_method: formData.payment_method,
-          pickup_date: formData.pickup_type === "asap" ? null : formData.pickup_date,
+          pickup_date: formData.pickup_type === "asap"
+            ? null
+            : (dailyDates.length === 1 ? dailyDates[0] : formData.pickup_date),
           pickup_time_slot: formData.pickup_type === "asap" ? null : formData.pickup_time,
           coupon_code: cart.coupon?.code || null,
           items: cart.items.map(item => ({
