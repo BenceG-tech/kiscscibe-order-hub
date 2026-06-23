@@ -13,6 +13,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-06-23",
+    title: "Rendszerellenőrző gomb a Rendelések oldalon + javított értesítő sáv",
+    description:
+      "Mostantól a Rendelések kezelése oldal fejlécében is elérhető a 'Rendszerellenőrzés' gomb — egy kattintással ellenőrizheted a rendelési rendszer állapotát anélkül, hogy visszamennél az Irányítópultra. Az admin értesítő sáv mobilon átszervezve: a cím, a lapozó és a gombok már nem csúsznak egymásra.",
+    type: "improved",
+    tabGroup: "orders",
+  },
+  {
+    date: "2026-06-23",
     title: "Piszkozat / publikálás munkafolyamat a heti menüknél",
     description:
       "Az új napi ajánlatok mostantól piszkozatként jönnek létre — nem jelennek meg a vendégek előtt, amíg nem nyomod meg a 'Publikálás' gombot. A heti nézetben napi szintű 'Piszkozat ↔ Publikálva' kapcsoló, valamint egy 'Hét publikálása' gomb is van a fejlécben. Korábbi ajánlatok automatikusan publikáltak maradnak.",
