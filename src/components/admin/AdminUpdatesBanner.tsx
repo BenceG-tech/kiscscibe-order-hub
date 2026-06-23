@@ -92,53 +92,27 @@ export const AdminUpdatesBanner = () => {
 
   return (
     <div className="border-b bg-primary/10">
-      <div className="mx-auto max-w-screen-xl px-3 sm:px-4 py-2.5 flex items-start gap-3">
-        <Sparkles className="h-4 w-4 text-primary mt-1 shrink-0" />
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2 mb-1">
-            <Badge className={style.className}>{style.label}</Badge>
-            <span className="text-sm font-semibold truncate">{current.title}</span>
-            <span className="text-xs text-muted-foreground">· {current.date}</span>
-            {visible.length > 1 && (
-              <span className="text-xs text-muted-foreground ml-auto">
-                {index + 1} / {visible.length}
-              </span>
-            )}
+      <div className="mx-auto max-w-screen-xl px-3 sm:px-4 py-2.5">
+        {/* Top row: icon + content */}
+        <div className="flex items-start gap-2 sm:gap-3">
+          <Sparkles className="h-4 w-4 text-primary mt-1 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1">
+              <Badge className={`${style.className} shrink-0 text-[10px] px-1.5 py-0`}>
+                {style.label}
+              </Badge>
+              <span className="text-sm font-semibold break-words">{current.title}</span>
+              <span className="text-[11px] text-muted-foreground">· {current.date}</span>
+            </div>
+            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-3 sm:line-clamp-none">
+              {current.description}
+            </p>
           </div>
-          <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 sm:line-clamp-none">
-            {current.description}
-          </p>
-        </div>
-        <div className="flex items-center gap-1 shrink-0">
-          {visible.length > 1 && (
-            <>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={() => setIndex((i) => (i - 1 + visible.length) % visible.length)}
-                aria-label="Előző"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={() => setIndex((i) => (i + 1) % visible.length)}
-                aria-label="Következő"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </>
-          )}
-          <Button variant="outline" size="sm" className="h-7 px-2 text-xs" onClick={dismissOne}>
-            Megtekintve
-          </Button>
+          {/* Desktop-only X */}
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7"
+            className="h-7 w-7 shrink-0 hidden sm:inline-flex"
             onClick={dismissAll}
             aria-label="Mind elrejtése"
             title="Mind elrejtése"
@@ -146,7 +120,55 @@ export const AdminUpdatesBanner = () => {
             <X className="h-4 w-4" />
           </Button>
         </div>
+
+        {/* Bottom action row — pager + buttons, wraps neatly on mobile */}
+        <div className="flex items-center justify-between gap-2 mt-2 pl-6">
+          <div className="flex items-center gap-1">
+            {visible.length > 1 && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => setIndex((i) => (i - 1 + visible.length) % visible.length)}
+                  aria-label="Előző"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-[11px] text-muted-foreground tabular-nums">
+                  {index + 1} / {visible.length}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => setIndex((i) => (i + 1) % visible.length)}
+                  aria-label="Következő"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </>
+            )}
+          </div>
+          <div className="flex items-center gap-1">
+            <Button variant="outline" size="sm" className="h-7 px-2 text-xs" onClick={dismissOne}>
+              Megtekintve
+            </Button>
+            {/* Mobile-only X here so it stays reachable */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 sm:hidden"
+              onClick={dismissAll}
+              aria-label="Mind elrejtése"
+              title="Mind elrejtése"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );
 };
+

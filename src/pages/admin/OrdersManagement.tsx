@@ -45,6 +45,7 @@ import {
   Undo2,
   RotateCcw,
   Printer,
+  Stethoscope,
 } from "lucide-react";
 import { printOrderReceipt } from "@/lib/printOrderReceipt";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -54,6 +55,9 @@ import { cn } from "@/lib/utils";
 import { exportOrdersToCSV } from "@/lib/orderExport";
 import InfoTip from "@/components/admin/InfoTip";
 import { FailedAttemptsList, AbandonedCartsList } from "@/components/admin/orders/FailedAndAbandoned";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { SystemHealthCheck } from "@/components/admin/SystemHealthCheck";
+
 
 interface OrderItemOption {
   id: string;
@@ -398,13 +402,31 @@ const OrdersManagement = () => {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold flex items-center gap-2">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
             Rendelések kezelése
             <InfoTip text="Kezeld a bejövő rendeléseket: fogadd el, állítsd készre, vagy mondd le." />
           </h1>
-          <Badge variant="outline">Összesen: {orders.length} rendelés</Badge>
+          <div className="flex items-center gap-2">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Stethoscope className="h-4 w-4" />
+                  <span className="hidden sm:inline">Rendszerellenőrzés</span>
+                  <span className="sm:hidden">Ellenőrzés</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[calc(100dvh-2rem)] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Rendszer önellenőrzés</DialogTitle>
+                </DialogHeader>
+                <SystemHealthCheck />
+              </DialogContent>
+            </Dialog>
+            <Badge variant="outline">Összesen: {orders.length}</Badge>
+          </div>
         </div>
+
 
         {/* Search + Export row */}
         <div className="flex items-start gap-3">
