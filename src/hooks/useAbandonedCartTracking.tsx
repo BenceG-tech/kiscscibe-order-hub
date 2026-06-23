@@ -1,5 +1,4 @@
 import { useEffect, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
 
 const SESSION_KEY = "kc_cart_session_id";
 
