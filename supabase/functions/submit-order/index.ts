@@ -886,7 +886,19 @@ serve(async (req) => {
     }
 
     console.log(`[${requestId}] Order completed successfully:`, orderCode);
-    
+
+    // Mark abandoned cart as converted (non-fatal)
+    if (attemptCtx.session_id) {
+      try {
+        await attemptCtx.supabase
+          .from('abandoned_carts')
+          .update({ converted_order_id: orderId, last_activity_at: new Date().toISOString() })
+          .eq('session_id', attemptCtx.session_id);
+      } catch (e) {
+        console.warn(`[${requestId}] Could not mark abandoned cart converted:`, e);
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -903,7 +915,34 @@ serve(async (req) => {
 
   } catch (error: any) {
     console.error(`[${requestId}] Submit order error:`, error);
-    
+
+    // Log the failed attempt for admin visibility (non-fatal)
+    try {
+      if (attemptCtx.supabase) {
+        const totalGuess = (attemptCtx.items || []).reduce((sum, it: any) => {
+          const q = Number(it?.qty) || 0;
+          const p = Number(it?.unit_price_huf) || 0;
+          return sum + q * p;
+        }, 0);
+
+        await attemptCtx.supabase.from('order_attempts').insert({
+          customer_name: attemptCtx.customer?.name || null,
+          customer_phone: attemptCtx.customer?.phone || null,
+          customer_email: attemptCtx.customer?.email || null,
+          cart_snapshot: attemptCtx.items || [],
+          total_huf: totalGuess || null,
+          error_message: error?.message || 'Ismeretlen hiba',
+          error_code: error?.code || null,
+          payment_method: attemptCtx.payment_method,
+          pickup_date: attemptCtx.pickup_date,
+          pickup_time_slot: attemptCtx.pickup_time_slot,
+          user_agent: attemptCtx.userAgent,
+        });
+      }
+    } catch (logError) {
+      console.error(`[${requestId}] Failed to log order attempt:`, logError);
+    }
+
     // Determine appropriate HTTP status code based on error type
     let statusCode = 400;
     if (error.message.includes('betelt') || error.message.includes('elfogyott')) {
