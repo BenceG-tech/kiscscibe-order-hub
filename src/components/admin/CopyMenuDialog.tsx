@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { format, addDays, subWeeks, startOfWeek } from "date-fns";
 import { hu } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
