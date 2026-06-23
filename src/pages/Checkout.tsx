@@ -193,31 +193,28 @@ const Checkout = () => {
   const generateBusinessHourSlots = (date: string): TimeSlot[] => {
     const slotDate = makeDate(date);
     const dayOfWeek = slotDate.getDay();
-    
-    if (dayOfWeek === 0) return [];
-    
+
+    // Closed on weekends (Saturday=6, Sunday=0)
+    if (dayOfWeek === 0 || dayOfWeek === 6) return [];
+
     const slots: TimeSlot[] = [];
-    let startHour = 7;
-    let endHour = 15;
-    
-    if (dayOfWeek === 6) {
-      startHour = 8;
-      endHour = 14;
+    // Lunch service: 10:30 – 15:00, every 30 minutes
+    // Generates: 10:30, 11:00, 11:30, 12:00, 12:30, 13:00, 13:30, 14:00, 14:30
+    const startMinutes = 10 * 60 + 30;
+    const endMinutes = 15 * 60;
+    for (let m = startMinutes; m < endMinutes; m += 30) {
+      const hour = Math.floor(m / 60);
+      const minute = m % 60;
+      const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:00`;
+      slots.push({
+        date,
+        timeslot: timeString,
+        available_capacity: 8,
+        max_capacity: 8,
+        utilization_percent: 0
+      });
     }
-    
-    for (let hour = startHour; hour < endHour; hour++) {
-      for (let minute = 0; minute < 60; minute += 30) {
-        const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:00`;
-        slots.push({
-          date,
-          timeslot: timeString,
-          available_capacity: 8,
-          max_capacity: 8,
-          utilization_percent: 0
-        });
-      }
-    }
-    
+
     return slots;
   };
 
