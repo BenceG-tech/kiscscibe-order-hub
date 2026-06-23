@@ -124,6 +124,16 @@ const Checkout = () => {
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponMessage, setCouponMessage] = useState<{ success: boolean; text: string } | null>(null);
 
+  // Track abandoned carts while the user fills in checkout
+  const cartSessionId = useAbandonedCartTracking({
+    cartItems: cart.items,
+    totalHuf: cart.total_huf,
+    name: formData.name,
+    phone: formData.phone,
+    email: formData.email,
+    step: "details",
+  });
+
   // --- Inline validation state ---
   const [fieldErrors, setFieldErrors] = useState<{ name?: string; phone?: string; email?: string }>({});
   const [touched, setTouched] = useState<{ name?: boolean; phone?: boolean; email?: boolean }>({});
