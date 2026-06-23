@@ -406,16 +406,17 @@ serve(async (req) => {
       const dailyItems = validatedItems.filter(item => item.daily_date);
       if (dailyItems.length > 0) {
         const uniqueDailyDates = [...new Set(dailyItems.map(item => item.daily_date))];
-        
+
         // Check for multiple daily dates
         if (uniqueDailyDates.length > 1) {
           throw new Error('Különböző dátumú napi ajánlatok/menük nem rendelhetőek egyszerre');
         }
-        
-        // Check daily item date matches pickup date
+
+        // Auto-align pickup date to the daily item's date if mismatched (defensive)
         const dailyDate = uniqueDailyDates[0];
         if (dailyDate !== date) {
-          throw new Error(`A napi ajánlat/menü csak ${dailyDate} dátumra rendelhető, de ${date} dátumra próbálta leadni`);
+          console.warn(`Pickup date ${date} mismatches daily item date ${dailyDate} — auto-aligning to ${dailyDate}.`);
+          date = dailyDate;
         }
       }
 
