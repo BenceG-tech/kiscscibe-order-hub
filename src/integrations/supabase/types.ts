@@ -1172,6 +1172,8 @@ export type Database = {
           is_featured: boolean
           is_temporary: boolean
           name: string
+          portion_size: number | null
+          portion_unit: string | null
           price_huf: number
           requires_side_selection: boolean
         }
@@ -1188,6 +1190,8 @@ export type Database = {
           is_featured?: boolean
           is_temporary?: boolean
           name: string
+          portion_size?: number | null
+          portion_unit?: string | null
           price_huf: number
           requires_side_selection?: boolean
         }
@@ -1204,6 +1208,8 @@ export type Database = {
           is_featured?: boolean
           is_temporary?: boolean
           name?: string
+          portion_size?: number | null
+          portion_unit?: string | null
           price_huf?: number
           requires_side_selection?: boolean
         }
