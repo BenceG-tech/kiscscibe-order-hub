@@ -1008,17 +1008,25 @@ export default function WeeklyMenuGrid() {
                   const pub = publishData[dateStr];
                   const hasOffer = !!pub;
                   return (
-                    <td key={idx} className="border-b border-l p-2 text-center">
+                    <td key={idx} className={`border-b border-l p-2 text-center ${hasOffer && !pub.isPublished ? "bg-amber-100/60 dark:bg-amber-950/40" : ""}`}>
                       {hasOffer ? (
                         <Button
                           variant={pub.isPublished ? "default" : "outline"}
                           size="sm"
-                          className={`text-xs h-7 ${pub.isPublished ? "" : "border-amber-500 text-amber-700 dark:text-amber-300"}`}
+                          className={`text-xs h-8 w-full font-semibold ${
+                            pub.isPublished
+                              ? "bg-green-600 hover:bg-green-700 text-white border-0"
+                              : "border-2 border-amber-500 bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-200 hover:bg-amber-100"
+                          }`}
                           disabled={publishMutation.isPending}
                           onClick={() => publishMutation.mutate({ dates: [dateStr], value: !pub.isPublished })}
                           title={pub.isPublished ? "Publikálva — kattints a visszavonáshoz" : "Piszkozat — kattints a publikáláshoz"}
                         >
-                          {pub.isPublished ? "Publikálva ✓" : "Piszkozat"}
+                          {pub.isPublished ? (
+                            <><Eye className="h-3 w-3 mr-1" /> Látható</>
+                          ) : (
+                            <><EyeOff className="h-3 w-3 mr-1" /> Nem látható</>
+                          )}
                         </Button>
                       ) : (
                         <span className="text-xs text-muted-foreground">—</span>
@@ -1026,6 +1034,7 @@ export default function WeeklyMenuGrid() {
                     </td>
                   );
                 })}
+
               </tr>
 
               
