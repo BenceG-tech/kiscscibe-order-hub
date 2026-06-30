@@ -1,32 +1,43 @@
-## Probléma
+## Cél
+Az ételek szerkesztésénél (admin) legyen lehetőség megadni az adag méretét **dkg-ban** (tömeg) vagy **db-ban** (darabszám). Ez megjelenjen a vendég felé az étlapon is, hogy lássák mekkora porciót kapnak.
 
-A publikálási banner (sárga „Egész hét publikálása" / zöld „Hét publikálva") csak a desktop nézetben jelenik meg. Mobilon a `WeeklyMenuGrid.tsx` 665. soránál `if (isMobile) return <WeeklyGridMobile … />` korán kilép, mielőtt eljutna a bannerig. Ráadásul a `WeeklyGridMobile` komponens egyáltalán nem kap publikálási adatot, így napi „Látható / Nem látható" gomb sincs mobilon.
+## Mit változik
 
-A desktop bannert is csak akkor látja az ember, ha a heti rács fejléce látható — fix sticky tetejű sáv nélkül scroll közben elveszik.
+### 1. Adatbázis (migráció)
+A `menu_items` táblához két új mező:
+- `portion_size` (szám, opcionális) — pl. 25, 2, 350
+- `portion_unit` (szöveg, opcionális) — `'dkg'`, `'db'`, `'g'`, vagy `'ml'` (alapból dkg/db közül választhat az admin, de a g/ml is engedélyezve van, ha később kell)
 
-## Megoldás
+Régi ételek `NULL`-on maradnak (nem jelenik meg semmi extra) — nincs törő változás.
 
-### 1. Publikálási banner mobilra (`WeeklyMenuGrid.tsx`)
+### 2. Admin szerkesztő — `MenuItemEditDialog.tsx`
+Új mezőcsoport "Ár" alatt: **Adag mérete**
+```
+[ Szám input ]  [ Egység választó: dkg | db ]
+```
+- Egyik sem kötelező, üresen hagyható.
+- Ha az admin beír egy számot egység nélkül, dkg az alapértelmezett.
+- Mentéskor együtt mennek a többi mezővel.
 
-A mobil ágban (665–728), közvetlenül a `WeeklyGridMobile` fölé beillesztem ugyanazt a banner blokkot, ami desktopon van:
-- Sárga sáv „X nap piszkozatban — egész hét publikálása" gombbal, ha van piszkozat.
-- Zöld sáv „Hét publikálva — a vendégek látják", ha minden napra publikálva van.
-- A banner sticky pozícióban (`sticky top-14 z-30`) legyen, hogy scroll közben is látszódjon.
+### 3. Megjelenítés a vendég oldalon
+Ahol az étel neve/leírása megjelenik (étlap kártyák, napi ajánlat, kosár), kicsi szürke címke a név mellé:
+- `25 dkg` vagy `2 db`
+- Csak akkor látszik, ha ki van töltve
 
-A desktop banner ugyanígy kapja a `sticky top-14` osztályt, hogy görgetéskor se vesszen el.
+Érintett komponensek (csak megjelenítés, logika nem változik):
+- `src/components/DailyOffersPanel.tsx` / `DailyMenuPanel.tsx`
+- `src/components/sections/AlwaysAvailableSection.tsx`
+- `src/components/sections/BreakfastSection.tsx`
+- `src/pages/Etlap.tsx` / `Menu.tsx`
+- Kosár (`CartDialog.tsx`) — opcionális, csak ha elfér
 
-### 2. Napi publikálás gombok mobilra (`WeeklyGridMobile.tsx`)
+### 4. Adminon listanézet
+A `MenuItemManagement.tsx` táblázatban új kis oszlop vagy a név alatt halvány jelzés, hogy egy pillantásra látszik mely ételeknél van már megadva adag.
 
-Hozzáadok egy új propot: `publishData: Record<string, { offerId: string; isPublished: boolean }>` és `onTogglePublish: (date: string, value: boolean) => void`.
+### 5. RPC frissítés
+A `get_daily_data` SQL függvény visszaad még két mezőt (`item_portion_size`, `item_portion_unit`), hogy a napi ajánlatban is megjelenjen.
 
-Minden napi szekció (nap-fejléc) jobb oldalára egy kis badge gomb kerül:
-- Zöld „Látható" / sárga „Nem látható" — egy kattintásra váltható, akárcsak desktopon.
-
-A `WeeklyMenuGrid.tsx` átadja ezeket a propokat és a meglévő `publishMutation`-t kötjük be.
-
-## Érintett fájlok
-
-- `src/components/admin/WeeklyMenuGrid.tsx` — banner megjelenítése a mobil ágban + sticky pozíció desktopon, propok átadása.
-- `src/components/admin/WeeklyGridMobile.tsx` — új propok, napi publish badge minden nap-fejlécbe.
-
-Nincs DB- vagy backend-változás.
+## Mit NEM változtatunk
+- Régi rendelések, számlák, e-mailek formátuma változatlan.
+- Árlogika és kosár mechanika érintetlen.
+- A `portion_size` csak informatív címke — nem befolyásolja a készlet/portion számítást (azt továbbra is a `max_portions`/`remaining_portions` kezeli).
