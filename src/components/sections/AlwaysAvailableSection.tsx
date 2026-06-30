@@ -180,8 +180,9 @@ const AlwaysAvailableSection = ({
                         )}
                       </div>
                       <div className="p-3 space-y-2">
-                        <h4 className="font-semibold text-sm leading-tight">
-                          {capitalizeFirst(item.name)}
+                        <h4 className="font-semibold text-sm leading-tight flex items-center gap-1.5 flex-wrap">
+                          <span>{capitalizeFirst(item.name)}</span>
+                          <PortionBadge size={item.portion_size} unit={item.portion_unit} />
                         </h4>
                         {item.description && (
                           <p className="text-xs text-muted-foreground line-clamp-2">{item.description}</p>
