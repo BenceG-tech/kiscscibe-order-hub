@@ -662,9 +662,55 @@ export default function WeeklyMenuGrid() {
   const topScrollRef = useRef<HTMLDivElement>(null);
   const syncingRef = useRef(false);
 
+  // Reusable publish banner (shown above grid on both mobile + desktop)
+  const renderPublishBanner = () => {
+    const weekDateStrs = weekDates.map(d => format(d, "yyyy-MM-dd"));
+    const offersInWeek = weekDateStrs.filter(d => publishData[d]);
+    if (offersInWeek.length === 0) return null;
+    const draftDates = offersInWeek.filter(d => !publishData[d].isPublished);
+    if (draftDates.length === 0) {
+      return (
+        <div className="sticky top-14 z-30 flex items-center gap-2 rounded-lg border border-green-500/30 bg-green-50 dark:bg-green-950/40 px-3 py-2 text-sm shadow-sm">
+          <Eye className="h-4 w-4 text-green-600 dark:text-green-400 shrink-0" />
+          <span className="text-green-800 dark:text-green-200 font-medium text-xs sm:text-sm">
+            Hét publikálva — a vendégek látják az étlapon
+          </span>
+        </div>
+      );
+    }
+    return (
+      <div className="sticky top-14 z-30 flex flex-col sm:flex-row sm:items-center gap-2 rounded-lg border-2 border-amber-500 bg-amber-50 dark:bg-amber-950/60 px-3 py-2.5 shadow-md">
+        <div className="flex items-start gap-2 flex-1 min-w-0">
+          <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+          <div className="min-w-0">
+            <div className="font-semibold text-amber-900 dark:text-amber-100 text-sm leading-tight">
+              {draftDates.length} nap piszkozat — a vendégek NEM látják!
+            </div>
+            <div className="text-[11px] sm:text-xs text-amber-800/80 dark:text-amber-200/80 mt-0.5">
+              Publikáld, hogy megjelenjenek az étlapon.
+            </div>
+          </div>
+        </div>
+        <Button
+          size="sm"
+          className="bg-amber-600 hover:bg-amber-700 text-white font-semibold shrink-0 w-full sm:w-auto"
+          disabled={publishMutation.isPending}
+          onClick={() => publishMutation.mutate({ dates: draftDates, value: true })}
+        >
+          {publishMutation.isPending ? (
+            <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Publikálás...</>
+          ) : (
+            <><Eye className="h-4 w-4 mr-2" /> Hét publikálása</>
+          )}
+        </Button>
+      </div>
+    );
+  };
+
   if (isMobile) {
     return (
       <>
+        {renderPublishBanner()}
         <WeeklyGridMobile
           weekDates={weekDates}
           categories={foodCategories}
@@ -687,7 +733,11 @@ export default function WeeklyMenuGrid() {
           onExport={exportToExcel}
           onOpenImport={() => setExcelImportOpen(true)}
           initialOpenDayIndex={initialOpenDayIndex}
+          publishData={publishData}
+          onTogglePublish={(date, value) => publishMutation.mutate({ dates: [date], value })}
+          isPublishPending={publishMutation.isPending}
         />
+
 
         {/* Floating quick entry FAB (above bottom nav) */}
         <Button
