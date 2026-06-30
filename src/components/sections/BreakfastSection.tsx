@@ -7,6 +7,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { capitalizeFirst } from "@/lib/utils";
 import { Coffee, Clock, Plus } from "lucide-react";
 import kiscsibeLogo from "@/assets/kiscsibe_logo_round.png";
+import { PortionBadge } from "@/components/PortionBadge";
 
 interface BreakfastItem {
   id: string;
@@ -15,6 +16,8 @@ interface BreakfastItem {
   price_huf: number;
   image_url: string | null;
   display_order: number;
+  portion_size: number | null;
+  portion_unit: string | null;
 }
 
 interface BreakfastSectionProps {
