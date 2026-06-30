@@ -40,7 +40,7 @@ const BreakfastSection = ({ variant = "page" }: BreakfastSectionProps) => {
 
       const { data, error } = await supabase
         .from("menu_items")
-        .select("id, name, description, price_huf, image_url, display_order")
+        .select("id, name, description, price_huf, image_url, display_order, portion_size, portion_unit")
         .eq("is_active", true)
         .eq("is_always_available", true)
         .eq("category_id", cat.id)
