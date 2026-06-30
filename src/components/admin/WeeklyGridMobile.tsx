@@ -55,6 +55,10 @@ interface WeeklyGridMobileProps {
   onExport?: () => void;
   onOpenImport?: () => void;
   initialOpenDayIndex?: number;
+  publishData?: Record<string, { offerId: string; isPublished: boolean }>;
+  onTogglePublish?: (date: string, value: boolean) => void;
+  isPublishPending?: boolean;
+
 }
 
 const WEEKDAYS = ["Hétfő", "Kedd", "Szerda", "Csütörtök", "Péntek"];
