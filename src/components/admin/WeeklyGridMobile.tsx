@@ -169,19 +169,44 @@ export function WeeklyGridMobile({
                       {format(date, "MM.dd.")}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {itemCount > 0 && (
-                      <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                        {itemCount} étel
-                      </span>
-                    )}
-                    <ChevronDown className={cn(
-                      "h-4 w-4 transition-transform",
-                      openDays[dayIdx] && "rotate-180"
-                    )} />
-                  </div>
-                </Button>
-              </CollapsibleTrigger>
+                <div className="flex items-center gap-2">
+                  {itemCount > 0 && (
+                    <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                      {itemCount} étel
+                    </span>
+                  )}
+                  {publishData?.[dateStr] && onTogglePublish && (
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        if (isPublishPending) return;
+                        onTogglePublish(dateStr, !publishData[dateStr].isPublished);
+                      }}
+                      className={cn(
+                        "text-[10px] font-semibold px-2 py-1 rounded-md flex items-center gap-1 border",
+                        publishData[dateStr].isPublished
+                          ? "bg-green-600 text-white border-green-600"
+                          : "bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-200 border-amber-500"
+                      )}
+                    >
+                      {publishData[dateStr].isPublished ? (
+                        <><Eye className="h-3 w-3" /> Látható</>
+                      ) : (
+                        <><EyeOff className="h-3 w-3" /> Nem látható</>
+                      )}
+                    </span>
+                  )}
+                  <ChevronDown className={cn(
+                    "h-4 w-4 transition-transform",
+                    openDays[dayIdx] && "rotate-180"
+                  )} />
+                </div>
+              </Button>
+            </CollapsibleTrigger>
+
               
               <CollapsibleContent className="pt-2">
                 <div className="space-y-2 pl-2 border-l-2 border-muted ml-2">
