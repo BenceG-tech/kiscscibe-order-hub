@@ -164,9 +164,11 @@ import DuplicateResolverDialog, { DuplicateCandidate } from "./DuplicateResolver
             is_featured: isFeatured,
             requires_side_selection: requiresSideSelection,
             is_always_available: isAlwaysAvailable,
+            portion_size: portionSize.trim() === "" ? null : Number(portionSize.replace(",", ".")),
+            portion_unit: portionSize.trim() === "" ? null : portionUnit,
           } as any)
          .eq("id", itemId);
- 
+
        if (error) throw error;
      },
      onSuccess: () => {
