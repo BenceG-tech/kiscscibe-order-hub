@@ -85,7 +85,11 @@ export function WeeklyGridMobile({
   onExport,
   onOpenImport,
   initialOpenDayIndex = 0,
+  publishData,
+  onTogglePublish,
+  isPublishPending,
 }: WeeklyGridMobileProps) {
+
   const [openDays, setOpenDays] = useState<Record<number, boolean>>({ [initialOpenDayIndex]: true });
 
   useEffect(() => {
