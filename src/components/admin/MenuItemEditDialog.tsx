@@ -313,8 +313,39 @@ import DuplicateResolverDialog, { DuplicateCandidate } from "./DuplicateResolver
                  placeholder="0"
                />
              </div>
- 
-             {/* Category */}
+
+             {/* Portion size */}
+             <div className="space-y-2">
+               <div className="flex items-center gap-1">
+                 <Label htmlFor="portion">Adag mérete</Label>
+                 <InfoTip text="Opcionális. Pl. 25 dkg vagy 2 db — a vendég látni fogja az étel mellett." />
+               </div>
+               <div className="flex gap-2">
+                 <Input
+                   id="portion"
+                   type="number"
+                   inputMode="decimal"
+                   min={0}
+                   step="0.1"
+                   value={portionSize}
+                   onChange={(e) => setPortionSize(e.target.value)}
+                   placeholder="pl. 25"
+                   className="flex-1"
+                 />
+                 <Select value={portionUnit} onValueChange={(v) => setPortionUnit(v as any)}>
+                   <SelectTrigger className="w-28">
+                     <SelectValue />
+                   </SelectTrigger>
+                   <SelectContent>
+                     <SelectItem value="dkg">dkg</SelectItem>
+                     <SelectItem value="db">db</SelectItem>
+                     <SelectItem value="g">g</SelectItem>
+                     <SelectItem value="ml">ml</SelectItem>
+                   </SelectContent>
+                 </Select>
+               </div>
+             </div>
+
              <div className="space-y-2">
                <Label>Kategória</Label>
                <Select
