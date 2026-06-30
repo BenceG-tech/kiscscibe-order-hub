@@ -13,6 +13,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-06-30",
+    title: "Adag mérete (dkg vagy db) megadható az ételekhez",
+    description:
+      "Az ételszerkesztőben az Ár alatt új mező: 'Adag mérete'. Megadhatsz egy számot és kiválaszthatod, hogy az dkg, db, g vagy ml. Üresen hagyható, és csak akkor jelenik meg a vendégek felé, ha ki van töltve. A vendég oldalon a napi ajánlatnál, a fix tételeknél és a reggelinél is kis szürke címkeként látszik az étel neve mellett (pl. '25 dkg' vagy '2 db'), így a vásárló pontosan tudja, mekkora porciót kap.",
+    type: "new",
+    tabGroup: "menu",
+  },
+  {
+    date: "2026-06-30",
     title: "Sokkal egyértelműbb publikálás a heti ajánlatoknál",
     description:
       "Volt egy gyakori félreértés: ha a heti ajánlatok 'piszkozat' állapotban maradtak, a vendégek nem látták az étlapon. Mostantól a heti rács tetején egy nagy, sárga figyelmeztető sáv jelenik meg, ha bármelyik nap piszkozatban van — rajta egy nagy 'Egész hét publikálása most' gombbal. Ha minden nap publikálva van, egy zöld 'Hét publikálva — a vendégek látják' sáv jelenik meg. Minden napra a 'Publikálva ✓ / Piszkozat' helyett most 'Látható / Nem látható' jelzés van, színes badge-dzsel, hogy egyértelmű legyen mit lát a vendég.",

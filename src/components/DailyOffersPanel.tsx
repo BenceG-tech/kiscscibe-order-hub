@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import MenuBadge from "@/components/MenuBadge";
+import { PortionBadge } from "@/components/PortionBadge";
 import { format } from "date-fns";
 import { hu } from "date-fns/locale";
 
@@ -14,6 +15,8 @@ interface MenuItem {
   item_price_huf: number;
   item_allergens?: string[];
   item_image_url?: string;
+  item_portion_size?: number | null;
+  item_portion_unit?: string | null;
 }
 
 interface DailyOffersData {
@@ -99,8 +102,9 @@ const DailyOffersPanel = ({ date, data, loading }: DailyOffersPanelProps) => {
             {data.items.map((item) => (
               <div key={item.id} className="flex items-start justify-between p-3 border rounded-lg">
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <h5 className="font-medium">{item.item_name}</h5>
+                    <PortionBadge size={item.item_portion_size} unit={item.item_portion_unit} />
                     {item.is_menu_part && <MenuBadge />}
                   </div>
                   {item.item_description && (

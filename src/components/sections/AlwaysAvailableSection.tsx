@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { capitalizeFirst } from "@/lib/utils";
 import { ShoppingCart, Package, Plus } from "lucide-react";
 import kiscsibeLogo from "@/assets/kiscsibe_logo_round.png";
+import { PortionBadge } from "@/components/PortionBadge";
 
 interface AlwaysAvailableItem {
   id: string;
@@ -18,6 +19,8 @@ interface AlwaysAvailableItem {
   allergens: string[] | null;
   category_id: string | null;
   display_order: number;
+  portion_size: number | null;
+  portion_unit: string | null;
 }
 
 interface Category {
@@ -49,7 +52,7 @@ const AlwaysAvailableSection = ({
     queryFn: async () => {
       let query = supabase
         .from("menu_items")
-        .select("id, name, description, price_huf, image_url, allergens, category_id, display_order")
+        .select("id, name, description, price_huf, image_url, allergens, category_id, display_order, portion_size, portion_unit")
         .eq("is_active", true)
         .eq("is_always_available", true)
         .order("display_order")
@@ -177,8 +180,9 @@ const AlwaysAvailableSection = ({
                         )}
                       </div>
                       <div className="p-3 space-y-2">
-                        <h4 className="font-semibold text-sm leading-tight">
-                          {capitalizeFirst(item.name)}
+                        <h4 className="font-semibold text-sm leading-tight flex items-center gap-1.5 flex-wrap">
+                          <span>{capitalizeFirst(item.name)}</span>
+                          <PortionBadge size={item.portion_size} unit={item.portion_unit} />
                         </h4>
                         {item.description && (
                           <p className="text-xs text-muted-foreground line-clamp-2">{item.description}</p>
@@ -205,8 +209,9 @@ const AlwaysAvailableSection = ({
                     className="flex items-center justify-between gap-3 px-3 py-2.5 hover:bg-muted/40 transition-colors"
                   >
                     <div className="min-w-0 flex-1">
-                      <div className="font-medium text-sm leading-tight truncate">
-                        {capitalizeFirst(item.name)}
+                      <div className="font-medium text-sm leading-tight truncate flex items-center gap-1.5">
+                        <span className="truncate">{capitalizeFirst(item.name)}</span>
+                        <PortionBadge size={item.portion_size} unit={item.portion_unit} />
                       </div>
                       {item.description && (
                         <div className="text-xs text-muted-foreground truncate">{item.description}</div>

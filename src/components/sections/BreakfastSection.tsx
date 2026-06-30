@@ -7,6 +7,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { capitalizeFirst } from "@/lib/utils";
 import { Coffee, Clock, Plus } from "lucide-react";
 import kiscsibeLogo from "@/assets/kiscsibe_logo_round.png";
+import { PortionBadge } from "@/components/PortionBadge";
 
 interface BreakfastItem {
   id: string;
@@ -15,6 +16,8 @@ interface BreakfastItem {
   price_huf: number;
   image_url: string | null;
   display_order: number;
+  portion_size: number | null;
+  portion_unit: string | null;
 }
 
 interface BreakfastSectionProps {
@@ -37,7 +40,7 @@ const BreakfastSection = ({ variant = "page" }: BreakfastSectionProps) => {
 
       const { data, error } = await supabase
         .from("menu_items")
-        .select("id, name, description, price_huf, image_url, display_order")
+        .select("id, name, description, price_huf, image_url, display_order, portion_size, portion_unit")
         .eq("is_active", true)
         .eq("is_always_available", true)
         .eq("category_id", cat.id)
@@ -127,8 +130,9 @@ const BreakfastSection = ({ variant = "page" }: BreakfastSectionProps) => {
 
               {/* Name + description */}
               <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-semibold leading-tight truncate">
-                  {capitalizeFirst(item.name)}
+                <h3 className="text-sm font-semibold leading-tight truncate flex items-center gap-1.5">
+                  <span className="truncate">{capitalizeFirst(item.name)}</span>
+                  <PortionBadge size={item.portion_size} unit={item.portion_unit} />
                 </h3>
                 {item.description && (
                   <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">

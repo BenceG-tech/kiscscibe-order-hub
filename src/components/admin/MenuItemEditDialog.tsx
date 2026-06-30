@@ -64,8 +64,10 @@ import DuplicateResolverDialog, { DuplicateCandidate } from "./DuplicateResolver
    const [allergens, setAllergens] = useState<string[]>([]);
    const [isActive, setIsActive] = useState(true);
    const [isFeatured, setIsFeatured] = useState(false);
-    const [requiresSideSelection, setRequiresSideSelection] = useState(false);
-    const [isAlwaysAvailable, setIsAlwaysAvailable] = useState(false);
+   const [requiresSideSelection, setRequiresSideSelection] = useState(false);
+   const [isAlwaysAvailable, setIsAlwaysAvailable] = useState(false);
+   const [portionSize, setPortionSize] = useState("");
+   const [portionUnit, setPortionUnit] = useState<"dkg" | "db" | "g" | "ml">("dkg");
  
    // Fetch categories
    const { data: categories = [] } = useQuery({
@@ -137,6 +139,10 @@ import DuplicateResolverDialog, { DuplicateCandidate } from "./DuplicateResolver
         setIsFeatured(item.is_featured ?? false);
         setRequiresSideSelection(item.requires_side_selection ?? false);
         setIsAlwaysAvailable((item as any).is_always_available ?? false);
+        const ps = (item as any).portion_size;
+        setPortionSize(ps !== null && ps !== undefined ? String(ps) : "");
+        const pu = (item as any).portion_unit;
+        setPortionUnit(pu === "db" || pu === "g" || pu === "ml" ? pu : "dkg");
      }
    }, [item]);
  
@@ -158,9 +164,11 @@ import DuplicateResolverDialog, { DuplicateCandidate } from "./DuplicateResolver
             is_featured: isFeatured,
             requires_side_selection: requiresSideSelection,
             is_always_available: isAlwaysAvailable,
+            portion_size: portionSize.trim() === "" ? null : Number(portionSize.replace(",", ".")),
+            portion_unit: portionSize.trim() === "" ? null : portionUnit,
           } as any)
          .eq("id", itemId);
- 
+
        if (error) throw error;
      },
      onSuccess: () => {
@@ -305,8 +313,39 @@ import DuplicateResolverDialog, { DuplicateCandidate } from "./DuplicateResolver
                  placeholder="0"
                />
              </div>
- 
-             {/* Category */}
+
+             {/* Portion size */}
+             <div className="space-y-2">
+               <div className="flex items-center gap-1">
+                 <Label htmlFor="portion">Adag mérete</Label>
+                 <InfoTip text="Opcionális. Pl. 25 dkg vagy 2 db — a vendég látni fogja az étel mellett." />
+               </div>
+               <div className="flex gap-2">
+                 <Input
+                   id="portion"
+                   type="number"
+                   inputMode="decimal"
+                   min={0}
+                   step="0.1"
+                   value={portionSize}
+                   onChange={(e) => setPortionSize(e.target.value)}
+                   placeholder="pl. 25"
+                   className="flex-1"
+                 />
+                 <Select value={portionUnit} onValueChange={(v) => setPortionUnit(v as any)}>
+                   <SelectTrigger className="w-28">
+                     <SelectValue />
+                   </SelectTrigger>
+                   <SelectContent>
+                     <SelectItem value="dkg">dkg</SelectItem>
+                     <SelectItem value="db">db</SelectItem>
+                     <SelectItem value="g">g</SelectItem>
+                     <SelectItem value="ml">ml</SelectItem>
+                   </SelectContent>
+                 </Select>
+               </div>
+             </div>
+
              <div className="space-y-2">
                <Label>Kategória</Label>
                <Select
