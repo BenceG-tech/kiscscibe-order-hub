@@ -64,8 +64,10 @@ import DuplicateResolverDialog, { DuplicateCandidate } from "./DuplicateResolver
    const [allergens, setAllergens] = useState<string[]>([]);
    const [isActive, setIsActive] = useState(true);
    const [isFeatured, setIsFeatured] = useState(false);
-    const [requiresSideSelection, setRequiresSideSelection] = useState(false);
-    const [isAlwaysAvailable, setIsAlwaysAvailable] = useState(false);
+   const [requiresSideSelection, setRequiresSideSelection] = useState(false);
+   const [isAlwaysAvailable, setIsAlwaysAvailable] = useState(false);
+   const [portionSize, setPortionSize] = useState("");
+   const [portionUnit, setPortionUnit] = useState<"dkg" | "db" | "g" | "ml">("dkg");
  
    // Fetch categories
    const { data: categories = [] } = useQuery({
