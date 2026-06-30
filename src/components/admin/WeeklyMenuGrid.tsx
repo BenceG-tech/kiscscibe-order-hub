@@ -1001,8 +1001,12 @@ export default function WeeklyMenuGrid() {
               {/* Publish Status Row */}
               <tr className="bg-amber-50/40 dark:bg-amber-950/20">
                 <td className="sticky left-0 z-20 bg-amber-50 dark:bg-amber-950/40 border-b border-r p-3 font-medium text-sm">
-                  Publikálás
+                  <div className="flex items-center gap-1.5">
+                    <Eye className="h-3.5 w-3.5" />
+                    Vendég látja?
+                  </div>
                 </td>
+
                 {weekDates.map((date, idx) => {
                   const dateStr = format(date, "yyyy-MM-dd");
                   const pub = publishData[dateStr];
