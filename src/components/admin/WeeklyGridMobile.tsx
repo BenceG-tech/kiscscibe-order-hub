@@ -2,7 +2,7 @@ import { format } from "date-fns";
 import { hu } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronLeft, ChevronRight, ChevronDown, Loader2, Check, Download, Upload } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Loader2, Check, Download, Upload, Eye, EyeOff } from "lucide-react";
 import { WeeklyGridCell } from "./WeeklyGridCell";
 import { DailyPriceInput } from "./DailyPriceInput";
 import { useState, useEffect } from "react";
