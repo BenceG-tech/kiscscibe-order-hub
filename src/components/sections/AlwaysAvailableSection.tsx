@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { capitalizeFirst } from "@/lib/utils";
 import { ShoppingCart, Package, Plus } from "lucide-react";
 import kiscsibeLogo from "@/assets/kiscsibe_logo_round.png";
+import { PortionBadge } from "@/components/PortionBadge";
 
 interface AlwaysAvailableItem {
   id: string;
@@ -18,6 +19,8 @@ interface AlwaysAvailableItem {
   allergens: string[] | null;
   category_id: string | null;
   display_order: number;
+  portion_size: number | null;
+  portion_unit: string | null;
 }
 
 interface Category {
