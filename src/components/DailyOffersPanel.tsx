@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import MenuBadge from "@/components/MenuBadge";
+import { PortionBadge } from "@/components/PortionBadge";
 import { format } from "date-fns";
 import { hu } from "date-fns/locale";
 
@@ -14,6 +15,8 @@ interface MenuItem {
   item_price_huf: number;
   item_allergens?: string[];
   item_image_url?: string;
+  item_portion_size?: number | null;
+  item_portion_unit?: string | null;
 }
 
 interface DailyOffersData {
