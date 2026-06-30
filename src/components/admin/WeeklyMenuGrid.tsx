@@ -6,7 +6,7 @@ import { getSmartWeekStart, getSmartInitialDayIndex } from "@/lib/dateUtils";
 import { hu } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 
-import { ChevronLeft, ChevronRight, Loader2, Check, Download, Ban, Copy, Trash2, FileSpreadsheet, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, Check, Download, Ban, Copy, Trash2, FileSpreadsheet, Plus, AlertTriangle, Eye, EyeOff, Info } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { CopyMenuDialog } from "./CopyMenuDialog";
 import { toast } from "sonner";
