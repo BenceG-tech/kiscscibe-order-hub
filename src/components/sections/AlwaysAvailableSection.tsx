@@ -209,8 +209,9 @@ const AlwaysAvailableSection = ({
                     className="flex items-center justify-between gap-3 px-3 py-2.5 hover:bg-muted/40 transition-colors"
                   >
                     <div className="min-w-0 flex-1">
-                      <div className="font-medium text-sm leading-tight truncate">
-                        {capitalizeFirst(item.name)}
+                      <div className="font-medium text-sm leading-tight truncate flex items-center gap-1.5">
+                        <span className="truncate">{capitalizeFirst(item.name)}</span>
+                        <PortionBadge size={item.portion_size} unit={item.portion_unit} />
                       </div>
                       {item.description && (
                         <div className="text-xs text-muted-foreground truncate">{item.description}</div>
