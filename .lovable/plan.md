@@ -1,39 +1,32 @@
 ## Probléma
 
-A vendégoldal csak a publikált (`is_published=true`) napi ajánlatokat mutatja. Az aktuális hét mind az 5 napja létrehozva, de **piszkozat** állapotban van — ezért nem látszik a fronton. A jelenlegi "Hét publikálása" gomb beleolvad a fejlécbe, és nem hívja fel a figyelmet arra, hogy van mit publikálni.
+A publikálási banner (sárga „Egész hét publikálása" / zöld „Hét publikálva") csak a desktop nézetben jelenik meg. Mobilon a `WeeklyMenuGrid.tsx` 665. soránál `if (isMobile) return <WeeklyGridMobile … />` korán kilép, mielőtt eljutna a bannerig. Ráadásul a `WeeklyGridMobile` komponens egyáltalán nem kap publikálási adatot, így napi „Látható / Nem látható" gomb sincs mobilon.
 
-## Megoldás: feltűnő publikálási sáv + auto-emlékeztető
+A desktop bannert is csak akkor látja az ember, ha a heti rács fejléce látható — fix sticky tetejű sáv nélkül scroll közben elveszik.
 
-### 1. Figyelmeztető banner a heti rács tetején (`WeeklyMenuGrid.tsx`)
+## Megoldás
 
-Ha a megjelenített héten van **bármilyen piszkozat** ajánlat:
+### 1. Publikálási banner mobilra (`WeeklyMenuGrid.tsx`)
 
-- Sárga/amber színű banner sáv a heti fejléc fölött
-- Szöveg: „**X nap piszkozatban — a vendégek nem látják!**" (X = piszkozatban lévő napok száma)
-- Mellette nagy, elsődleges színű gomb: **„Egész hét publikálása most"**
-- Ha minden napra publikálva van: zöld pipa + halvány szöveg „Hét publikálva — a vendégek látják"
+A mobil ágban (665–728), közvetlenül a `WeeklyGridMobile` fölé beillesztem ugyanazt a banner blokkot, ami desktopon van:
+- Sárga sáv „X nap piszkozatban — egész hét publikálása" gombbal, ha van piszkozat.
+- Zöld sáv „Hét publikálva — a vendégek látják", ha minden napra publikálva van.
+- A banner sticky pozícióban (`sticky top-14 z-30`) legyen, hogy scroll közben is látszódjon.
 
-### 2. Napi cellák erősebb vizuális jelzése
+A desktop banner ugyanígy kapja a `sticky top-14` osztályt, hogy görgetéskor se vesszen el.
 
-- Piszkozat napoknál a teljes cella körül szaggatott amber keret (nem csak a kis gomb)
-- A „Piszkozat" szöveg helyett: **„⚠ Nem látható"** badge
-- Publikált napoknál: **„👁 Látható"** badge zöld háttérrel
+### 2. Napi publikálás gombok mobilra (`WeeklyGridMobile.tsx`)
 
-### 3. Mentés utáni toast emlékeztető
+Hozzáadok egy új propot: `publishData: Record<string, { offerId: string; isPublished: boolean }>` és `onTogglePublish: (date: string, value: boolean) => void`.
 
-Amikor menüpontot adunk hozzá / módosítunk egy piszkozat naphoz, a sikeres mentés toast után jelenjen meg egy **second toast „Ne felejtsd el publikálni!"** akció gombbal, ami egy kattintással publikálja az adott napot.
+Minden napi szekció (nap-fejléc) jobb oldalára egy kis badge gomb kerül:
+- Zöld „Látható" / sárga „Nem látható" — egy kattintásra váltható, akárcsak desktopon.
 
-### 4. Súgó szöveg
-
-A heti rács fejlécében egy `InfoTip` ikon rövid magyarázattal: „A piszkozat ajánlatok csak nálad látszanak. A vendégek csak a publikált napokat látják az étlapon."
-
-### 5. Egyszeri javítás most
-
-A jelenlegi 5 darab piszkozat (2026-06-29 – 2026-07-03) **publikálása** — ezt rád bízzuk: az új banner megjelenése után egy kattintás. Nem nyúlok a DB-hez automatikusan, mert lehet hogy szándékos volt a piszkozat.
+A `WeeklyMenuGrid.tsx` átadja ezeket a propokat és a meglévő `publishMutation`-t kötjük be.
 
 ## Érintett fájlok
 
-- `src/components/admin/WeeklyMenuGrid.tsx` — banner, badge-ek, toast emlékeztető, súgó tooltip
-- `src/data/adminChangelog.ts` — bejegyzés a változásról
+- `src/components/admin/WeeklyMenuGrid.tsx` — banner megjelenítése a mobil ágban + sticky pozíció desktopon, propok átadása.
+- `src/components/admin/WeeklyGridMobile.tsx` — új propok, napi publish badge minden nap-fejlécbe.
 
-Nincs DB migráció, nincs backend változás.
+Nincs DB- vagy backend-változás.
