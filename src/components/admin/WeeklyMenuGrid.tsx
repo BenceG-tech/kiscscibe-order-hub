@@ -838,53 +838,9 @@ export default function WeeklyMenuGrid() {
         </div>
       </div>
 
-      {/* Publish status banner */}
-      {(() => {
-        const weekDateStrs = weekDates.map(d => format(d, "yyyy-MM-dd"));
-        const offersInWeek = weekDateStrs.filter(d => publishData[d]);
-        if (offersInWeek.length === 0) return null;
-        const draftDates = offersInWeek.filter(d => !publishData[d].isPublished);
-        const allPublished = draftDates.length === 0;
+      {/* Publish status banner (sticky) */}
+      {renderPublishBanner()}
 
-        if (allPublished) {
-          return (
-            <div className="flex items-center gap-2 rounded-lg border border-green-500/30 bg-green-50 dark:bg-green-950/30 px-4 py-2.5 text-sm">
-              <Eye className="h-4 w-4 text-green-600 dark:text-green-400 shrink-0" />
-              <span className="text-green-800 dark:text-green-200 font-medium">
-                Hét publikálva — a vendégek látják az étlapon
-              </span>
-            </div>
-          );
-        }
-
-        return (
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-lg border-2 border-amber-500 bg-amber-50 dark:bg-amber-950/40 px-4 py-3 shadow-sm">
-            <div className="flex items-start gap-2 flex-1">
-              <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-              <div>
-                <div className="font-semibold text-amber-900 dark:text-amber-100 text-sm">
-                  {draftDates.length} nap piszkozatban — a vendégek NEM látják!
-                </div>
-                <div className="text-xs text-amber-800/80 dark:text-amber-200/80 mt-0.5">
-                  A piszkozat ajánlatok csak nálad látszanak. Publikáld, hogy megjelenjenek az étlapon.
-                </div>
-              </div>
-            </div>
-            <Button
-              size="default"
-              className="bg-amber-600 hover:bg-amber-700 text-white font-semibold shrink-0"
-              disabled={publishMutation.isPending}
-              onClick={() => publishMutation.mutate({ dates: draftDates, value: true })}
-            >
-              {publishMutation.isPending ? (
-                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Publikálás...</>
-              ) : (
-                <><Eye className="h-4 w-4 mr-2" /> Egész hét publikálása most</>
-              )}
-            </Button>
-          </div>
-        );
-      })()}
 
 
       <WeeklyExcelImport
