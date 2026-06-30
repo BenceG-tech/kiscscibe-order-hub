@@ -130,8 +130,9 @@ const BreakfastSection = ({ variant = "page" }: BreakfastSectionProps) => {
 
               {/* Name + description */}
               <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-semibold leading-tight truncate">
-                  {capitalizeFirst(item.name)}
+                <h3 className="text-sm font-semibold leading-tight truncate flex items-center gap-1.5">
+                  <span className="truncate">{capitalizeFirst(item.name)}</span>
+                  <PortionBadge size={item.portion_size} unit={item.portion_unit} />
                 </h3>
                 {item.description && (
                   <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
