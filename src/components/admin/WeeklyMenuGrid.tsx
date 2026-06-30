@@ -765,24 +765,8 @@ export default function WeeklyMenuGrid() {
           {isLoading && (
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           )}
-          {(() => {
-            const weekDateStrs = weekDates.map(d => format(d, "yyyy-MM-dd"));
-            const offersInWeek = weekDateStrs.filter(d => publishData[d]);
-            const allPublished = offersInWeek.length > 0 && offersInWeek.every(d => publishData[d].isPublished);
-            const anyDrafts = offersInWeek.some(d => !publishData[d].isPublished);
-            if (offersInWeek.length === 0) return null;
-            return (
-              <Button
-                variant={anyDrafts ? "default" : "outline"}
-                size="sm"
-                disabled={publishMutation.isPending}
-                onClick={() => publishMutation.mutate({ dates: offersInWeek, value: anyDrafts })}
-                title={anyDrafts ? "Az összes piszkozat publikálása" : "Az egész hét visszavonása piszkozatba"}
-              >
-                {anyDrafts ? "Hét publikálása" : "Hét visszavonása"}
-              </Button>
-            );
-          })()}
+          {/* Publish button moved to prominent banner below */}
+
           <Button variant="outline" size="sm" onClick={() => setCopyDialogOpen(true)}>
             <Copy className="h-4 w-4 mr-1" />
             Másolás
