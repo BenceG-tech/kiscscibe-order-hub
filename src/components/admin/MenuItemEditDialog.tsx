@@ -139,6 +139,10 @@ import DuplicateResolverDialog, { DuplicateCandidate } from "./DuplicateResolver
         setIsFeatured(item.is_featured ?? false);
         setRequiresSideSelection(item.requires_side_selection ?? false);
         setIsAlwaysAvailable((item as any).is_always_available ?? false);
+        const ps = (item as any).portion_size;
+        setPortionSize(ps !== null && ps !== undefined ? String(ps) : "");
+        const pu = (item as any).portion_unit;
+        setPortionUnit(pu === "db" || pu === "g" || pu === "ml" ? pu : "dkg");
      }
    }, [item]);
  
