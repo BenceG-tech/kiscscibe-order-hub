@@ -52,7 +52,7 @@ const AlwaysAvailableSection = ({
     queryFn: async () => {
       let query = supabase
         .from("menu_items")
-        .select("id, name, description, price_huf, image_url, allergens, category_id, display_order")
+        .select("id, name, description, price_huf, image_url, allergens, category_id, display_order, portion_size, portion_unit")
         .eq("is_active", true)
         .eq("is_always_available", true)
         .order("display_order")
