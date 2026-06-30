@@ -12,6 +12,15 @@ export interface ChangelogEntry {
 // Newest first
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: "2026-06-30",
+    title: "Sokkal egyértelműbb publikálás a heti ajánlatoknál",
+    description:
+      "Volt egy gyakori félreértés: ha a heti ajánlatok 'piszkozat' állapotban maradtak, a vendégek nem látták az étlapon. Mostantól a heti rács tetején egy nagy, sárga figyelmeztető sáv jelenik meg, ha bármelyik nap piszkozatban van — rajta egy nagy 'Egész hét publikálása most' gombbal. Ha minden nap publikálva van, egy zöld 'Hét publikálva — a vendégek látják' sáv jelenik meg. Minden napra a 'Publikálva ✓ / Piszkozat' helyett most 'Látható / Nem látható' jelzés van, színes badge-dzsel, hogy egyértelmű legyen mit lát a vendég.",
+    type: "improved",
+    tabGroup: "daily",
+  },
+  {
+
     date: "2026-06-23",
     title: "Átvételi időpontok csak ebédidőben (10:30-tól)",
     description:

@@ -6,7 +6,7 @@ import { getSmartWeekStart, getSmartInitialDayIndex } from "@/lib/dateUtils";
 import { hu } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 
-import { ChevronLeft, ChevronRight, Loader2, Check, Download, Ban, Copy, Trash2, FileSpreadsheet, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, Check, Download, Ban, Copy, Trash2, FileSpreadsheet, Plus, AlertTriangle, Eye, EyeOff, Info } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { CopyMenuDialog } from "./CopyMenuDialog";
 import { toast } from "sonner";
@@ -765,24 +765,8 @@ export default function WeeklyMenuGrid() {
           {isLoading && (
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           )}
-          {(() => {
-            const weekDateStrs = weekDates.map(d => format(d, "yyyy-MM-dd"));
-            const offersInWeek = weekDateStrs.filter(d => publishData[d]);
-            const allPublished = offersInWeek.length > 0 && offersInWeek.every(d => publishData[d].isPublished);
-            const anyDrafts = offersInWeek.some(d => !publishData[d].isPublished);
-            if (offersInWeek.length === 0) return null;
-            return (
-              <Button
-                variant={anyDrafts ? "default" : "outline"}
-                size="sm"
-                disabled={publishMutation.isPending}
-                onClick={() => publishMutation.mutate({ dates: offersInWeek, value: anyDrafts })}
-                title={anyDrafts ? "Az összes piszkozat publikálása" : "Az egész hét visszavonása piszkozatba"}
-              >
-                {anyDrafts ? "Hét publikálása" : "Hét visszavonása"}
-              </Button>
-            );
-          })()}
+          {/* Publish button moved to prominent banner below */}
+
           <Button variant="outline" size="sm" onClick={() => setCopyDialogOpen(true)}>
             <Copy className="h-4 w-4 mr-1" />
             Másolás
@@ -803,6 +787,55 @@ export default function WeeklyMenuGrid() {
           </Button>
         </div>
       </div>
+
+      {/* Publish status banner */}
+      {(() => {
+        const weekDateStrs = weekDates.map(d => format(d, "yyyy-MM-dd"));
+        const offersInWeek = weekDateStrs.filter(d => publishData[d]);
+        if (offersInWeek.length === 0) return null;
+        const draftDates = offersInWeek.filter(d => !publishData[d].isPublished);
+        const allPublished = draftDates.length === 0;
+
+        if (allPublished) {
+          return (
+            <div className="flex items-center gap-2 rounded-lg border border-green-500/30 bg-green-50 dark:bg-green-950/30 px-4 py-2.5 text-sm">
+              <Eye className="h-4 w-4 text-green-600 dark:text-green-400 shrink-0" />
+              <span className="text-green-800 dark:text-green-200 font-medium">
+                Hét publikálva — a vendégek látják az étlapon
+              </span>
+            </div>
+          );
+        }
+
+        return (
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-lg border-2 border-amber-500 bg-amber-50 dark:bg-amber-950/40 px-4 py-3 shadow-sm">
+            <div className="flex items-start gap-2 flex-1">
+              <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <div className="font-semibold text-amber-900 dark:text-amber-100 text-sm">
+                  {draftDates.length} nap piszkozatban — a vendégek NEM látják!
+                </div>
+                <div className="text-xs text-amber-800/80 dark:text-amber-200/80 mt-0.5">
+                  A piszkozat ajánlatok csak nálad látszanak. Publikáld, hogy megjelenjenek az étlapon.
+                </div>
+              </div>
+            </div>
+            <Button
+              size="default"
+              className="bg-amber-600 hover:bg-amber-700 text-white font-semibold shrink-0"
+              disabled={publishMutation.isPending}
+              onClick={() => publishMutation.mutate({ dates: draftDates, value: true })}
+            >
+              {publishMutation.isPending ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Publikálás...</>
+              ) : (
+                <><Eye className="h-4 w-4 mr-2" /> Egész hét publikálása most</>
+              )}
+            </Button>
+          </div>
+        );
+      })()}
+
 
       <WeeklyExcelImport
         open={excelImportOpen}
@@ -952,24 +985,36 @@ export default function WeeklyMenuGrid() {
               {/* Publish Status Row */}
               <tr className="bg-amber-50/40 dark:bg-amber-950/20">
                 <td className="sticky left-0 z-20 bg-amber-50 dark:bg-amber-950/40 border-b border-r p-3 font-medium text-sm">
-                  Publikálás
+                  <div className="flex items-center gap-1.5">
+                    <Eye className="h-3.5 w-3.5" />
+                    Vendég látja?
+                  </div>
                 </td>
+
                 {weekDates.map((date, idx) => {
                   const dateStr = format(date, "yyyy-MM-dd");
                   const pub = publishData[dateStr];
                   const hasOffer = !!pub;
                   return (
-                    <td key={idx} className="border-b border-l p-2 text-center">
+                    <td key={idx} className={`border-b border-l p-2 text-center ${hasOffer && !pub.isPublished ? "bg-amber-100/60 dark:bg-amber-950/40" : ""}`}>
                       {hasOffer ? (
                         <Button
                           variant={pub.isPublished ? "default" : "outline"}
                           size="sm"
-                          className={`text-xs h-7 ${pub.isPublished ? "" : "border-amber-500 text-amber-700 dark:text-amber-300"}`}
+                          className={`text-xs h-8 w-full font-semibold ${
+                            pub.isPublished
+                              ? "bg-green-600 hover:bg-green-700 text-white border-0"
+                              : "border-2 border-amber-500 bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-200 hover:bg-amber-100"
+                          }`}
                           disabled={publishMutation.isPending}
                           onClick={() => publishMutation.mutate({ dates: [dateStr], value: !pub.isPublished })}
                           title={pub.isPublished ? "Publikálva — kattints a visszavonáshoz" : "Piszkozat — kattints a publikáláshoz"}
                         >
-                          {pub.isPublished ? "Publikálva ✓" : "Piszkozat"}
+                          {pub.isPublished ? (
+                            <><Eye className="h-3 w-3 mr-1" /> Látható</>
+                          ) : (
+                            <><EyeOff className="h-3 w-3 mr-1" /> Nem látható</>
+                          )}
                         </Button>
                       ) : (
                         <span className="text-xs text-muted-foreground">—</span>
@@ -977,6 +1022,7 @@ export default function WeeklyMenuGrid() {
                     </td>
                   );
                 })}
+
               </tr>
 
               
