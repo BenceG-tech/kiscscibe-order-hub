@@ -619,12 +619,11 @@ serve(async (req) => {
     // Insert order with retry on unique code collision (max 3 attempts)
     let orderData: any = null;
     let orderInsertError: any = null;
-    let currentOrderCode = orderCode;
     for (let attempt = 0; attempt < 3; attempt++) {
       const { data, error } = await supabase
         .from('orders')
         .insert({
-          code: currentOrderCode,
+          code: orderCode,
           name: customer.name,
           phone: customer.phone,
           email: customer.email || null,
@@ -647,9 +646,9 @@ serve(async (req) => {
       orderInsertError = error;
       // 23505 = unique_violation on orders.code — regenerate and retry
       if ((error as any).code === '23505' && attempt < 2) {
-        console.warn(`Order code collision on ${currentOrderCode}, regenerating (attempt ${attempt + 1})`);
+        console.warn(`Order code collision on ${orderCode}, regenerating (attempt ${attempt + 1})`);
         const { data: newCode } = await supabase.rpc('gen_order_code');
-        if (newCode) currentOrderCode = newCode as string;
+        if (newCode) orderCode = newCode as string;
         continue;
       }
       break;
@@ -659,9 +658,7 @@ serve(async (req) => {
       console.error('Order insert error:', orderInsertError);
       throw new Error('Rendelés mentési hiba');
     }
-    // Keep downstream references consistent with the code we actually inserted
-    (globalThis as any).__unused = orderCode; // no-op to keep var used
-    const finalOrderCode = currentOrderCode;
+
 
 
     const orderId = orderData.id;
