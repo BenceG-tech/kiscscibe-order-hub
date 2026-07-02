@@ -125,12 +125,17 @@ serve(async (req) => {
     userAgent: req.headers.get('user-agent') || '',
   };
 
+  // Rollback safety net: registered compensations run in reverse order if any step after
+  // capacity/portion mutations throws. Prevents "ghost" bookings when the final INSERT fails.
+  const compensations: Array<() => Promise<void>> = [];
+
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     attemptCtx.supabase = supabase;
+
 
     const {
       customer,
