@@ -638,7 +638,7 @@ serve(async (req) => {
           email: customer.email || null,
           total_huf: calculatedTotal,
           status: 'new',
-          payment_method,
+          payment_method: payment_method_final,
           pickup_time: pickup_time || (date && time ? budapestWallTimeToUtcIso(date, time.slice(0, 5)) : null),
           notes: customer.notes || null,
           coupon_code: appliedCouponCode,
