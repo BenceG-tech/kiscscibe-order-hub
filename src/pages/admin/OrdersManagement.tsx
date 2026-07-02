@@ -1147,7 +1147,7 @@ const PastOrderAdminCard = ({
               )}
               <span className="flex items-center gap-1">
                 <CreditCard className="h-3.5 w-3.5" />
-                {order.payment_method === "cash" ? "Készpénz" : "Kártya"}
+                {order.payment_method === "cash" ? "Készpénz" : order.payment_method === "card_online" ? "Online kártya" : "Bankkártya"}
               </span>
             </div>
 
