@@ -1,70 +1,43 @@
-## Cél
-Végignézni azokat a rejtett pontokat a rendelésleadásban, ahol az Erikáéhoz hasonlóan némán elakadhat egy rendelés, és javítani a valós kockázatokat.
+## Mit találtam
 
-## Talált kockázatok (submit-order/index.ts + kapcsolódók)
+Kazi Cintia 4× próbálta leadni ugyanazt a rendelést (2026-07-02 11:46–11:47 Budapest, 7280 Ft, 5 tétel), mind "Rendelés mentési hiba" üzenettel. A vásárló nem tudott sikeresen rendelni.
 
-### 1. Legacy ISO `pickup_time` → időzóna-eltolódás (ugyanaz a családi hiba, mint Erikánál) — MAGAS
-`supabase/functions/submit-order/index.ts` 439–444. sor: ha a kliens `pickup_time` ISO-t küld (nem az új `pickup_date` + `pickup_time_slot` formátumot), a szerver
-```
-date = pickupDate.toISOString().split('T')[0]
-time = pickupDate.toTimeString()...
-```
-használ. Az edge function UTC-ben fut, tehát 10:30 budapesti idő → 08:30 UTC, dátum akár előző napra csúszik. Ezt a `capacity_slots` kereséséhez / létrehozásához, és utána a `validate_pickup_time` triggerhez adjuk tovább — pont a 10:30-as ablakot lőheti szét, és a `is_weekend`-et is elronthatja szombat-vasárnap környékén.
+## Gyökér-ok (KRITIKUS bug)
 
-**Javítás:** ugyanaz a Budapest-alapú kiszedés, mint az új formátumnál (Intl.DateTimeFormat `Europe/Budapest` vagy egyszerűen kényszerítsük az új formátumot: ha csak `pickup_time` érkezik, alakítsuk át Budapest wall-time-ra és úgy dolgozzunk vele).
+A `Checkout.tsx` a fizetési módhoz a `"card"` értéket küldi a `submit-order` edge functionnek ("Bankkártya átvételkor" opciónál), viszont a `orders_payment_method_check` DB constraint csak a `'cash' | 'pos' | 'card_online'` értékeket engedi.
 
-### 2. Napi tétel „múltbeli dátum" ellenőrzés UTC-ben — KÖZEPES
-321–327. sor: `new Date(itemDateStr + 'T00:00:00.000Z')` vs. `today = new Date(); today.setHours(0,0,0,0)`. Az edge function UTC-ben fut, tehát pont éjfél körül a magyar „ma" és a szerver „today" 1–2 órányit szétcsúszhat. Késő este (22:00–23:59 Bp) tudná visszadobni a másnapi tételt „múltbeli dátum" hibával az extrém esetben — vagy fordítva átengedni. Kicsi, de meglévő.
+Emiatt minden olyan vendég, aki a "Bankkártya átvételkor" opciót választja, `Rendelés mentési hiba` üzenetet kap az `orders` INSERT-nél elszáll. Cintia is ezt választotta. (Ez ugyanaz a jelenség, ami miatt Erika rendelését is manuálisan `card_online`-nal kellett berögzíteni.)
 
-**Javítás:** a `today` értéket is Europe/Budapest szerinti YYYY-MM-DD-re számoljuk (mint a `system-health-check`-ben már használt Intl formatter), és stringen hasonlítsunk.
+**Nem újkeletű probléma** – ez régóta él, minden bankkártyás átvételi próbálkozás elbukik. Nézd meg a régebbi "Sikertelen" listát: valószínűleg még több ilyen áldozat lesz.
 
-### 3. Capacity fallback nyitvatartás ütközik a `validate_pickup_time`-mal — KÖZEPES
-486–503. sor: a fallback slot létrehozás `hours >= 7 && hours < 16` alapján dönt, míg a DB trigger csak 10:30–15:00 között enged. Ha valami miatt kliens 09:30-at küld (vagy régi cache-elt slot), az edge function létrehozza a capacity slotot és foglal, majd az `orders` INSERT-en a trigger `Pickup time is outside business hours`-ral kilő — közben a capacity_slot már inkrementálódott, tehát „szellemfoglalás" marad + a vevő „Rendelés mentési hiba" toastot lát. Ez pontosan Erika típusú tünet.
+## Terv
 
-**Javítás:** a fallback ablakot igazítsuk a triggerhez (10:30–15:00) ÉS Budapest időben számoljuk a napot/órát; így vagy már itt tiszta hibaüzenetet adunk, vagy nem foglalunk el kapacitást feleslegesen. Plusz: ha az `orders` INSERT hibára fut, engedjük vissza a `capacity_slot.booked_orders`-t.
+**1. Frontend fix (`src/pages/Checkout.tsx`)**
+- A "Bankkártya átvételkor" opció értéke `"card"` → `"pos"` (a `pos` szemantikailag helyes: POS-terminál helyszíni fizetés; a `card_online` az online kártyafizetést jelentené, ami nálunk nincs).
+- Type-t (`"cash" | "card"` → `"cash" | "pos"`) is átírom mindenhol a fájlban.
+- A submit-order body-ban tehát `payment_method: "pos"` megy.
 
-### 4. Nincs rollback részleges hiba után — MAGAS (részben nyitott az AUDIT-ban is)
-Ha bármely lépés a `capacity_slot` foglalás UTÁN elhasal (pl. #3, `gen_order_code` ütközés, `orders` INSERT, `order_items` INSERT), a `remaining_portions` és a `capacity_slots.booked_orders` már csökkent — vevő nem lát rendelést, admin sem, de a készlet fogy. Idővel „elfogyott" hazug jelzés.
+**2. Manuális helyreállítás – Cintia rendelése**
+- 4 próbálkozásból 1 valódi rendelést csinálok (dedupláció, mint Erikánál).
+- `orders` INSERT: `payment_method='pos'`, `total_huf=7280`, `status='new'`, `pickup_time=NULL` (asap – így küldte).
+- `order_items` INSERT (5 sor a snapshotból).
+- A 4 sikertelen `order_attempts` bejegyzést törlöm.
 
-**Javítás:** try/catch-ben tartsunk nyilván inkrementált slot/portion listát; hiba esetén tegyünk visszaállító RPC hívásokat (`update_daily_portions` negatív mennyiséggel + capacity_slot dekrement). Vagy egyetlen tranzakciós SQL funkcióba tolni (nagyobb refaktor, most nem kell).
+**3. Régebbi áldozatok kimutatása**
+- Egyszeri `SELECT` a `order_attempts` táblából, ahol `error_message='Rendelés mentési hiba'` és `customer_phone` egyedi → lista neked, hogy visszahívhasd őket. **Nem** rögzítek automatikusan; egyenként te döntesz.
 
-### 5. `gen_order_code` ütközés-védelem hiányzik — ALACSONY
-`gen_order_code`: egy random betű + epoch mod 100000. Két egyidejű rendelés azonos másodpercben azonos betűt húz → egyedi kulcs ütközés az `orders.code`-on → „Rendelés mentési hiba". Ritka, de van rá esély csúcsidőben.
+**4. Védőháló a submit-orderben (`supabase/functions/submit-order/index.ts`)**
+- Bemenet-normalizálás: ha `payment_method === 'card'` → átmapelem `'pos'`-ra (backward compat régi klienseknek / cache-elt bundle-nek).
+- Így ha marad egy régi tab a vendégnél, akkor sem bukik el.
 
-**Javítás:** próbáljuk meg 3× újragenerálni ütközés esetén, vagy toldjuk meg a kódot még 1 random karakterrel (kód formátum akkor 7 karakter — kell egyeztetni, hogy a nyomtatás/UI elviseli).
+**5. Changelog + memory**
+- `src/data/adminChangelog.ts`: új bejegyzés (2026-07-02) a `card` → `pos` mapping fixről és Cintia helyreállításáról.
+- Röviden megemlítem az admin help szövegekben is, ha releváns.
 
-### 6. `menu_item_sides` több konfig — ALACSONY
-158–168. sor: csak az első sor `is_required` / `min` / `max` alapján validál. Ha valakinek több side-csoportja van egy főételhez, félreértékeli és vagy hazug „köret hiányzik" hibát dob, vagy engedi. Erika-szerű néma elakadást nem okoz, de érdemes megjegyezni.
+## Amit NEM módosítok
+- DB constraint (`orders_payment_method_check`) — a jelenlegi 3 érték helyes, nem tágítom.
+- Semmilyen más business logika, UI struktúra.
+- Az edge function timezone / rollback logikát, amit az előző körben már fixáltunk.
 
-**Javítás:** csoportonként ellenőrzés, `sides`-t modifier_group_id szerint csoportosítva.
-
-## Mit csináljunk most
-
-Konkrét javítási sorrend (mind a `submit-order/index.ts`-ben, migráció nem kell):
-
-1. **#1 + #2 + #3 együtt**: bevezetünk egy közös `getBudapestDateParts(iso|null)` helpert, ami mindenhol Europe/Budapest szerinti `date` (YYYY-MM-DD) és `time` (HH:MM) értéket ad. Ezt használjuk:
-   - legacy `pickup_time` ág átalakítására,
-   - napi tétel „múltbeli dátum" hasonlításra (string szintű),
-   - fallback capacity slot nap/óra ellenőrzésre.
-   - A fallback nyitvatartást 10:30–15:00 közé szűkítjük, hogy egyezzen a DB triggerrel.
-
-2. **#4 rollback safety net**: az edge functionben követjük a végrehajtott `update_daily_portions` és `update_capacity_slot` hívásokat egy `compensations: Array<() => Promise>` tömbben; a `catch` ágban fordított sorrendben végig futtatjuk őket, mielőtt `order_attempts`-be logolunk. Nem tranzakció, de megelőzi a szellem-készletcsökkenést.
-
-3. **#5 order code retry**: `orders` INSERT `code` unique ütközés (`23505`) esetén max. 3× újragenerálás + retry, csak utána adjuk fel.
-
-4. **Changelog + audit doc**: adminChangelog-ba egy „Rendelési stabilitás: időzóna és rollback javítások" bejegyzés + az `AUDIT_AND_IMPROVEMENT_PLAN.md` 1.1/1.3 és 3.2 pontjait áthúzzuk „✅ Javítva" jelzéssel.
-
-5. **Egészségellenőrzés kibővítés**: a `system-health-check`-be jön még egy „foglalt de rendelés nélküli capacity slotok" próba (`capacity_slots.booked_orders > count(orders az adott date+time-on)`), és a `system-health-fix` ezeket vissza tudja állítani egy gombnyomásra — így ha múltbeli szellemfoglalás keletkezett, egyszerűen tisztítható.
-
-## Amit NEM csinálunk most
-- #6 (több side csoport): érintett séma nincs élesben így, jelezzük a changelogban „ismert korlát"-ként, migráció nélkül nem indokolt most javítani.
-- Teljes atomikus DB funkció (`submit_order_atomic`): nagy refaktor, a fenti rollback safety net most elég.
-
-## Fájlok, amiket érintenék
-- `supabase/functions/submit-order/index.ts` (fő javítás)
-- `supabase/functions/system-health-check/index.ts` (+ szellemfoglalás check)
-- `supabase/functions/system-health-fix/index.ts` (+ tisztító művelet)
-- `src/data/adminChangelog.ts` (bejegyzés)
-- `AUDIT_AND_IMPROVEMENT_PLAN.md` (státuszfrissítés)
-
-Mehet így, vagy szűkítsük csak a KRITIKUS pontokra (#1 + #3 + #4)?
+## Kérdés jóváhagyás előtt
+Megfelel a `"card"` → `"pos"` mapping (POS-terminál átvételkor)? Vagy inkább `"card_online"`-t akarod, esetleg a DB constraintbe engedjük be a `"card"` értéket is?

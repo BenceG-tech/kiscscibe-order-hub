@@ -114,7 +114,7 @@ const Checkout = () => {
     pickup_type: "asap" as "asap" | "scheduled",
     pickup_date: "",
     pickup_time: "",
-    payment_method: "cash" as "cash" | "card"
+    payment_method: "cash" as "cash" | "pos"
   });
   
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
@@ -932,7 +932,7 @@ const Checkout = () => {
                     <Label className="text-base font-semibold">Fizetési mód</Label>
                     <RadioGroup
                       value={formData.payment_method}
-                      onValueChange={(value: "cash" | "card") => 
+                      onValueChange={(value: "cash" | "pos") => 
                         setFormData(prev => ({ ...prev, payment_method: value }))
                       }
                     >
@@ -946,8 +946,8 @@ const Checkout = () => {
                       
                       <div>
                         <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="card" id="card" />
-                          <Label htmlFor="card">Bankkártya átvételkor</Label>
+                          <RadioGroupItem value="pos" id="pos" />
+                          <Label htmlFor="pos">Bankkártya átvételkor</Label>
                         </div>
                         <p className="text-xs text-muted-foreground ml-6">Bankkártyás fizetés átvételkor</p>
                       </div>

@@ -13,6 +13,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-07-02",
+    title: "KRITIKUS javítás: bankkártyás átvételi fizetés minden esetben elszállt",
+    description:
+      "Kiderült, hogy amikor a vendég a 'Bankkártya átvételkor' opciót választotta, a rendelés MINDIG 'Rendelés mentési hiba' üzenettel elutasításra került. Az ok: a frontend a 'card' értéket küldte, de az adatbázis csak a 'cash', 'pos' és 'card_online' értékeket engedélyezte, így az orders INSERT azonnal elhasalt egy check-constraint miatt. Ez már régóta élt — minden bankkártyás átvételi próbálkozás áldozat lett. Javítás: a Checkout mostantól 'pos' (POS-terminál helyszíni fizetés) értékkel küld, és a szerver oldalon védőháló is van a régi ('card') klienseknek. Egy érintett rendelést (Kazi Cintia, 7280 Ft, 4× próbálkozás) kézzel berögzítettünk az Új rendelések közé, és a Sikertelen listáról töröltük a duplikátumokat.",
+    type: "fixed",
+    tabGroup: "orders",
+  },
+  {
+    date: "2026-07-02",
     title: "Rendelési stabilitás: időzóna és rollback javítások",
     description:
       "Több rejtett hibát is kijavítottunk, ami miatt egy rendelés némán elakadhatott. 1) A régi formátumú átvételi időpont (ISO) mostantól szintén Európa/Budapest időben olvasódik, tehát 10:30 nem csúszik 08:30-ra. 2) A napi tétel 'múltbeli dátum' ellenőrzése is Budapest időben történik — éjfél körül nem dobja el a másnapi rendelést. 3) Ha valamiért nincs előre létrehozott idősáv, a szerver most csak a valódi 10:30–15:00 ablakban hoz létre újat (nem 7:00–16:00 között) — így nem foglal el kapacitást olyan időpontra, amit a végleges ellenőrzés úgyis elutasítana. 4) Ha bármelyik lépés a végleges rendelés-mentés előtt hibára fut, a szerver automatikusan visszaadja a lefoglalt idősávot és a levont adagszámot — így nincs 'szellemfoglalás', ami feleslegesen fogyasztaná a készletet. 5) A rendeléskód (pl. B12345) ütközés esetén automatikusan újragenerálódik és újrapróbálja a mentést. Az admin rendszerellenőrzésbe került egy új 'Szellemfoglalások' teszt is, ami egy gombnyomásra helyrerakja a számlálókat.",

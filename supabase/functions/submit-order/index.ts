@@ -148,9 +148,18 @@ serve(async (req) => {
       session_id,
     }: OrderRequest = await req.json();
 
+    // Backward-compat: older clients sent 'card' which is not in orders_payment_method_check.
+    // Normalize to 'pos' (POS terminal on pickup) so those requests don't crash on INSERT.
+    let payment_method_normalized = payment_method;
+    if (payment_method_normalized === 'card') {
+      console.warn(`[${requestId}] Legacy payment_method='card' received — normalizing to 'pos'`);
+      payment_method_normalized = 'pos';
+    }
+    const payment_method_final = payment_method_normalized;
+
     attemptCtx.customer = customer;
     attemptCtx.items = items || [];
-    attemptCtx.payment_method = payment_method;
+    attemptCtx.payment_method = payment_method_final;
     attemptCtx.pickup_date = pickup_date || null;
     attemptCtx.pickup_time_slot = pickup_time_slot || null;
     attemptCtx.session_id = session_id || null;
@@ -629,7 +638,7 @@ serve(async (req) => {
           email: customer.email || null,
           total_huf: calculatedTotal,
           status: 'new',
-          payment_method,
+          payment_method: payment_method_final,
           pickup_time: pickup_time || (date && time ? budapestWallTimeToUtcIso(date, time.slice(0, 5)) : null),
           notes: customer.notes || null,
           coupon_code: appliedCouponCode,
