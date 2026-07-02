@@ -724,7 +724,7 @@ const ActiveOrderCard = ({
             )}
             <p className="text-sm text-muted-foreground">
               <CreditCard className="h-4 w-4 inline mr-1" />
-              {order.payment_method === "cash" ? "Készpénz" : "Kártya"}
+              {order.payment_method === "cash" ? "Készpénz" : order.payment_method === "card_online" ? "Online kártya" : "Bankkártya"}
             </p>
           </div>
         </div>
