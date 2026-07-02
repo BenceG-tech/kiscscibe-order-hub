@@ -591,31 +591,78 @@ serve(async (req) => {
         // Slot didn't exist - this shouldn't happen since we just created/fetched it
         throw new Error('Az időpont nem elérhető');
       }
+
+      // Register rollback for capacity slot booking
+      const slotDate = date;
+      const slotTime = time;
+      compensations.push(async () => {
+        try {
+          const { data: cur } = await supabase
+            .from('capacity_slots')
+            .select('booked_orders')
+            .eq('date', slotDate)
+            .eq('timeslot', slotTime)
+            .single();
+          const restored = Math.max(0, (cur?.booked_orders ?? 1) - 1);
+          await supabase
+            .from('capacity_slots')
+            .update({ booked_orders: restored })
+            .eq('date', slotDate)
+            .eq('timeslot', slotTime);
+          console.log(`Rollback: released capacity slot ${slotDate} ${slotTime}`);
+        } catch (e) {
+          console.error('Capacity rollback failed:', e);
+        }
+      });
     }
 
-    // Insert order
-    const { data: orderData, error: orderError } = await supabase
-      .from('orders')
-      .insert({
-        code: orderCode,
-        name: customer.name,
-        phone: customer.phone,
-        email: customer.email || null,
-        total_huf: calculatedTotal,
-        status: 'new',
-        payment_method,
-        pickup_time: pickup_time || (date && time ? budapestWallTimeToUtcIso(date, time.slice(0, 5)) : null),
-        notes: customer.notes || null,
-        coupon_code: appliedCouponCode,
-        discount_huf: discountHuf,
-      })
-      .select('id')
-      .single();
+    // Insert order with retry on unique code collision (max 3 attempts)
+    let orderData: any = null;
+    let orderInsertError: any = null;
+    let currentOrderCode = orderCode;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const { data, error } = await supabase
+        .from('orders')
+        .insert({
+          code: currentOrderCode,
+          name: customer.name,
+          phone: customer.phone,
+          email: customer.email || null,
+          total_huf: calculatedTotal,
+          status: 'new',
+          payment_method,
+          pickup_time: pickup_time || (date && time ? budapestWallTimeToUtcIso(date, time.slice(0, 5)) : null),
+          notes: customer.notes || null,
+          coupon_code: appliedCouponCode,
+          discount_huf: discountHuf,
+        })
+        .select('id')
+        .single();
 
-    if (orderError) {
-      console.error('Order insert error:', orderError);
+      if (!error) {
+        orderData = data;
+        orderInsertError = null;
+        break;
+      }
+      orderInsertError = error;
+      // 23505 = unique_violation on orders.code — regenerate and retry
+      if ((error as any).code === '23505' && attempt < 2) {
+        console.warn(`Order code collision on ${currentOrderCode}, regenerating (attempt ${attempt + 1})`);
+        const { data: newCode } = await supabase.rpc('gen_order_code');
+        if (newCode) currentOrderCode = newCode as string;
+        continue;
+      }
+      break;
+    }
+
+    if (orderInsertError || !orderData) {
+      console.error('Order insert error:', orderInsertError);
       throw new Error('Rendelés mentési hiba');
     }
+    // Keep downstream references consistent with the code we actually inserted
+    (globalThis as any).__unused = orderCode; // no-op to keep var used
+    const finalOrderCode = currentOrderCode;
+
 
     const orderId = orderData.id;
     console.log('Created order:', orderId);
