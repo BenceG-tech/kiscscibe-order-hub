@@ -1038,19 +1038,29 @@ serve(async (req) => {
         Köszönjük, hogy minket választott! 💛
       `;
 
-      await resend.emails.send({
+      // Fire-and-forget: do NOT block the response on Resend. If email is slow
+      // and the edge function times out, the client sees an error and retries —
+      // creating duplicate orders. EdgeRuntime.waitUntil keeps the promise
+      // alive after we've already returned success to the browser.
+      const emailPromise = resend.emails.send({
         from: 'Kiscsibe Étterem <rendeles@kiscsibe-etterem.hu>',
         to: [customer.email],
-        bcc: ['info@kiscsibeetterem.hu', 'gataibence@gmail.com'], // Admin copies
+        bcc: ['info@kiscsibeetterem.hu', 'gataibence@gmail.com'],
         subject: `Kiscsibe – rendelés visszaigazolás #${orderCode}`,
         html: emailHtml,
         text: emailText,
+      }).then(() => {
+        console.log(`[${requestId}] Confirmation email sent to:`, customer.email);
+      }).catch((emailError) => {
+        console.error(`[${requestId}] Email sending failed:`, emailError);
       });
 
-      console.log(`[${requestId}] Confirmation email sent to:`, customer.email);
+      try {
+        // deno-lint-ignore no-explicit-any
+        (globalThis as any).EdgeRuntime?.waitUntil?.(emailPromise);
+      } catch (_) { /* runtime may not support waitUntil — promise still lives briefly */ }
     } catch (emailError) {
-      console.error(`[${requestId}] Email sending failed:`, emailError);
-      // Don't fail the order if email sending fails
+      console.error(`[${requestId}] Email preparation failed:`, emailError);
     }
 
     console.log(`[${requestId}] Order completed successfully:`, orderCode);
