@@ -8,13 +8,17 @@ Utolsó frissítés: 2026-02-15
 |---|----------|-----------|---------|
 | 1.2 | Capacity slot race condition | KRITIKUS | ✅ Javítva |
 | 2.4 | Modifier/side árak nem szerver-validáltak | KÖZEPES | ✅ Javítva |
-| 1.1 | Capacity + portions nincs tranzakcióban | MAGAS | Nyitott |
-| 1.3 | Nincs rollback részleges hiba esetén | MAGAS | Nyitott |
+| 1.1 | Capacity + portions nincs tranzakcióban | MAGAS | ⚠️ Részben (kompenzáció bevezetve 2026-07-02) |
+| 1.3 | Nincs rollback részleges hiba esetén | MAGAS | ✅ Javítva (2026-07-02, rollback safety net) |
 | 4.1 | Elfogyott tételek checkboxai aktívak | KÖZEPES | ✅ Javítva |
 | 2.1 | ASAP rendelések bypass-olják az üzleti órákat | KÖZEPES | Nyitott |
 | 5.2 | Nincs cutoff time rendszer | KÖZEPES | Nyitott |
 | 3.1 | Rendelés státusz workflow lassú | KÖZEPES | Nyitott |
 | 3.2 | Csendes hibák modifier/side mentésnél | KÖZEPES | Nyitott |
+| 6.1 | Időzóna-hiba a legacy pickup_time / napi dátum ellenőrzésnél | MAGAS | ✅ Javítva (2026-07-02) |
+| 6.2 | Fallback nyitvatartás (7–16) ütközik a 10:30–15:00 triggerrel | KÖZEPES | ✅ Javítva (2026-07-02) |
+| 6.3 | Order code ütközés nem retry-olódott | ALACSONY | ✅ Javítva (2026-07-02) |
+
 
 ## Javított problémák részletei
 

@@ -29,6 +29,31 @@ function budapestWallTimeToUtcIso(date: string, time: string): string {
   return new Date(naive.getTime() - offsetMin * 60_000).toISOString();
 }
 
+// Return the date (YYYY-MM-DD) and time (HH:MM) in Europe/Budapest for a given Date (or now).
+function getBudapestParts(d: Date = new Date()): { date: string; time: string } {
+  const dateFmt = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Budapest',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+  const timeFmt = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Budapest',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+  return { date: dateFmt.format(d), time: timeFmt.format(d) };
+}
+
+// Day-of-week in Europe/Budapest (0=Sun..6=Sat)
+function budapestDayOfWeek(dateStr: string): number {
+  // dateStr = YYYY-MM-DD, interpreted as a local Budapest date (no tz shift risk)
+  const [y, mo, da] = dateStr.split('-').map(Number);
+  return new Date(Date.UTC(y, mo - 1, da)).getUTCDay();
+}
+
+
 interface OrderModifier {
   label_snapshot: string;
   price_delta_huf: number;
@@ -100,12 +125,17 @@ serve(async (req) => {
     userAgent: req.headers.get('user-agent') || '',
   };
 
+  // Rollback safety net: registered compensations run in reverse order if any step after
+  // capacity/portion mutations throws. Prevents "ghost" bookings when the final INSERT fails.
+  const compensations: Array<() => Promise<void>> = [];
+
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     attemptCtx.supabase = supabase;
+
 
     const {
       customer,
@@ -317,12 +347,9 @@ serve(async (req) => {
           }
         }
 
-        // Check if ordering is still allowed - prevent past dates
-        const itemDate = new Date(itemDateStr + 'T00:00:00.000Z');
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        if (itemDate < today) {
+        // Check if ordering is still allowed - prevent past dates (Budapest local date, string compare)
+        const todayBudapest = getBudapestParts().date;
+        if (itemDateStr < todayBudapest) {
           throw new Error(`Múltbeli dátumra nem lehet rendelni: ${itemDateStr}`);
         }
 
@@ -351,8 +378,32 @@ serve(async (req) => {
           console.error('Failed to update daily item portions:', updateError);
           throw new Error(updateError?.message || 'Hiba a készlet frissítése során - nincs elég adag');
         }
+
+        // Register rollback for this portion decrement
+        const tblForRollback = tableName;
+        const idForRollback = item.daily_id!;
+        const qtyForRollback = item.qty;
+        compensations.push(async () => {
+          try {
+            const { data: cur } = await supabase
+              .from(tblForRollback)
+              .select('remaining_portions')
+              .eq('id', idForRollback)
+              .single();
+            const restored = (cur?.remaining_portions ?? 0) + qtyForRollback;
+            await supabase
+              .from(tblForRollback)
+              .update({ remaining_portions: restored })
+              .eq('id', idForRollback);
+            console.log(`Rollback: restored ${qtyForRollback} portions on ${tblForRollback} ${idForRollback}`);
+          } catch (e) {
+            console.error('Portion rollback failed:', e);
+          }
+        });
+
       }
     }
+
 
     // Apply coupon discount if provided
     let discountHuf = 0;
@@ -411,7 +462,7 @@ serve(async (req) => {
       throw new Error('Rendeléskód generálási hiba');
     }
 
-    const orderCode = orderCodeData;
+    let orderCode = orderCodeData as string;
     console.log('Generated order code:', orderCode);
 
     // Handle capacity slot update if pickup_time is specified
@@ -437,12 +488,13 @@ serve(async (req) => {
       time = normalizeTimeString(pickup_time_slot);
       console.log('Updating capacity for (new format):', date, time);
     } else if (pickup_time) {
-      // Legacy format: parse ISO string
-      const pickupDate = new Date(pickup_time);
-      date = pickupDate.toISOString().split('T')[0];
-      time = normalizeTimeString(pickupDate.toTimeString().split(' ')[0].slice(0, 5)); // HH:MM format
-      console.log('Updating capacity for (legacy format):', date, time);
+      // Legacy format: parse ISO string in Europe/Budapest (not UTC!) to avoid a 2h shift
+      const bp = getBudapestParts(new Date(pickup_time));
+      date = bp.date;
+      time = normalizeTimeString(bp.time);
+      console.log('Updating capacity for (legacy format, Budapest):', date, time);
     }
+
     
     if (date && time) {
 
@@ -476,33 +528,28 @@ serve(async (req) => {
       if (capacityError && capacityError.code === 'PGRST116') {
         console.log('Capacity slot not found, creating fallback slot for:', date, time);
         
-        // Validate business hours before creating
-        const slotDate = new Date(date + 'T00:00:00'); // Local date parsing
-        const dayOfWeek = slotDate.getDay();
+        // Validate business hours (Budapest local) BEFORE creating slot,
+        // and align with validate_pickup_time (10:30–15:00 weekdays only).
+        const dayOfWeek = budapestDayOfWeek(date);
         const [hours, minutes] = time.split(':').map(Number);
-        
-        console.log(`Validating business hours: date=${date}, time=${time}, dayOfWeek=${dayOfWeek}, hours=${hours}`);
-        
-        // Business hours: H-P 7:00-16:00, Szo-V Zárva
-        // Check if it's weekend (Saturday=6 or Sunday=0) - closed
+        const totalMinutes = hours * 60 + minutes;
+
+        console.log(`Validating business hours (Budapest): date=${date}, time=${time}, dow=${dayOfWeek}, mins=${totalMinutes}`);
+
         if (dayOfWeek === 0 || dayOfWeek === 6) {
-          console.error(`Rejected: Weekend is closed (dayOfWeek=${dayOfWeek})`);
+          console.error(`[${requestId}] Rejected: weekend closed (dow=${dayOfWeek})`);
           throw new Error('Hétvégén zárva tartunk');
         }
-        
-        // Check business hours: Monday-Friday 7:00-16:00
-        let isValidTime = false;
-        if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-          isValidTime = hours >= 7 && hours < 16;
-          console.log(`Weekday hours check: ${hours} >= 7 && ${hours} < 16 = ${isValidTime}`);
-        }
-        
+
+        // Lunch window: 10:30 – 15:00 (matches validate_pickup_time trigger)
+        const isValidTime = totalMinutes >= 10 * 60 + 30 && totalMinutes <= 15 * 60;
         if (!isValidTime) {
-          console.error(`[${requestId}] Rejected: Invalid business hours for dayOfWeek=${dayOfWeek}, hours=${hours}`);
-          throw new Error('A kiválasztott időpont nyitvatartási időn kívül esik');
+          console.error(`[${requestId}] Rejected: outside lunch window (${time})`);
+          throw new Error('A kiválasztott időpont nyitvatartási időn kívül esik (10:30 – 15:00)');
         }
-        
+
         console.log('Business hours validation passed');
+
         
         // Create the capacity slot
         const { data: newCapacityData, error: createError } = await supabase
@@ -544,31 +591,75 @@ serve(async (req) => {
         // Slot didn't exist - this shouldn't happen since we just created/fetched it
         throw new Error('Az időpont nem elérhető');
       }
+
+      // Register rollback for capacity slot booking
+      const slotDate = date;
+      const slotTime = time;
+      compensations.push(async () => {
+        try {
+          const { data: cur } = await supabase
+            .from('capacity_slots')
+            .select('booked_orders')
+            .eq('date', slotDate)
+            .eq('timeslot', slotTime)
+            .single();
+          const restored = Math.max(0, (cur?.booked_orders ?? 1) - 1);
+          await supabase
+            .from('capacity_slots')
+            .update({ booked_orders: restored })
+            .eq('date', slotDate)
+            .eq('timeslot', slotTime);
+          console.log(`Rollback: released capacity slot ${slotDate} ${slotTime}`);
+        } catch (e) {
+          console.error('Capacity rollback failed:', e);
+        }
+      });
     }
 
-    // Insert order
-    const { data: orderData, error: orderError } = await supabase
-      .from('orders')
-      .insert({
-        code: orderCode,
-        name: customer.name,
-        phone: customer.phone,
-        email: customer.email || null,
-        total_huf: calculatedTotal,
-        status: 'new',
-        payment_method,
-        pickup_time: pickup_time || (date && time ? budapestWallTimeToUtcIso(date, time.slice(0, 5)) : null),
-        notes: customer.notes || null,
-        coupon_code: appliedCouponCode,
-        discount_huf: discountHuf,
-      })
-      .select('id')
-      .single();
+    // Insert order with retry on unique code collision (max 3 attempts)
+    let orderData: any = null;
+    let orderInsertError: any = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const { data, error } = await supabase
+        .from('orders')
+        .insert({
+          code: orderCode,
+          name: customer.name,
+          phone: customer.phone,
+          email: customer.email || null,
+          total_huf: calculatedTotal,
+          status: 'new',
+          payment_method,
+          pickup_time: pickup_time || (date && time ? budapestWallTimeToUtcIso(date, time.slice(0, 5)) : null),
+          notes: customer.notes || null,
+          coupon_code: appliedCouponCode,
+          discount_huf: discountHuf,
+        })
+        .select('id')
+        .single();
 
-    if (orderError) {
-      console.error('Order insert error:', orderError);
+      if (!error) {
+        orderData = data;
+        orderInsertError = null;
+        break;
+      }
+      orderInsertError = error;
+      // 23505 = unique_violation on orders.code — regenerate and retry
+      if ((error as any).code === '23505' && attempt < 2) {
+        console.warn(`Order code collision on ${orderCode}, regenerating (attempt ${attempt + 1})`);
+        const { data: newCode } = await supabase.rpc('gen_order_code');
+        if (newCode) orderCode = newCode as string;
+        continue;
+      }
+      break;
+    }
+
+    if (orderInsertError || !orderData) {
+      console.error('Order insert error:', orderInsertError);
       throw new Error('Rendelés mentési hiba');
     }
+
+
 
     const orderId = orderData.id;
     console.log('Created order:', orderId);
@@ -915,6 +1006,16 @@ serve(async (req) => {
 
   } catch (error: any) {
     console.error(`[${requestId}] Submit order error:`, error);
+
+    // Roll back any capacity/portion mutations that succeeded before the failure,
+    // in reverse order. Prevents "ghost" bookings that eat inventory without an order.
+    if (compensations.length > 0) {
+      console.log(`[${requestId}] Running ${compensations.length} rollback compensations...`);
+      for (let i = compensations.length - 1; i >= 0; i--) {
+        try { await compensations[i](); } catch (e) { console.error(`[${requestId}] Compensation ${i} failed:`, e); }
+      }
+    }
+
 
     // Log the failed attempt for admin visibility (non-fatal)
     try {

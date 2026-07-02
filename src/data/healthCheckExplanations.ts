@@ -109,4 +109,19 @@ export const HEALTH_CHECK_EXPLANATIONS: Record<string, HealthCheckExplanation> =
     fixable: true,
     fixLabel: "Mindent elérhetővé tesz",
   },
+  ghost_slots: {
+    what: "Megnézi, hogy a mai idősávokban a 'foglalt' számláló egyezik-e a tényleges rendelések számával. Ha valamiért egy rendelés félbeszakadt, előfordulhat, hogy egy idősáv úgy mutat foglaltnak egy helyet, hogy valójában nincs mögötte rendelés — ez idővel indokolatlanul 'betelt' állapotot okozhat.",
+    causes: [
+      "Egy rendelés a foglalás után hibára futott (pl. hálózati megszakadás).",
+      "Manuálisan törölt rendelés, aminek a foglalása bent maradt.",
+    ],
+    manualSteps: [
+      "Kattints a 'Javítás' gombra — a rendszer újraszámolja a foglalt helyeket a valódi rendelések alapján.",
+      "Ha vissza akarod ellenőrizni: nyisd meg az Admin → Kapacitás oldalt.",
+    ],
+    link: { label: "Kapacitás kezelése", href: "/admin/capacity" },
+    fixable: true,
+    fixLabel: "Foglalások újraszámolása",
+  },
 };
+
