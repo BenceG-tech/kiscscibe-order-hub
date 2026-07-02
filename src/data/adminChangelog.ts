@@ -13,12 +13,21 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-07-02",
+    title: "Rendelési stabilitás: időzóna és rollback javítások",
+    description:
+      "Több rejtett hibát is kijavítottunk, ami miatt egy rendelés némán elakadhatott. 1) A régi formátumú átvételi időpont (ISO) mostantól szintén Európa/Budapest időben olvasódik, tehát 10:30 nem csúszik 08:30-ra. 2) A napi tétel 'múltbeli dátum' ellenőrzése is Budapest időben történik — éjfél körül nem dobja el a másnapi rendelést. 3) Ha valamiért nincs előre létrehozott idősáv, a szerver most csak a valódi 10:30–15:00 ablakban hoz létre újat (nem 7:00–16:00 között) — így nem foglal el kapacitást olyan időpontra, amit a végleges ellenőrzés úgyis elutasítana. 4) Ha bármelyik lépés a végleges rendelés-mentés előtt hibára fut, a szerver automatikusan visszaadja a lefoglalt idősávot és a levont adagszámot — így nincs 'szellemfoglalás', ami feleslegesen fogyasztaná a készletet. 5) A rendeléskód (pl. B12345) ütközés esetén automatikusan újragenerálódik és újrapróbálja a mentést. Az admin rendszerellenőrzésbe került egy új 'Szellemfoglalások' teszt is, ami egy gombnyomásra helyrerakja a számlálókat.",
+    type: "fixed",
+    tabGroup: "orders",
+  },
+  {
+    date: "2026-07-02",
     title: "Javítva: 10:30-as rendelések elutasítása időzóna hiba miatt",
     description:
       "Kiderült, hogy pontosan 10:30-ra időzített rendelések bizonyos esetekben 'Rendelés mentési hiba' üzenettel elutasításra kerültek. Az ok: a rendszer az átvételi időpontot UTC időzónában értékelte (Budapesthez képest -2 óra), így a 10:30 → 08:30-ként jelent meg, ami kívül esett a 10:30–15:00 ablakon. A szerveroldali ellenőrzés (validate_pickup_time) mostantól kifejezetten Európa/Budapest időzónában dolgozik. Egy érintett rendelést (Dr. Örkényi Erika, 4740 Ft) kézzel berögzítettünk az Új rendelések közé.",
     type: "fixed",
     tabGroup: "orders",
   },
+
   {
 
     date: "2026-06-30",
