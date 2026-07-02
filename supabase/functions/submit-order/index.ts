@@ -488,12 +488,13 @@ serve(async (req) => {
       time = normalizeTimeString(pickup_time_slot);
       console.log('Updating capacity for (new format):', date, time);
     } else if (pickup_time) {
-      // Legacy format: parse ISO string
-      const pickupDate = new Date(pickup_time);
-      date = pickupDate.toISOString().split('T')[0];
-      time = normalizeTimeString(pickupDate.toTimeString().split(' ')[0].slice(0, 5)); // HH:MM format
-      console.log('Updating capacity for (legacy format):', date, time);
+      // Legacy format: parse ISO string in Europe/Budapest (not UTC!) to avoid a 2h shift
+      const bp = getBudapestParts(new Date(pickup_time));
+      date = bp.date;
+      time = normalizeTimeString(bp.time);
+      console.log('Updating capacity for (legacy format, Budapest):', date, time);
     }
+
     
     if (date && time) {
 
