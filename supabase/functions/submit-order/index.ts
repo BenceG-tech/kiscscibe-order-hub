@@ -677,6 +677,7 @@ serve(async (req) => {
           notes: customer.notes || null,
           coupon_code: appliedCouponCode,
           discount_huf: discountHuf,
+          idempotency_key: idempotency_key,
         })
         .select('id')
         .single();
@@ -687,12 +688,32 @@ serve(async (req) => {
         break;
       }
       orderInsertError = error;
-      // 23505 = unique_violation on orders.code — regenerate and retry
-      if ((error as any).code === '23505' && attempt < 2) {
-        console.warn(`Order code collision on ${orderCode}, regenerating (attempt ${attempt + 1})`);
-        const { data: newCode } = await supabase.rpc('gen_order_code');
-        if (newCode) orderCode = newCode as string;
-        continue;
+      // 23505 = unique_violation. Two cases:
+      //   (a) orders.code collision → regenerate & retry
+      //   (b) orders.idempotency_key collision → same submission raced past our pre-check,
+      //       return the existing order instead of failing.
+      if ((error as any).code === '23505') {
+        const msg = String((error as any).message || '');
+        if (msg.includes('idempotency_key') && idempotency_key) {
+          const { data: existing } = await supabase
+            .from('orders')
+            .select('id, code, total_huf')
+            .eq('idempotency_key', idempotency_key)
+            .maybeSingle();
+          if (existing) {
+            console.warn(`Idempotency race resolved — returning existing order ${existing.code}`);
+            return new Response(
+              JSON.stringify({ success: true, order_code: existing.code, total_huf: existing.total_huf, request_id: requestId, loyalty_reward: null, duplicate: true }),
+              { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+            );
+          }
+        }
+        if (attempt < 2) {
+          console.warn(`Order code collision on ${orderCode}, regenerating (attempt ${attempt + 1})`);
+          const { data: newCode } = await supabase.rpc('gen_order_code');
+          if (newCode) orderCode = newCode as string;
+          continue;
+        }
       }
       break;
     }
@@ -702,10 +723,23 @@ serve(async (req) => {
       throw new Error('Rendelés mentési hiba');
     }
 
-
-
     const orderId = orderData.id;
     console.log('Created order:', orderId);
+
+    // Register rollback: if any downstream step (items, options) fails, DELETE this order
+    // so we don't leave phantom rows with no items visible to staff.
+    compensations.push(async () => {
+      try {
+        await supabase.from('order_items').delete().eq('order_id', orderId);
+        await supabase.from('order_item_options').delete().in('order_item_id',
+          (await supabase.from('order_items').select('id').eq('order_id', orderId)).data?.map((r: any) => r.id) || []
+        );
+        await supabase.from('orders').delete().eq('id', orderId);
+        console.log(`Rollback: deleted order ${orderId}`);
+      } catch (e) {
+        console.error('Order rollback failed:', e);
+      }
+    });
 
     // Record coupon usage
     if (appliedCouponCode && discountHuf > 0) {
