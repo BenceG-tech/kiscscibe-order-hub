@@ -483,11 +483,13 @@ serve(async (req) => {
       appliedCouponCode = coupon.code;
       calculatedTotal -= discountHuf;
 
-      // Increment usage count
-      await supabase
-        .from('coupons')
-        .update({ used_count: coupon.used_count + 1 })
-        .eq('id', coupon.id);
+      // Atomic increment — safe against concurrent orders using the same coupon.
+      const { data: incrementOk, error: incErr } = await supabase
+        .rpc('atomic_coupon_increment', { _coupon_id: coupon.id });
+      if (incErr || !incrementOk) {
+        console.error('Coupon atomic increment failed:', incErr);
+        throw new Error('Ez a kupon időközben elfogyott');
+      }
 
       console.log(`Coupon ${coupon.code} applied: -${discountHuf} Ft`);
     }
