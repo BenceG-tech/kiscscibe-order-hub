@@ -206,6 +206,51 @@ serve(async (req) => {
     }
   }
 
+  // 8. Ghost capacity bookings: booked_orders > actual orders for that slot (today)
+  try {
+    const { data: slots } = await supabase
+      .from("capacity_slots")
+      .select("date, timeslot, booked_orders")
+      .eq("date", today)
+      .gt("booked_orders", 0);
+
+    const ghosts: string[] = [];
+    for (const s of slots || []) {
+      // Match by pickup_time in Budapest local time — compare hh:mm portion
+      const { data: orders } = await supabase
+        .from("orders")
+        .select("id, pickup_time, status")
+        .neq("status", "cancelled")
+        .gte("pickup_time", `${s.date}T00:00:00Z`)
+        .lte("pickup_time", `${s.date}T23:59:59Z`);
+      const slotHHMM = String(s.timeslot).slice(0, 5);
+      const matching = (orders || []).filter((o: any) => {
+        if (!o.pickup_time) return false;
+        const bpTime = new Intl.DateTimeFormat("en-GB", {
+          timeZone: "Europe/Budapest", hour: "2-digit", minute: "2-digit", hour12: false,
+        }).format(new Date(o.pickup_time));
+        return bpTime === slotHHMM;
+      }).length;
+      if ((s.booked_orders as number) > matching) {
+        ghosts.push(`${slotHHMM} (foglalt: ${s.booked_orders}, rendelés: ${matching})`);
+      }
+    }
+    if (ghosts.length === 0) {
+      checks.push({ id: "ghost_slots", label: "Szellemfoglalások", status: "ok", message: "Nincs szellemfoglalás ma." });
+    } else {
+      checks.push({
+        id: "ghost_slots",
+        label: "Szellemfoglalások",
+        status: "warn",
+        message: `${ghosts.length} idősávban a foglalás nem egyezik a rendelésszámmal.`,
+        detail: ghosts.join(", "),
+      });
+    }
+  } catch (e: any) {
+    checks.push({ id: "ghost_slots", label: "Szellemfoglalások", status: "warn", message: e?.message || "Nem ellenőrizhető" });
+  }
+
+
   const summary = {
     ok: checks.filter((c) => c.status === "ok").length,
     warn: checks.filter((c) => c.status === "warn").length,
