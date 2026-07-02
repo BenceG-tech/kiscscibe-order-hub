@@ -14,6 +14,13 @@ const MAX_RETRIES = 8;
 const BASE_DELAY_MS = 2000;
 const HEARTBEAT_MS = 30_000;
 const STALE_SUBSCRIBED_MS = 90_000;
+// Flap protection: if the channel closes very quickly after opening, back off
+// aggressively so we don't burn CPU / log spam in a 2-second SUBSCRIBED→CLOSED loop.
+const FLAP_WINDOW_MS = 5_000;      // "quickly" = closed within 5s of subscribing
+const FLAP_THRESHOLD = 3;          // 3 such flaps triggers cooldown
+const FLAP_COOLDOWN_MS = 60_000;   // 60s pause before resuming subscription attempts
+const DEV = typeof import.meta !== 'undefined' && (import.meta as any).env?.DEV;
+const log = (...args: unknown[]) => { if (DEV) console.log(...args); };
 
 /**
  * Global order notification hook.
