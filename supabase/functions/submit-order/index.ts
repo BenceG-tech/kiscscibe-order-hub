@@ -528,33 +528,28 @@ serve(async (req) => {
       if (capacityError && capacityError.code === 'PGRST116') {
         console.log('Capacity slot not found, creating fallback slot for:', date, time);
         
-        // Validate business hours before creating
-        const slotDate = new Date(date + 'T00:00:00'); // Local date parsing
-        const dayOfWeek = slotDate.getDay();
+        // Validate business hours (Budapest local) BEFORE creating slot,
+        // and align with validate_pickup_time (10:30–15:00 weekdays only).
+        const dayOfWeek = budapestDayOfWeek(date);
         const [hours, minutes] = time.split(':').map(Number);
-        
-        console.log(`Validating business hours: date=${date}, time=${time}, dayOfWeek=${dayOfWeek}, hours=${hours}`);
-        
-        // Business hours: H-P 7:00-16:00, Szo-V Zárva
-        // Check if it's weekend (Saturday=6 or Sunday=0) - closed
+        const totalMinutes = hours * 60 + minutes;
+
+        console.log(`Validating business hours (Budapest): date=${date}, time=${time}, dow=${dayOfWeek}, mins=${totalMinutes}`);
+
         if (dayOfWeek === 0 || dayOfWeek === 6) {
-          console.error(`Rejected: Weekend is closed (dayOfWeek=${dayOfWeek})`);
+          console.error(`[${requestId}] Rejected: weekend closed (dow=${dayOfWeek})`);
           throw new Error('Hétvégén zárva tartunk');
         }
-        
-        // Check business hours: Monday-Friday 7:00-16:00
-        let isValidTime = false;
-        if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-          isValidTime = hours >= 7 && hours < 16;
-          console.log(`Weekday hours check: ${hours} >= 7 && ${hours} < 16 = ${isValidTime}`);
-        }
-        
+
+        // Lunch window: 10:30 – 15:00 (matches validate_pickup_time trigger)
+        const isValidTime = totalMinutes >= 10 * 60 + 30 && totalMinutes <= 15 * 60;
         if (!isValidTime) {
-          console.error(`[${requestId}] Rejected: Invalid business hours for dayOfWeek=${dayOfWeek}, hours=${hours}`);
-          throw new Error('A kiválasztott időpont nyitvatartási időn kívül esik');
+          console.error(`[${requestId}] Rejected: outside lunch window (${time})`);
+          throw new Error('A kiválasztott időpont nyitvatartási időn kívül esik (10:30 – 15:00)');
         }
-        
+
         console.log('Business hours validation passed');
+
         
         // Create the capacity slot
         const { data: newCapacityData, error: createError } = await supabase
