@@ -148,6 +148,15 @@ serve(async (req) => {
       session_id,
     }: OrderRequest = await req.json();
 
+    // Backward-compat: older clients sent 'card' which is not in orders_payment_method_check.
+    // Normalize to 'pos' (POS terminal on pickup) so those requests don't crash on INSERT.
+    let payment_method_normalized = payment_method;
+    if (payment_method_normalized === 'card') {
+      console.warn(`[${requestId}] Legacy payment_method='card' received — normalizing to 'pos'`);
+      payment_method_normalized = 'pos';
+    }
+    const payment_method_final = payment_method_normalized;
+
     attemptCtx.customer = customer;
     attemptCtx.items = items || [];
     attemptCtx.payment_method = payment_method;
