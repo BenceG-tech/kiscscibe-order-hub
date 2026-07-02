@@ -29,6 +29,31 @@ function budapestWallTimeToUtcIso(date: string, time: string): string {
   return new Date(naive.getTime() - offsetMin * 60_000).toISOString();
 }
 
+// Return the date (YYYY-MM-DD) and time (HH:MM) in Europe/Budapest for a given Date (or now).
+function getBudapestParts(d: Date = new Date()): { date: string; time: string } {
+  const dateFmt = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Budapest',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+  const timeFmt = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Budapest',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+  return { date: dateFmt.format(d), time: timeFmt.format(d) };
+}
+
+// Day-of-week in Europe/Budapest (0=Sun..6=Sat)
+function budapestDayOfWeek(dateStr: string): number {
+  // dateStr = YYYY-MM-DD, interpreted as a local Budapest date (no tz shift risk)
+  const [y, mo, da] = dateStr.split('-').map(Number);
+  return new Date(Date.UTC(y, mo - 1, da)).getUTCDay();
+}
+
+
 interface OrderModifier {
   label_snapshot: string;
   price_delta_huf: number;
