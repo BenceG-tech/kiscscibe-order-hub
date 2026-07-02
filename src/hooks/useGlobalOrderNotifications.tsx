@@ -336,10 +336,13 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
     if (!enabled) return;
     const interval = setInterval(() => {
       if (document.visibilityState !== 'visible') return;
+      // Sweep always runs — it's our polling fallback when Realtime is down.
       sweepMissedOrders();
+      // Don't try to re-subscribe during cooldown.
+      if (cooldownUntilRef.current > Date.now()) return;
       const sinceAck = Date.now() - lastSubscribedAtRef.current;
       if (lastSubscribedAtRef.current === 0 || sinceAck > STALE_SUBSCRIBED_MS) {
-        console.warn(`[Notifications] Heartbeat: stale subscription (${sinceAck}ms), reconnecting`);
+        if (DEV) console.warn(`[Notifications] Heartbeat: stale subscription (${sinceAck}ms), reconnecting`);
         retryCountRef.current = 0;
         createSubscription();
       }
