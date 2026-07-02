@@ -213,6 +213,15 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
 
   // ── Create / re-create subscription ──
   const createSubscription = useCallback(async () => {
+    // Respect flap cooldown so we don't hammer Realtime when the server is
+    // dropping us right after SUBSCRIBED (e.g. RLS/auth mismatch, transient
+    // Realtime outage). Polling fallback + heartbeat still cover us.
+    const now = Date.now();
+    if (cooldownUntilRef.current > now) {
+      log(`[Notifications] Cooldown active, skip subscription (${cooldownUntilRef.current - now}ms left)`);
+      return;
+    }
+
     if (channelRef.current) {
       await supabase.removeChannel(channelRef.current);
       channelRef.current = null;
@@ -220,12 +229,12 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
 
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
-      console.warn('[Notifications] No session, deferring subscription');
+      log('[Notifications] No session, deferring subscription');
       return;
     }
 
     const channelName = `order-notifications-${Date.now()}`;
-    console.log(`[Notifications] Creating channel: ${channelName}`);
+    log(`[Notifications] Creating channel: ${channelName}`);
 
     const channel = supabase
       .channel(channelName)
@@ -233,16 +242,27 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
         { event: 'INSERT', schema: 'public', table: 'orders' },
         (payload: any) => notifyIfNew(payload.new as PendingOrder))
       .subscribe((status, err) => {
-        console.log(`[Notifications] Subscription status: ${status}`, err || '');
+        log(`[Notifications] Subscription status: ${status}`, err || '');
         if (status === 'SUBSCRIBED') {
-          console.log('[Notifications] ✅ Subscribed');
+          log('[Notifications] ✅ Subscribed');
           retryCountRef.current = 0;
           lastSubscribedAtRef.current = Date.now();
-          // Catch anything that arrived during the (re)connect.
           sweepMissedOrders();
         }
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-          console.error(`[Notifications] ❌ Subscription ${status}`, err);
+          // Flap detection: was this a quick close after a SUBSCRIBED ack?
+          const nowInner = Date.now();
+          const sinceSubscribed = lastSubscribedAtRef.current > 0 ? nowInner - lastSubscribedAtRef.current : Infinity;
+          if (sinceSubscribed < FLAP_WINDOW_MS) {
+            recentFlapsRef.current = [...recentFlapsRef.current.filter(t => nowInner - t < 30_000), nowInner];
+            if (recentFlapsRef.current.length >= FLAP_THRESHOLD) {
+              cooldownUntilRef.current = nowInner + FLAP_COOLDOWN_MS;
+              recentFlapsRef.current = [];
+              console.warn(`[Notifications] Flap detected (${FLAP_THRESHOLD}× <${FLAP_WINDOW_MS}ms) — cooling down ${FLAP_COOLDOWN_MS / 1000}s. Polling fallback covers new orders.`);
+              return;
+            }
+          }
+          if (DEV) console.error(`[Notifications] Subscription ${status}`, err);
           if (retryCountRef.current < MAX_RETRIES) {
             const delay = BASE_DELAY_MS * Math.pow(2, Math.min(retryCountRef.current, 5));
             retryCountRef.current += 1;
