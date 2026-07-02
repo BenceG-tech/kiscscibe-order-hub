@@ -385,29 +385,22 @@ serve(async (req) => {
         const qtyForRollback = item.qty;
         compensations.push(async () => {
           try {
-            if (tblForRollback === 'daily_offers') {
-              await supabase.rpc('sql' as any); // no-op if RPC missing; actual restore below
-            }
-          } catch { /* swallow */ }
-          // Direct increment via update
-          try {
-            if (tblForRollback === 'daily_offers') {
-              await supabase.from('daily_offers').update({
-                remaining_portions: (await supabase.from('daily_offers').select('remaining_portions').eq('id', idForRollback).single()).data?.remaining_portions! + qtyForRollback
-              }).eq('id', idForRollback);
-            } else if (tblForRollback === 'daily_menus') {
-              await supabase.from('daily_menus').update({
-                remaining_portions: (await supabase.from('daily_menus').select('remaining_portions').eq('id', idForRollback).single()).data?.remaining_portions! + qtyForRollback
-              }).eq('id', idForRollback);
-            } else if (tblForRollback === 'daily_offer_menus') {
-              await supabase.from('daily_offer_menus').update({
-                remaining_portions: (await supabase.from('daily_offer_menus').select('remaining_portions').eq('id', idForRollback).single()).data?.remaining_portions! + qtyForRollback
-              }).eq('id', idForRollback);
-            }
+            const { data: cur } = await supabase
+              .from(tblForRollback)
+              .select('remaining_portions')
+              .eq('id', idForRollback)
+              .single();
+            const restored = (cur?.remaining_portions ?? 0) + qtyForRollback;
+            await supabase
+              .from(tblForRollback)
+              .update({ remaining_portions: restored })
+              .eq('id', idForRollback);
+            console.log(`Rollback: restored ${qtyForRollback} portions on ${tblForRollback} ${idForRollback}`);
           } catch (e) {
             console.error('Portion rollback failed:', e);
           }
         });
+
       }
     }
 
