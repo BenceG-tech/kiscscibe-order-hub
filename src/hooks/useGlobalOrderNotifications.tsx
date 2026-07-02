@@ -51,6 +51,9 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
   const lastSeenAtRef = useRef<string>(new Date(0).toISOString());
   // Last time we received a SUBSCRIBED ack — used by the heartbeat to detect a wedged channel.
   const lastSubscribedAtRef = useRef<number>(0);
+  // Flap detection: track recent close events + cooldown state.
+  const recentFlapsRef = useRef<number[]>([]);
+  const cooldownUntilRef = useRef<number>(0);
 
   const currentNotification = pendingOrders[0] || null;
 
