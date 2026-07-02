@@ -1007,6 +1007,16 @@ serve(async (req) => {
   } catch (error: any) {
     console.error(`[${requestId}] Submit order error:`, error);
 
+    // Roll back any capacity/portion mutations that succeeded before the failure,
+    // in reverse order. Prevents "ghost" bookings that eat inventory without an order.
+    if (compensations.length > 0) {
+      console.log(`[${requestId}] Running ${compensations.length} rollback compensations...`);
+      for (let i = compensations.length - 1; i >= 0; i--) {
+        try { await compensations[i](); } catch (e) { console.error(`[${requestId}] Compensation ${i} failed:`, e); }
+      }
+    }
+
+
     // Log the failed attempt for admin visibility (non-fatal)
     try {
       if (attemptCtx.supabase) {
