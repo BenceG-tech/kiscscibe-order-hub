@@ -1,43 +1,47 @@
 ## Cél
-Az ételek szerkesztésénél (admin) legyen lehetőség megadni az adag méretét **dkg-ban** (tömeg) vagy **db-ban** (darabszám). Ez megjelenjen a vendég felé az étlapon is, hogy lássák mekkora porciót kapnak.
+Javítani a `validate_pickup_time()` trigger időzóna hibáját, ami miatt Erika (és mások) 10:30-as rendelése elutasításra került, majd berögzíteni Erika elveszett rendelését.
 
-## Mit változik
+## Lépések
 
-### 1. Adatbázis (migráció)
-A `menu_items` táblához két új mező:
-- `portion_size` (szám, opcionális) — pl. 25, 2, 350
-- `portion_unit` (szöveg, opcionális) — `'dkg'`, `'db'`, `'g'`, vagy `'ml'` (alapból dkg/db közül választhat az admin, de a g/ml is engedélyezve van, ha később kell)
+### 1. Migráció: `validate_pickup_time()` javítása
+A funkció jelenleg a `pickup_datetime::time` értéket UTC-ben értelmezi. Budapest nyári időszámításban (UTC+2) egy 10:30-as rendelés 08:30 UTC-ként jelenik meg, ami kívül esik a 10:30–15:00 ablakon → a DB elutasítja.
 
-Régi ételek `NULL`-on maradnak (nem jelenik meg semmi extra) — nincs törő változás.
+Javítás: `AT TIME ZONE 'Europe/Budapest'` konverzió alkalmazása, mielőtt kinyerjük az időt és a napot.
 
-### 2. Admin szerkesztő — `MenuItemEditDialog.tsx`
-Új mezőcsoport "Ár" alatt: **Adag mérete**
+```sql
+CREATE OR REPLACE FUNCTION public.validate_pickup_time(pickup_datetime timestamp with time zone)
+RETURNS boolean
+LANGUAGE plpgsql
+STABLE SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+DECLARE
+    local_ts timestamp;
+    pickup_time_local time;
+    day_of_week integer;
+BEGIN
+    local_ts := (pickup_datetime AT TIME ZONE 'Europe/Budapest');
+    pickup_time_local := local_ts::time;
+    day_of_week := EXTRACT(DOW FROM local_ts::date);
+
+    IF day_of_week IN (0, 6) THEN
+        RETURN false;
+    END IF;
+    IF pickup_time_local < '10:30'::time OR pickup_time_local > '15:00'::time THEN
+        RETURN false;
+    END IF;
+    RETURN true;
+END;
+$$;
 ```
-[ Szám input ]  [ Egység választó: dkg | db ]
-```
-- Egyik sem kötelező, üresen hagyható.
-- Ha az admin beír egy számot egység nélkül, dkg az alapértelmezett.
-- Mentéskor együtt mennek a többi mezővel.
 
-### 3. Megjelenítés a vendég oldalon
-Ahol az étel neve/leírása megjelenik (étlap kártyák, napi ajánlat, kosár), kicsi szürke címke a név mellé:
-- `25 dkg` vagy `2 db`
-- Csak akkor látszik, ha ki van töltve
+### 2. Erika rendelésének berögzítése
+Az `order_attempts` táblából kiolvasom Erika adatait (név, telefon, tételek, összeg, átvételi idő), majd `INSERT`-elem az `orders` + `order_items` táblákba `status='new'` státusszal, hogy az étterem lássa és kezelni tudja. Ehhez a migráció után az `insert` eszközt fogom használni (miután megnéztem a pontos rekordot).
 
-Érintett komponensek (csak megjelenítés, logika nem változik):
-- `src/components/DailyOffersPanel.tsx` / `DailyMenuPanel.tsx`
-- `src/components/sections/AlwaysAvailableSection.tsx`
-- `src/components/sections/BreakfastSection.tsx`
-- `src/pages/Etlap.tsx` / `Menu.tsx`
-- Kosár (`CartDialog.tsx`) — opcionális, csak ha elfér
+### 3. Changelog + admin banner
+Új bejegyzés: „Javítva: 10:30-as rendelések elutasítása időzóna hiba miatt. Erika elveszett rendelése kézzel berögzítve."
 
-### 4. Adminon listanézet
-A `MenuItemManagement.tsx` táblázatban új kis oszlop vagy a név alatt halvány jelzés, hogy egy pillantásra látszik mely ételeknél van már megadva adag.
-
-### 5. RPC frissítés
-A `get_daily_data` SQL függvény visszaad még két mezőt (`item_portion_size`, `item_portion_unit`), hogy a napi ajánlatban is megjelenjen.
-
-## Mit NEM változtatunk
-- Régi rendelések, számlák, e-mailek formátuma változatlan.
-- Árlogika és kosár mechanika érintetlen.
-- A `portion_size` csak informatív címke — nem befolyásolja a készlet/portion számítást (azt továbbra is a `max_portions`/`remaining_portions` kezeli).
+## Sorrend
+1. Migráció futtatása (trigger függvény javítása)
+2. Erika `order_attempts` rekord kiolvasása → `orders`/`order_items` insert
+3. Changelog frissítése (`src/data/adminChangelog.ts`)

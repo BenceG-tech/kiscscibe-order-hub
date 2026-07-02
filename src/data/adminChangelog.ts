@@ -12,6 +12,15 @@ export interface ChangelogEntry {
 // Newest first
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: "2026-07-02",
+    title: "Javítva: 10:30-as rendelések elutasítása időzóna hiba miatt",
+    description:
+      "Kiderült, hogy pontosan 10:30-ra időzített rendelések bizonyos esetekben 'Rendelés mentési hiba' üzenettel elutasításra kerültek. Az ok: a rendszer az átvételi időpontot UTC időzónában értékelte (Budapesthez képest -2 óra), így a 10:30 → 08:30-ként jelent meg, ami kívül esett a 10:30–15:00 ablakon. A szerveroldali ellenőrzés (validate_pickup_time) mostantól kifejezetten Európa/Budapest időzónában dolgozik. Egy érintett rendelést (Dr. Örkényi Erika, 4740 Ft) kézzel berögzítettünk az Új rendelések közé.",
+    type: "fixed",
+    tabGroup: "orders",
+  },
+  {
+
     date: "2026-06-30",
     title: "Adag mérete (dkg vagy db) megadható az ételekhez",
     description:
