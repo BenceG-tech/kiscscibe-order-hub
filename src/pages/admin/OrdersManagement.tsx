@@ -622,6 +622,35 @@ const ActiveOrderCard = ({
   const StatusIcon = statusConfig.icon;
   const isNew = order.status === "new";
 
+  // Pickup time formatting
+  const pickupInfo = (() => {
+    if (!order.pickup_time) {
+      return { primary: "Mielőbb", secondary: "ASAP – amint elkészül", urgent: isNew };
+    }
+    const pd = new Date(order.pickup_time);
+    const now = new Date();
+    const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    const dayDiff = Math.round((startOfDay(pd) - startOfDay(now)) / 86400000);
+    const time = pd.toLocaleTimeString("hu-HU", { hour: "2-digit", minute: "2-digit" });
+    let dayLabel: string;
+    if (dayDiff === 0) dayLabel = "MA";
+    else if (dayDiff === 1) dayLabel = "HOLNAP";
+    else if (dayDiff === -1) dayLabel = "TEGNAP";
+    else dayLabel = pd.toLocaleDateString("hu-HU", { month: "short", day: "numeric", weekday: "short" });
+
+    const diffMin = Math.round((pd.getTime() - now.getTime()) / 60000);
+    let secondary = "";
+    if (Math.abs(diffMin) < 60 * 6) {
+      if (diffMin > 1) secondary = `kb. ${diffMin} perc múlva`;
+      else if (diffMin < -1) secondary = `${Math.abs(diffMin)} perce esedékes lett volna`;
+      else secondary = "épp most";
+    } else if (diffMin >= 60 * 6 && dayDiff === 0) {
+      secondary = `kb. ${Math.round(diffMin / 60)} óra múlva`;
+    }
+    const urgent = isNew && diffMin >= -5 && diffMin <= 30;
+    return { primary: `${dayLabel} · ${time}`, secondary, urgent };
+  })();
+
   return (
     <Card
       className={cn(
@@ -642,15 +671,34 @@ const ActiveOrderCard = ({
             <Phone className="h-3.5 w-3.5" />
             {order.phone}
           </a>
-          {order.pickup_time && (
-            <span className="text-muted-foreground inline-flex items-center gap-1">
-              <Clock className="h-3.5 w-3.5" />
-              {new Date(order.pickup_time).toLocaleString("hu-HU", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-            </span>
-          )}
           <span className="ml-auto font-bold text-primary">
             {order.total_huf.toLocaleString("hu-HU")} Ft
           </span>
+        </div>
+
+        {/* Prominent pickup time highlight */}
+        <div
+          className={cn(
+            "flex items-center gap-3 rounded-lg border px-3 py-2 mb-3",
+            pickupInfo.urgent
+              ? "bg-primary/25 border-primary/60 animate-pulse"
+              : "bg-primary/10 border-primary/40"
+          )}
+        >
+          <Clock className="h-5 w-5 text-primary shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none">
+              Átvétel
+            </div>
+            <div className="text-lg font-bold text-primary leading-tight">
+              {pickupInfo.primary}
+            </div>
+            {pickupInfo.secondary && (
+              <div className="text-xs text-muted-foreground leading-tight">
+                {pickupInfo.secondary}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex items-start justify-between">
@@ -663,9 +711,10 @@ const ActiveOrderCard = ({
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
               <Calendar className="h-4 w-4 inline mr-1" />
-              {new Date(order.created_at).toLocaleString("hu-HU")}
+              Leadva: {new Date(order.created_at).toLocaleString("hu-HU")}
             </p>
           </div>
+
           <div className="text-right">
             {order.coupon_code && order.discount_huf && order.discount_huf > 0 && (
               <p className="text-xs text-green-600 dark:text-green-400 flex items-center justify-end gap-1 mt-0.5">
@@ -675,7 +724,7 @@ const ActiveOrderCard = ({
             )}
             <p className="text-sm text-muted-foreground">
               <CreditCard className="h-4 w-4 inline mr-1" />
-              {order.payment_method === "cash" ? "Készpénz" : "Kártya"}
+              {order.payment_method === "cash" ? "Készpénz" : order.payment_method === "card_online" ? "Online kártya" : "Bankkártya"}
             </p>
           </div>
         </div>
@@ -1098,7 +1147,7 @@ const PastOrderAdminCard = ({
               )}
               <span className="flex items-center gap-1">
                 <CreditCard className="h-3.5 w-3.5" />
-                {order.payment_method === "cash" ? "Készpénz" : "Kártya"}
+                {order.payment_method === "cash" ? "Készpénz" : order.payment_method === "card_online" ? "Online kártya" : "Bankkártya"}
               </span>
             </div>
 

@@ -1,43 +1,37 @@
-## Mit találtam
+## Cél
+Az admin **Rendelések** listán az átvétel időpontja legyen a kártya legfeltűnőbb eleme, egyértelműen elkülönítve a rendelés leadási időpontjától.
 
-Kazi Cintia 4× próbálta leadni ugyanazt a rendelést (2026-07-02 11:46–11:47 Budapest, 7280 Ft, 5 tétel), mind "Rendelés mentési hiba" üzenettel. A vásárló nem tudott sikeresen rendelni.
+## Módosítás egy helyen: `src/pages/admin/OrdersManagement.tsx` (OrderCard komponens)
 
-## Gyökér-ok (KRITIKUS bug)
+**1. Új, kiemelt „Átvétel" blokk a kártya tetején (az essence-bar alatt)**
+- Nagy, sárga/primary háttérrel kiemelt sáv, órával és címkével.
+- Formátum:
+  - **MA 12:30** — ha az átvétel dátuma a mai nap (nagy betűvel, „MA" chip)
+  - **HOLNAP 11:00** — ha holnap
+  - **júl. 3. (péntek) 11:00** — egyéb napokra
+  - **Mielőbb (ASAP)** — ha `pickup_time` üres
+- Alatta kis szürke szöveg: `„X perc múlva"` / `„X óra múlva"` / `„X perce elmúlt"` (relatív, csak ha a mai napra vagy közelre esik).
+- Új rendelésnél (`status='new'`) pulzáló effekt, ha az átvétel < 30 perc múlva van (hogy azonnal szemet szúrjon).
 
-A `Checkout.tsx` a fizetési módhoz a `"card"` értéket küldi a `submit-order` edge functionnek ("Bankkártya átvételkor" opciónál), viszont a `orders_payment_method_check` DB constraint csak a `'cash' | 'pos' | 'card_online'` értékeket engedi.
+**2. A leadás időpontja legyen egyértelműen felcímkézve**
+- A jelenlegi `Calendar` ikon melletti sor mostantól: **„Leadva: 2026. 07. 02. 11:47"** (a „Leadva:" prefix kerül elé).
 
-Emiatt minden olyan vendég, aki a "Bankkártya átvételkor" opciót választja, `Rendelés mentési hiba` üzenetet kap az `orders` INSERT-nél elszáll. Cintia is ezt választotta. (Ez ugyanaz a jelenség, ami miatt Erika rendelését is manuálisan `card_online`-nal kellett berögzíteni.)
+**3. Duplikáció megszüntetése az essence-barból**
+- A kis órás pickup chip (line 645-650) kikerül, hogy ne legyen kétszer.
 
-**Nem újkeletű probléma** – ez régóta él, minden bankkártyás átvételi próbálkozás elbukik. Nézd meg a régebbi "Sikertelen" listát: valószínűleg még több ilyen áldozat lesz.
-
-## Terv
-
-**1. Frontend fix (`src/pages/Checkout.tsx`)**
-- A "Bankkártya átvételkor" opció értéke `"card"` → `"pos"` (a `pos` szemantikailag helyes: POS-terminál helyszíni fizetés; a `card_online` az online kártyafizetést jelentené, ami nálunk nincs).
-- Type-t (`"cash" | "card"` → `"cash" | "pos"`) is átírom mindenhol a fájlban.
-- A submit-order body-ban tehát `payment_method: "pos"` megy.
-
-**2. Manuális helyreállítás – Cintia rendelése**
-- 4 próbálkozásból 1 valódi rendelést csinálok (dedupláció, mint Erikánál).
-- `orders` INSERT: `payment_method='pos'`, `total_huf=7280`, `status='new'`, `pickup_time=NULL` (asap – így küldte).
-- `order_items` INSERT (5 sor a snapshotból).
-- A 4 sikertelen `order_attempts` bejegyzést törlöm.
-
-**3. Régebbi áldozatok kimutatása**
-- Egyszeri `SELECT` a `order_attempts` táblából, ahol `error_message='Rendelés mentési hiba'` és `customer_phone` egyedi → lista neked, hogy visszahívhasd őket. **Nem** rögzítek automatikusan; egyenként te döntesz.
-
-**4. Védőháló a submit-orderben (`supabase/functions/submit-order/index.ts`)**
-- Bemenet-normalizálás: ha `payment_method === 'card'` → átmapelem `'pos'`-ra (backward compat régi klienseknek / cache-elt bundle-nek).
-- Így ha marad egy régi tab a vendégnél, akkor sem bukik el.
-
-**5. Changelog + memory**
-- `src/data/adminChangelog.ts`: új bejegyzés (2026-07-02) a `card` → `pos` mapping fixről és Cintia helyreállításáról.
-- Röviden megemlítem az admin help szövegekben is, ha releváns.
+**4. Fizetési mód címke pontosítás**
+- Amíg itt vagyok: `payment_method === 'pos'` → „Bankkártya", `'card_online'` → „Online kártya", `'cash'` → „Készpénz" (a mostani `'cash'` vs „Kártya" bináris feltétel nem tesz különbséget).
 
 ## Amit NEM módosítok
-- DB constraint (`orders_payment_method_check`) — a jelenlegi 3 érték helyes, nem tágítom.
-- Semmilyen más business logika, UI struktúra.
-- Az edge function timezone / rollback logikát, amit az előző körben már fixáltunk.
+- Nem nyúlok a részletnézethez (1092-es sor környéke már így is jól címkézett).
+- Nincs adatbázis-, üzleti logika-, vagy backend-változás.
+- Kanban/staff nézet nem érintett — csak az admin rendelések lista.
+- A színsémát a meglévő brand tokenekkel oldom meg (nincs hardcoded szín).
 
-## Kérdés jóváhagyás előtt
-Megfelel a `"card"` → `"pos"` mapping (POS-terminál átvételkor)? Vagy inkább `"card_online"`-t akarod, esetleg a DB constraintbe engedjük be a `"card"` értéket is?
+## Technikai részletek (nem-technikai olvasó ugorjon)
+- Egy segéd `formatPickupBadge(iso: string | null)` a fájlon belül: visszaadja `{ label, sublabel, isUrgent }`-et.
+- Új wrapper `<div>` az essence-bar és a régi header között, `bg-primary/15 border border-primary/40 rounded-lg px-3 py-2` osztályokkal.
+- Sürgős esetben (< 30 perc + new) `animate-pulse` és `bg-primary/25`.
+
+## Kérdés
+Jó a fenti kiemelés, vagy inkább **nagy** sárga sáv legyen a kártya tetején az essence-bar HELYETT (még feltűnőbb, de az essence-info lentebb csúszik)?
