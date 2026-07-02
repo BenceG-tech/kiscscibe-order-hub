@@ -159,7 +159,7 @@ serve(async (req) => {
 
     attemptCtx.customer = customer;
     attemptCtx.items = items || [];
-    attemptCtx.payment_method = payment_method;
+    attemptCtx.payment_method = payment_method_final;
     attemptCtx.pickup_date = pickup_date || null;
     attemptCtx.pickup_time_slot = pickup_time_slot || null;
     attemptCtx.session_id = session_id || null;
