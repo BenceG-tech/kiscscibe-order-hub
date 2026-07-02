@@ -114,7 +114,7 @@ const Checkout = () => {
     pickup_type: "asap" as "asap" | "scheduled",
     pickup_date: "",
     pickup_time: "",
-    payment_method: "cash" as "cash" | "card"
+    payment_method: "cash" as "cash" | "pos"
   });
   
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
