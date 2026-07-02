@@ -83,9 +83,9 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
         if (ctx.state === 'suspended') ctx.resume().catch(() => {});
         audioUnlockedRef.current = true;
         setAudioUnlocked(true);
-        console.log('[Notifications] Audio unlocked');
+        log(console.log('[Notifications] Audio unlocked');
       } catch (err) {
-        console.log('[Notifications] Audio unlock failed:', err);
+        log(console.log('[Notifications] Audio unlock failed:', err);
       }
     };
 
@@ -138,7 +138,7 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
         playWithWebAudio(ctx);
       }
     } catch (err) {
-      console.log('[Notifications] Could not play sound:', err);
+      log(console.log('[Notifications] Could not play sound:', err);
     }
   }, []);
 
@@ -158,7 +158,7 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
     if (firedIdsRef.current.size > 500) {
       firedIdsRef.current = new Set(Array.from(firedIdsRef.current).slice(-250));
     }
-    console.log('[Notifications] 🔔 New order:', o.code);
+    log(console.log('[Notifications] 🔔 New order:', o.code);
     playNotificationSound();
     setPendingOrders(prev => [...prev, o]);
     setNewOrdersCount(prev => prev + 1);
@@ -177,16 +177,16 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
         .order('created_at', { ascending: true })
         .limit(50);
       if (error) {
-        console.log('[Notifications] sweep error:', error);
+        log(console.log('[Notifications] sweep error:', error);
         return;
       }
       if (data?.length) {
-        console.log(`[Notifications] Sweep found ${data.length} new since ${since}`);
+        log(console.log(`[Notifications] Sweep found ${data.length} new since ${since}`);
         data.forEach((o) => notifyIfNew(o as PendingOrder));
         lastSeenAtRef.current = data[data.length - 1].created_at;
       }
     } catch (e) {
-      console.log('[Notifications] sweep exception:', e);
+      log(console.log('[Notifications] sweep exception:', e);
     }
   }, [notifyIfNew]);
 
@@ -205,7 +205,7 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
       } else {
         lastSeenAtRef.current = new Date().toISOString();
       }
-      console.log(`[Notifications] Cursor initialized at ${lastSeenAtRef.current}`);
+      log(console.log(`[Notifications] Cursor initialized at ${lastSeenAtRef.current}`);
       // Immediate sweep in case orders arrived during init.
       sweepMissedOrders();
     })();
@@ -314,7 +314,7 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
 
     const onVisible = () => {
       if (document.visibilityState !== 'visible') return;
-      console.log('[Notifications] Tab visible — resume + sweep + re-subscribe');
+      log(console.log('[Notifications] Tab visible — resume + sweep + re-subscribe');
       audioContextRef.current?.resume?.().catch(() => {});
       retryCountRef.current = 0;
       sweepMissedOrders();
