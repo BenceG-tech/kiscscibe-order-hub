@@ -462,7 +462,7 @@ serve(async (req) => {
       throw new Error('Rendeléskód generálási hiba');
     }
 
-    const orderCode = orderCodeData;
+    let orderCode = orderCodeData as string;
     console.log('Generated order code:', orderCode);
 
     // Handle capacity slot update if pickup_time is specified
