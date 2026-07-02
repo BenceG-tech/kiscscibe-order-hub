@@ -149,7 +149,6 @@ serve(async (req) => {
     }: OrderRequest = await req.json();
 
     // Backward-compat: older clients sent 'card' which is not in orders_payment_method_check.
-    // Normalize to 'pos' (POS terminal on pickup) so those requests don't crash on INSERT.
     let payment_method_normalized = payment_method;
     if (payment_method_normalized === 'card') {
       console.warn(`[${requestId}] Legacy payment_method='card' received — normalizing to 'pos'`);
@@ -163,6 +162,39 @@ serve(async (req) => {
     attemptCtx.pickup_date = pickup_date || null;
     attemptCtx.pickup_time_slot = pickup_time_slot || null;
     attemptCtx.session_id = session_id || null;
+
+    // ── Idempotency: dedupe network retries / double-clicks within a 5-minute window.
+    //    Key = session_id + phone + items shape. A fresh session_id (issued per Checkout mount)
+    //    lets the same customer legitimately place a second identical order later.
+    let idempotency_key: string | null = null;
+    if (session_id && customer?.phone && Array.isArray(items)) {
+      const totalQty = items.reduce((s, it) => s + (Number(it?.qty) || 0), 0);
+      idempotency_key = `${session_id}|${customer.phone}|${items.length}|${totalQty}|${pickup_date || ''}|${pickup_time_slot || ''}`.slice(0, 255);
+      try {
+        const { data: existing } = await supabase
+          .from('orders')
+          .select('id, code, total_huf')
+          .eq('idempotency_key', idempotency_key)
+          .gt('created_at', new Date(Date.now() - 5 * 60 * 1000).toISOString())
+          .maybeSingle();
+        if (existing) {
+          console.warn(`[${requestId}] Duplicate submission detected — returning existing order ${existing.code}`);
+          return new Response(
+            JSON.stringify({
+              success: true,
+              order_code: existing.code,
+              total_huf: existing.total_huf,
+              request_id: requestId,
+              loyalty_reward: null,
+              duplicate: true,
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+          );
+        }
+      } catch (e) {
+        console.warn(`[${requestId}] Idempotency pre-check failed (non-fatal):`, e);
+      }
+    }
 
     console.log(`[${requestId}] Processing order for:`, customer.name, 'with', items.length, 'items');
 
