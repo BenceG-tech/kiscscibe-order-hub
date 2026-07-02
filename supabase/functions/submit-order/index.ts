@@ -347,12 +347,9 @@ serve(async (req) => {
           }
         }
 
-        // Check if ordering is still allowed - prevent past dates
-        const itemDate = new Date(itemDateStr + 'T00:00:00.000Z');
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        if (itemDate < today) {
+        // Check if ordering is still allowed - prevent past dates (Budapest local date, string compare)
+        const todayBudapest = getBudapestParts().date;
+        if (itemDateStr < todayBudapest) {
           throw new Error(`Múltbeli dátumra nem lehet rendelni: ${itemDateStr}`);
         }
 
@@ -381,8 +378,39 @@ serve(async (req) => {
           console.error('Failed to update daily item portions:', updateError);
           throw new Error(updateError?.message || 'Hiba a készlet frissítése során - nincs elég adag');
         }
+
+        // Register rollback for this portion decrement
+        const tblForRollback = tableName;
+        const idForRollback = item.daily_id!;
+        const qtyForRollback = item.qty;
+        compensations.push(async () => {
+          try {
+            if (tblForRollback === 'daily_offers') {
+              await supabase.rpc('sql' as any); // no-op if RPC missing; actual restore below
+            }
+          } catch { /* swallow */ }
+          // Direct increment via update
+          try {
+            if (tblForRollback === 'daily_offers') {
+              await supabase.from('daily_offers').update({
+                remaining_portions: (await supabase.from('daily_offers').select('remaining_portions').eq('id', idForRollback).single()).data?.remaining_portions! + qtyForRollback
+              }).eq('id', idForRollback);
+            } else if (tblForRollback === 'daily_menus') {
+              await supabase.from('daily_menus').update({
+                remaining_portions: (await supabase.from('daily_menus').select('remaining_portions').eq('id', idForRollback).single()).data?.remaining_portions! + qtyForRollback
+              }).eq('id', idForRollback);
+            } else if (tblForRollback === 'daily_offer_menus') {
+              await supabase.from('daily_offer_menus').update({
+                remaining_portions: (await supabase.from('daily_offer_menus').select('remaining_portions').eq('id', idForRollback).single()).data?.remaining_portions! + qtyForRollback
+              }).eq('id', idForRollback);
+            }
+          } catch (e) {
+            console.error('Portion rollback failed:', e);
+          }
+        });
       }
     }
+
 
     // Apply coupon discount if provided
     let discountHuf = 0;
