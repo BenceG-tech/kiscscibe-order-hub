@@ -13,6 +13,15 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-07-02",
+    title: "Nagy rendelés-audit: duplikátum-védelem, kupon-verseny, realtime flap javítás",
+    description:
+      "Teljes körű auditot csináltunk a rendelés életútján (leadás → mentés → megjelenítés). A megtalált 15+ kockázatból az alábbiakat most javítottuk: 1) DUPLIKÁTUM-VÉDELEM: ha a vendég kétszer kattint, vagy a hálózat pillanatnyi timeout után újrapróbálja, a szerver 5 percen belül ugyanazt a kosarat egyetlen rendelésként rögzíti (idempotency_key). 2) EMAIL TIMEOUT: a Resend visszaigazoló emailt már nem várjuk meg a válasz előtt — így ha az email szolgáltatás belassul, a rendelés nem hasal el 'Rendelés mentési hiba' üzenettel. 3) KUPON-VERSENY: két egyidejű rendelés ugyanazzal a kuponnal többé nem tudja átlépni a max_uses limitet (atomikus SQL számláló). 4) ORDER ROLLBACK: ha a rendelés-tételek mentése elakad, a szerver automatikusan törli a fejrekordot is — nincs több 'üres rendelés' a listán. 5) 5 PERCES GRACE: a szerveroldali pickup_time ellenőrzés 5 perc türelmet ad a feldolgozási késésnek, hogy a vendég 10:30-as rendelése ne csússzon el 'múltbeli' hibaüzenetbe. 6) REALTIME FLAP-VÉDELEM: az admin értesítés csatorna másodpercenként bomlott le újra és újra (SUBSCRIBED → CLOSED loop) — most 3× gyors bezárás után 60s cooldown-ba megy, és közben a 30s-os polling fallback biztosítja, hogy egyetlen új rendelés se maradjon észrevétlen. 7) A konzolt már nem szemeteli a Notifications hook — csak fejlesztői módban logol.",
+    type: "fixed",
+    tabGroup: "orders",
+  },
+
+  {
+    date: "2026-07-02",
     title: "KRITIKUS javítás: bankkártyás átvételi fizetés minden esetben elszállt",
     description:
       "Kiderült, hogy amikor a vendég a 'Bankkártya átvételkor' opciót választotta, a rendelés MINDIG 'Rendelés mentési hiba' üzenettel elutasításra került. Az ok: a frontend a 'card' értéket küldte, de az adatbázis csak a 'cash', 'pos' és 'card_online' értékeket engedélyezte, így az orders INSERT azonnal elhasalt egy check-constraint miatt. Ez már régóta élt — minden bankkártyás átvételi próbálkozás áldozat lett. Javítás: a Checkout mostantól 'pos' (POS-terminál helyszíni fizetés) értékkel küld, és a szerver oldalon védőháló is van a régi ('card') klienseknek. Egy érintett rendelést (Kazi Cintia, 7280 Ft, 4× próbálkozás) kézzel berögzítettünk az Új rendelések közé, és a Sikertelen listáról töröltük a duplikátumokat.",

@@ -1394,6 +1394,7 @@ export type Database = {
           discount_huf: number
           email: string | null
           id: string
+          idempotency_key: string | null
           name: string
           notes: string | null
           payment_method: string
@@ -1410,6 +1411,7 @@ export type Database = {
           discount_huf?: number
           email?: string | null
           id?: string
+          idempotency_key?: string | null
           name: string
           notes?: string | null
           payment_method?: string
@@ -1426,6 +1428,7 @@ export type Database = {
           discount_huf?: number
           email?: string | null
           id?: string
+          idempotency_key?: string | null
           name?: string
           notes?: string | null
           payment_method?: string
@@ -1669,6 +1672,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      atomic_coupon_increment: {
+        Args: { _coupon_id: string }
+        Returns: boolean
+      }
       audit_changed_fields: {
         Args: { after_row: Json; before_row: Json }
         Returns: string[]

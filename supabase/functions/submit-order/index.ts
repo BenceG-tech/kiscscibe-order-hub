@@ -149,7 +149,6 @@ serve(async (req) => {
     }: OrderRequest = await req.json();
 
     // Backward-compat: older clients sent 'card' which is not in orders_payment_method_check.
-    // Normalize to 'pos' (POS terminal on pickup) so those requests don't crash on INSERT.
     let payment_method_normalized = payment_method;
     if (payment_method_normalized === 'card') {
       console.warn(`[${requestId}] Legacy payment_method='card' received — normalizing to 'pos'`);
@@ -163,6 +162,39 @@ serve(async (req) => {
     attemptCtx.pickup_date = pickup_date || null;
     attemptCtx.pickup_time_slot = pickup_time_slot || null;
     attemptCtx.session_id = session_id || null;
+
+    // ── Idempotency: dedupe network retries / double-clicks within a 5-minute window.
+    //    Key = session_id + phone + items shape. A fresh session_id (issued per Checkout mount)
+    //    lets the same customer legitimately place a second identical order later.
+    let idempotency_key: string | null = null;
+    if (session_id && customer?.phone && Array.isArray(items)) {
+      const totalQty = items.reduce((s, it) => s + (Number(it?.qty) || 0), 0);
+      idempotency_key = `${session_id}|${customer.phone}|${items.length}|${totalQty}|${pickup_date || ''}|${pickup_time_slot || ''}`.slice(0, 255);
+      try {
+        const { data: existing } = await supabase
+          .from('orders')
+          .select('id, code, total_huf')
+          .eq('idempotency_key', idempotency_key)
+          .gt('created_at', new Date(Date.now() - 5 * 60 * 1000).toISOString())
+          .maybeSingle();
+        if (existing) {
+          console.warn(`[${requestId}] Duplicate submission detected — returning existing order ${existing.code}`);
+          return new Response(
+            JSON.stringify({
+              success: true,
+              order_code: existing.code,
+              total_huf: existing.total_huf,
+              request_id: requestId,
+              loyalty_reward: null,
+              duplicate: true,
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+          );
+        }
+      } catch (e) {
+        console.warn(`[${requestId}] Idempotency pre-check failed (non-fatal):`, e);
+      }
+    }
 
     console.log(`[${requestId}] Processing order for:`, customer.name, 'with', items.length, 'items');
 
@@ -451,11 +483,13 @@ serve(async (req) => {
       appliedCouponCode = coupon.code;
       calculatedTotal -= discountHuf;
 
-      // Increment usage count
-      await supabase
-        .from('coupons')
-        .update({ used_count: coupon.used_count + 1 })
-        .eq('id', coupon.id);
+      // Atomic increment — safe against concurrent orders using the same coupon.
+      const { data: incrementOk, error: incErr } = await supabase
+        .rpc('atomic_coupon_increment', { _coupon_id: coupon.id });
+      if (incErr || !incrementOk) {
+        console.error('Coupon atomic increment failed:', incErr);
+        throw new Error('Ez a kupon időközben elfogyott');
+      }
 
       console.log(`Coupon ${coupon.code} applied: -${discountHuf} Ft`);
     }
@@ -643,6 +677,7 @@ serve(async (req) => {
           notes: customer.notes || null,
           coupon_code: appliedCouponCode,
           discount_huf: discountHuf,
+          idempotency_key: idempotency_key,
         })
         .select('id')
         .single();
@@ -653,12 +688,32 @@ serve(async (req) => {
         break;
       }
       orderInsertError = error;
-      // 23505 = unique_violation on orders.code — regenerate and retry
-      if ((error as any).code === '23505' && attempt < 2) {
-        console.warn(`Order code collision on ${orderCode}, regenerating (attempt ${attempt + 1})`);
-        const { data: newCode } = await supabase.rpc('gen_order_code');
-        if (newCode) orderCode = newCode as string;
-        continue;
+      // 23505 = unique_violation. Two cases:
+      //   (a) orders.code collision → regenerate & retry
+      //   (b) orders.idempotency_key collision → same submission raced past our pre-check,
+      //       return the existing order instead of failing.
+      if ((error as any).code === '23505') {
+        const msg = String((error as any).message || '');
+        if (msg.includes('idempotency_key') && idempotency_key) {
+          const { data: existing } = await supabase
+            .from('orders')
+            .select('id, code, total_huf')
+            .eq('idempotency_key', idempotency_key)
+            .maybeSingle();
+          if (existing) {
+            console.warn(`Idempotency race resolved — returning existing order ${existing.code}`);
+            return new Response(
+              JSON.stringify({ success: true, order_code: existing.code, total_huf: existing.total_huf, request_id: requestId, loyalty_reward: null, duplicate: true }),
+              { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+            );
+          }
+        }
+        if (attempt < 2) {
+          console.warn(`Order code collision on ${orderCode}, regenerating (attempt ${attempt + 1})`);
+          const { data: newCode } = await supabase.rpc('gen_order_code');
+          if (newCode) orderCode = newCode as string;
+          continue;
+        }
       }
       break;
     }
@@ -668,10 +723,23 @@ serve(async (req) => {
       throw new Error('Rendelés mentési hiba');
     }
 
-
-
     const orderId = orderData.id;
     console.log('Created order:', orderId);
+
+    // Register rollback: if any downstream step (items, options) fails, DELETE this order
+    // so we don't leave phantom rows with no items visible to staff.
+    compensations.push(async () => {
+      try {
+        await supabase.from('order_items').delete().eq('order_id', orderId);
+        await supabase.from('order_item_options').delete().in('order_item_id',
+          (await supabase.from('order_items').select('id').eq('order_id', orderId)).data?.map((r: any) => r.id) || []
+        );
+        await supabase.from('orders').delete().eq('id', orderId);
+        console.log(`Rollback: deleted order ${orderId}`);
+      } catch (e) {
+        console.error('Order rollback failed:', e);
+      }
+    });
 
     // Record coupon usage
     if (appliedCouponCode && discountHuf > 0) {
@@ -970,19 +1038,29 @@ serve(async (req) => {
         Köszönjük, hogy minket választott! 💛
       `;
 
-      await resend.emails.send({
+      // Fire-and-forget: do NOT block the response on Resend. If email is slow
+      // and the edge function times out, the client sees an error and retries —
+      // creating duplicate orders. EdgeRuntime.waitUntil keeps the promise
+      // alive after we've already returned success to the browser.
+      const emailPromise = resend.emails.send({
         from: 'Kiscsibe Étterem <rendeles@kiscsibe-etterem.hu>',
         to: [customer.email],
-        bcc: ['info@kiscsibeetterem.hu', 'gataibence@gmail.com'], // Admin copies
+        bcc: ['info@kiscsibeetterem.hu', 'gataibence@gmail.com'],
         subject: `Kiscsibe – rendelés visszaigazolás #${orderCode}`,
         html: emailHtml,
         text: emailText,
+      }).then(() => {
+        console.log(`[${requestId}] Confirmation email sent to:`, customer.email);
+      }).catch((emailError) => {
+        console.error(`[${requestId}] Email sending failed:`, emailError);
       });
 
-      console.log(`[${requestId}] Confirmation email sent to:`, customer.email);
+      try {
+        // deno-lint-ignore no-explicit-any
+        (globalThis as any).EdgeRuntime?.waitUntil?.(emailPromise);
+      } catch (_) { /* runtime may not support waitUntil — promise still lives briefly */ }
     } catch (emailError) {
-      console.error(`[${requestId}] Email sending failed:`, emailError);
-      // Don't fail the order if email sending fails
+      console.error(`[${requestId}] Email preparation failed:`, emailError);
     }
 
     console.log(`[${requestId}] Order completed successfully:`, orderCode);

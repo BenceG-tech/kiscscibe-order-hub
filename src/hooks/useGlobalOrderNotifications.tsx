@@ -14,6 +14,13 @@ const MAX_RETRIES = 8;
 const BASE_DELAY_MS = 2000;
 const HEARTBEAT_MS = 30_000;
 const STALE_SUBSCRIBED_MS = 90_000;
+// Flap protection: if the channel closes very quickly after opening, back off
+// aggressively so we don't burn CPU / log spam in a 2-second SUBSCRIBED→CLOSED loop.
+const FLAP_WINDOW_MS = 5_000;      // "quickly" = closed within 5s of subscribing
+const FLAP_THRESHOLD = 3;          // 3 such flaps triggers cooldown
+const FLAP_COOLDOWN_MS = 60_000;   // 60s pause before resuming subscription attempts
+const DEV = typeof import.meta !== 'undefined' && (import.meta as any).env?.DEV;
+const log = (...args: unknown[]) => { if (DEV) console.log(...args); };
 
 /**
  * Global order notification hook.
@@ -44,6 +51,9 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
   const lastSeenAtRef = useRef<string>(new Date(0).toISOString());
   // Last time we received a SUBSCRIBED ack — used by the heartbeat to detect a wedged channel.
   const lastSubscribedAtRef = useRef<number>(0);
+  // Flap detection: track recent close events + cooldown state.
+  const recentFlapsRef = useRef<number[]>([]);
+  const cooldownUntilRef = useRef<number>(0);
 
   const currentNotification = pendingOrders[0] || null;
 
@@ -73,9 +83,9 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
         if (ctx.state === 'suspended') ctx.resume().catch(() => {});
         audioUnlockedRef.current = true;
         setAudioUnlocked(true);
-        console.log('[Notifications] Audio unlocked');
+        log('[Notifications] Audio unlocked');
       } catch (err) {
-        console.log('[Notifications] Audio unlock failed:', err);
+        log('[Notifications] Audio unlock failed:', err);
       }
     };
 
@@ -128,7 +138,7 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
         playWithWebAudio(ctx);
       }
     } catch (err) {
-      console.log('[Notifications] Could not play sound:', err);
+      log('[Notifications] Could not play sound:', err);
     }
   }, []);
 
@@ -148,7 +158,7 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
     if (firedIdsRef.current.size > 500) {
       firedIdsRef.current = new Set(Array.from(firedIdsRef.current).slice(-250));
     }
-    console.log('[Notifications] 🔔 New order:', o.code);
+    log('[Notifications] 🔔 New order:', o.code);
     playNotificationSound();
     setPendingOrders(prev => [...prev, o]);
     setNewOrdersCount(prev => prev + 1);
@@ -167,16 +177,16 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
         .order('created_at', { ascending: true })
         .limit(50);
       if (error) {
-        console.log('[Notifications] sweep error:', error);
+        log('[Notifications] sweep error:', error);
         return;
       }
       if (data?.length) {
-        console.log(`[Notifications] Sweep found ${data.length} new since ${since}`);
+        log(`[Notifications] Sweep found ${data.length} new since ${since}`);
         data.forEach((o) => notifyIfNew(o as PendingOrder));
         lastSeenAtRef.current = data[data.length - 1].created_at;
       }
     } catch (e) {
-      console.log('[Notifications] sweep exception:', e);
+      log('[Notifications] sweep exception:', e);
     }
   }, [notifyIfNew]);
 
@@ -195,7 +205,7 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
       } else {
         lastSeenAtRef.current = new Date().toISOString();
       }
-      console.log(`[Notifications] Cursor initialized at ${lastSeenAtRef.current}`);
+      log(`[Notifications] Cursor initialized at ${lastSeenAtRef.current}`);
       // Immediate sweep in case orders arrived during init.
       sweepMissedOrders();
     })();
@@ -203,6 +213,15 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
 
   // ── Create / re-create subscription ──
   const createSubscription = useCallback(async () => {
+    // Respect flap cooldown so we don't hammer Realtime when the server is
+    // dropping us right after SUBSCRIBED (e.g. RLS/auth mismatch, transient
+    // Realtime outage). Polling fallback + heartbeat still cover us.
+    const now = Date.now();
+    if (cooldownUntilRef.current > now) {
+      log(`[Notifications] Cooldown active, skip subscription (${cooldownUntilRef.current - now}ms left)`);
+      return;
+    }
+
     if (channelRef.current) {
       await supabase.removeChannel(channelRef.current);
       channelRef.current = null;
@@ -210,12 +229,12 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
 
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
-      console.warn('[Notifications] No session, deferring subscription');
+      log('[Notifications] No session, deferring subscription');
       return;
     }
 
     const channelName = `order-notifications-${Date.now()}`;
-    console.log(`[Notifications] Creating channel: ${channelName}`);
+    log(`[Notifications] Creating channel: ${channelName}`);
 
     const channel = supabase
       .channel(channelName)
@@ -223,16 +242,27 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
         { event: 'INSERT', schema: 'public', table: 'orders' },
         (payload: any) => notifyIfNew(payload.new as PendingOrder))
       .subscribe((status, err) => {
-        console.log(`[Notifications] Subscription status: ${status}`, err || '');
+        log(`[Notifications] Subscription status: ${status}`, err || '');
         if (status === 'SUBSCRIBED') {
-          console.log('[Notifications] ✅ Subscribed');
+          log('[Notifications] ✅ Subscribed');
           retryCountRef.current = 0;
           lastSubscribedAtRef.current = Date.now();
-          // Catch anything that arrived during the (re)connect.
           sweepMissedOrders();
         }
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-          console.error(`[Notifications] ❌ Subscription ${status}`, err);
+          // Flap detection: was this a quick close after a SUBSCRIBED ack?
+          const nowInner = Date.now();
+          const sinceSubscribed = lastSubscribedAtRef.current > 0 ? nowInner - lastSubscribedAtRef.current : Infinity;
+          if (sinceSubscribed < FLAP_WINDOW_MS) {
+            recentFlapsRef.current = [...recentFlapsRef.current.filter(t => nowInner - t < 30_000), nowInner];
+            if (recentFlapsRef.current.length >= FLAP_THRESHOLD) {
+              cooldownUntilRef.current = nowInner + FLAP_COOLDOWN_MS;
+              recentFlapsRef.current = [];
+              console.warn(`[Notifications] Flap detected (${FLAP_THRESHOLD}× <${FLAP_WINDOW_MS}ms) — cooling down ${FLAP_COOLDOWN_MS / 1000}s. Polling fallback covers new orders.`);
+              return;
+            }
+          }
+          if (DEV) console.error(`[Notifications] Subscription ${status}`, err);
           if (retryCountRef.current < MAX_RETRIES) {
             const delay = BASE_DELAY_MS * Math.pow(2, Math.min(retryCountRef.current, 5));
             retryCountRef.current += 1;
@@ -284,7 +314,7 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
 
     const onVisible = () => {
       if (document.visibilityState !== 'visible') return;
-      console.log('[Notifications] Tab visible — resume + sweep + re-subscribe');
+      log('[Notifications] Tab visible — resume + sweep + re-subscribe');
       audioContextRef.current?.resume?.().catch(() => {});
       retryCountRef.current = 0;
       sweepMissedOrders();
@@ -306,10 +336,13 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
     if (!enabled) return;
     const interval = setInterval(() => {
       if (document.visibilityState !== 'visible') return;
+      // Sweep always runs — it's our polling fallback when Realtime is down.
       sweepMissedOrders();
+      // Don't try to re-subscribe during cooldown.
+      if (cooldownUntilRef.current > Date.now()) return;
       const sinceAck = Date.now() - lastSubscribedAtRef.current;
       if (lastSubscribedAtRef.current === 0 || sinceAck > STALE_SUBSCRIBED_MS) {
-        console.warn(`[Notifications] Heartbeat: stale subscription (${sinceAck}ms), reconnecting`);
+        if (DEV) console.warn(`[Notifications] Heartbeat: stale subscription (${sinceAck}ms), reconnecting`);
         retryCountRef.current = 0;
         createSubscription();
       }
