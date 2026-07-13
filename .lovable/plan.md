@@ -1,99 +1,120 @@
-# submit-order from-cím fix + E1–E9 + send-contact-email fix
 
-## 1. submit-order/index.ts — from-csere + reply_to (egyetlen commit)
+# Terv — 3 döntés végrehajtása + adaptív értesítő panel
 
-**Sor 1230–1236 (admin loop):**
-```ts
-const { data, error } = await resend.emails.send({
-  from: 'Kiscsibe Étterem <rendeles@kiscsibe-etterem.hu>',
-  to: [recipient],
-  reply_to: 'info@kiscsibeetterem.hu',
-  subject: `Új rendelés #${orderCode} — ${customer.name}`,
-  html: adminHtml,
-  text: adminText,
-});
+## 1) P1 — Érthető hibaüzenetek (submit-order)
+
+**Cél:** A nyers Postgres trigger-hibák helyett magyar, vevőnek érthető szövegek jelenjenek meg.
+
+**Feltárás:** A `supabase/functions/submit-order/index.ts` catch-ágában és a validációknál átnézzük az összes ismert trigger/RPC hibaforrást:
+- `validate_order_date` → „Cannot place orders for past dates or times" / „Pickup time is outside business hours"
+- `validate_daily_item_date` → „Cannot create daily items for past dates"
+- `update_capacity_slot` → „Az időpont közben betelt (foglalt: X, max: Y)" (ez már magyar, marad)
+- `update_daily_portions` → „Insufficient portions available"
+- `atomic_coupon_increment` false → kupon lejárt/elfogyott
+- `validate_coupon_code` üzenetek (már magyar)
+- generikus fallback: „Rendelés mentési hiba"
+
+**Megoldás:** Bevezetünk egy `mapDbErrorToHungarian(err: unknown): string` helper-t a submit-order fv. tetején, ami stringmatch alapján ismert hibákat leképez:
+
+| Trigger üzenet (részlet) | Vevőnek megjelenő magyar |
+|---|---|
+| `past dates or times` | „A választott átvételi idő már elmúlt — kérjük, válassz későbbi időpontot." |
+| `outside business hours` | „A választott időpont nyitvatartási időn kívül esik (H–P 07:00–16:00)." |
+| `Insufficient portions` | „Sajnos időközben elfogyott az adag ebből az ételből." |
+| `Az időpont közben betelt` | változatlanul továbbadva |
+| `daily items for past dates` | „A választott nap már lezárult, nem rendelhető." |
+| bármi más | „Rendelés mentési hiba — kérjük próbáld újra, vagy hívj minket." |
+
+A `submit-order` minden hibaválaszában (`return new Response(... status: 4xx/5xx ...)`) ezen keresztül megy a `error` mező.
+
+## 2) Hírlevél feladók javítása (BACKLOG-2b, 2c)
+
+**Egy commit, két fájl:**
+
+- `supabase/functions/send-welcome-newsletter/index.ts`:
+  - `from: 'Kiscsibe Étterem <rendeles@kiscsibe-etterem.hu>'`
+  - `reply_to: 'info@kiscsibeetterem.hu'` hozzáadása
+  - Message ID naplózása console-ba (mint a többi fv-ben)
+  - **A meglévő 6 feliratkozónak semmi nem megy** — a fv. csak új feliratkozáskor fut, ez már így van (5 perces friss-feliratkozás check védelem)
+- `supabase/functions/send-weekly-menu/index.ts`:
+  - Ugyanez a `from` + `reply_to` csere minden `resend.emails.send` hívásnál
+
+**Verifikáció:**
+- `send-welcome-newsletter`: valódi TESZT feliratkozás beszúrása a `subscribers` táblába (`AUDIT TESZT WELCOME` prefix), fv. meghívása, message ID naplózás, majd a teszt sor törlése
+- `send-weekly-menu`: dry-run meghívás egy TESZT email címre (owner címére) — message ID rögzítés
+
+## 3) Adaptív értesítő overlay több egyidejű rendeléshez
+
+**Meglévő architektúra:**
+- `useGlobalOrderNotifications` hook: Realtime + polling + `newOrdersQueue` state (nem tudom pontos struktúráját — build módban megnézem), egyetlen hang forrás (K1 dedupe)
+- `OrderNotificationsProvider` → `OrderNotificationModal` (jelenleg egyesével jelenít meg egy `currentNotification`-t + `pendingCount`-ot)
+
+**Új komponens:** `src/components/admin/OrderNotificationOverlay.tsx`
+
+**Props (a hookból):**
+```
+orders: PendingOrder[]         // az összes még nem nyugtázott új rendelés
+onDismissOne: (id) => void     // egy kártya X
+onDismissAll: () => void       // "Összes bezárása"
+onViewOne: (id) => void        // navigate + nyugtáz
+onViewAll: () => void          // navigate lista + nyugtáz mindet
+navigateTo: string
 ```
 
-**Sor 1332–1338 (vevői visszaigazolás):**
-```ts
-const { data, error } = await resend.emails.send({
-  from: 'Kiscsibe Étterem <rendeles@kiscsibe-etterem.hu>',
-  to: [customer.email],
-  reply_to: 'info@kiscsibeetterem.hu',
-  subject: `Kiscsibe – rendelés visszaigazolás #${orderCode}`,
-  html: customerHtml,
-  text: customerText,
-});
-```
+**Adaptív rács (Tailwind, `orders.length` alapján):**
 
-Deploy: `submit-order`. Semmi más nem változik ebben a commitban.
+| Darab | Elrendezés | Kártya-méret |
+|---|---|---|
+| 1 | jelenlegi nagy középső kártya | változatlan |
+| 2 | `grid-cols-2` | közepesen kicsi |
+| 3–4 | `grid-cols-2` (2×2) | közepes |
+| 5–9 | `grid-cols-3` (3×3) | kompakt |
+| 10+ | `grid-cols-3`, `max-h-[80vh] overflow-y-auto`, fejlécben számláló | kompakt |
 
-## 2. E1–E9 tesztfutás (a fix deploy után azonnal)
+**Mobil (`useIsMobile`):** mindig `grid-cols-1`, `max-h-[85vh] overflow-y-auto`, gombok `h-12`.
 
-Playwright anon `http://localhost:8080` alól, minden teszt `/tmp/browser/e{n}/` alatt, screenshot + `supabase--read_query` a DB-hez.
+**Kártya-tartalom (minden méretben):** kód (`#XXXXX`), összeg (Ft), átvételi idő, beérkezés ideje, „Megtekintés" gomb, X gomb. Kompakt módban ikonok kisebbek, fontok skálázódnak.
 
-| ID | Teszt | Fő ellenőrzés |
-|----|-------|---------------|
-| E1 | Rendelés email nélkül, `AUDIT TESZT E1` | 2× admin_notification sent, 1× customer_confirmation **skipped** |
-| E2 | Rendelés `gataibence@gmail.com`, `AUDIT TESZT E2` | 3× sent, Resend message ID mind a 3-ra |
-| E3 | Dupla-klikk „Megrendelem" 300ms belül | 1 rendelés, 2 admin sor (nem 4) |
-| E4 | Céldátum **2026-07-14 (kedd)** Europe/Budapest: 06:59 / 07:00 / 15:59 / 16:00 / múlt (2026-07-13) / szombat (2026-07-18) | Frontend hibaüzenet-minőség; trigger visszautasít |
-| E5 | ASAP (mai) 21:00+ | Vevő mit lát; szabály konzisztens |
-| E6 | Napi menüs tétel | `daily_offer_items` portion csökken |
-| E7 | `TESZT-E7-KUPON` insert (10%, aktív) → használat → törlés | Kedvezmény alkalmazva, `coupon_usages` sor |
-| E8 | Név: `<script>alert(1)</script>🐔`, hosszú megjegyzés | Admin DOM escape-elt, email HTML `&lt;script&gt;` |
-| E9 | Telefon: `+36 20 123 4567`, `06201234567`, `20/123-4567` | Normalizált formátum admin nézetben |
+**Overlay fejléc:** „N új rendelés érkezett!" + „Összes megtekintése" + „Összes bezárása" gombok.
 
-## 3. Takarítás (megegyezés)
+**Rendezés:** `pickup_time ASC NULLS LAST` — legsürgősebb elöl. Új rendelés érkezésekor a helyére szúródik, meglévők nem ugrálnak (React key = order.id).
 
-Törlés ELŐTT: `UPDATE email_send_log SET order_id = NULL WHERE order_id IN (<AUDIT TESZT ids>)` — hogy ne cascade-elődjön. Aztán DELETE minden `name ILIKE '%AUDIT TESZT%'` rendelés + `order_items` + `order_item_options`, majd `TESZT-E7-KUPON` DELETE. `email_send_log` sorok maradnak. Verifikáció count query.
+**Hang-dedupe (K1) megőrzése:**
+- A `useGlobalOrderNotifications` hook továbbra is az egyetlen hangforrás
+- Új rendelésenként egyszer szól a hang (a meglévő logikát nem módosítjuk)
+- Verifikációban `console.log('[notification-sound] play', orderId)` a hook-ban, hogy Playwright-tal megszámoljuk
 
-## 4. Záró jelentés
+**Last-seen mechanizmus:** a meglévő localStorage `lastSeenOrderId` / `dismissed` set-re építünk — nyugtázott kártya oldal-frissítés után nem jelenik meg újra.
 
-1. Teszt-mátrix E1–E9 (✅/❌/⚠️ + 1 sor bizonyíték)
-2. **Kiküldött emailek táblázat**: Resend message ID + Europe/Budapest timestamp + címzett + subject (valódi `info@kiscsibeetterem.hu` és `gataibence@gmail.com` értesítések — telefonos ellenőrzéshez)
-3. Proaktívan javított hibák (ha lesz)
-4. TULAJDONOSI DÖNTÉS KELL lista
-5. Takarítás igazolás
+**Kontextus-API változás (`OrderNotificationsContext`):**
+- A hook mostantól `pendingOrders: PendingOrder[]` listát ad vissza (nem csak `currentNotification`)
+- Új: `dismissOrder(id)`, `dismissAll()` a `dismissNotification` helyett/mellett
+- `OrderNotificationsProvider` az új overlay-t rendereli, ha `pendingOrders.length > 0`
 
-## 5. send-contact-email fix (KÜLÖN COMMIT, E1–E9 UTÁN)
+**Régi `OrderNotificationModal.tsx`:** megtartjuk 1-es esetre reusable kártyaként (`OrderNotificationCard` néven kiemelve), vagy inline az overlay-ben — build közben döntjük el a legkisebb diff alapján.
 
-Az E1–E9 sikeres lezárása után, külön commitban:
+## 4) Verifikáció (build végén, egy Playwright futásban)
 
-**supabase/functions/send-contact-email/index.ts sor 64–68 (admin értesítés):**
-```ts
-await resend.emails.send({
-  from: 'Kiscsibe Étterem <rendeles@kiscsibe-etterem.hu>',
-  to: ['info@kiscsibeetterem.hu'],
-  reply_to: email,  // a beküldő címe → az étterem közvetlenül válaszolhat
-  subject: `Új üzenet a weboldalról - ${safeName}`,
-  ...
-});
-```
+**Hibaüzenetek:** manuális invoke a `submit-order`-re múltbeli `pickup_time`-mal, ASSERT a magyar üzenetre.
 
-**Sor 100–104 (auto-reply a beküldőnek):**
-```ts
-await resend.emails.send({
-  from: 'Kiscsibe Reggeliző & Étterem <rendeles@kiscsibe-etterem.hu>',
-  to: [email],
-  reply_to: 'info@kiscsibeetterem.hu',
-  subject: 'Kiscsibe - Megkaptuk üzenetét',
-  ...
-});
-```
+**Overlay:** direkt DB `INSERT`-tel 1, 2, 4, 10 db TESZT rendelés (érvényes jövőbeli `pickup_time`, `AUDIT TESZT OVERLAY` prefixű `name`), `/admin/orders`-en Playwright screenshot mindegyik elrendezésről (1280×1800). Konzol logokból megszámoljuk a hang-eseményeket: 10 új rendelés → 10 log, nem több.
 
-Deploy: `send-contact-email`. Teszt: küldök egy kontakt-üzenetet Playwrighttal a `/kapcsolat` oldalon keresztül `AUDIT TESZT KONTAKT` névvel és `gataibence@gmail.com` email címmel, majd Resend message ID-t olvasok a function logból. A test kontakt-üzenetet nem tudjuk törölni (nincs adatbázis-tábla hozzá — csak email), tehát csak jelzem a bizonyítékot.
+**Takarítás:**
+- `UPDATE email_send_log SET order_id = NULL WHERE order_id IN (teszt id-k)` majd DELETE rendelések/items/coupon usages
+- Subscribers TESZT sor törlése
+- `email_send_log` sorok megmaradnak bizonyítékként
 
-## 6. Használat-ellenőrzés (nem-blokkoló info a jelentésben)
+## 5) Záró jelentés
 
-Grep + adatbázis-lekérdezés a válaszban:
-- `send-welcome-newsletter`: hívott-e valahol a frontend? Van-e `subscribers` bejegyzés? (Ha nincs, tényleg backlog.)
-- `send-weekly-menu`: hívott-e cron vagy admin gomb? Volt-e futása az edge function logban az elmúlt 30 napban?
+- Változtatás-lista fájlonként
+- Küldött emailek táblázata (funkció, cím, Resend message ID, Europe/Budapest időbélyeg)
+- Hibaüzenet-mapping tábla
+- Overlay screenshotok (1, 2, 4, 10 rendelés + mobil)
+- Hang-dedupe bizonyíték (console log count)
 
-Ha bármelyik használatban van, kiemelt BACKLOG-2b/2c pontként jelzem — de a mostani commitban NEM módosítom, mert a scope kizárólag a submit-order + send-contact-email.
+## Fegyelem
 
-## Korlátok
-
-- Egy hiba → diagnózis → minimális fix → verifikáció. Max 3 kör ugyanarra a bugra, utána megállok és kérdek.
-- Nincs DB-trigger módosítás, nincs éles secret-átírás.
-- 2 külön commit: (A) submit-order + E1–E9, (B) send-contact-email + kontakt-teszt.
+- Egy hiba → egy fix → verifikáció, max 3 ciklus
+- Nem nyúlunk DB triggerekhez, secretekhez, RLS-hez
+- A K1 hang-dedupe-ot nem törjük vissza
+- A meglévő `useGlobalOrderNotifications` polling/Realtime logika változatlan
