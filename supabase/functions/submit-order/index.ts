@@ -1126,187 +1126,232 @@ serve(async (req) => {
     // Initialize Resend client
     const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
 
-    // Send confirmation email to customer
-    try {
-      if (!customer.email) {
-        console.log(`[${requestId}] No customer email provided — skipping confirmation email.`);
-      } else {
-      console.log(`[${requestId}] Preparing confirmation email for ${customer.email}`);
-      
-      const itemsHtml = validatedItems.map(item => {
-        const modifiersHtml = item.modifiers.length > 0 
-          ? `<br><small style="color: #666;">+ ${item.modifiers.map(mod => escapeHtml(mod.label_snapshot)).join(', ')}</small>`
-          : '';
-        
-        return `
-          <tr>
-            <td style="padding: 8px; border-bottom: 1px solid #eee;">
-              <strong>${escapeHtml(item.name_snapshot)}</strong> × ${item.qty}${modifiersHtml}
-            </td>
-            <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">
-              ${item.line_total_huf.toLocaleString()} Ft
-            </td>
+    // ============================================================
+    // Email dispatch — M4/M5
+    //   (A) Admin notification: MINDIG kimegy, két külön send-ként
+    //       (info@ + gataibence@), nem bcc (Gmail-spam kockázat).
+    //   (B) Vevői visszaigazolás: csak ha van customer.email.
+    //   Minden kísérlet (skipped is) sort kap az email_send_log-ban.
+    //   Független try/catch, egyik hibája sem blokkolja a másikat,
+    //   sem a rendelés-mentést. EdgeRuntime.waitUntil mögött fut.
+    // ============================================================
+
+    const logEmailAttempt = async (
+      emailType: 'admin_notification' | 'customer_confirmation',
+      recipient: string,
+      status: 'sent' | 'failed' | 'skipped',
+      resendMessageId: string | null,
+      errorMsg: string | null,
+    ) => {
+      try {
+        await supabase.from('email_send_log').insert({
+          order_id: orderId,
+          email_type: emailType,
+          recipient,
+          status,
+          resend_message_id: resendMessageId,
+          error: errorMsg,
+        });
+      } catch (logErr) {
+        console.error(`[${requestId}] email_send_log insert failed:`, logErr);
+      }
+    };
+
+    const buildItemsHtml = () => validatedItems.map(item => {
+      const modifiersHtml = item.modifiers.length > 0
+        ? `<br><small style="color:#666;">+ ${item.modifiers.map(mod => escapeHtml(mod.label_snapshot)).join(', ')}</small>`
+        : '';
+      return `
+        <tr>
+          <td style="padding:8px;border-bottom:1px solid #eee;">
+            <strong>${escapeHtml(item.name_snapshot)}</strong> × ${item.qty}${modifiersHtml}
+          </td>
+          <td style="padding:8px;border-bottom:1px solid #eee;text-align:right;">
+            ${item.line_total_huf.toLocaleString()} Ft
+          </td>
+        </tr>`;
+    }).join('');
+
+    const buildItemsText = () => validatedItems.map(item =>
+      `- ${item.name_snapshot} × ${item.qty}: ${item.line_total_huf.toLocaleString()} Ft${item.modifiers.length > 0 ? ` (+ ${item.modifiers.map(mod => mod.label_snapshot).join(', ')})` : ''}`
+    ).join('\n');
+
+    const pickupDisplay = pickup_time
+      ? new Date(pickup_time).toLocaleString('hu-HU', { timeZone: 'Europe/Budapest' })
+      : 'Amilyen hamar lehet';
+    const paymentLabel = payment_method_final === 'cash' ? 'Készpénz' : 'Kártya';
+
+    // ----- (A) Admin notification email (mindig) -----
+    const adminItemsHtml = buildItemsHtml();
+    const adminItemsText = buildItemsText();
+
+    const adminHtml = `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+        <h2 style="color:#333;">Új rendelés érkezett – #${escapeHtml(orderCode)}</h2>
+        <div style="background:#fff8e6;border:1px solid #f6c22d;padding:16px;border-radius:8px;margin:16px 0;">
+          <p style="margin:4px 0;"><strong>Rendelés kód:</strong> ${escapeHtml(orderCode)}</p>
+          <p style="margin:4px 0;"><strong>Név:</strong> ${escapeHtml(customer.name)}</p>
+          <p style="margin:4px 0;"><strong>Telefon:</strong> ${escapeHtml(customer.phone)}</p>
+          <p style="margin:4px 0;"><strong>Email:</strong> ${customer.email ? escapeHtml(customer.email) : '<em>nem adott meg</em>'}</p>
+          <p style="margin:4px 0;"><strong>Átvétel:</strong> ${escapeHtml(pickupDisplay)}</p>
+          <p style="margin:4px 0;"><strong>Fizetés:</strong> ${paymentLabel}</p>
+          ${customer.notes ? `<p style="margin:4px 0;"><strong>Megjegyzés:</strong> ${escapeHtml(customer.notes)}</p>` : ''}
+        </div>
+        <h3>Tételek</h3>
+        <table style="width:100%;border-collapse:collapse;">
+          ${adminItemsHtml}
+          <tr style="font-weight:bold;background:#f8f9fa;">
+            <td style="padding:12px;border-top:2px solid #333;">Összesen</td>
+            <td style="padding:12px;border-top:2px solid #333;text-align:right;">${calculatedTotal.toLocaleString()} Ft</td>
           </tr>
-        `;
-      }).join('');
+        </table>
+        <p style="color:#666;font-size:12px;margin-top:24px;">Automatikus admin-értesítő – Kiscsibe rendszer</p>
+      </div>`;
+
+    const adminText = `Új rendelés #${orderCode}
+
+Név: ${customer.name}
+Telefon: ${customer.phone}
+Email: ${customer.email || 'nem adott meg'}
+Átvétel: ${pickupDisplay}
+Fizetés: ${paymentLabel}
+${customer.notes ? `Megjegyzés: ${customer.notes}\n` : ''}
+Tételek:
+${adminItemsText}
+
+Összesen: ${calculatedTotal.toLocaleString()} Ft
+`;
+
+    const ADMIN_RECIPIENTS = ['info@kiscsibeetterem.hu', 'gataibence@gmail.com'];
+
+    const sendAdminEmails = async () => {
+      for (const recipient of ADMIN_RECIPIENTS) {
+        try {
+          const { data, error } = await resend.emails.send({
+            from: 'Kiscsibe Étterem <rendeles@kiscsibeetterem.hu>',
+            to: [recipient],
+            subject: `Új rendelés #${orderCode} — ${customer.name}`,
+            html: adminHtml,
+            text: adminText,
+          });
+          if (error) throw error;
+          console.log(`[${requestId}] Admin notification sent to ${recipient} (id=${data?.id ?? 'n/a'})`);
+          await logEmailAttempt('admin_notification', recipient, 'sent', data?.id ?? null, null);
+        } catch (err) {
+          const msg = String((err as any)?.message ?? err);
+          console.error(`[${requestId}] Admin notification to ${recipient} failed:`, msg);
+          await logEmailAttempt('admin_notification', recipient, 'failed', null, msg);
+        }
+      }
+    };
+
+    // ----- (B) Customer confirmation (csak ha van email) -----
+    const sendCustomerEmail = async () => {
+      if (!customer.email) {
+        console.log(`[${requestId}] No customer email provided — logging skipped.`);
+        await logEmailAttempt('customer_confirmation', '', 'skipped', null, 'no customer email');
+        return;
+      }
+
+      const itemsHtml = buildItemsHtml();
 
       const loyaltyHtml = loyaltyReward ? `
-        <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
-          <p style="margin: 0 0 8px; font-size: 18px;">🎉 Köszönjük a hűségedet!</p>
-          <p style="margin: 0 0 8px; font-size: 14px;">Ez a ${loyaltyReward.order_count}. rendelésed!</p>
-          <p style="margin: 0; font-size: 20px; font-weight: bold; color: #d97706;">
-            Kuponod: ${loyaltyReward.coupon_code}
-          </p>
-          <p style="margin: 4px 0 0; font-size: 14px; color: #666;">
+        <div style="background:#fef3c7;padding:20px;border-radius:8px;margin:20px 0;text-align:center;">
+          <p style="margin:0 0 8px;font-size:18px;">🎉 Köszönjük a hűségedet!</p>
+          <p style="margin:0 0 8px;font-size:14px;">Ez a ${loyaltyReward.order_count}. rendelésed!</p>
+          <p style="margin:0;font-size:20px;font-weight:bold;color:#d97706;">Kuponod: ${loyaltyReward.coupon_code}</p>
+          <p style="margin:4px 0 0;font-size:14px;color:#666;">
             ${loyaltyReward.discount_type === 'percentage' ? `${loyaltyReward.discount_value}% kedvezmény` : `${loyaltyReward.discount_value} Ft kedvezmény`} a következő rendelésedből!
           </p>
-        </div>
-      ` : '';
+        </div>` : '';
 
-      const emailHtml = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #333;">Kiscsibe – Rendelés visszaigazolás</h2>
+      const customerHtml = `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+          <h2 style="color:#333;">Kiscsibe – Rendelés visszaigazolás</h2>
           <p>Kedves ${escapeHtml(customer.name)}!</p>
           <p>Köszönjük rendelését! Az alábbi részletekkel rögzítettük:</p>
-          
-          <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="margin-top: 0;">Rendelés részletei</h3>
+          <div style="background:#f8f9fa;padding:20px;border-radius:8px;margin:20px 0;">
+            <h3 style="margin-top:0;">Rendelés részletei</h3>
             <p><strong>Rendelés kód:</strong> ${escapeHtml(orderCode)}</p>
             <p><strong>Telefonszám:</strong> ${escapeHtml(customer.phone)}</p>
-            ${date && time ? `<p><strong>Átvétel:</strong> ${escapeHtml(date)} ${escapeHtml(time)}</p>` : '<p><strong>Átvétel:</strong> Amilyen hamar lehet</p>'}
-            <p><strong>Fizetés:</strong> ${payment_method_final === 'cash' ? 'Készpénz' : 'Kártya'}</p>
+            <p><strong>Átvétel:</strong> ${escapeHtml(pickupDisplay)}</p>
+            <p><strong>Fizetés:</strong> ${paymentLabel}</p>
             ${customer.notes ? `<p><strong>Megjegyzés:</strong> ${escapeHtml(customer.notes)}</p>` : ''}
           </div>
-
           <h3>Rendelt termékek</h3>
-          <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+          <table style="width:100%;border-collapse:collapse;margin:20px 0;">
             ${itemsHtml}
-            <tr style="font-weight: bold; background: #f8f9fa;">
-              <td style="padding: 12px; border-top: 2px solid #333;">Összesen</td>
-              <td style="padding: 12px; border-top: 2px solid #333; text-align: right;">${calculatedTotal.toLocaleString()} Ft</td>
+            <tr style="font-weight:bold;background:#f8f9fa;">
+              <td style="padding:12px;border-top:2px solid #333;">Összesen</td>
+              <td style="padding:12px;border-top:2px solid #333;text-align:right;">${calculatedTotal.toLocaleString()} Ft</td>
             </tr>
           </table>
-
-          <div style="background: #f0f4f8; padding: 16px; border-radius: 8px; margin: 20px 0; border: 1px solid #d0d5dd;">
-            <h4 style="margin: 0 0 8px; font-size: 14px; color: #333;">🧾 Digitális nyugta</h4>
-            <table style="width: 100%; font-size: 13px; color: #555;">
-              <tr><td>Nettó összeg:</td><td style="text-align: right;">${Math.round(calculatedTotal / 1.27).toLocaleString()} Ft</td></tr>
-              <tr><td>ÁFA (27%):</td><td style="text-align: right;">${(calculatedTotal - Math.round(calculatedTotal / 1.27)).toLocaleString()} Ft</td></tr>
-              <tr style="font-weight: bold;"><td>Bruttó összeg:</td><td style="text-align: right;">${calculatedTotal.toLocaleString()} Ft</td></tr>
+          <div style="background:#f0f4f8;padding:16px;border-radius:8px;margin:20px 0;border:1px solid #d0d5dd;">
+            <h4 style="margin:0 0 8px;font-size:14px;color:#333;">🧾 Digitális nyugta</h4>
+            <table style="width:100%;font-size:13px;color:#555;">
+              <tr><td>Nettó összeg:</td><td style="text-align:right;">${Math.round(calculatedTotal / 1.27).toLocaleString()} Ft</td></tr>
+              <tr><td>ÁFA (27%):</td><td style="text-align:right;">${(calculatedTotal - Math.round(calculatedTotal / 1.27)).toLocaleString()} Ft</td></tr>
+              <tr style="font-weight:bold;"><td>Bruttó összeg:</td><td style="text-align:right;">${calculatedTotal.toLocaleString()} Ft</td></tr>
             </table>
-            <p style="margin: 8px 0 0; font-size: 11px; color: #999; font-style: italic;">
+            <p style="margin:8px 0 0;font-size:11px;color:#999;font-style:italic;">
               Bizonylat szám: ${orderCode} · Dátum: ${new Date().toLocaleDateString('hu-HU')} · Ez a dokumentum nem minősül adóügyi bizonylatnak.
             </p>
           </div>
-
           ${loyaltyHtml}
-
-          <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <p style="margin: 0 0 4px 0;"><strong>Kiscsibe Reggeliző & Étterem</strong></p>
-            <p style="margin: 0 0 4px 0; font-size: 14px; color: #555;">📍 1141 Budapest, Vezér u. 110.</p>
-            <p style="margin: 0 0 4px 0; font-size: 14px; color: #555;">🕐 H–P: 7:00–15:00 | Szo: 8:00–14:00 | V: Zárva</p>
-            <p style="margin: 0; font-size: 14px;">
-              <a href="https://www.facebook.com/kiscsibeetteremXIV" style="color: #1877F2; text-decoration: none;">📘 Facebook</a>
+          <div style="background:#e3f2fd;padding:15px;border-radius:8px;margin:20px 0;">
+            <p style="margin:0 0 4px 0;"><strong>Kiscsibe Reggeliző & Étterem</strong></p>
+            <p style="margin:0 0 4px 0;font-size:14px;color:#555;">📍 1141 Budapest, Vezér u. 110.</p>
+            <p style="margin:0 0 4px 0;font-size:14px;color:#555;">🕐 H–P: 7:00–15:00 | Szo: 8:00–14:00 | V: Zárva</p>
+            <p style="margin:0;font-size:14px;">
+              <a href="https://www.facebook.com/kiscsibeetteremXIV" style="color:#1877F2;text-decoration:none;">📘 Facebook</a>
             </p>
           </div>
+          <p style="color:#666;font-size:14px;">Köszönjük, hogy minket választott! 💛</p>
+        </div>`;
 
-          <p style="color: #666; font-size: 14px;">
-            Köszönjük, hogy minket választott! 💛
-          </p>
-        </div>
-      `;
+      const customerText = `Kiscsibe – Rendelés visszaigazolás
 
-      const emailText = `
-        Kiscsibe – Rendelés visszaigazolás
+Kedves ${customer.name}!
 
-        Kedves ${customer.name}!
+Rendelés kód: ${orderCode}
+Telefonszám: ${customer.phone}
+Átvétel: ${pickupDisplay}
+Fizetés: ${paymentLabel}
+${customer.notes ? `Megjegyzés: ${customer.notes}\n` : ''}
+Rendelt termékek:
+${buildItemsText()}
 
-        Köszönjük rendelését! Az alábbi részletekkel rögzítettük:
+Összesen: ${calculatedTotal.toLocaleString()} Ft
+${loyaltyReward ? `\nHűségkupon: ${loyaltyReward.coupon_code}` : ''}
 
-        Rendelés kód: ${orderCode}
-        Telefonszám: ${customer.phone}
-        ${pickup_time ? `Átvétel: ${new Date(pickup_time).toLocaleString('hu-HU')}` : 'Átvétel: Amilyen hamar lehet'}
-        Fizetés: ${payment_method_final === 'cash' ? 'Készpénz' : 'Kártya'}
-        ${customer.notes ? `Megjegyzés: ${customer.notes}` : ''}
-
-        Rendelt termékek:
-        ${validatedItems.map(item => `- ${item.name_snapshot} × ${item.qty}: ${item.line_total_huf.toLocaleString()} Ft${item.modifiers.length > 0 ? ` (+ ${item.modifiers.map(mod => mod.label_snapshot).join(', ')})` : ''}`).join('\n')}
-
-        Összesen: ${calculatedTotal.toLocaleString()} Ft
-        ${loyaltyReward ? `\nHűségkupon: ${loyaltyReward.coupon_code} (${loyaltyReward.discount_type === 'percentage' ? `${loyaltyReward.discount_value}%` : `${loyaltyReward.discount_value} Ft`} kedvezmény)` : ''}
-
-        Kiscsibe Reggeliző & Étterem
-        1141 Budapest, Vezér u. 110.
-        H–P: 7:00–15:00 | Szo: 8:00–14:00 | V: Zárva
-        Facebook: https://www.facebook.com/kiscsibeetteremXIV
-        Köszönjük, hogy minket választott! 💛
-      `;
-
-      // Fire-and-forget: do NOT block the response on Resend. If email is slow
-      // and the edge function times out, the client sees an error and retries —
-      // creating duplicate orders. EdgeRuntime.waitUntil keeps the promise
-      // alive after we've already returned success to the browser.
-      // Feladó a tulaj bejáratott domainjén (kötőjel NÉLKÜL). A régi
-      // "rendeles@kiscsibe-etterem.hu" (kötőjeles) csendben 403-mal
-      // elhalhatott, ha csak a kiscsibeetterem.hu volt verifikálva a Resendben.
-      const emailPromise = resend.emails.send({
-        from: 'Kiscsibe Étterem <rendeles@kiscsibeetterem.hu>',
-        to: [customer.email],
-        bcc: ['info@kiscsibeetterem.hu', 'gataibence@gmail.com'],
-        subject: `Kiscsibe – rendelés visszaigazolás #${orderCode}`,
-        html: emailHtml,
-        text: emailText,
-      }).then(async () => {
-        console.log(`[${requestId}] Confirmation email sent to:`, customer.email);
-        // Naplózzuk sikeres kimenetet is, hogy az admin diagnosztikából
-        // egyértelműen látszódjon, hogy a Resend elfogadta a küldést.
-        if (attemptCtx.session_id && attemptCtx.supabase) {
-          try {
-            await attemptCtx.supabase.from('abandoned_carts').update({
-              cart_snapshot: {
-                items: attemptCtx.items || [],
-                diagnostic: {
-                  step: 'submit_success',
-                  email_send_status: 'sent',
-                  email_to: customer.email,
-                  request_id: requestId,
-                  recorded_at: new Date().toISOString(),
-                },
-              },
-            }).eq('session_id', attemptCtx.session_id);
-          } catch (_) { /* non-fatal */ }
-        }
-      }).catch(async (emailError) => {
-        console.error(`[${requestId}] Email sending failed:`, emailError);
-        // Kritikus: ha az email küldés hibázik (pl. Resend domain nem
-        // verifikált, kvóta elfogyott), az admin panelen látszódjon.
-        if (attemptCtx.session_id && attemptCtx.supabase) {
-          try {
-            await attemptCtx.supabase.from('abandoned_carts').update({
-              cart_snapshot: {
-                items: attemptCtx.items || [],
-                diagnostic: {
-                  step: 'submit_success',
-                  email_send_status: 'failed',
-                  email_to: customer.email,
-                  email_error: String(emailError?.message || emailError),
-                  request_id: requestId,
-                  recorded_at: new Date().toISOString(),
-                },
-              },
-            }).eq('session_id', attemptCtx.session_id);
-          } catch (_) { /* non-fatal */ }
-        }
-      });
+Kiscsibe Reggeliző & Étterem
+1141 Budapest, Vezér u. 110.
+`;
 
       try {
-        // deno-lint-ignore no-explicit-any
-        (globalThis as any).EdgeRuntime?.waitUntil?.(emailPromise);
-      } catch (_) { /* runtime may not support waitUntil — promise still lives briefly */ }
+        const { data, error } = await resend.emails.send({
+          from: 'Kiscsibe Étterem <rendeles@kiscsibeetterem.hu>',
+          to: [customer.email],
+          subject: `Kiscsibe – rendelés visszaigazolás #${orderCode}`,
+          html: customerHtml,
+          text: customerText,
+        });
+        if (error) throw error;
+        console.log(`[${requestId}] Customer confirmation sent to ${customer.email} (id=${data?.id ?? 'n/a'})`);
+        await logEmailAttempt('customer_confirmation', customer.email, 'sent', data?.id ?? null, null);
+      } catch (err) {
+        const msg = String((err as any)?.message ?? err);
+        console.error(`[${requestId}] Customer confirmation to ${customer.email} failed:`, msg);
+        await logEmailAttempt('customer_confirmation', customer.email, 'failed', null, msg);
       }
-    } catch (emailError) {
-      console.error(`[${requestId}] Email preparation failed:`, emailError);
-    }
+    };
+
+    // Fire-and-forget mindkét ág, waitUntil mögött — ne blokkolja a submit-ot.
+    const emailPromise = Promise.allSettled([sendAdminEmails(), sendCustomerEmail()]);
+    try {
+      // deno-lint-ignore no-explicit-any
+      (globalThis as any).EdgeRuntime?.waitUntil?.(emailPromise);
+    } catch (_) { /* runtime may not support waitUntil */ }
 
     console.log(`[${requestId}] Order completed successfully:`, orderCode);
 
