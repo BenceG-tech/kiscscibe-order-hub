@@ -376,9 +376,12 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
     pendingCount: pendingOrders.length,
     newOrdersCount,
     dismissNotification,
+    dismissOrder,
+    dismissAll,
     clearNewOrdersCount,
     audioUnlocked,
     playNotificationSound,
     lastNewOrderAt,
   };
 };
+
