@@ -791,6 +791,7 @@ const ActiveOrderCard = ({
                 <StatusIcon className="h-3 w-3 mr-1" />
                 {statusConfig.label}
               </Badge>
+              <EmailStatusBadge status={order.email_status} />
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
               <Calendar className="h-4 w-4 inline mr-1" />
