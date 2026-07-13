@@ -203,6 +203,7 @@ serve(async (req) => {
       items,
       coupon_code,
       session_id,
+      idempotency_bucket: clientIdempotencyBucket,
     }: OrderRequest = await req.json();
 
     // Backward-compat + safety net: whitelist payment_method so we never bounce off the check constraint.
