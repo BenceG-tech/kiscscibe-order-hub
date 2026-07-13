@@ -209,7 +209,7 @@ const OrdersManagement = () => {
       return;
     }
 
-    const mapped = (data || []).map((order: any) => ({
+    const mapped: Order[] = (data || []).map((order: any) => ({
       ...order,
       items: (order.order_items || []).map((item: any) => ({
         id: item.id,
@@ -225,6 +225,19 @@ const OrdersManagement = () => {
         })),
       })),
     }));
+
+    // Batch-fetch email_send_log for visible orders and merge status.
+    const orderIds = mapped.map((o) => o.id);
+    if (orderIds.length > 0) {
+      const { data: logs, error: logErr } = await supabase
+        .from("email_send_log" as any)
+        .select("order_id, email_type, status, created_at")
+        .in("order_id", orderIds);
+      if (!logErr && logs) {
+        const summaryMap = aggregateEmailLogs(logs as any);
+        for (const o of mapped) o.email_status = summaryMap.get(o.id);
+      }
+    }
 
     setOrders(mapped);
     setLoading(false);
