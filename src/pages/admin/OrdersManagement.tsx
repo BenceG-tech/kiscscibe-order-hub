@@ -1208,6 +1208,7 @@ const PastOrderAdminCard = ({
               >
                 {order.status === "completed" ? "Átvéve" : "Lemondva"}
               </Badge>
+              <EmailStatusBadge status={order.email_status} />
               {expanded ? (
                 <ChevronDown className="h-4 w-4 text-muted-foreground" />
               ) : (
