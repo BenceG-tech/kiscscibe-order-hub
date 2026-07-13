@@ -562,8 +562,35 @@ serve(async (req) => {
       if (dailyDate !== nowBudapest.date) {
         throw new Error('Napi ajánlatot csak a saját napjára, időpont választással lehet előrendelni');
       }
-      if (!isBudapestLunchWindow(nowBudapest.date, nowBudapest.time)) {
-        throw new Error('Napi ajánlatot mielőbbi átvétellel csak 10:30 és 15:00 között lehet rendelni');
+      const isBreakfastOnlyCart = (items || []).length > 0
+        && (items || []).every((it: any) => it?.is_breakfast === true);
+      if (!isWithinPickupWindow(nowBudapest.date, nowBudapest.time, isBreakfastOnlyCart)) {
+        const win = isBreakfastOnlyCart ? '07:00 és 10:00' : '10:30 és 16:00';
+        throw new Error(`Mielőbbi átvétellel csak ${win} között lehet rendelni`);
+      }
+      const [nowH, nowM] = nowBudapest.time.split(':').map(Number);
+      if (nowH * 60 + nowM >= TODAY_ORDER_CUTOFF_MIN) {
+        throw new Error('Ma már nem tudunk új rendelést fogadni (15:30 után).');
+      }
+    }
+
+    // Extra safety net: ASAP order with no pickup_time / pickup_date at all.
+    // Previously this path completely bypassed weekend/hours validation.
+    if (!pickup_date && !pickup_time_slot && !pickup_time) {
+      const nowBudapest = getBudapestParts();
+      const dow = budapestDayOfWeek(nowBudapest.date);
+      if (dow === 0 || dow === 6) {
+        throw new Error('Hétvégén zárva tartunk — kérjük hétfőn (vagy egy nyitva tartó napra) adj le rendelést.');
+      }
+      const isBreakfastOnlyCart = (items || []).length > 0
+        && (items || []).every((it: any) => it?.is_breakfast === true);
+      if (!isWithinPickupWindow(nowBudapest.date, nowBudapest.time, isBreakfastOnlyCart)) {
+        const win = isBreakfastOnlyCart ? '07:00 és 10:00' : '10:30 és 16:00';
+        throw new Error(`Éppen zárva vagyunk — mielőbbi átvételes rendelés csak ${win} között lehetséges.`);
+      }
+      const [nowH, nowM] = nowBudapest.time.split(':').map(Number);
+      if (nowH * 60 + nowM >= TODAY_ORDER_CUTOFF_MIN) {
+        throw new Error('Ma már nem tudunk új rendelést fogadni (15:30 után). Kérjük válassz holnapi időpontot.');
       }
     }
 
