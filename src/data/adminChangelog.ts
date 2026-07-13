@@ -13,7 +13,15 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-07-13",
-    title: "Sürgős rendelésleadási audit: telefon, email és időpont blokkolások javítása",
+    title: "KRITIKUS javítás: napi teljes menük (leves+főétel csomag) rendelése nem működött",
+    description:
+      "Sürgős audit után kiderült, hogy a napi TELJES menüt (leves + főétel csomag) tartalmazó rendelések MINDEGYIKE csendben elutasításra került hónapok óta. Az ok: a készletkezelő adatbázis-függvény nem ismerte fel a napi teljes menük tábláját (`daily_offer_menus`), és 'Invalid table name' hibával eldobta a rendelést, mielőtt bármi mentődött volna. Ez magyarázza a nagy értékű (20-30 000 Ft-os) elveszett rendeléseket, mert éppen a törzsvendégek rendeltek komplett menüt. Ezzel együtt javítottuk: (1) DUPLA KATTINTÁS: a rendelés gomb most `useRef`-alapú zárral még a React újrarajzolás ELŐTT blokkol, tehát dupla kattintás / lassú hálózat esetén sem futhat le kétszer a submit. (2) HÁLÓZATI HIBA RETRY: ha kimarad az internet vagy a szerver timeoutol, piros dobozban egyértelmű üzenet jelenik meg és a gomb ismét aktív — a rendszer 15 percen belül ugyanazt a rendelési szándékot ismeri fel és nem hoz létre duplikátumot (idempotency bucket). (3) NYITVATARTÁS EGYSÉGESÍTVE: minden réteg (frontend, backend, DB trigger) most a valós nyitvatartást tudja — H-P 07:00-16:00 nyitva, ebéd átvétele 10:30-tól, 15:30 után aznapi rendelés már nem fogadható, csak holnaptól. (4) ASAP RENDELÉS VÉDELEM: mielőbbi-átvételes rendelés is validálódik (eddig csendben átment hétvégén / záráskor).",
+    type: "fixed",
+    tabGroup: "orders",
+  },
+  {
+    date: "2026-07-13",
+    title: "Rendelésleadási audit: telefon, email és időpont blokkolások javítása",
     description:
       "A rendelési útvonalon több olyan kliensoldali blokkolót találtunk, ami miatt a vendég rendelése el sem jutott a szerverig, ezért az étterem sem rendelést, sem sikertelen próbálkozást nem látott. Javítás: az email már nem kötelező, a telefonszám elfogadja a 06 / +36 / 36 / szóközös formátumokat, a böngésző natív email-validációja nem állítja meg némán a formot, minden rendelés gomb-kattintás azonnal naplózódik, a validációs blokkolások is megjelennek a Félbehagyott/Sikertelen nézetben, az időpontlista 15:00-ig enged, és az ellenőrzések Budapest-idő szerint futnak.",
     type: "fixed",
