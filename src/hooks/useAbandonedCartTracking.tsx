@@ -1,8 +1,10 @@
 import { useEffect, useRef } from "react";
 
 const SESSION_KEY = "kc_cart_session_id";
+const SUPABASE_URL_FALLBACK = "https://gvtsbnivuysunnjrpndk.supabase.co";
+const SUPABASE_ANON_KEY_FALLBACK = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd2dHNibml2dXlzdW5uanJwbmRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3OTU2OTMsImV4cCI6MjA3MzM3MTY5M30.F2jdRSnEJYKD8ryCFRbGZUC6_ksED6iPVDhc638STd8";
 
-type CheckoutTrackingStep = "details" | "submit_attempt" | "submit_failed" | "submit_success";
+type CheckoutTrackingStep = "details" | "submit_attempt" | "submit_failed" | "submit_success" | "validation_blocked";
 
 export function getCartSessionId(): string {
   try {
@@ -52,8 +54,8 @@ export async function persistCheckoutSnapshot({
   errorMessage,
 }: PersistCheckoutSnapshotArgs): Promise<boolean> {
   try {
-    const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string) || "https://gvtsbnivuysunnjrpndk.supabase.co";
-    const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+    const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string) || SUPABASE_URL_FALLBACK;
+    const anonKey = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string) || SUPABASE_ANON_KEY_FALLBACK;
     if (!supabaseUrl || !anonKey || !sessionId) return false;
 
     const recordedAt = new Date().toISOString();

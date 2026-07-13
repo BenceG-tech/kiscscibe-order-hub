@@ -12,6 +12,14 @@ export interface ChangelogEntry {
 // Newest first
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: "2026-07-13",
+    title: "Sürgős rendelésleadási audit: telefon, email és időpont blokkolások javítása",
+    description:
+      "A rendelési útvonalon több olyan kliensoldali blokkolót találtunk, ami miatt a vendég rendelése el sem jutott a szerverig, ezért az étterem sem rendelést, sem sikertelen próbálkozást nem látott. Javítás: az email már nem kötelező, a telefonszám elfogadja a 06 / +36 / 36 / szóközös formátumokat, a böngésző natív email-validációja nem állítja meg némán a formot, minden rendelés gomb-kattintás azonnal naplózódik, a validációs blokkolások is megjelennek a Félbehagyott/Sikertelen nézetben, az időpontlista 15:00-ig enged, és az ellenőrzések Budapest-idő szerint futnak.",
+    type: "fixed",
+    tabGroup: "orders",
+  },
+  {
     date: "2026-07-02",
     title: "Nagy rendelés-audit: duplikátum-védelem, kupon-verseny, realtime flap javítás",
     description:

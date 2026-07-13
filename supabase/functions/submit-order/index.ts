@@ -53,6 +53,14 @@ function budapestDayOfWeek(dateStr: string): number {
   return new Date(Date.UTC(y, mo - 1, da)).getUTCDay();
 }
 
+function isBudapestLunchWindow(dateStr: string, timeStr: string): boolean {
+  const dow = budapestDayOfWeek(dateStr);
+  if (dow === 0 || dow === 6) return false;
+  const [hours, minutes] = timeStr.split(':').map(Number);
+  const totalMinutes = hours * 60 + minutes;
+  return totalMinutes >= 10 * 60 + 30 && totalMinutes <= 15 * 60;
+}
+
 
 interface OrderModifier {
   label_snapshot: string;
@@ -81,7 +89,7 @@ interface OrderItem {
 interface CustomerInfo {
   name: string;
   phone: string;
-  email: string;
+  email?: string | null;
   notes?: string;
 }
 
@@ -199,7 +207,7 @@ serve(async (req) => {
     console.log(`[${requestId}] Processing order for:`, customer.name, 'with', items.length, 'items');
 
     // Validate required fields
-    if (!customer.name || !customer.phone || !customer.email) {
+    if (!customer.name || !customer.phone) {
       throw new Error('Hiányzó kötelező adatok');
     }
 
@@ -311,6 +319,8 @@ serve(async (req) => {
       }
     }
 
+    const validatedDailyDates = new Set<string>();
+
     // Handle daily items (offers and menus)
     if (dailyItems.length > 0) {
       for (const item of dailyItems) {
@@ -394,6 +404,8 @@ serve(async (req) => {
           throw new Error(`Múltbeli dátumra nem lehet rendelni: ${itemDateStr}`);
         }
 
+        validatedDailyDates.add(itemDateStr);
+
         if (remainingPortions < item.qty) {
           throw new Error(`Nincs elég adag: ${item.name_snapshot} (maradt: ${remainingPortions})`);
         }
@@ -442,6 +454,20 @@ serve(async (req) => {
           }
         });
 
+      }
+    }
+
+    if (dailyItems.length > 0 && !pickup_date && !pickup_time_slot && !pickup_time) {
+      if (validatedDailyDates.size > 1) {
+        throw new Error('Különböző dátumú napi ajánlatok/menük nem rendelhetőek egyszerre');
+      }
+      const dailyDate = [...validatedDailyDates][0];
+      const nowBudapest = getBudapestParts();
+      if (dailyDate !== nowBudapest.date) {
+        throw new Error('Napi ajánlatot csak a saját napjára, időpont választással lehet előrendelni');
+      }
+      if (!isBudapestLunchWindow(nowBudapest.date, nowBudapest.time)) {
+        throw new Error('Napi ajánlatot mielőbbi átvétellel csak 10:30 és 15:00 között lehet rendelni');
       }
     }
 
@@ -963,6 +989,9 @@ serve(async (req) => {
 
     // Send confirmation email to customer
     try {
+      if (!customer.email) {
+        console.log(`[${requestId}] No customer email provided — skipping confirmation email.`);
+      } else {
       console.log(`[${requestId}] Preparing confirmation email for ${customer.email}`);
       
       const itemsHtml = validatedItems.map(item => {
@@ -1006,7 +1035,7 @@ serve(async (req) => {
             <p><strong>Rendelés kód:</strong> ${escapeHtml(orderCode)}</p>
             <p><strong>Telefonszám:</strong> ${escapeHtml(customer.phone)}</p>
             ${date && time ? `<p><strong>Átvétel:</strong> ${escapeHtml(date)} ${escapeHtml(time)}</p>` : '<p><strong>Átvétel:</strong> Amilyen hamar lehet</p>'}
-            <p><strong>Fizetés:</strong> ${payment_method === 'cash' ? 'Készpénz' : 'Kártya'}</p>
+            <p><strong>Fizetés:</strong> ${payment_method_final === 'cash' ? 'Készpénz' : 'Kártya'}</p>
             ${customer.notes ? `<p><strong>Megjegyzés:</strong> ${escapeHtml(customer.notes)}</p>` : ''}
           </div>
 
@@ -1058,7 +1087,7 @@ serve(async (req) => {
         Rendelés kód: ${orderCode}
         Telefonszám: ${customer.phone}
         ${pickup_time ? `Átvétel: ${new Date(pickup_time).toLocaleString('hu-HU')}` : 'Átvétel: Amilyen hamar lehet'}
-        Fizetés: ${payment_method === 'cash' ? 'Készpénz' : 'Kártya'}
+        Fizetés: ${payment_method_final === 'cash' ? 'Készpénz' : 'Kártya'}
         ${customer.notes ? `Megjegyzés: ${customer.notes}` : ''}
 
         Rendelt termékek:
@@ -1095,6 +1124,7 @@ serve(async (req) => {
         // deno-lint-ignore no-explicit-any
         (globalThis as any).EdgeRuntime?.waitUntil?.(emailPromise);
       } catch (_) { /* runtime may not support waitUntil — promise still lives briefly */ }
+      }
     } catch (emailError) {
       console.error(`[${requestId}] Email preparation failed:`, emailError);
     }
