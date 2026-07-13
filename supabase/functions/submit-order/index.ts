@@ -182,18 +182,59 @@ serve(async (req) => {
       session_id,
     }: OrderRequest = await req.json();
 
-    // Backward-compat: older clients sent 'card' which is not in orders_payment_method_check.
-    let payment_method_normalized = payment_method;
-    if (payment_method_normalized === 'card') {
-      console.warn(`[${requestId}] Legacy payment_method='card' received — normalizing to 'pos'`);
-      payment_method_normalized = 'pos';
+    // Backward-compat + safety net: whitelist payment_method so we never bounce off the check constraint.
+    const payment_method_final = normalizePaymentMethod(payment_method);
+    if (payment_method_final !== payment_method) {
+      console.warn(`[${requestId}] payment_method normalized: '${payment_method}' → '${payment_method_final}'`);
     }
-    const payment_method_final = payment_method_normalized;
+
+    // Server-side phone normalization → single canonical form.
+    // Keeps idempotency, loyalty and admin views consistent no matter what shape the client sent.
+    if (customer && typeof customer.phone === 'string') {
+      const normalized = normalizeHungarianPhoneServer(customer.phone);
+      if (normalized !== customer.phone) {
+        console.log(`[${requestId}] phone normalized: '${customer.phone}' → '${normalized}'`);
+        customer.phone = normalized;
+      }
+    }
 
     attemptCtx.customer = customer;
     attemptCtx.items = items || [];
     attemptCtx.payment_method = payment_method_final;
     attemptCtx.pickup_date = pickup_date || null;
+    attemptCtx.pickup_time_slot = pickup_time_slot || null;
+    attemptCtx.session_id = session_id || null;
+
+    // === Server-side "attempted submission" beacon ===
+    // Write to abandoned_carts using the service role IMMEDIATELY so we have a durable record
+    // even if the client-side x-session-id header is stripped by a CDN/proxy, or the browser
+    // crashes mid-request. This is our source-of-truth "someone tried to order" signal.
+    if (session_id) {
+      try {
+        await supabase.from('abandoned_carts').upsert({
+          session_id,
+          customer_name: customer?.name || null,
+          customer_phone: customer?.phone || null,
+          customer_email: customer?.email || null,
+          cart_snapshot: {
+            items: items || [],
+            diagnostic: {
+              step: 'submit_attempt',
+              source: 'edge_function',
+              request_id: requestId,
+              recorded_at: new Date().toISOString(),
+            },
+          },
+          total_huf: (items || []).reduce((s: number, it: any) => s + (Number(it?.qty) || 0) * (Number(it?.unit_price_huf) || 0), 0),
+          step: 'submit_attempt',
+          user_agent: attemptCtx.userAgent,
+          last_activity_at: new Date().toISOString(),
+        }, { onConflict: 'session_id' });
+      } catch (e) {
+        console.warn(`[${requestId}] Server-side submit_attempt beacon failed (non-fatal):`, e);
+      }
+    }
+
     attemptCtx.pickup_time_slot = pickup_time_slot || null;
     attemptCtx.session_id = session_id || null;
 
