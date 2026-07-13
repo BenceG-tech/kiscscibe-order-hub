@@ -1,49 +1,84 @@
-## Diagnosztikai futtatás — B → A sorrend
+## RLS-regresszió fix — Opció A, minimális önálló commit
 
-Célja: eldönteni, hogy a rendelés-elakadás oka **RLS-regresszió** (`is_admin` permission denied az anon útvonalon), **Realtime hiba**, vagy **egyik sem**. Kód-változtatás nincs, csak bizonyíték-gyűjtés.
+Csak és kizárólag az RLS policy-k átírása. K1/K2/egyéb javítás **nem része** ennek a commitnak.
 
-### B) Anon frontend smoke (először)
+### 1. Idővonal-egyeztetés (fix ELŐTT, jelentéssel)
 
-1. **Direkt anon REST curl-ök** a Supabase REST-en, `apikey=<anon>` + `Authorization: Bearer <anon>` fejlécekkel, pontosan a frontend query-kre:
-   - `GET /rest/v1/menu_items?select=*&is_active=eq.true`
-   - `GET /rest/v1/daily_menus?select=*&date=eq.<ma>`
-   - `GET /rest/v1/daily_menu_items?select=*`
-   - `GET /rest/v1/daily_offer_menus?select=*`
-   - `GET /rest/v1/capacity_slots?select=*&date=eq.<ma>`
-   - `POST /rest/v1/rpc/get_daily_data` body `{ "target_date": "<ma>" }`
-   
-   Minden hívás HTTP státuszát + response bodyt rögzítem. `permission denied for function is_admin` = találat.
+Két read-only lekérdezés a diagnózis validálására:
 
-2. **Playwright** headless Chromium, `viewport 1280x1800`, cache kikapcsolva (`context = browser.new_context(bypass_csp=True)` + `page.route` cache-headerekkel), incognito-szerű friss context, hard reload a `/` és `/etlap` oldalakra. Console + network hibák kigyűjtése, screenshot.
+```sql
+SELECT version, name FROM supabase_migrations.schema_migrations
+ WHERE version >= '20260701' ORDER BY version;
+```
 
-3. **Ha bármelyik REST hívás elesik**: `supabase--read_query` `EXPLAIN`-nel `authenticated` role szimulációval (`SET LOCAL role authenticated`), és a `pg_policies` táblából lekérdezem a table policy-ket, hogy megnevezhessem melyik policy ág hivatkozik `is_admin`-ra. Két fix-javaslatot jelentek, de **nem javítok**:
-   - (a) `GRANT EXECUTE ON FUNCTION public.is_admin(uuid) TO anon` visszaadása, vagy
-   - (b) policy átírás: `is_admin` hívás áthelyezése `SELECT public.is_admin(...)` szubszelekt alá vagy két külön policy szétválasztása (`FOR SELECT TO anon USING (is_published)` + `FOR SELECT TO authenticated USING (is_admin(...) OR is_published)`).
+Majd az érintett migrációk SQL tartalmának letöltése (a `supabase/migrations/` fájlokból), grep `REVOKE` + `is_admin` mintára, hogy pontosan azonosítható legyen **az első** anon EXECUTE revoke migrációja.
 
-### A) T9 Realtime INSERT smoke (B után)
+**Két lehetséges kimenet:**
+- (a) Az első revoke 07-02 körüli → magyarázza a 07-02-i leállást; jelentem és megyünk a fix-re.
+- (b) Az első revoke csak 07-13-i → **STOP**: második gyökér-ok létezik a 07-02–07-12 időszakra. Nem javítok, hanem `postgres_logs` mélyebb analitikáját futtatom (2026-07-01 → 07-12) a `permission denied for function` mintára, és a `submit-order` `edge_logs`-ot ugyanerre az időszakra. A user jóváhagyása nélkül nem megyek tovább.
 
-Előfeltételek betartva:
-- `pickup_time` = **holnap 10:00 Europe/Budapest** (hétköznap; ha holnap hétvége, a legközelebbi hétköznap 10:00). Elkerüli a `validate_order_date_trigger`-t.
-- `code = 'TEST_' || substr(gen_random_uuid()::text,1,6)`, `name='RENDSZERTESZT'`, `phone='+36000000000'`, `total_huf=1`, `status='new'`, `payment_method='cash'`, `notes='T9 smoke — törlendő'`.
-- **Figyelmeztetés a tulajnak**: pontos időpontot előre jelzek üzenetben ("Most futtatom, ~10 mp múlva TEST_ értesítés jöhet"). Az `A` szakaszt csak azután indítom.
+### 2. Coupons: NEM nyitunk anon SELECT-et
 
-Lépések:
-1. Playwright script indít egy háttér-listener klienset (anon apikey nem elég — Realtime a `orders`-re az `SELECT` policy alapján fut; szükség lehet egy staff/admin session-re). A preview-session token használata itt megfelelő, mert az admin csatornát pont ő látja.
-2. Két csatornára feliratkozom párhuzamosan, ahogy a frontend teszi: `order-notifications-*` és bármely `orders-changes-*` mintát is figyelek. Rögzítem a `SUBSCRIBED` ack idejét.
-3. `supabase--insert` INSERT a fenti sorral. `t0 = INSERT válasz`. Rögzítem: `t1_channel1`, `t1_channel2` — Realtime esemény beérkezésének idői, delta ms-ben.
-4. Azonnali cleanup: `DELETE FROM orders WHERE code = '<test_code>'`, plusz `order_items` / `capacity_slots` (nincs is, hiszen nem hívjuk a submit-order edge fn-t) — csak az orders sor.
-5. Rögzítem: `edge_logs` (`submit-order`) érintetlen (nem hívtuk); `postgres_logs`-ban látszik-e a trigger sikere.
+- **Kód-audit előre**: `rg -n "from\(['\"]coupons" src/` + `rg -n "\.rpc\(.*coupon" src/` — megnézem, van-e kliens-oldali `.from('coupons').select(...)` anon hívás.
+- Létező helyzet: a `validate_coupon_code(p_code, p_order_total)` RPC már létezik és `SECURITY DEFINER`, csak érvényességet ad vissza, nem listáz — a kliens ezt hívja. Nem kell új RPC.
+- **Fix**: `"Admin full access to coupons"` policy scope `{public}` → `{authenticated}`. Anon SELECT policy **nem** készül.
+- Ha az audit talál közvetlen `.from('coupons').select(...)` anon hívást: **STOP** és jelentem — kód-refaktor kell hozzá, ami már nem RLS-fix.
+
+### 3. Szisztematikus sweep — nem csak az 5 találat
+
+Előfutás (read-only):
+
+```sql
+SELECT tablename, policyname, roles::text, cmd, qual, with_check
+FROM pg_policies
+WHERE schemaname='public'
+  AND roles::text = '{public}'
+  AND (qual ~ 'is_admin|is_admin_or_staff|is_staff|is_owner|has_role'
+    OR with_check ~ 'is_admin|is_admin_or_staff|is_staff|is_owner|has_role');
+```
+
+Az EDÉSZ találati listát a migrációban lekezelem, két minta szerint:
+
+**Minta A — csak admin/staff/mutáció policy (nincs anon szükséglet):**
+`DROP POLICY ... ; CREATE POLICY ... TO authenticated USING (is_admin(auth.uid()))` (`{public}` → `{authenticated}` szűkítés, változatlan qual).
+
+**Minta B — vegyes: publikus olvasás + admin bypass egy policy-ban (menu_items, daily_offers, daily_offer_items, daily_offer_menus mintája):**
+Szétbontás két külön policy-ra:
+```sql
+-- Anon: csak a publikus feltétel, függvényhívás NÉLKÜL
+CREATE POLICY "Anon can view <x>" ON public.<t> FOR SELECT TO anon
+  USING (<publikus_feltétel>);
+-- Authenticated: publikus VAGY admin
+CREATE POLICY "Authenticated can view <x>" ON public.<t> FOR SELECT TO authenticated
+  USING (<publikus_feltétel> OR public.is_admin_or_staff(auth.uid()));
+```
+
+**Már ismert érintettek (bővíthető a sweep alapján):**
+`menu_items`, `daily_offers`, `daily_offer_items`, `daily_offer_menus`, `coupons`. Az audit alapján valószínűleg még: `menu_item_sides`, `menu_categories`, `daily_menus`, `daily_menu_items`, `capacity_slots` (UPDATE), `gallery_images`, `item_modifiers`, `item_modifier_options`, `blackout_dates`, `settings` — de a sweep query végleges listája dönt.
+
+A `service_role` policy-kat és auth-only táblák (`orders`, `profiles`, `user_roles`, `invoices`, stb.) admin policy-jait **nem** módosítom, ha nincs `{public}`+`is_*` kombináció.
+
+### 4. Verifikáció a fix után (mielőtt lezárom)
+
+Négy explicit lépés, mindegyik pass kell:
+
+1. **Anon curl mátrix**: minden érintett tábla + a sweep listája → mind `HTTP 200`. Táblázatos jelentés.
+2. **Playwright anon inkognitó, end-to-end**: `/` → `/etlap` → item kosárba → `/checkout` → form kitöltés (teszt telefonszám `+36301234567`, holnap 10:00 pickup) → submit → `/order-confirmation` betöltés. **Screenshot minden lépésnél.** Ez az email-ágat is éles teszteli (Resend valóban küld → utána a rendelést töröljük).
+3. **`postgres_logs`** a Playwright futás időablakára szűrve: `event_message ~ 'permission denied for function'` **0 találat kell**.
+4. **Admin realtime**: külön Playwright tab admin session-nel a `/admin/orders`-en, screenshot közvetlenül a submit után **refresh nélkül** — a teszt-rendelés látszik-e.
+
+Ha bármelyik pass el nem éri: rollback nem kell (a policy-k idempotensek DROP+CREATE-tel), de jelentem és nem lezárom.
+
+**Cleanup**: a Playwright teszt-rendelés törlése azonnal (`DELETE FROM orders WHERE code = 'TEST_...'`), plus a hozzátartozó `order_items`, `capacity_slots.booked_orders--`.
+
+### 5. Commit-scope korlát
+
+- Egyetlen migráció (`fix_rls_anon_regression`).
+- **Nem** módosítok: Realtime hookokat (K1), `submit-order` edge fn-t, `validate_order_date` triggert (K3), tranzakciós refaktort (K2), sw.js-t, egyéb frontendet.
+- Egyetlen kivétel a scope-on belül: **ha** a coupons kód-audit anon-`.from('coupons')` hívást talál, **STOP** és külön kérdezek — nem toldom hozzá csendben.
 
 ### Kimenet, amit adok
 
-Táblázat:
-- **Hipotézis:** RLS-regresszió (`is_admin` anon-nak) — igazolt / cáfolt, bizonyítékkal (HTTP státusz + policy név).
-- **Hipotézis:** Realtime — igazolt / cáfolt (delta ms + mindkét csatorna kapta-e).
-- **Egyéb váratlan lelet** ha van.
-- **Következő javaslat**: melyik fixet kellene elsőként jóváhagyni (K3/RLS vs. K1/Realtime dedup vs. K2/tranzakció). **Kódot nem módosítok**, csak jelentek.
-
-### Kockázatkezelés
-
-- T9 INSERT `bypass`-olja a `submit-order` edge fn-t, tehát: nem küld emailt (Resend nem hívódik), nem foglal kapacitást (`capacity_slots` érintetlen), nem hoz létre `order_items`-et. Tiszta Realtime-teszt.
-- A törlés az INSERT után max 5 mp-en belül lefut → invoice-trigger nem sül el (csak `status='completed'`-re fut).
-- Ha a tulaj offline: 0 hangos értesítés kockázat. Ha online: max 1 rövid teszt-hang, előre bejelentve.
+- Idővonal-jelentés (1. pont) → várok jóváhagyásra, ha (b) forgatókönyv áll fenn.
+- Sweep-találati lista + migráció SQL preview → migration tool → user approve.
+- Verifikációs jelentés (4×): anon curl mátrix, Playwright screenshot-sorozat, postgres_logs 0-találat bizonyíték, admin realtime screenshot.
