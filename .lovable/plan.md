@@ -1,81 +1,49 @@
+## Terv: valós próbarendelés + két bizonyíték-válasz + K1 lezárás
 
-## Idővonal-válasz (megismételve, egyértelműen)
+### 1. Bizonyíték-válasz #1 — timezone a 07-02-i `validate_pickup_time`-ben
 
-`SELECT version, name FROM supabase_migrations.schema_migrations WHERE version >= '20260625' ORDER BY version;` már lefutott az előző körben. Eredmény:
+A régi (`20260702072305`) trigger-törzs **helyesen** Budapest fali időben hasonlított — nem timezone-bug:
 
-| version | mit csinált (releváns rész) |
-|---|---|
-| 20260630093708 | `get_daily_data` létrehozás |
-| 20260630093724 | `REVOKE EXECUTE … get_daily_data FROM PUBLIC` + `GRANT … anon` (csak ez az egy fv) |
-| **20260702072303** | `validate_pickup_time` ablak **10:30–15:00**-ra szűkítve |
-| 20260702144801 | idempotency_key + `validate_order_date` 5 perc grace |
-| 20260713145510 | `update_daily_portions` + `daily_offer_menus` ág, `validate_pickup_time` → **07:00–16:00** javítás |
-| 20260713153108 | abandoned_carts dedupe |
-| **20260713154724** | tömeges `REVOKE EXECUTE … is_admin/is_admin_or_staff/is_staff/is_owner/has_role FROM anon` |
-| 20260713180046 | mai RLS-fix (általunk) |
-
-**Az anon EXECUTE először 2026-07-13 15:47 UTC-kor lett megvonva** (20260713154724). Ez **nem** magyarázza a 07-02-i leállást.
-
-### Döntés: „második ok gyanú" — kettős gyökérok
-
-A 07-02 óta tartó rendelés-leállás bizonyíték-alapú gyökéroka a **20260702072303**: `validate_pickup_time` **10:30–15:00**-ra szűkült. Következmény: minden 07:00–10:29 közötti reggeli és 15:01–16:00 közötti délutáni pickup INSERT-nél a `validate_order_date` trigger `RAISE EXCEPTION 'Pickup time is outside business hours'` → rollback → nincs `orders` sor → admin nem lát semmit → email nem indul. A 20260713145510 migráció commit-üzenete ezt explicit dokumentálja („previous lunch-only 10:30–15:00").
-
-A 07-13-i RLS regresszió (154724) ehhez képest egy második, független hiba: már csak az étlap anon olvasását törte, néhány órán át.
-
-**Mindkét gyökérok javítva:** validate_pickup_time (20260713145510), RLS anon (20260713180046). Verifikációhoz futni fog: `postgres_logs` grep `Pickup time is outside business hours` 07-02–07-13 közti retention-en → ha a mintázat 10:00 és 15:30 körüli időpontokra tömeges → diagnózis lezárva.
-
----
-
-## K1 verifikációs terv (build módban futtatva)
-
-Egyetlen turn-ben, három bizonyítékkal + idővonal-log-vizsgálattal.
-
-### 1. Anon E2E — Playwright inkognitó, hard reload
-
-Script: `/ + /etlap + kosárba tétel + /checkout-ig navigálás (submit nélkül)`. Rögzít: minden Supabase network kérés státusza, screenshot. **Elvárás: 0 db 4xx/5xx a supabase.co és functions.supabase.co host-ra.**
-
-### 2. K1-specifikus admin teszt — bejelentkezett tulaj sessionnel
-
-Playwright script `LOVABLE_BROWSER_SUPABASE_*` env-el restore-olva, `/admin/orders` betöltése, `console` capture bekapcsolva. Lépések:
-
-**(a) Egyetlen forrás:** grep a console-ban `useRealtimeOrders` vs `[Notifications]` toast/hang előfordulást. Elvárás: `useRealtimeOrders` **nem** logol értesítést, csak `[Notifications] 🔔 New order` jön.
-
-**(b) Egyszeri értesítés — kontrollált INSERT/DELETE:**
 ```sql
-INSERT INTO orders (code, name, phone, total_huf, status, payment_method, pickup_time, notes)
-VALUES ('TEST_K1', 'TEST_K1_dedupe', '+36301234567', 100, 'new', 'cash',
-        (NOW() + INTERVAL '2 hours')::timestamptz, 'K1_TEST_MARKER');
--- 3s várakozás, screenshot, majd:
-DELETE FROM orders WHERE notes = 'K1_TEST_MARKER';
+local_ts := (pickup_datetime AT TIME ZONE 'Europe/Budapest');
+pickup_time_local := local_ts::time;
+...
+IF pickup_time_local < '10:30'::time OR pickup_time_local > '15:00'::time THEN
+    RETURN false;
+END IF;
 ```
-Idő: azonnal a teszt elején, hogy a tulaj ne kapja el. Elvárás: `[Notifications] 🔔 New order: TEST_K1` **pontosan 1×**, `OrderNotificationModal` render **1×**, `useRealtimeOrders` INSERT handler is lefut (lista frissül) de nem szól. Rögzített időbélyeg-diff INSERT ↔ két csatorna realtime event között.
 
-**(c) Exponenciális backoff:** böngészőben `supabase.removeChannel(channel)` + `channel.unsubscribe()` erőltetéssel, majd offline/online togglerrel csatornahiba szimuláció. Grep: `[useRealtimeOrders] Channel status=... — reconnect in Xms (attempt N)`. Elvárás: **2000 → 4000 → 8000 → 16000 ms** progresszió, nem fix 3000.
+Ítélet: **nem timezone-eltolódás**, hanem valódi ablak-szűkítés — a fejlesztő szándékosan (vagy tévedésből) csak ebédidőre engedte a rendeléseket. Reggeli (07:00–10:29) és késő délutáni (15:01–16:00) pickup-ok mind elhasaltak a `validate_order_date` triggeren. Ez az egyetlen gyökérok a 07-02-i leálláshoz.
 
-### 3. postgres_logs — teszt-ablak
+### 2. Bizonyíték-válasz #2 — miért csak 1 `order_attempts` rekord
 
-A teszt ISO-timestamp-tartományában: `event_message ILIKE '%permission denied%'` count = **0**. Egyben lefuttatom a régi `Pickup time is outside business hours` grep-et is 07-02–07-13-ra a retention határáig, hogy az idővonal-diagnózis második okát empirikusan is lezárjam.
+Adatbázis-lekérdezések eredménye (07-02 → 07-14):
+- `orders`: **2 sor** (mindkettő 07-02)
+- `order_attempts`: **1 sor** (07-02 06:05 UTC)
+- `abandoned_carts`: **0 sor**
 
-### Kimenet
+A `submit-order` catch-ág **igenis ír** `order_attempts`-be és `abandoned_carts`-ba (service role, RLS-bypass — kódutalás: `submit-order/index.ts:1355, 1389`). Tehát ha lettek volna trigger-elutasított próbálkozások, itt látszaniuk kellene.
 
-Egyetlen verifikációs jelentés a chatben, benne:
-- 1., 2a., 2b., 2c. bizonyítékok (log-részlet + screenshot-utalás)
-- 3. `permission denied` count = 0
-- Idővonal-log ítélet: „diagnózis teljes: kettős gyökérok igazolva" **vagy** „harmadik ok gyanú: X"
+Két lehetséges olvasat, mindkettőt közlöm a tulajjal:
 
-## Ha zöld → M5+M4
+**(a) Ez a DB nem a produkciós adathalmaz.** `SELECT DATE(created_at), COUNT(*) FROM orders WHERE created_at >= '2026-06-25'` összesen 2 rendelést hoz, mindkettő 07-02. Egy működő étterem 10 nap alatt ennyi rendelést nem produkál. Valószínű: staging/dev környezet, vagy a produkciós rendelések másik projektben landolnak. **Ezt előbb tisztáznod kell a tulajjal**, mert ha igen, a 10 napos „leállás" itt nem is látható — csak a séma-hibát javítottuk, a hatás-becslést nem tudom számszerűsíteni ebből a DB-ből.
 
-Külön migráció:
-- `email_send_log` tábla: `id`, `order_id`, `recipient`, `email_type` (`customer`|`owner`|`bence`), `status` (`sent`|`failed`), `error text NULL`, `resend_message_id text NULL`, `created_at`. GRANTs: `authenticated` SELECT, `service_role` ALL. RLS: `is_admin_or_staff` SELECT.
-- `orders` publikációhoz kapcsolva marad; új tábla nem realtime.
+**(b) Ha ez tényleg a produkciós DB:** akkor a felhasználók 10 napig még próbálkozni sem próbáltak, mert az UI (`Checkout.tsx` client-side `validate_pickup_time`) még a `submit-order` hívás **előtt** blokkolta a rendelést → `submit-order` nem futott → catch-ág nem írt sehova. Vagyis a tracking-táblák hallgatása egybevág a totális UI-szintű blokkolással, és **veszteség-becsléshez a `postgres_logs`/edge function log-ok szükségesek**, nem a DB-táblák.
 
-Edge function (`submit-order`):
-- bcc-szétbontás: `resend.emails.send` külön hívás tulaj (`kiscsibeetterem@gmail.com`) és Bence címére. Egyenként log-sor.
-- vevőnek küldött email is log-sort ír.
-- minden send hívás try/catch, hiba esetén status=`failed` + error message rögzítve, de a rendelés-válasz sikeres marad (nem blokkoló).
+Kérdés a tulajhoz: melyik Supabase projekt-ref az élesé? Ha ez (`gvtsbnivuysunnjrpndk`), akkor (b) áll; ha másik, akkor a fenti számok irrelevánsak és át kell váltani a hatás-becsléshez.
 
-Frontend (`OrdersManagement`/rendeléslista):
-- új oszlop/badge: „Email" — összesített státusz az adott rendelésre (`email_send_log` join a rendeléshez). Ikonok: ✓ (mind sent), ⚠ (van failed), — (nincs sor).
-- Rendelés-részletnél lista: melyik címre mikor ment, mi a status/error.
+### 3. Valós próbarendelés-verifikáció (te vezérled)
 
-Verifikáció M5+M4 után: Playwright anon TELJES rendelés (submit-tel is), majd admin oldal ellenőrzés — 3 log sor (customer, owner, bence), mind ✓, `resend_message_id` kitöltve.
+Amikor jelzed „nyitva az admin, DevTools console fut":
+
+1. Te leadsz egy inkognitó próbarendelést telefonról, `notes` mezőbe „TEST_K1_LIVE".
+2. Én kérni fogom:
+   - console log copy-paste (grep: `[Notifications]`, `useRealtimeOrders`, `Channel status`) — bizonyíték 2b (dedupe = 1 toast + 1 modal + 1 sound).
+   - screenshot vagy megerősítés, hogy mindkét címzett (`kiscsibeetterem@gmail.com` + Bence) megkapta-e az emailt — ez az M5+M4 előtti empirikus email-baseline.
+3. Utána megadod a rendelés `code`-ját, és **egyetlen `supabase--migration`** cleanup fut: `DELETE FROM order_item_options WHERE order_item_id IN (…) ; DELETE FROM order_items WHERE order_id = … ; DELETE FROM invoices WHERE order_id = … ; DELETE FROM orders WHERE id = …` — a `create_invoice_on_order_complete` trigger miatt fontos az `invoices` sor kitörlése is, ha státusz `completed`-re ment.
+
+Ha 2b zöld (pontosan 1 értesítés) és mindkét email megjött **VAGY** a hiányzó email dokumentálva → K1 lezárva → **M5+M4 következik** (email_send_log tábla + bcc-szétbontás + admin Email státusz oszlop) a korábbi terv szerint.
+
+### Fájl-változás ebben a lépésben
+
+Nincs. Csak olvasás + a te live rendelésed + cleanup migráció a rendelés után.
