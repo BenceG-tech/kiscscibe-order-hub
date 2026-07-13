@@ -130,11 +130,13 @@ const OrdersManagement = () => {
   const [showArchived, setShowArchived] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [trackingCounts, setTrackingCounts] = useState({ failed: 0, abandoned: 0 });
 
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchOrders();
+    fetchTrackingCounts();
 
     const channel = supabase
       .channel("orders-updates")
@@ -152,11 +154,15 @@ const OrdersManagement = () => {
     // Polling fallback: refresh every 30s in case realtime drops
     const pollInterval = setInterval(() => {
       fetchOrders();
+      fetchTrackingCounts();
     }, 30000);
 
     // Refresh immediately when tab becomes visible again
     const onVisibility = () => {
-      if (document.visibilityState === "visible") fetchOrders();
+      if (document.visibilityState === "visible") {
+        fetchOrders();
+        fetchTrackingCounts();
+      }
     };
     document.addEventListener("visibilitychange", onVisibility);
 
@@ -220,6 +226,33 @@ const OrdersManagement = () => {
 
     setOrders(mapped);
     setLoading(false);
+  };
+
+  const fetchTrackingCounts = async () => {
+    try {
+      const cutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      const [attemptsResult, cartsResult] = await Promise.all([
+        supabase.from("order_attempts" as any).select("id").limit(200),
+        supabase
+          .from("abandoned_carts" as any)
+          .select("id, step, last_activity_at")
+          .is("converted_order_id", null)
+          .order("last_activity_at", { ascending: false })
+          .limit(200),
+      ]);
+
+      const failed = attemptsResult.error ? 0 : ((attemptsResult.data as any[]) || []).length;
+      const abandoned = cartsResult.error
+        ? 0
+        : (((cartsResult.data as any[]) || []).filter((item) => {
+            const step = String(item.step || "");
+            return step.startsWith("submit_") || String(item.last_activity_at || "") < cutoff;
+          }).length);
+
+      setTrackingCounts({ failed, abandoned });
+    } catch (error) {
+      console.warn("[OrdersManagement] tracking count error:", error);
+    }
   };
 
   const updateOrderStatus = async (
@@ -405,6 +438,8 @@ const OrdersManagement = () => {
       ready: orders.filter((o) => o.status === "ready").length,
       past: pastOrders.filter((o) => !showArchived ? !(o as any).archived : true).length,
       all: activeOrders.length,
+      failed: trackingCounts.failed,
+      abandoned: trackingCounts.abandoned,
     };
   };
 
@@ -435,7 +470,7 @@ const OrdersManagement = () => {
               className="gap-2"
               onClick={async () => {
                 setRefreshing(true);
-                await fetchOrders();
+                await Promise.all([fetchOrders(), fetchTrackingCounts()]);
                 setRefreshing(false);
                 toast({ title: "Frissítve", description: "Rendelések listája naprakész." });
               }}
@@ -463,6 +498,22 @@ const OrdersManagement = () => {
           </div>
         </div>
 
+
+        {(trackingCounts.failed > 0 || trackingCounts.abandoned > 0) && (
+          <Card className="border-destructive/50 bg-destructive/10">
+            <CardContent className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <p className="font-semibold text-destructive">Rendelési próbálkozás figyelmet igényel</p>
+                <p className="text-sm text-muted-foreground">
+                  {trackingCounts.failed} szerver oldali hiba, {trackingCounts.abandoned} félbehagyott vagy kliens oldali leadási kísérlet.
+                </p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setActiveTab(trackingCounts.failed > 0 ? "failed" : "abandoned")}>
+                Megnézem
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Search + Export row */}
         <div className="flex items-start gap-3">
@@ -542,8 +593,22 @@ const OrdersManagement = () => {
               )}
             </TabsTrigger>
             <TabsTrigger value="all">Aktív</TabsTrigger>
-            <TabsTrigger value="failed">Sikertelen</TabsTrigger>
-            <TabsTrigger value="abandoned">Félbehagyott</TabsTrigger>
+            <TabsTrigger value="failed" className="relative">
+              Sikertelen
+              {counts.failed > 0 && (
+                <Badge className="ml-2 bg-destructive text-destructive-foreground">
+                  {counts.failed}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="abandoned" className="relative">
+              Félbehagyott
+              {counts.abandoned > 0 && (
+                <Badge className="ml-2 bg-destructive text-destructive-foreground">
+                  {counts.abandoned}
+                </Badge>
+              )}
+            </TabsTrigger>
           </TabsList>
 
           {/* Active tabs: new, preparing, ready, all */}

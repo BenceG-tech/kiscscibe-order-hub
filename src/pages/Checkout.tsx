@@ -15,7 +15,7 @@ import { LoadingSpinner } from "@/components/ui/loading";
 import { Badge } from "@/components/ui/badge";
 import ModernNavigation from "@/components/ModernNavigation";
 import { ArrowLeft, Check, Clock, CreditCard, ShoppingCart, User, FileText } from "lucide-react";
-import { useAbandonedCartTracking } from "@/hooks/useAbandonedCartTracking";
+import { persistCheckoutSnapshot, useAbandonedCartTracking } from "@/hooks/useAbandonedCartTracking";
 
 // --- Progress Indicator Component ---
 const CheckoutProgress = () => {
@@ -545,45 +545,71 @@ const Checkout = () => {
 
     setIsSubmitting(true);
 
+    let normalizedPhone = "";
+    let submitBody: Record<string, any> | null = null;
+    let timeoutId: number | undefined;
+
     try {
       console.log('Calling submit-order edge function...');
-      const normalizedPhone = formData.phone.replace(/\D/g, "").replace(/^0+/, "");
-      
-      const { data, error } = await supabase.functions.invoke("submit-order", {
-        body: {
-          customer: {
-            name: formData.name,
-            phone: `+36${normalizedPhone}`,
-            email: formData.email,
-            notes: (tableNumber ? `[Asztal: ${tableNumber}] ` : '') + (formData.notes || '') || null
-          },
-          payment_method: formData.payment_method,
-          pickup_date: formData.pickup_type === "asap"
-            ? null
-            : (dailyDates.length === 1 ? dailyDates[0] : formData.pickup_date),
-          pickup_time_slot: formData.pickup_type === "asap" ? null : formData.pickup_time,
-          coupon_code: cart.coupon?.code || null,
-          session_id: cartSessionId,
-          items: cart.items.map(item => ({
-            item_id: item.id,
-            name_snapshot: item.name,
-            qty: item.quantity,
-            unit_price_huf: item.price_huf,
-            daily_type: item.daily_type,
-            daily_date: item.daily_date,
-            daily_id: item.daily_id ?? item.menu_id,
-            modifiers: (item.modifiers || []).map(mod => ({
-              label_snapshot: mod.label,
-              price_delta_huf: mod.price_delta_huf
-            })),
-            sides: (item.sides || []).map(side => ({
-              id: side.id,
-              name: side.name,
-              price_huf: side.price_huf
-            }))
+      normalizedPhone = formData.phone.replace(/\D/g, "").replace(/^0+/, "");
+      submitBody = {
+        customer: {
+          name: formData.name,
+          phone: `+36${normalizedPhone}`,
+          email: formData.email,
+          notes: (tableNumber ? `[Asztal: ${tableNumber}] ` : '') + (formData.notes || '') || null
+        },
+        payment_method: formData.payment_method,
+        pickup_date: formData.pickup_type === "asap"
+          ? null
+          : (dailyDates.length === 1 ? dailyDates[0] : formData.pickup_date),
+        pickup_time_slot: formData.pickup_type === "asap" ? null : formData.pickup_time,
+        coupon_code: cart.coupon?.code || null,
+        session_id: cartSessionId,
+        items: cart.items.map(item => ({
+          item_id: item.id,
+          name_snapshot: item.name,
+          qty: item.quantity,
+          unit_price_huf: item.price_huf,
+          daily_type: item.daily_type,
+          daily_date: item.daily_date,
+          daily_id: item.daily_id ?? item.menu_id,
+          modifiers: (item.modifiers || []).map(mod => ({
+            label_snapshot: mod.label,
+            price_delta_huf: mod.price_delta_huf
+          })),
+          sides: (item.sides || []).map(side => ({
+            id: side.id,
+            name: side.name,
+            price_huf: side.price_huf
           }))
-        }
+        }))
+      };
+
+      await persistCheckoutSnapshot({
+        sessionId: cartSessionId,
+        cartItems: cart.items,
+        totalHuf: cart.totalAfterDiscount || cart.total,
+        name: formData.name,
+        phone: `+36${normalizedPhone}`,
+        email: formData.email,
+        step: "submit_attempt",
       });
+      
+      const invokePromise = supabase.functions.invoke("submit-order", { body: submitBody });
+      invokePromise.catch(() => undefined);
+
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = window.setTimeout(() => {
+          reject(new Error("A rendelés leadása túl sokáig tart. A rendelési kísérletet rögzítettük, az étterem látni fogja."));
+        }, 30000);
+      });
+
+      const { data, error } = await Promise.race([invokePromise, timeoutPromise]);
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+        timeoutId = undefined;
+      }
       
       console.log('Edge function response:', { data, error });
       
@@ -594,12 +620,23 @@ const Checkout = () => {
       
     } catch (error: any) {
       console.error("Order submission error:", error);
+      await persistCheckoutSnapshot({
+        sessionId: cartSessionId,
+        cartItems: cart.items,
+        totalHuf: cart.totalAfterDiscount || cart.total,
+        name: formData.name,
+        phone: normalizedPhone ? `+36${normalizedPhone}` : formData.phone,
+        email: formData.email,
+        step: "submit_failed",
+        errorMessage: error?.message || "Ismeretlen rendelésleadási hiba",
+      });
       toast({
         title: "Hiba a rendelés leadásakor",
-        description: error.message || "Kérjük próbálja újra",
+        description: error.message || "A rendelési kísérletet rögzítettük. Kérjük próbáld újra, vagy jelezd az étteremnek.",
         variant: "destructive"
       });
     } finally {
+      if (timeoutId) window.clearTimeout(timeoutId);
       setIsSubmitting(false);
     }
   };

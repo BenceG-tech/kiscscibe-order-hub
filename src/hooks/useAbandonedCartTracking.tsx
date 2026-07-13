@@ -2,6 +2,8 @@ import { useEffect, useRef } from "react";
 
 const SESSION_KEY = "kc_cart_session_id";
 
+type CheckoutTrackingStep = "details" | "submit_attempt" | "submit_failed" | "submit_success";
+
 export function getCartSessionId(): string {
   try {
     let id = localStorage.getItem(SESSION_KEY);
@@ -26,6 +28,73 @@ interface TrackingArgs {
   email?: string;
   step?: string;
   enabled?: boolean;
+}
+
+interface PersistCheckoutSnapshotArgs {
+  sessionId: string;
+  cartItems: any[];
+  totalHuf: number;
+  name?: string;
+  phone?: string;
+  email?: string;
+  step: CheckoutTrackingStep | string;
+  errorMessage?: string | null;
+}
+
+export async function persistCheckoutSnapshot({
+  sessionId,
+  cartItems,
+  totalHuf,
+  name,
+  phone,
+  email,
+  step,
+  errorMessage,
+}: PersistCheckoutSnapshotArgs): Promise<boolean> {
+  try {
+    const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string) || "https://gvtsbnivuysunnjrpndk.supabase.co";
+    const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+    if (!supabaseUrl || !anonKey || !sessionId) return false;
+
+    const recordedAt = new Date().toISOString();
+    const cartSnapshot = errorMessage
+      ? {
+          items: cartItems || [],
+          diagnostic: {
+            step,
+            error_message: errorMessage,
+            recorded_at: recordedAt,
+          },
+        }
+      : cartItems || [];
+
+    const response = await fetch(`${supabaseUrl}/rest/v1/abandoned_carts?on_conflict=session_id`, {
+      method: "POST",
+      headers: {
+        apikey: anonKey,
+        Authorization: `Bearer ${anonKey}`,
+        "Content-Type": "application/json",
+        Prefer: "resolution=merge-duplicates",
+        "x-session-id": sessionId,
+      },
+      body: JSON.stringify({
+        session_id: sessionId,
+        customer_name: name || null,
+        customer_phone: phone || null,
+        customer_email: email || null,
+        cart_snapshot: cartSnapshot,
+        total_huf: totalHuf || 0,
+        step,
+        user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+        last_activity_at: recordedAt,
+      }),
+    });
+
+    return response.ok;
+  } catch (e) {
+    console.debug("checkout snapshot tracking failed", e);
+    return false;
+  }
 }
 
 /**
@@ -76,19 +145,14 @@ export function useAbandonedCartTracking({
     debounceTimer.current = window.setTimeout(async () => {
       lastSerialized.current = serialized;
       try {
-        // Send x-session-id header so RLS can verify the row belongs to this session.
-        const SUPABASE_URL = "https://gvtsbnivuysunnjrpndk.supabase.co";
-        const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
-        await fetch(`${SUPABASE_URL}/rest/v1/abandoned_carts?on_conflict=session_id`, {
-          method: "POST",
-          headers: {
-            apikey: ANON_KEY,
-            Authorization: `Bearer ${ANON_KEY}`,
-            "Content-Type": "application/json",
-            Prefer: "resolution=merge-duplicates",
-            "x-session-id": sessionId.current,
-          },
-          body: JSON.stringify(payload),
+        await persistCheckoutSnapshot({
+          sessionId: sessionId.current,
+          cartItems,
+          totalHuf,
+          name,
+          phone,
+          email,
+          step,
         });
       } catch (e) {
         // non-fatal

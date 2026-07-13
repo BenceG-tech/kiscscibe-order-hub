@@ -31,9 +31,35 @@ interface AbandonedCart {
   customer_email: string | null;
   cart_snapshot: any;
   total_huf: number | null;
+  step: string | null;
   converted_order_id: string | null;
+  created_at: string;
   last_activity_at: string;
 }
+
+const getCartItems = (items: any): any[] => {
+  if (Array.isArray(items)) return items;
+  if (Array.isArray(items?.items)) return items.items;
+  return [];
+};
+
+const getDiagnostic = (items: any) => {
+  if (Array.isArray(items)) return null;
+  return items?.diagnostic || null;
+};
+
+const getStepLabel = (step?: string | null) => {
+  switch (step) {
+    case "submit_attempt":
+      return "Leadási kísérlet";
+    case "submit_failed":
+      return "Leadás hibára futott";
+    case "details":
+      return "Adatok kitöltése";
+    default:
+      return step || "Félbehagyott";
+  }
+};
 
 const formatDateTime = (iso: string) =>
   new Date(iso).toLocaleString("hu-HU", {
@@ -45,27 +71,35 @@ const formatDateTime = (iso: string) =>
   });
 
 const CartPreview = ({ items }: { items: any }) => {
-  const arr = Array.isArray(items) ? items : [];
+  const arr = getCartItems(items);
+  const diagnostic = getDiagnostic(items);
   if (arr.length === 0) {
     return <p className="text-sm text-muted-foreground">Üres kosár.</p>;
   }
   return (
-    <ul className="space-y-1 text-sm">
-      {arr.map((it: any, i: number) => {
-        const qty = it.qty || it.quantity || 1;
-        const price = it.unit_price_huf || it.price_huf || 0;
-        return (
-          <li key={i} className="flex justify-between gap-2">
-            <span className="truncate">
-              {it.name_snapshot || it.name || "Tétel"} × {qty}
-            </span>
-            <span className="text-muted-foreground tabular-nums">
-              {(price * qty).toLocaleString()} Ft
-            </span>
-          </li>
-        );
-      })}
-    </ul>
+    <div className="space-y-2">
+      {diagnostic?.error_message && (
+        <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          <strong>Checkout hiba:</strong> {diagnostic.error_message}
+        </div>
+      )}
+      <ul className="space-y-1 text-sm">
+        {arr.map((it: any, i: number) => {
+          const qty = it.qty || it.quantity || 1;
+          const price = it.unit_price_huf || it.price_huf || 0;
+          return (
+            <li key={i} className="flex justify-between gap-2">
+              <span className="truncate">
+                {it.name_snapshot || it.name || "Tétel"} × {qty}
+              </span>
+              <span className="text-muted-foreground tabular-nums">
+                {(price * qty).toLocaleString()} Ft
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 };
 
@@ -183,18 +217,20 @@ export const AbandonedCartsList = () => {
 
   const load = async () => {
     setLoading(true);
-    const cutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString();
     const { data, error } = await supabase
       .from("abandoned_carts" as any)
       .select("*")
       .is("converted_order_id", null)
-      .lt("last_activity_at", cutoff)
       .order("last_activity_at", { ascending: false })
       .limit(200);
     if (error) {
       toast({ title: "Hiba", description: error.message, variant: "destructive" });
     } else {
-      setItems((data as any) || []);
+      const cutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      setItems(((data as any) || []).filter((item: AbandonedCart) => {
+        const step = item.step || "";
+        return step.startsWith("submit_") || item.last_activity_at < cutoff;
+      }));
     }
     setLoading(false);
   };
@@ -245,6 +281,9 @@ export const AbandonedCartsList = () => {
                   </span>
                 </CardTitle>
                 <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                  <Badge variant={c.step === "submit_failed" ? "destructive" : "outline"}>
+                    {getStepLabel(c.step)}
+                  </Badge>
                   {c.customer_phone && (
                     <a
                       href={`tel:${c.customer_phone}`}
