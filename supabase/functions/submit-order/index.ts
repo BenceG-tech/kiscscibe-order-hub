@@ -53,12 +53,31 @@ function budapestDayOfWeek(dateStr: string): number {
   return new Date(Date.UTC(y, mo - 1, da)).getUTCDay();
 }
 
-function isBudapestLunchWindow(dateStr: string, timeStr: string): boolean {
+// ─── Opening-hours business rules (single source of truth for backend) ───
+// Mon–Fri only, weekends closed.
+//   Breakfast pickup window: 07:00 – 10:00
+//   Lunch pickup window:     10:30 – 16:00
+//   Same-day order cutoff:   15:30 (after which "today" is not accepted)
+const BREAKFAST_START_MIN = 7 * 60;
+const BREAKFAST_END_MIN = 10 * 60;
+const LUNCH_START_MIN = 10 * 60 + 30;
+const LUNCH_END_MIN = 16 * 60;
+const TODAY_ORDER_CUTOFF_MIN = 15 * 60 + 30;
+
+function isWithinPickupWindow(dateStr: string, timeStr: string, isBreakfastOnly: boolean): boolean {
   const dow = budapestDayOfWeek(dateStr);
   if (dow === 0 || dow === 6) return false;
   const [hours, minutes] = timeStr.split(':').map(Number);
   const totalMinutes = hours * 60 + minutes;
-  return totalMinutes >= 10 * 60 + 30 && totalMinutes <= 15 * 60;
+  if (isBreakfastOnly) {
+    return totalMinutes >= BREAKFAST_START_MIN && totalMinutes <= BREAKFAST_END_MIN;
+  }
+  return totalMinutes >= LUNCH_START_MIN && totalMinutes <= LUNCH_END_MIN;
+}
+
+// Kept for backwards compatibility with existing callsites
+function isBudapestLunchWindow(dateStr: string, timeStr: string): boolean {
+  return isWithinPickupWindow(dateStr, timeStr, false);
 }
 
 // Normalize any Hungarian phone input to canonical "+36XXXXXXXXX" (9 digits after +36).
