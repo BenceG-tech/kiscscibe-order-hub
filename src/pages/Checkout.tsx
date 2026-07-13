@@ -213,17 +213,37 @@ const Checkout = () => {
     return new Date(Date.UTC(year, month - 1, day)).getUTCDay();
   };
 
-  const isBudapestLunchWindow = (date: string, time?: string) => {
+  // Does this cart include only breakfast items? Then use breakfast pickup window.
+  // Otherwise use lunch window (or both if mixed - defensively allow lunch).
+  const cartIsBreakfastOnly = useMemo(() => {
+    if (cart.items.length === 0) return false;
+    return cart.items.every((it) => (it as any).is_breakfast === true);
+  }, [cart.items]);
+
+  const isWithinPickupWindow = (date: string, time?: string) => {
     const dayOfWeek = getDayOfWeekFromDateStr(date);
     if (dayOfWeek === 0 || dayOfWeek === 6) return false;
     if (!time) return true;
     const mins = minutesFromTime(time);
-    return mins >= 10 * 60 + 30 && mins <= 15 * 60;
+    if (cartIsBreakfastOnly) {
+      return mins >= BREAKFAST_START_MIN && mins <= BREAKFAST_END_MIN;
+    }
+    // Default (lunch / mixed): allow the full lunch window.
+    return mins >= LUNCH_START_MIN && mins <= LUNCH_END_MIN;
+  };
+
+  // Backwards-compat alias used elsewhere in this file
+  const isBudapestLunchWindow = isWithinPickupWindow;
+
+  const canOrderForToday = () => {
+    const bp = getBudapestNowParts();
+    return minutesFromTime(bp.time) < TODAY_ORDER_CUTOFF_MIN;
   };
 
   const canUseAsap = () => {
     const bp = getBudapestNowParts();
-    if (!isBudapestLunchWindow(bp.date, bp.time)) return false;
+    if (!isWithinPickupWindow(bp.date, bp.time)) return false;
+    if (!canOrderForToday()) return false;
     if (dailyDates.length === 0) return true;
     return dailyDates.length === 1 && dailyDates[0] === bp.date;
   };
