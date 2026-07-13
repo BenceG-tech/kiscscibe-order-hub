@@ -235,8 +235,7 @@ serve(async (req) => {
       }
     }
 
-    attemptCtx.pickup_time_slot = pickup_time_slot || null;
-    attemptCtx.session_id = session_id || null;
+
 
     // ── Idempotency: dedupe network retries / double-clicks within a 5-minute window.
     //    Key = session_id + phone + items shape. A fresh session_id (issued per Checkout mount)
