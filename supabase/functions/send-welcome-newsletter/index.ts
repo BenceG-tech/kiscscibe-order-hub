@@ -48,9 +48,11 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    await resend.emails.send({
-      from: "Kiscsibe Reggeliző & Étterem <onboarding@resend.dev>",
+    const sendResult = await resend.emails.send({
+      from: "Kiscsibe Étterem <rendeles@kiscsibe-etterem.hu>",
+      reply_to: "info@kiscsibeetterem.hu",
       to: [email],
+
       subject: "Köszönjük a feliratkozást! - Kiscsibe Étterem",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #fffbeb;">
