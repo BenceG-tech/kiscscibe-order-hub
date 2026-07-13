@@ -547,6 +547,7 @@ const Checkout = () => {
 
     let normalizedPhone = "";
     let submitBody: Record<string, any> | null = null;
+    let timeoutId: number | undefined;
 
     try {
       console.log('Calling submit-order edge function...');
@@ -598,7 +599,6 @@ const Checkout = () => {
       const invokePromise = supabase.functions.invoke("submit-order", { body: submitBody });
       invokePromise.catch(() => undefined);
 
-      let timeoutId: number | undefined;
       const timeoutPromise = new Promise<never>((_, reject) => {
         timeoutId = window.setTimeout(() => {
           reject(new Error("A rendelés leadása túl sokáig tart. A rendelési kísérletet rögzítettük, az étterem látni fogja."));
@@ -606,7 +606,10 @@ const Checkout = () => {
       });
 
       const { data, error } = await Promise.race([invokePromise, timeoutPromise]);
-      if (timeoutId) window.clearTimeout(timeoutId);
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+        timeoutId = undefined;
+      }
       
       console.log('Edge function response:', { data, error });
       
@@ -633,6 +636,7 @@ const Checkout = () => {
         variant: "destructive"
       });
     } finally {
+      if (timeoutId) window.clearTimeout(timeoutId);
       setIsSubmitting(false);
     }
   };

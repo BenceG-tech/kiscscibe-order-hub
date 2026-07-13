@@ -761,9 +761,7 @@ serve(async (req) => {
         if (rollbackItemIds.length > 0) {
           await supabase.from('order_item_options').delete().in('order_item_id', rollbackItemIds);
         }
-        await supabase.from('order_item_options').delete().in('order_item_id',
-          (await supabase.from('order_items').select('id').eq('order_id', orderId)).data?.map((r: any) => r.id) || []
-        );
+        await supabase.from('coupon_usages').delete().eq('order_id', orderId);
         await supabase.from('order_items').delete().eq('order_id', orderId);
         await supabase.from('orders').delete().eq('id', orderId);
         console.log(`Rollback: deleted order ${orderId}`);
