@@ -61,9 +61,10 @@ const handler = async (req: Request): Promise<Response> => {
     const timestamp = new Date().toLocaleString("hu-HU", { timeZone: "Europe/Budapest" });
 
     // Send notification to restaurant
-    await resend.emails.send({
-      from: "Kiscsibe Weboldal <onboarding@resend.dev>",
+    const adminSend = await resend.emails.send({
+      from: "Kiscsibe Étterem <rendeles@kiscsibe-etterem.hu>",
       to: ["info@kiscsibeetterem.hu"],
+      reply_to: email,
       subject: `Új üzenet a weboldalról - ${safeName}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -97,9 +98,10 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     // Send confirmation to sender
-    await resend.emails.send({
-      from: "Kiscsibe Reggeliző & Étterem <onboarding@resend.dev>",
+    const customerSend = await resend.emails.send({
+      from: "Kiscsibe Reggeliző & Étterem <rendeles@kiscsibe-etterem.hu>",
       to: [email],
+      reply_to: "info@kiscsibeetterem.hu",
       subject: "Kiscsibe - Megkaptuk üzenetét",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -121,8 +123,16 @@ const handler = async (req: Request): Promise<Response> => {
       `,
     });
 
+    console.log(
+      `[send-contact-email] admin_id=${adminSend?.data?.id ?? 'n/a'} err=${adminSend?.error?.message ?? 'none'} | customer_id=${customerSend?.data?.id ?? 'n/a'} err=${customerSend?.error?.message ?? 'none'}`,
+    );
+
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({
+        success: true,
+        admin_message_id: adminSend?.data?.id ?? null,
+        customer_message_id: customerSend?.data?.id ?? null,
+      }),
       {
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders },
