@@ -143,6 +143,15 @@ const Checkout = () => {
   const [couponCode, setCouponCode] = useState("");
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponMessage, setCouponMessage] = useState<{ success: boolean; text: string } | null>(null);
+  const [networkError, setNetworkError] = useState<string | null>(null);
+
+  // Hard duplicate-submit lock: gates the very first line of handleSubmit,
+  // BEFORE React re-render can disable the button. Prevents duplicate orders
+  // on double-tap, slow networks, or race conditions.
+  const submissionLockRef = useRef(false);
+  // Stable per-attempt idempotency bucket. Reused if the previous attempt
+  // failed on network/timeout so the backend dedupes the retry.
+  const idempotencyBucketRef = useRef<number | null>(null);
 
   // Track abandoned carts while the user fills in checkout
   const cartSessionId = useAbandonedCartTracking({
