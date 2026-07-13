@@ -372,13 +372,13 @@ const Checkout = () => {
           
           if (bufferBlockedSlots.has(key)) return false;
           
-          const slotDate = makeDate(slot.date);
-          const [hours, minutes] = slot.timeslot.split(':').map(Number);
-          slotDate.setHours(hours, minutes, 0, 0);
-          
-          const now = new Date();
-          const minFutureTime = new Date(now.getTime() + 15 * 60 * 1000);
-          if (slotDate <= minFutureTime) return false;
+          const bp = getBudapestNowParts();
+          if (slot.date < bp.date) return false;
+          if (slot.date === bp.date) {
+            const slotMinutes = minutesFromTime(slot.timeslot);
+            const minAllowedMinutes = minutesFromTime(bp.time) + 15;
+            if (slotMinutes <= minAllowedMinutes) return false;
+          }
           
           return true;
         })
