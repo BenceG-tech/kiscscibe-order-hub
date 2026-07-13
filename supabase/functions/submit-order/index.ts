@@ -1228,8 +1228,9 @@ ${adminItemsText}
       for (const recipient of ADMIN_RECIPIENTS) {
         try {
           const { data, error } = await resend.emails.send({
-            from: 'Kiscsibe Étterem <rendeles@kiscsibeetterem.hu>',
+            from: 'Kiscsibe Étterem <rendeles@kiscsibe-etterem.hu>',
             to: [recipient],
+            reply_to: 'info@kiscsibeetterem.hu',
             subject: `Új rendelés #${orderCode} — ${customer.name}`,
             html: adminHtml,
             text: adminText,
@@ -1330,8 +1331,9 @@ Kiscsibe Reggeliző & Étterem
 
       try {
         const { data, error } = await resend.emails.send({
-          from: 'Kiscsibe Étterem <rendeles@kiscsibeetterem.hu>',
+          from: 'Kiscsibe Étterem <rendeles@kiscsibe-etterem.hu>',
           to: [customer.email],
+          reply_to: 'info@kiscsibeetterem.hu',
           subject: `Kiscsibe – rendelés visszaigazolás #${orderCode}`,
           html: customerHtml,
           text: customerText,
