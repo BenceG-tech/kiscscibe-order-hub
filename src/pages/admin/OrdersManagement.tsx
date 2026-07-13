@@ -56,6 +56,7 @@ import { cn } from "@/lib/utils";
 import { exportOrdersToCSV } from "@/lib/orderExport";
 import InfoTip from "@/components/admin/InfoTip";
 import { FailedAttemptsList, AbandonedCartsList } from "@/components/admin/orders/FailedAndAbandoned";
+import { EmailStatusBadge, aggregateEmailLogs, type EmailStatusSummary } from "@/components/admin/orders/EmailStatusBadge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { SystemHealthCheck } from "@/components/admin/SystemHealthCheck";
 
