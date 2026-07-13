@@ -123,8 +123,16 @@ const handler = async (req: Request): Promise<Response> => {
       `,
     });
 
+    console.log(
+      `[send-contact-email] admin_id=${adminSend?.data?.id ?? 'n/a'} err=${adminSend?.error?.message ?? 'none'} | customer_id=${customerSend?.data?.id ?? 'n/a'} err=${customerSend?.error?.message ?? 'none'}`,
+    );
+
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({
+        success: true,
+        admin_message_id: adminSend?.data?.id ?? null,
+        customer_message_id: customerSend?.data?.id ?? null,
+      }),
       {
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders },
