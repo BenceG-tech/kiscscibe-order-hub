@@ -1,49 +1,79 @@
-## Terv: valós próbarendelés + két bizonyíték-válasz + K1 lezárás
+# Email-diagnózis — #L69199
 
-### 1. Bizonyíték-válasz #1 — timezone a 07-02-i `validate_pickup_time`-ben
+## Ítélet: (a) a küldés meg sem kísérlődött
 
-A régi (`20260702072305`) trigger-törzs **helyesen** Budapest fali időben hasonlított — nem timezone-bug:
+A `customer.email` `null` volt a submit body-ban → a kód a `!customer.email` ágon némán kihagyta a Resend-hívást. Se Resend request, se hiba — teljesen láthatatlan a mostani sémában.
 
-```sql
-local_ts := (pickup_datetime AT TIME ZONE 'Europe/Budapest');
-pickup_time_local := local_ts::time;
-...
-IF pickup_time_local < '10:30'::time OR pickup_time_local > '15:00'::time THEN
-    RETURN false;
-END IF;
+## Bizonyítékok
+
+### 1. Edge function log (a rendelés időablakában, 18:59:57–18:59:59 UTC)
+
+Idézett sorok a `submit-order` log-ból (context: `edge-function-logs-all`):
+
+```
+[req_1783969197234_9t0alggz5] Starting order submission...
+[req_1783969197234_9t0alggz5] Processing order for: Gátai Bence TESZT with 3 items
+Server-calculated total: 6300
+Generated order code: L69199
+Business hours validation passed
+Created order: 5965e9d6-cf16-4f98-bfdd-a9af6d1b67d3
+Order completed successfully: L69199
+[req_1783969197234_9t0alggz5] Order completed successfully: L69199
+[req_1783969197234_9t0alggz5] No customer email provided — skipping confirmation email.
 ```
 
-Ítélet: **nem timezone-eltolódás**, hanem valódi ablak-szűkítés — a fejlesztő szándékosan (vagy tévedésből) csak ebédidőre engedte a rendeléseket. Reggeli (07:00–10:29) és késő délutáni (15:01–16:00) pickup-ok mind elhasaltak a `validate_order_date` triggeren. Ez az egyetlen gyökérok a 07-02-i leálláshoz.
+A `[req_...] Preparing confirmation email for ...` sor **nincs**, `Email sending failed` **nincs**, `Confirmation email sent to:` **nincs**. Egyértelmű: a `if (!customer.email)` ág futott (`submit-order/index.ts:1131-1132`), Resend hívás nem indult.
 
-### 2. Bizonyíték-válasz #2 — miért csak 1 `order_attempts` rekord
+### 2. Kód-idézet — from/to/bcc (submit-order/index.ts:1252-1258)
 
-Adatbázis-lekérdezések eredménye (07-02 → 07-14):
-- `orders`: **2 sor** (mindkettő 07-02)
-- `order_attempts`: **1 sor** (07-02 06:05 UTC)
-- `abandoned_carts`: **0 sor**
+```ts
+const emailPromise = resend.emails.send({
+  from: 'Kiscsibe Étterem <rendeles@kiscsibeetterem.hu>',
+  to: [customer.email],
+  bcc: ['info@kiscsibeetterem.hu', 'gataibence@gmail.com'],
+  subject: ...,
+  html: emailHtml,
+  text: emailText,
+})
+```
 
-A `submit-order` catch-ág **igenis ír** `order_attempts`-be és `abandoned_carts`-ba (service role, RLS-bypass — kódutalás: `submit-order/index.ts:1355, 1389`). Tehát ha lettek volna trigger-elutasított próbálkozások, itt látszaniuk kellene.
+Megerősítve: `from = rendeles@kiscsibeetterem.hu`, `to = customer.email`, `bcc = [info@kiscsibeetterem.hu, gataibence@gmail.com]`. A dokumentációban szereplő régi `rendeles@kiscsibe-etterem.hu` (kötőjeles) már **nincs** a submit-order-ben — kötőjel nélküli domain az élő.
 
-Két lehetséges olvasat, mindkettőt közlöm a tulajjal:
+### 3. RESEND_API_KEY secret
 
-**(a) Ez a DB nem a produkciós adathalmaz.** `SELECT DATE(created_at), COUNT(*) FROM orders WHERE created_at >= '2026-06-25'` összesen 2 rendelést hoz, mindkettő 07-02. Egy működő étterem 10 nap alatt ennyi rendelést nem produkál. Valószínű: staging/dev környezet, vagy a produkciós rendelések másik projektben landolnak. **Ezt előbb tisztáznod kell a tulajjal**, mert ha igen, a 10 napos „leállás" itt nem is látható — csak a séma-hibát javítottuk, a hatás-becslést nem tudom számszerűsíteni ebből a DB-ből.
+A projekt secret-listájában (`<secrets>` blokk) szerepel: **`RESEND_API_KEY` név megvan**, értéket nem ellenőriztem. Tehát ez **nem** a hiba oka — a kód eleve el sem jutott a Resend-inicializálás utáni `emails.send`-ig ebben a request-ben.
 
-**(b) Ha ez tényleg a produkciós DB:** akkor a felhasználók 10 napig még próbálkozni sem próbáltak, mert az UI (`Checkout.tsx` client-side `validate_pickup_time`) még a `submit-order` hívás **előtt** blokkolta a rendelést → `submit-order` nem futott → catch-ág nem írt sehova. Vagyis a tracking-táblák hallgatása egybevág a totális UI-szintű blokkolással, és **veszteség-becsléshez a `postgres_logs`/edge function log-ok szükségesek**, nem a DB-táblák.
+### 4. abandoned_carts diagnostic — miért nincs email_send_status
 
-Kérdés a tulajhoz: melyik Supabase projekt-ref az élesé? Ha ez (`gvtsbnivuysunnjrpndk`), akkor (b) áll; ha másik, akkor a fenti számok irrelevánsak és át kell váltani a hatás-becsléshez.
+Az `abandoned_carts` séma jelenlegi oszlopai:
 
-### 3. Valós próbarendelés-verifikáció (te vezérled)
+```
+id, session_id, customer_name, customer_phone, customer_email,
+cart_snapshot, total_huf, step, converted_order_id, user_agent,
+created_at, last_activity_at
+```
 
-Amikor jelzed „nyitva az admin, DevTools console fut":
+**Nincs `email_send_status` / `email_to` / `email_error` oszlop**, holott a `submit-order` (`index.ts:1266-1298`) épp ezekre a nevekre próbál `update`-elni a `.then`/`.catch` ágakban. Vagyis a jelenlegi kódban ez a diagnosztikai update **PostgREST 400-zal némán elbukik** minden email-küldésnél — nem csak most. Kényszerítve is átmegyünk az M5-höz.
 
-1. Te leadsz egy inkognitó próbarendelést telefonról, `notes` mezőbe „TEST_K1_LIVE".
-2. Én kérni fogom:
-   - console log copy-paste (grep: `[Notifications]`, `useRealtimeOrders`, `Channel status`) — bizonyíték 2b (dedupe = 1 toast + 1 modal + 1 sound).
-   - screenshot vagy megerősítés, hogy mindkét címzett (`kiscsibeetterem@gmail.com` + Bence) megkapta-e az emailt — ez az M5+M4 előtti empirikus email-baseline.
-3. Utána megadod a rendelés `code`-ját, és **egyetlen `supabase--migration`** cleanup fut: `DELETE FROM order_item_options WHERE order_item_id IN (…) ; DELETE FROM order_items WHERE order_id = … ; DELETE FROM invoices WHERE order_id = … ; DELETE FROM orders WHERE id = …` — a `create_invoice_on_order_complete` trigger miatt fontos az `invoices` sor kitörlése is, ha státusz `completed`-re ment.
+Ráadásul az adminon látszik, a live network log is mutatja: két `abandoned_carts` upsert **401 RLS-hibával** halt el (`new row violates row-level security policy for table "abandoned_carts"`) — tehát a session-höz eleve nincs is `abandoned_carts` sor amit update-elni lehetne. Ez külön hiba (anon RLS insert-policy hiány), de az email-diagnózist nem befolyásolja: a döntő tény az edge log `No customer email provided` sora.
 
-Ha 2b zöld (pontosan 1 értesítés) és mindkét email megjött **VAGY** a hiányzó email dokumentálva → K1 lezárva → **M5+M4 következik** (email_send_log tábla + bcc-szétbontás + admin Email státusz oszlop) a korábbi terv szerint.
+### 5. Miért volt `customer.email` null
 
-### Fájl-változás ebben a lépésben
+A checkout-ról érkezett submit body-ban valóban `customer_email: null` (a live network log ugyanezt mutatja az `abandoned_carts` upsert-ekben is: `"customer_email":null`). Telefonon TESZT rendelést leadva a felhasználó nem töltötte ki az email mezőt → nincs mit küldeni. A tulaj oldali (`bcc`) másolat sem megy ki, mert a `resend.emails.send` egyáltalán meg sem hívódik, ha nincs `to`.
 
-Nincs. Csak olvasás + a te live rendelésed + cleanup migráció a rendelés után.
+## Következtetés és javasolt fixek (végrehajtás külön körben)
+
+**Eset: (a).** Nem kell Resend domain-verifikáció miatt aggódni ehhez a rendeléshez — a hívás létre sem jött. Két külön hiba viszont felszínre jött:
+
+1. **Kritikus üzleti hiba:** az admin/tulaj bcc-másolat a `customer.email` létéhez van kötve. Ha vendég nem ad emailt (mint most, telefonos TESZT), a tulaj **soha nem kap értesítést**. Fixa (M4 részeként, `submit-order`):
+   - szétbontani két külön `resend.emails.send` hívásra: (i) customer email — csak ha `customer.email` létezik, (ii) admin notification — mindig, `to: ['info@kiscsibeetterem.hu', 'gataibence@gmail.com']`, függetlenül attól, van-e vevő email.
+2. **abandoned_carts séma-elmaradás:** a kód `email_send_status` / `email_to` / `email_error` mezőket írna, de az oszlopok nincsenek. Ez az M5 mag: külön `email_send_log` tábla (order_id, recipient, kind: `customer|admin`, status, provider_message_id, error, created_at), a `submit-order` catch/then ág oda ír, admin `/admin/orders` „Email" oszlop olvassa. A jelenlegi `abandoned_carts.update({email_send_status:…})` sorokat el kell távolítani vagy áthúzni az új táblára.
+3. **anon RLS insert-policy `abandoned_carts`-en** hiányzik (401 az élő network log-ban). Külön mini-migráció: `CREATE POLICY "anon insert abandoned_carts" ON public.abandoned_carts FOR INSERT TO anon WITH CHECK (true)` + `GRANT INSERT, UPDATE (last_activity_at, step, customer_*, cart_snapshot, total_huf) ON public.abandoned_carts TO anon` — anélkül a K1 impact-tracking is vak.
+
+## Következő lépés (jóváhagyás után)
+
+- (A) M5+M4 build: `email_send_log` tábla + `submit-order` átalakítás (két külön send, admin mindig kap), admin oszlop.
+- (B) `abandoned_carts` anon RLS-fix ugyanabban a migrációban.
+- (C) A #L69199 törlése a te jelzésedre — most még marad, ahogy kérted.
+
+Nincs kód-változtatás ebben a körben, csak diagnózis.
