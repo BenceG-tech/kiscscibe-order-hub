@@ -61,6 +61,32 @@ function isBudapestLunchWindow(dateStr: string, timeStr: string): boolean {
   return totalMinutes >= 10 * 60 + 30 && totalMinutes <= 15 * 60;
 }
 
+// Normalize any Hungarian phone input to canonical "+36XXXXXXXXX" (9 digits after +36).
+// Accepts: "06 30 …", "+36 30 …", "3630…", "0036…", spaces, dashes, etc.
+// Returns the original trimmed string if it doesn't look like a HU number so we don't
+// silently corrupt legitimate international numbers.
+function normalizeHungarianPhoneServer(raw: string | null | undefined): string {
+  if (!raw) return '';
+  const trimmed = String(raw).trim();
+  let digits = trimmed.replace(/\D/g, '');
+  if (digits.startsWith('0036')) digits = digits.slice(4);
+  else if (digits.startsWith('36') && digits.length >= 10) digits = digits.slice(2);
+  if (digits.startsWith('06')) digits = digits.slice(2);
+  else if (digits.startsWith('0')) digits = digits.slice(1);
+  if (digits.length >= 8 && digits.length <= 9) return `+36${digits}`;
+  return trimmed;
+}
+
+// Whitelist payment_method against orders_payment_method_check to avoid silent 23514 failures.
+function normalizePaymentMethod(raw: string | null | undefined): string {
+  const v = String(raw || '').toLowerCase().trim();
+  if (v === 'cash') return 'cash';
+  if (v === 'pos' || v === 'card' || v === 'terminal' || v === 'bankkartya') return 'pos';
+  if (v === 'card_online' || v === 'online' || v === 'stripe') return 'card_online';
+  // Anything unknown → safest default: cash (customer pays on pickup).
+  return 'cash';
+}
+
 
 interface OrderModifier {
   label_snapshot: string;
