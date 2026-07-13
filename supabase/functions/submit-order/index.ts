@@ -711,24 +711,40 @@ serve(async (req) => {
       if (capacityError && capacityError.code === 'PGRST116') {
         console.log('Capacity slot not found, creating fallback slot for:', date, time);
         
-        // Validate business hours (Budapest local) BEFORE creating slot,
-        // and align with validate_pickup_time (10:30–15:00 weekdays only).
+        // Validate business hours (Budapest local) BEFORE creating slot.
+        // Broader window than the old lunch-only rule: 07:00–16:00 weekdays;
+        // breakfast-only carts must be inside 07:00–10:00, everything else
+        // inside 10:30–16:00.
         const dayOfWeek = budapestDayOfWeek(date);
         const [hours, minutes] = time.split(':').map(Number);
         const totalMinutes = hours * 60 + minutes;
 
-        console.log(`Validating business hours (Budapest): date=${date}, time=${time}, dow=${dayOfWeek}, mins=${totalMinutes}`);
+        const isBreakfastOnlyCart = (items || []).length > 0
+          && (items || []).every((it: any) => it?.is_breakfast === true);
+
+        console.log(`Validating business hours (Budapest): date=${date}, time=${time}, dow=${dayOfWeek}, mins=${totalMinutes}, breakfastOnly=${isBreakfastOnlyCart}`);
 
         if (dayOfWeek === 0 || dayOfWeek === 6) {
           console.error(`[${requestId}] Rejected: weekend closed (dow=${dayOfWeek})`);
           throw new Error('Hétvégén zárva tartunk');
         }
 
-        // Lunch window: 10:30 – 15:00 (matches validate_pickup_time trigger)
-        const isValidTime = totalMinutes >= 10 * 60 + 30 && totalMinutes <= 15 * 60;
+        const isValidTime = isWithinPickupWindow(date, time, isBreakfastOnlyCart);
         if (!isValidTime) {
-          console.error(`[${requestId}] Rejected: outside lunch window (${time})`);
-          throw new Error('A kiválasztott időpont nyitvatartási időn kívül esik (10:30 – 15:00)');
+          const win = isBreakfastOnlyCart ? '07:00 – 10:00 (reggeli)' : '10:30 – 16:00 (ebéd)';
+          console.error(`[${requestId}] Rejected: outside pickup window (${time}, window=${win})`);
+          throw new Error(`A kiválasztott időpont nyitvatartási időn kívül esik (${win})`);
+        }
+
+        // Same-day cutoff: after 15:30 no more today-orders (owner rule).
+        const nowBp = getBudapestParts();
+        if (date === nowBp.date) {
+          const [nowH, nowM] = nowBp.time.split(':').map(Number);
+          const nowMin = nowH * 60 + nowM;
+          if (nowMin >= TODAY_ORDER_CUTOFF_MIN) {
+            console.error(`[${requestId}] Rejected: past today's 15:30 cutoff (now=${nowBp.time})`);
+            throw new Error('Ma már nem tudunk új rendelést fogadni (15:30 után). Kérjük válassz holnapi vagy későbbi időpontot.');
+          }
         }
 
         console.log('Business hours validation passed');
