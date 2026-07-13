@@ -21,6 +21,8 @@ interface CartItem {
   modifiers: CartModifier[];
   sides: CartSide[];
   image_url?: string;
+  // Breakfast-only tag → drives 07:00–10:00 pickup window in Checkout.
+  is_breakfast?: boolean;
   // Daily item specific fields
   daily_type?: 'offer' | 'menu' | 'complete_menu';
   daily_date?: string; // YYYY-MM-DD format

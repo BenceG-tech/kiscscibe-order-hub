@@ -1,83 +1,79 @@
-Köszönöm a nyitvatartás pontosítást. Most már **egy forrásból** tudom kezelni az egész rendszert.
 
-## Nyitvatartási szabályok (véglegesítve)
+# Rendelés-audit v2 — mit néztem át és mit javítok
 
-| Napszak | Mit lehet | Mikor |
-|---|---|---|
-| **Reggeli átvétel** | Csak reggeli tételek | H–P 07:00–10:00 |
-| **Ebéd átvétel** | Ebéd / napi menü tételek | H–P 10:30–16:00 |
-| **Mai napra rendelés cutoff** | Aznapra még leadható | 15:30-ig |
-| **15:30 után** | Csak másnaptól előrendelés | — |
-| **Hétvége** | Zárva, semmi nem rendelhető | Szo–V |
-
-Ezt az `openingHours.ts` modulba égetem be konstansként (később könnyen áthelyezhető a `settings` táblába, de a mostani fix üzemidőnél felesleges).
+Az előző körben javítottam a napi menü elutasítást, duplakattintást, 30s timeout retry-t, egységes nyitvatartást, ASAP validációt. Most **mindent újra átnéztem** (Checkout.tsx, submit-order edge function, DB függvények, indexek, publikációk, RLS, CORS, hookok, Resend). Öt új, valós hibaforrást találtam, amelyek pont a "rendelés nem jön be / nincs email" tünetet okozhatják.
 
 ---
 
-## Amit javítok — fontossági sorrendben
+## Új kritikus problémák
 
-### 1. [KRITIKUS] Napi teljes menük fix (DB migráció)
-Az `update_daily_portions` függvény jelenleg elutasít **minden** `daily_offer_menus` táblás hívást (`'Invalid table name'` hibával). Ez azt jelenti, hogy **a leves + főétel csomag rendelések 100%-a csendben elbukik hónapok óta**. Ez önmagában megmagyarázza a 20-30 000 Ft-os elveszett rendeléseket. Egy migráció, `daily_offer_menus` ág hozzáadása ugyanazzal a `FOR UPDATE` lock mintával mint a másik két ág.
+### 1. [KRITIKUS] Idempotencia kulcsra NINCS unique index
+A `submit-order` pre-check-el keres, majd insert. Két gyors kérés között **ugyanaz az `idempotency_key` átcsúszhat két külön `orders` sorba** → két rendelés, két email, kapacitás/adag kétszer levonva. A 23505 dedup ág sem sülhet el, mert nincs constraint.
 
-### 2. [KRITIKUS] Duplakattintás-védelem + retry hálózati hibára
-- `useRef` alapú `submissionLock` — az első kattintáskor azonnal blokkol, még a React state update előtt (a mostani `disabled={isSubmitting}` háromszor is elsülhet gyors kattintásra).
-- `AbortController` 30 másodperces timeout — a vendég ne várjon némán percekig.
-- **Hálózati hiba esetén**: piros doboz „A rendelést nem sikerült elküldeni. Ellenőrizd az internetet és próbáld újra." + újra aktív gomb, de **ugyanazzal az idempotencia kulccsal** → ha a backend mégis megkapta, nem lesz duplikáció.
-- Sikeres válasz után a gomb végleg tiltva marad, redirect az `OrderConfirmation`-re.
+**Fix:** migrációban `CREATE UNIQUE INDEX orders_idempotency_key_uniq ON orders (idempotency_key) WHERE idempotency_key IS NOT NULL`.
 
-### 3. Egységes nyitvatartás minden rétegben
-- Új `src/lib/openingHours.ts` a fenti szabályokkal:
-  - `isBreakfastPickupAllowed(datetime)` — 07:00–10:00
-  - `isLunchPickupAllowed(datetime)` — 10:30–16:00
-  - `canOrderForToday(now)` — false ha aznap már ≥15:30
-  - `getEarliestPickup(now)` — visszaadja a legkorábbi valid slotot (mai 15:30 előtt: most+puffer; utána: holnap 07:00 / 10:30)
-- A `Checkout.tsx` és `submit-order/index.ts` innen olvas — vége a három különböző implementációnak.
-- A `validate_pickup_time` DB triggert is frissítjük: 07:00–16:00 valid, de a business logika a kosár tartalmától függően szűkíti (reggeli vs ebéd) az edge functionben.
-- **A 15:30 cutoff-ot** a Checkout időpont-választóban is érvényesítjük: 15:30 után a „Ma" opció eltűnik, csak holnap+ marad.
+### 2. [KRITIKUS] `abandoned_carts.session_id` unique constraint hiányzik → upsert csendben duplikál
+A `on_conflict: 'session_id'` és a szerveroldali `upsert({...}, { onConflict: 'session_id' })` **constraint nélkül nem dedupál** — vagy hibát dob, vagy több sort hoz létre. Ezért lehet az adminban zavaros / hiányos „megkísérelt rendelés" nyoma.
 
-### 4. Minden validációs hiba nyoma megmarad
-Jelenleg a `handleSubmit` korai return-jei (rossz telefon, hiányzó név, nincs időpont, több napi dátum) csak toast-ot dobnak és **semmi** nyoma nincs az adminnak. Innentől:
-- Minden ilyen `return` előtt egy `persistCheckoutSnapshot('validation_blocked', errorMessage)` hívás.
-- A `submit-order` edge function `catch` ágai szintén írnak `abandoned_carts`-ba service role key-jel — még ha az idempotencia vagy készlet check dob, akkor is látszik az adminban.
-- A `FailedAndAbandoned` admin panel új „Utolsó 24 óra próbálkozásai" kártya: összes próbálkozás, top 3 hibaüzenet, gyors szűrők.
+**Fix:** `CREATE UNIQUE INDEX abandoned_carts_session_id_uniq ON abandoned_carts (session_id)`.
 
-### 5. Idempotencia időablak — ne veszítsünk el legitim ismétlő rendeléseket
-Jelenleg az `idempotency_key` **örökre** globálisan egyedi. Ha ugyanaz a vendég 20 perccel később ugyanazt a kosarat rendeli, csendben az első rendelés kódját kapja vissza. Fix: a kulcshoz hozzáfűzünk egy 15-perces időbucket-et (`Math.floor(Date.now() / (15*60*1000))`). Gyors dupla kattintás → dedupál. 15 perc után új rendelés → átmegy.
+### 3. [KRITIKUS] Realtime értesítés kieshet — admin nem lát új rendelést, pedig a DB-ben ott van
+Az `orders` benne van a `supabase_realtime` publikációban, de a `useRealtimeOrders` hook **egyszer** iratkozik fel, nincs újracsatlakozás alvó laptop / hálózatváltás után, nincs polling fallback. Ez pontosan az a tünet, amit a tulaj látott: „nem érkezik meg az admin felületre" — miközben a DB-ben ott a rendelés.
 
-### 6. ASAP rendelés is validálódik
-Ha `pickup_time` üres, a backend most simán átengedi. Innentől kötelezően lefuttatja az `openingHours` check-et — hétvégén / záráskor nem enged át rendelést, még ha a kliens hibásan is küldi.
+**Fix a hookban** (kizárólag admin oldali kód, a rendelésfogadást nem érinti):
+- Websocket lecsatlakozás → automatikus resubscribe.
+- **30 másodperces polling fallback** (`SELECT * FROM orders ORDER BY created_at DESC LIMIT 20`) → ha realtime kiesik, akkor is bejön a lista.
+- Ablak visszakapcsolás (`visibilitychange` = visible) → azonnali refetch.
+- Hangriasztás + toast változatlan.
 
-### 7. UX finomhangolás — egyszerűbb, felhasználóbarátabb checkout
-- **Telefon mező**: onBlur is normalizál (nem csak submit-kor), zöld pipa látszik ha helyes formátum.
-- **Kosár összesítő**: kattintható, összecsukható lista a Checkout tetején — vendég lássa mit rendel.
-- **Progressive form szekciók**: „1. Kapcsolat → 2. Fizetés → 3. Átvétel" külön blokkokban, checkmarkkal a kitöltötteken. Mobilon így sokkal átláthatóbb.
-- **Ha nincs elérhető slot**: egyértelmű üzenet + „Rendelj holnapra" gomb, ne csendes zsákutca.
-- **Fizetés választó**: nagy kártya-szerű radio (Készpénz átvételkor / Bankkártya átvételkor), ikonokkal.
+### 4. [KRITIKUS] Resend feladó domain lehet nem verifikált → NULLA email megy ki
+A feladó `rendeles@kiscsibe-etterem.hu` (kötőjeles), a BCC viszont `info@kiscsibeetterem.hu` (kötőjel nélküli). A tulaj domainje `kiscsibeetterem.hu` — ha a Resendben csak ez a verifikált domain, akkor a `send()` némán 403-mal elhal (és fire-and-forget, a rendelés amúgy létrejön → tulaj panasza: „nem kap emailt").
 
-### 8. Élesítés + verifikáció
-- Publikálás custom domainre.
-- Playwright teszt matrix: teljes menü + POS, egyedi napi menü + készpénz, `+36 30…` és `06 30…` telefonformátum, duplakattintás (pontosan 1 rendelés).
-- 15:30 utáni teszt: mai opció eltűnik, holnapra átengedi.
-- DB-ben ellenőrzés: `orders` új sor + `abandoned_carts.step = submit_success` konvertálva.
+**Fix:**
+- Feladó átírása `rendeles@kiscsibeetterem.hu`-ra (a tulaj bejáratott domainje).
+- BCC lista változatlanul `info@kiscsibeetterem.hu` + `gataibence@gmail.com`.
+- Email hiba **naplózása** `abandoned_carts` diagnosztikába (`email_send_status`) — a tulaj a felületen lássa, ha bármi email nem ment ki.
+
+### 5. Reggeli átvételi ablak sosem aktiválódik
+A `cartIsBreakfastOnly` a `cart.items.every(it => it.is_breakfast === true)` alapján dönt, de **a kosárba tett tételekben `is_breakfast` sehol nem kerül beállításra** (kód-átvizsgálás igazolta). Emiatt reggeli-only rendelésnél is a 10:30–16:00 lunch ablakot kényszeríti — reggeli tételre 8:00-ra soha nem lehet átvételi időpontot foglalni.
+
+**Fix:**
+- `CartContext.tsx` / `DailyItemSelector` / `BreakfastSection` `addToCart` hívások: reggeli kategóriájú tételeknél `is_breakfast: true` a payloadban.
+- Egyszerű detektálás: `menu_categories.slug` vagy `menu_categories.name` tartalmazza a „reggeli" szót → `is_breakfast: true`.
 
 ---
 
-## Technikai részletek (fejlesztőnek)
+## Amit még átnéztem és rendben van
 
-**Új fájlok:**
-- `supabase/migrations/…_fix_update_daily_portions_and_pickup_hours.sql` — `update_daily_portions` `daily_offer_menus` ág + `validate_pickup_time` frissítés 07:00–16:00-ra.
-- `src/lib/openingHours.ts` — egyetlen forrás a nyitvatartási / cutoff logikára.
-
-**Módosított fájlok:**
-- `src/pages/Checkout.tsx` — `submissionLock` ref, `AbortController`, minden early-return `persistCheckoutSnapshot('validation_blocked')`, `network_error` retry doboz, progressive form szekciók, 15:30 cutoff a date pickerben, kosár-összesítő fejléc.
-- `src/hooks/useAbandonedCartTracking.tsx` — `logValidationBlock(reason)` helper, alacsonyabb hasContact küszöb.
-- `src/components/admin/orders/FailedAndAbandoned.tsx` — „Utolsó 24 óra" statisztika kártya.
-- `supabase/functions/submit-order/index.ts` — inline másolt `openingHours` logika (edge function nem tud `src/`-ből importálni), idempotencia 15-perc bucket, ASAP kötelező `isOpenNow` check, `catch` ág mindig `abandoned_carts.submit_failed` service role-lal.
-
-**DB migráció szükséges**: 1 db, csak függvény body-k (`CREATE OR REPLACE`). Nincs séma változás, visszaállítható.
-
-**Kockázat**: minimális. A `daily_offer_menus` ág hozzáadása nem érinti a többi táblát. Az idempotencia kulcs formátum váltás → élesítés utáni első 15 percben egy vendég ugyanazzal a kosárral kétszer is le tudna adni rendelést, ami elfogadható (eddig semmi nem ment át teljes menüből, tehát tiszta nyereség).
+- **CORS**: mindkét custom domain (`kiscsibe-etterem.hu`, `kiscsibeetterem.hu`) engedélyezve, subdomain wildcard is.
+- **Payment method whitelist**: `normalizePaymentMethod` levédi az ismeretlen értékeket → sosem lesz 23514 check constraint hiba.
+- **Telefon normalizáció**: kliens + szerver oldalon egységesen `+36XXXXXXXXX`.
+- **Rollback kompenzációk**: adag + kapacitás + kupon + rendelés törlés reverse order — helyes.
+- **Idempotency 15-min bucket** kliens+szerver: rendben (csak a unique index hiányzik hozzá).
+- **Email fire-and-forget + `EdgeRuntime.waitUntil`**: nem blokkolja a választ, jó.
+- **ASAP + weekend + 15:30 cutoff + reggeli/ebéd ablak validáció**: mind a három rétegben (kliens, edge, DB trigger) egységes.
+- **RLS `orders` INSERT**: csak service_role — edge function service key-jel ír, kliens sosem tud direkt beírni.
 
 ---
 
-Jóváhagyás után indulhat az implementáció.
+## Változtatások összefoglaló
+
+**DB migráció (1 db):**
+1. `CREATE UNIQUE INDEX orders_idempotency_key_uniq ON public.orders (idempotency_key) WHERE idempotency_key IS NOT NULL;`
+2. `CREATE UNIQUE INDEX abandoned_carts_session_id_uniq ON public.abandoned_carts (session_id);` (előtte duplikátumok deduplikálása `MAX(last_activity_at)` alapján).
+
+**Kód:**
+- `src/hooks/useRealtimeOrders.tsx` — resubscribe + 30s polling + visibilitychange refetch.
+- `supabase/functions/submit-order/index.ts` — feladó `rendeles@kiscsibeetterem.hu`; email status naplózás abandoned_carts diagnosztikába.
+- `src/contexts/CartContext.tsx` (+ `BreakfastSection.tsx` / `DailyItemSelector.tsx` addToCart hívók) — `is_breakfast: true` a reggeli kategóriás tételekre.
+- `src/data/adminChangelog.ts` — új v-es bejegyzés.
+
+**Verifikáció:**
+- Playwright: teljes menü rendelés → DB `orders` sor + admin realtime toast lejön 5s-en belül.
+- Kézi: laptop 2 percre elalvasztás → visszaébredés után polling fallback behúzza az új rendelést.
+- Resend: éles email teszt `rendeles@kiscsibeetterem.hu` feladóval, sikeres delivery log.
+- DB: `SELECT indexdef FROM pg_indexes WHERE indexname IN ('orders_idempotency_key_uniq','abandoned_carts_session_id_uniq')` visszatér.
+
+**Kockázat:** minimális. Az idempotency unique index ütközne, ha a jelenlegi `orders` táblában lennének azonos `idempotency_key`-jű sorok — a migráció a NULL-ekre nem vonatkozik, és a nem-null kulcsok között az elmúlt hónapokban nincs duplikátum (ellenőriztem).
+
+Jóváhagyás után indul az implementáció.

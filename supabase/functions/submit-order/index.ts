@@ -1246,17 +1246,57 @@ serve(async (req) => {
       // and the edge function times out, the client sees an error and retries —
       // creating duplicate orders. EdgeRuntime.waitUntil keeps the promise
       // alive after we've already returned success to the browser.
+      // Feladó a tulaj bejáratott domainjén (kötőjel NÉLKÜL). A régi
+      // "rendeles@kiscsibe-etterem.hu" (kötőjeles) csendben 403-mal
+      // elhalhatott, ha csak a kiscsibeetterem.hu volt verifikálva a Resendben.
       const emailPromise = resend.emails.send({
-        from: 'Kiscsibe Étterem <rendeles@kiscsibe-etterem.hu>',
+        from: 'Kiscsibe Étterem <rendeles@kiscsibeetterem.hu>',
         to: [customer.email],
         bcc: ['info@kiscsibeetterem.hu', 'gataibence@gmail.com'],
         subject: `Kiscsibe – rendelés visszaigazolás #${orderCode}`,
         html: emailHtml,
         text: emailText,
-      }).then(() => {
+      }).then(async () => {
         console.log(`[${requestId}] Confirmation email sent to:`, customer.email);
-      }).catch((emailError) => {
+        // Naplózzuk sikeres kimenetet is, hogy az admin diagnosztikából
+        // egyértelműen látszódjon, hogy a Resend elfogadta a küldést.
+        if (attemptCtx.session_id && attemptCtx.supabase) {
+          try {
+            await attemptCtx.supabase.from('abandoned_carts').update({
+              cart_snapshot: {
+                items: attemptCtx.items || [],
+                diagnostic: {
+                  step: 'submit_success',
+                  email_send_status: 'sent',
+                  email_to: customer.email,
+                  request_id: requestId,
+                  recorded_at: new Date().toISOString(),
+                },
+              },
+            }).eq('session_id', attemptCtx.session_id);
+          } catch (_) { /* non-fatal */ }
+        }
+      }).catch(async (emailError) => {
         console.error(`[${requestId}] Email sending failed:`, emailError);
+        // Kritikus: ha az email küldés hibázik (pl. Resend domain nem
+        // verifikált, kvóta elfogyott), az admin panelen látszódjon.
+        if (attemptCtx.session_id && attemptCtx.supabase) {
+          try {
+            await attemptCtx.supabase.from('abandoned_carts').update({
+              cart_snapshot: {
+                items: attemptCtx.items || [],
+                diagnostic: {
+                  step: 'submit_success',
+                  email_send_status: 'failed',
+                  email_to: customer.email,
+                  email_error: String(emailError?.message || emailError),
+                  request_id: requestId,
+                  recorded_at: new Date().toISOString(),
+                },
+              },
+            }).eq('session_id', attemptCtx.session_id);
+          } catch (_) { /* non-fatal */ }
+        }
       });
 
       try {
