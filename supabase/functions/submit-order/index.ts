@@ -975,8 +975,9 @@ serve(async (req) => {
 
     if (orderInsertError || !orderData) {
       console.error('Order insert error:', orderInsertError);
-      throw new Error('Rendelés mentési hiba');
+      throw new Error(mapDbErrorToHungarian(orderInsertError));
     }
+
 
     const orderId = orderData.id;
     console.log('Created order:', orderId);
