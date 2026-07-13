@@ -765,7 +765,28 @@ const Checkout = () => {
 
     } catch (error: any) {
       console.error("Order submission error:", error);
-      const rawMessage = error?.message || "";
+      let rawMessage = error?.message || "";
+
+      // supabase.functions.invoke wraps non-2xx as FunctionsHttpError with a
+      // generic "Edge Function returned a non-2xx status code" — the real
+      // Hungarian message lives in error.context (a Response).
+      try {
+        const ctx = (error as any)?.context;
+        if (ctx && typeof ctx.text === "function") {
+          const bodyText = await ctx.text();
+          if (bodyText) {
+            try {
+              const parsed = JSON.parse(bodyText);
+              if (parsed?.error && typeof parsed.error === "string") {
+                rawMessage = parsed.error;
+              }
+            } catch {
+              rawMessage = bodyText;
+            }
+          }
+        }
+      } catch { /* keep rawMessage */ }
+
       const isNetworkIssue =
         rawMessage === "__NETWORK_TIMEOUT__" ||
         /failed to fetch|network|networkerror|load failed|abort/i.test(rawMessage);
@@ -773,6 +794,7 @@ const Checkout = () => {
       const userMessage = isNetworkIssue
         ? "Nem sikerült elérni a rendelési szervert. Ellenőrizd az internetet és próbáld újra — nem lesz duplikált rendelés."
         : (rawMessage || "Ismeretlen rendelésleadási hiba");
+
 
       await persistCheckoutSnapshot({
         sessionId: cartSessionId,

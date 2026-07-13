@@ -106,6 +106,66 @@ function normalizePaymentMethod(raw: string | null | undefined): string {
   return 'cash';
 }
 
+// Map raw Postgres/trigger/RPC error messages to customer-facing Hungarian text.
+// Keeps validate_pickup_time / validate_order_date / update_daily_portions /
+// update_capacity_slot / atomic_coupon_increment failures from leaking as
+// English DB text or a generic "Rendelés mentési hiba".
+function mapDbErrorToHungarian(err: unknown): string {
+  const raw = String(
+    (err as any)?.message ??
+    (err as any)?.error_description ??
+    (err as any)?.details ??
+    err ?? ''
+  );
+  if (!raw) return 'Rendelés mentési hiba — kérjük próbáld újra, vagy hívj minket.';
+
+  const lower = raw.toLowerCase();
+
+  // Already a Hungarian message from our code — pass through.
+  // Heuristic: contains typical Hungarian order words.
+  if (/[őűáéíóöúü]/.test(raw) || /rendel|kupon|adag|időpont|napi|köret|étel|hétvég|nyitvatart|múltbeli|foglalt|betelt|elfogyott|feliratkoz|nyitva|zárva|Kiscsibe/i.test(raw)) {
+    // Except a few known raw-throws that we want to soften.
+    if (raw === 'Rendelés mentési hiba') {
+      return 'Nem sikerült a rendelést menteni — kérjük próbáld újra pár másodperc múlva, vagy hívj minket.';
+    }
+    return raw;
+  }
+
+  // Postgres trigger messages (English).
+  if (lower.includes('past dates or times')) {
+    return 'A választott átvételi idő már elmúlt — kérjük, válassz későbbi időpontot.';
+  }
+  if (lower.includes('outside business hours')) {
+    return 'A választott időpont nyitvatartási időn kívül esik (H–P 07:00–16:00).';
+  }
+  if (lower.includes('daily items for past dates')) {
+    return 'A választott nap már lezárult, arra a napra nem adható le rendelés.';
+  }
+  if (lower.includes('insufficient portions')) {
+    return 'Sajnos időközben elfogyott az adag ebből az ételből.';
+  }
+  if (lower.includes('remaining portions cannot be negative')) {
+    return 'Sajnos időközben elfogyott az adag ebből az ételből.';
+  }
+  if (lower.includes('daily offer not found') || lower.includes('daily menu not found') || lower.includes('daily offer menu not found')) {
+    return 'A napi ajánlat nem található — kérjük frissítsd az oldalt.';
+  }
+  if (lower.includes('duplicate key') || lower.includes('unique constraint')) {
+    return 'Ez a rendelés már be lett rögzítve — kérjük ellenőrizd az email értesítőt.';
+  }
+  if (lower.includes('permission denied') || lower.includes('rls')) {
+    return 'Jogosultsági hiba történt — kérjük próbáld újra, vagy hívj minket.';
+  }
+  if (lower.includes('timeout') || lower.includes('timed out')) {
+    return 'A rendelési szerver túl lassan válaszolt — kérjük próbáld újra.';
+  }
+
+  // Unknown DB error — generic soft fallback.
+  return 'Nem sikerült a rendelést menteni — kérjük próbáld újra pár másodperc múlva, vagy hívj minket.';
+}
+
+
+
 
 interface OrderModifier {
   label_snapshot: string;
@@ -915,8 +975,9 @@ serve(async (req) => {
 
     if (orderInsertError || !orderData) {
       console.error('Order insert error:', orderInsertError);
-      throw new Error('Rendelés mentési hiba');
+      throw new Error(mapDbErrorToHungarian(orderInsertError));
     }
+
 
     const orderId = orderData.id;
     console.log('Created order:', orderId);
@@ -1463,9 +1524,10 @@ Kiscsibe Reggeliző & Étterem
       statusCode = 500; // Internal Server Error
     }
     
+    const userMessage = mapDbErrorToHungarian(error);
     return new Response(
       JSON.stringify({
-        error: error.message || 'Ismeretlen hiba történt',
+        error: userMessage,
         request_id: requestId
       }),
       {
@@ -1473,5 +1535,6 @@ Kiscsibe Reggeliző & Étterem
         status: statusCode,
       }
     );
+
   }
 });

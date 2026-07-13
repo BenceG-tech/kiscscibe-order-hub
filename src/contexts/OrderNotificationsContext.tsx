@@ -1,7 +1,7 @@
 import React, { createContext, useContext } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGlobalOrderNotifications } from '@/hooks/useGlobalOrderNotifications';
-import OrderNotificationModal from '@/components/admin/OrderNotificationModal';
+import OrderNotificationOverlay from '@/components/admin/OrderNotificationOverlay';
 
 interface OrderNotificationsContextType {
   newOrdersCount: number;
@@ -28,9 +28,9 @@ export const OrderNotificationsProvider = ({ children }: { children: React.React
   const {
     newOrdersCount,
     clearNewOrdersCount,
-    currentNotification,
-    pendingCount,
-    dismissNotification,
+    pendingOrders,
+    dismissOrder,
+    dismissAll,
     playNotificationSound,
     audioUnlocked,
     lastNewOrderAt,
@@ -40,12 +40,11 @@ export const OrderNotificationsProvider = ({ children }: { children: React.React
 
   return (
     <OrderNotificationsContext.Provider value={{ newOrdersCount, clearNewOrdersCount, playNotificationSound, audioUnlocked, lastNewOrderAt }}>
-
-      {enabled && currentNotification && (
-        <OrderNotificationModal
-          order={currentNotification}
-          onDismiss={dismissNotification}
-          pendingCount={pendingCount}
+      {enabled && pendingOrders.length > 0 && (
+        <OrderNotificationOverlay
+          orders={pendingOrders}
+          onDismissOne={dismissOrder}
+          onDismissAll={dismissAll}
           navigateTo={navigateTo}
         />
       )}

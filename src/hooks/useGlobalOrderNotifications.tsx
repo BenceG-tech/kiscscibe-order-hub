@@ -146,7 +146,25 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
     setPendingOrders(prev => prev.slice(1));
   }, []);
 
+  const dismissOrder = useCallback((id: string) => {
+    setPendingOrders(prev => prev.filter(o => o.id !== id));
+  }, []);
+
+  const dismissAll = useCallback(() => {
+    setPendingOrders([]);
+  }, []);
+
   const clearNewOrdersCount = useCallback(() => setNewOrdersCount(0), []);
+
+  // Sort by pickup_time ASC (most urgent first, nulls last), stable by created_at.
+  const sortPending = (list: PendingOrder[]): PendingOrder[] => {
+    return [...list].sort((a, b) => {
+      const ap = a.pickup_time ? new Date(a.pickup_time).getTime() : Number.POSITIVE_INFINITY;
+      const bp = b.pickup_time ? new Date(b.pickup_time).getTime() : Number.POSITIVE_INFINITY;
+      if (ap !== bp) return ap - bp;
+      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    });
+  };
 
   // ── Notify on a new order (cursor + per-id dedupe) ──
   const notifyIfNew = useCallback((o: PendingOrder) => {
@@ -158,12 +176,14 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
     if (firedIdsRef.current.size > 500) {
       firedIdsRef.current = new Set(Array.from(firedIdsRef.current).slice(-250));
     }
+    console.log('[notification-sound] play', o.id, o.code);
     log('[Notifications] 🔔 New order:', o.code);
     playNotificationSound();
-    setPendingOrders(prev => [...prev, o]);
+    setPendingOrders(prev => sortPending([...prev.filter(p => p.id !== o.id), o]));
     setNewOrdersCount(prev => prev + 1);
     setLastNewOrderAt(o.created_at);
   }, [playNotificationSound]);
+
 
   // ── Sweep: fetch anything newer than cursor, advance cursor at the end ──
   const sweepMissedOrders = useCallback(async () => {
@@ -356,9 +376,12 @@ export const useGlobalOrderNotifications = (enabled: boolean = true) => {
     pendingCount: pendingOrders.length,
     newOrdersCount,
     dismissNotification,
+    dismissOrder,
+    dismissAll,
     clearNewOrdersCount,
     audioUnlocked,
     playNotificationSound,
     lastNewOrderAt,
   };
 };
+
