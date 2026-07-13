@@ -1,105 +1,83 @@
-## Amit most bizonyítottan látok az adatbázisban
+Köszönöm a nyitvatartás pontosítást. Most már **egy forrásból** tudom kezelni az egész rendszert.
 
-- Utolsó sikeres rendelés: **2026-07-02**. Azóta 11 nap alatt **egyetlen** rendelés sem érkezett.
-- `abandoned_carts`: **teljesen üres** — nincs nyoma egyetlen "submit_attempt", "validation_blocked" vagy "submit_failed" sornak sem.
-- `order_attempts`: utolsó bejegyzés is **2026-07-02** (payment_method=`card`, "Rendelés mentési hiba").
-- `submit-order` edge function logok: **nincs friss hívás** (`No logs found`).
+## Nyitvatartási szabályok (véglegesítve)
 
-Ez azt jelenti, hogy a vendégek **el sem érnek a backendig**, és a beépített tracking sem lát semmit. Ennek gyakorlatilag csak két oka lehet:
+| Napszak | Mit lehet | Mikor |
+|---|---|---|
+| **Reggeli átvétel** | Csak reggeli tételek | H–P 07:00–10:00 |
+| **Ebéd átvétel** | Ebéd / napi menü tételek | H–P 10:30–16:00 |
+| **Mai napra rendelés cutoff** | Aznapra még leadható | 15:30-ig |
+| **15:30 után** | Csak másnaptól előrendelés | — |
+| **Hétvége** | Zárva, semmi nem rendelhető | Szo–V |
 
-1. **A publikus/custom domain (`kiscsibe-etterem.hu`) még a régi, hibás checkout kódot szolgálja ki** — a júliusi javítások soha nem lettek élesítve. Ez a legvalószínűbb.
-2. Van egy csendes JS hiba a publikus buildben, ami megakadályozza a submit lefutását, még a tracking előtt.
+Ezt az `openingHours.ts` modulba égetem be konstansként (később könnyen áthelyezhető a `settings` táblába, de a mostani fix üzemidőnél felesleges).
 
-Ehhez jönnek másodlagos, de valós zsákutcák a jelenlegi checkoutban is.
+---
 
-## A gyökérokok, amiket most javítunk
+## Amit javítok — fontossági sorrendben
 
-### A. Publikálási/verzió-rés (elsődleges gyanú)
-- A `useAbandonedCartTracking` és `persistCheckoutSnapshot` már bőven ír, de nulla sor keletkezik → a vendégek nem ezt a kódot futtatják.
-- Meg kell erősíteni éles felől: build hash, `submit-order` verzió, DevTools-ban látszó `abandoned_carts` fetch a publikus domainen.
+### 1. [KRITIKUS] Napi teljes menük fix (DB migráció)
+Az `update_daily_portions` függvény jelenleg elutasít **minden** `daily_offer_menus` táblás hívást (`'Invalid table name'` hibával). Ez azt jelenti, hogy **a leves + főétel csomag rendelések 100%-a csendben elbukik hónapok óta**. Ez önmagában megmagyarázza a 20-30 000 Ft-os elveszett rendeléseket. Egy migráció, `daily_offer_menus` ág hozzáadása ugyanazzal a `FOR UPDATE` lock mintával mint a másik két ág.
 
-### B. Késői napi menü zsákutca (bizonyított logikai hiba)
-- `fetchTimeSlots` szűrője kizár minden slotot, ami `<= most + 15 perc`.
-- Ha valaki 14:45 után a mai napi menüt teszi kosárba, `dailyDates = [ma]`, a `targetDates` **csak** a mai napot tartalmazza → nulla slot, `pickup_type=scheduled` kényszerítve, `pickup_time` üres → soha nem lehet leadni.
-- A backend viszont még 15:00-ig fogadná — ez frontend-only zsákutca.
+### 2. [KRITIKUS] Duplakattintás-védelem + retry hálózati hibára
+- `useRef` alapú `submissionLock` — az első kattintáskor azonnal blokkol, még a React state update előtt (a mostani `disabled={isSubmitting}` háromszor is elsülhet gyors kattintásra).
+- `AbortController` 30 másodperces timeout — a vendég ne várjon némán percekig.
+- **Hálózati hiba esetén**: piros doboz „A rendelést nem sikerült elküldeni. Ellenőrizd az internetet és próbáld újra." + újra aktív gomb, de **ugyanazzal az idempotencia kulccsal** → ha a backend mégis megkapta, nem lesz duplikáció.
+- Sikeres válasz után a gomb végleg tiltva marad, redirect az `OrderConfirmation`-re.
 
-### C. Session/idempotencia normalizáció
-- Az idempotencia kulcs a nyers `customer.phone` mezőt használja, a frontend viszont `+36<normalizált>` alakot küld, de a régi cache-ből érkező kliens `+36 30 …` szóközös alakot is küldhet → két retry két külön kulcsot ad, duplikált rendelés keletkezhet.
-- Kell egy egységes szerveroldali telefon-normalizálás az idempotencia kulcs képzésekor.
+### 3. Egységes nyitvatartás minden rétegben
+- Új `src/lib/openingHours.ts` a fenti szabályokkal:
+  - `isBreakfastPickupAllowed(datetime)` — 07:00–10:00
+  - `isLunchPickupAllowed(datetime)` — 10:30–16:00
+  - `canOrderForToday(now)` — false ha aznap már ≥15:30
+  - `getEarliestPickup(now)` — visszaadja a legkorábbi valid slotot (mai 15:30 előtt: most+puffer; utána: holnap 07:00 / 10:30)
+- A `Checkout.tsx` és `submit-order/index.ts` innen olvas — vége a három különböző implementációnak.
+- A `validate_pickup_time` DB triggert is frissítjük: 07:00–16:00 valid, de a business logika a kosár tartalmától függően szűkíti (reggeli vs ebéd) az edge functionben.
+- **A 15:30 cutoff-ot** a Checkout időpont-választóban is érvényesítjük: 15:30 után a „Ma" opció eltűnik, csak holnap+ marad.
 
-### D. Silent RLS/anon insert kockázat
-- Az `abandoned_carts` INSERT policy megköveteli, hogy a `session_id` egyezzen a `x-session-id` fejléccel. A tracking küldi a headert, de ha bármelyik réteg (CDN, proxy) leszedi, minden insert csendben elbukik → láthatatlanul veszítünk el minden nyomot.
-- Kell egy szerveroldali fallback út: az `submit-order` edge function is írjon `abandoned_carts` sort minden bejövő próbálkozásra (submit_attempt) és minden hibára (submit_failed), service role kulccsal — így soha nem tűnhet el a nyom.
+### 4. Minden validációs hiba nyoma megmarad
+Jelenleg a `handleSubmit` korai return-jei (rossz telefon, hiányzó név, nincs időpont, több napi dátum) csak toast-ot dobnak és **semmi** nyoma nincs az adminnak. Innentől:
+- Minden ilyen `return` előtt egy `persistCheckoutSnapshot('validation_blocked', errorMessage)` hívás.
+- A `submit-order` edge function `catch` ágai szintén írnak `abandoned_carts`-ba service role key-jel — még ha az idempotencia vagy készlet check dob, akkor is látszik az adminban.
+- A `FailedAndAbandoned` admin panel új „Utolsó 24 óra próbálkozásai" kártya: összes próbálkozás, top 3 hibaüzenet, gyors szűrők.
 
-### E. Fizetési mód konzisztencia
-- `orders_payment_method_check` engedi: `cash`, `pos`, `card_online`.
-- A UI csak `cash` és `pos` opciót kínál. A régi kliensek `card` értéket küldhetnek → a backend már normalizálja `pos`-ra, de a `card_online` út nincs karbantartva és nincs UI-ban.
-- Nem hozunk vissza online fizetést — csak biztosítjuk, hogy minden bejövő érték biztonságosan `cash`/`pos`-ra normalizálódjon, és semmi ne akadjon el rejtett check-constraint hibán.
+### 5. Idempotencia időablak — ne veszítsünk el legitim ismétlő rendeléseket
+Jelenleg az `idempotency_key` **örökre** globálisan egyedi. Ha ugyanaz a vendég 20 perccel később ugyanazt a kosarat rendeli, csendben az első rendelés kódját kapja vissza. Fix: a kulcshoz hozzáfűzünk egy 15-perces időbucket-et (`Math.floor(Date.now() / (15*60*1000))`). Gyors dupla kattintás → dedupál. 15 perc után új rendelés → átmegy.
 
-### F. Telefon-mező tapasztalati botlások
-- A `+36` prefix fixen látszik, de a `+` karaktert az onChange kiszűri, így a beillesztett `+36 30 …` érték `36 30 …`-vé válik és `normalizeHungarianPhone` ezt már kezeli — jó.
-- Viszont ha valaki a `+36` prefix mellé `+3630…` alakot ír, vizuálisan `+36+3630…` látszik. A submit ettől még leadja a rendelést, de a UX zavaró és pánikot okoz. Kell egy szelídebb, csak-számokra szűrő + tippszöveg.
+### 6. ASAP rendelés is validálódik
+Ha `pickup_time` üres, a backend most simán átengedi. Innentől kötelezően lefuttatja az `openingHours` check-et — hétvégén / záráskor nem enged át rendelést, még ha a kliens hibásan is küldi.
 
-### G. Kosár + napi ajánlat kombinációk
-- Ha a kosár két különböző dátumú napi ajánlatot tartalmaz, a submit teljesen blokkol egy piros szalaggal, de nincs egy-kattintásos "Távolítsd el az egyiket" gomb.
-- Kell egy gyors CTA, ami vagy a régebbi napi tételt tartja meg, vagy a felhasználót visszaviszi a kosárba.
+### 7. UX finomhangolás — egyszerűbb, felhasználóbarátabb checkout
+- **Telefon mező**: onBlur is normalizál (nem csak submit-kor), zöld pipa látszik ha helyes formátum.
+- **Kosár összesítő**: kattintható, összecsukható lista a Checkout tetején — vendég lássa mit rendel.
+- **Progressive form szekciók**: „1. Kapcsolat → 2. Fizetés → 3. Átvétel" külön blokkokban, checkmarkkal a kitöltötteken. Mobilon így sokkal átláthatóbb.
+- **Ha nincs elérhető slot**: egyértelmű üzenet + „Rendelj holnapra" gomb, ne csendes zsákutca.
+- **Fizetés választó**: nagy kártya-szerű radio (Készpénz átvételkor / Bankkártya átvételkor), ikonokkal.
 
-## Javítási terv (kód + élesítés)
+### 8. Élesítés + verifikáció
+- Publikálás custom domainre.
+- Playwright teszt matrix: teljes menü + POS, egyedi napi menü + készpénz, `+36 30…` és `06 30…` telefonformátum, duplakattintás (pontosan 1 rendelés).
+- 15:30 utáni teszt: mai opció eltűnik, holnapra átengedi.
+- DB-ben ellenőrzés: `orders` új sor + `abandoned_carts.step = submit_success` konvertálva.
 
-### 1. Élesítési sanity check és kényszerű publikálás
-- A javítások után **azonnal publikálunk** a custom domainre. Ha nem publikáljuk, mindez hatástalan.
-- Nyitunk egy `/admin` alatt látható "utolsó publikált build ideje" jelzést a `AdminUpdatesBanner`-be, hogy a tulaj bármikor le tudja ellenőrizni, éles-e a legfrissebb kód.
-
-### 2. Késői napi menü fallback (B pont)
-- Ha a `dailyDates` csak a mai napot tartalmazza és minden mai slot lejárt a +15 perc puffer miatt:
-  - Automatikusan felajánljuk a **most azonnali** átvételt (ASAP), ha Budapest-idő szerint még 15:00 előtt vagyunk.
-  - Ha az ASAP is tiltott, mutassunk egy egyértelmű üzenetet ("Ma már nem tudunk új rendelést fogadni") ahelyett, hogy csendes zsákutcába vinnénk.
-- A +15 perces puffert 10 percre csökkentjük a UI oldalon, hogy ne veszítsünk el használható slotot.
-
-### 3. Szerveroldali telefon-normalizálás és idempotencia (C pont)
-- `submit-order` elején egységesen normalizáljuk a `customer.phone` értéket ugyanazzal a logikával, mint a frontend: minden nem-számjegyet levágunk, `0036`/`36`/`06` prefixeket kezeljük, végül `+36<9-jegy>` alakra hozzuk.
-- Az idempotencia kulcs a normalizált telefonszámmal képződjön → egy vendég két retry-a azonos kulcsot kap → duplikáció kizárva.
-
-### 4. Szerveroldali abandoned_carts fallback (D pont)
-- A `submit-order` a legelső biztos ponton (JSON parse után) írjon egy `submit_attempt` sort `abandoned_carts`-ba service role kulccsal, `session_id` és a kosár snapshot alapján.
-- Bármelyik `throw` esetén a `catch` ág frissítse ezt a sort `submit_failed` állapotra, a konkrét hibaüzenettel.
-- Így akkor is látjuk a próbálkozást, ha a kliens oldali tracking headere elveszik útközben, vagy a vendég böngészője azonnal bezárul.
-- A meglévő `order_attempts` táblát külön is töltjük hibaesetekre, a mostani logika szerint.
-
-### 5. Fizetési mód biztonsági háló (E pont)
-- A `submit-order` az elején fehérlistát alkalmaz: `cash` és `pos` mennek át; `card` → `pos` (már megvan); minden más `payment_method` → `cash`-re esik vissza + figyelmeztetés a logban, hogy soha ne bukjon check-constraint miatt.
-- A UI-ban a jelenlegi két rádiógomb marad ("Készpénz átvételkor" / "Bankkártya átvételkor"), egyértelmű címkékkel, alapértelmezetten `cash`.
-
-### 6. Checkout UX finomhangolás (F–G pont)
-- A telefon mezőn:
-  - Beviteli hint: "Csak a számokat írd, országhívó nem kell — pl. `30 123 4567`".
-  - Az onChange végén, ha a bevitel `+36`-tal vagy `06`-tal kezdődik, csendben levágjuk.
-- A "különböző dátumú napi ajánlatok" bannerhez adunk egy **"Vissza a kosárhoz"** gombot és egy **"Töröld a régebbit"** egykattintásos akciót.
-- A "Rendelés leadása" gomb továbbra sem tiltható a felhasználó által látott validációk alapján — kattintáskor toast + inline hibaüzenet vezeti végig, hogy mit kell javítani. (Ez már így van, csak megerősítjük a szövegeket.)
-
-### 7. Rendelési kísérletek admin láthatósága
-- A `FailedAndAbandoned` panelen külön szekcióba kerülnek a `submit_attempt` (bejövő próbálkozás) és `submit_failed` (backend elutasította) sorok, az utóbbi mellett a konkrét hibaüzenettel.
-- A rendeléskezelő tetején lévő "Figyelem" kártyán megjelenik az utolsó 24/72 óra próbálkozási száma, hogy azonnal látszódjon, ha ismét némán "eltűnnek" rendelések.
-
-### 8. Ellenőrzés élesben
-- A publikálás után Playwright + saját kézi teszt:
-  - Név + `06 30 …` telefon + készpénz → sikeres rendelés.
-  - Név + `+36 30 …` telefon + POS → sikeres rendelés.
-  - Késői (14:50) napi menü kosárban → felajánlott ASAP átvétel → sikeres rendelés.
-  - Két különböző dátumú napi menü → egykattintásos feloldás → sikeres rendelés.
-- DB ellenőrzés a teszt után:
-  - `orders` táblában megjelennek az új sorok.
-  - `abandoned_carts` mind a sikeres, mind a szándékosan hibás próbálkozásra tartalmaz sort.
+---
 
 ## Technikai részletek (fejlesztőnek)
 
-- **Frontend érintett fájlok:** `src/pages/Checkout.tsx`, `src/hooks/useAbandonedCartTracking.tsx`.
-- **Backend érintett fájl:** `supabase/functions/submit-order/index.ts` (telefon-normalizálás, szerver oldali `abandoned_carts` írás service role kulccsal, payment_method fehérlista).
-- **Admin érintett fájl:** `src/components/admin/orders/FailedAndAbandoned.tsx`, `src/pages/admin/OrdersManagement.tsx`, `src/components/admin/AdminUpdatesBanner.tsx` (build/publish jelzés).
-- **DB migráció nem szükséges** — az `abandoned_carts` táblán van `service_role` grant, a jelenlegi séma elég.
-- **Élesítés:** kód javítás után `preview_ui--publish` a custom domainre. Enélkül semmi nem ér el a vendégekhez.
+**Új fájlok:**
+- `supabase/migrations/…_fix_update_daily_portions_and_pickup_hours.sql` — `update_daily_portions` `daily_offer_menus` ág + `validate_pickup_time` frissítés 07:00–16:00-ra.
+- `src/lib/openingHours.ts` — egyetlen forrás a nyitvatartási / cutoff logikára.
 
-## Kockázat, amit vállalunk
+**Módosított fájlok:**
+- `src/pages/Checkout.tsx` — `submissionLock` ref, `AbortController`, minden early-return `persistCheckoutSnapshot('validation_blocked')`, `network_error` retry doboz, progressive form szekciók, 15:30 cutoff a date pickerben, kosár-összesítő fejléc.
+- `src/hooks/useAbandonedCartTracking.tsx` — `logValidationBlock(reason)` helper, alacsonyabb hasContact küszöb.
+- `src/components/admin/orders/FailedAndAbandoned.tsx` — „Utolsó 24 óra" statisztika kártya.
+- `supabase/functions/submit-order/index.ts` — inline másolt `openingHours` logika (edge function nem tud `src/`-ből importálni), idempotencia 15-perc bucket, ASAP kötelező `isOpenNow` check, `catch` ág mindig `abandoned_carts.submit_failed` service role-lal.
 
-- A szerveroldali `abandoned_carts` írás minden bejövő hívást kb. 1-2 plusz DB művelettel terhel — elhanyagolható.
-- A telefon-normalizálás megváltoztathat régebbi rögzítési szokásokat (a rendelésekben mostantól konzisztensen `+36<9jegy>` formátum lesz), de a KDS és az admin nézet ezt már így kezeli.
+**DB migráció szükséges**: 1 db, csak függvény body-k (`CREATE OR REPLACE`). Nincs séma változás, visszaállítható.
+
+**Kockázat**: minimális. A `daily_offer_menus` ág hozzáadása nem érinti a többi táblát. Az idempotencia kulcs formátum váltás → élesítés utáni első 15 percben egy vendég ugyanazzal a kosárral kétszer is le tudna adni rendelést, ami elfogadható (eddig semmi nem ment át teljes menüből, tehát tiszta nyereség).
+
+---
+
+Jóváhagyás után indulhat az implementáció.

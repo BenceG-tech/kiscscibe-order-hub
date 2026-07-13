@@ -53,12 +53,31 @@ function budapestDayOfWeek(dateStr: string): number {
   return new Date(Date.UTC(y, mo - 1, da)).getUTCDay();
 }
 
-function isBudapestLunchWindow(dateStr: string, timeStr: string): boolean {
+// ─── Opening-hours business rules (single source of truth for backend) ───
+// Mon–Fri only, weekends closed.
+//   Breakfast pickup window: 07:00 – 10:00
+//   Lunch pickup window:     10:30 – 16:00
+//   Same-day order cutoff:   15:30 (after which "today" is not accepted)
+const BREAKFAST_START_MIN = 7 * 60;
+const BREAKFAST_END_MIN = 10 * 60;
+const LUNCH_START_MIN = 10 * 60 + 30;
+const LUNCH_END_MIN = 16 * 60;
+const TODAY_ORDER_CUTOFF_MIN = 15 * 60 + 30;
+
+function isWithinPickupWindow(dateStr: string, timeStr: string, isBreakfastOnly: boolean): boolean {
   const dow = budapestDayOfWeek(dateStr);
   if (dow === 0 || dow === 6) return false;
   const [hours, minutes] = timeStr.split(':').map(Number);
   const totalMinutes = hours * 60 + minutes;
-  return totalMinutes >= 10 * 60 + 30 && totalMinutes <= 15 * 60;
+  if (isBreakfastOnly) {
+    return totalMinutes >= BREAKFAST_START_MIN && totalMinutes <= BREAKFAST_END_MIN;
+  }
+  return totalMinutes >= LUNCH_START_MIN && totalMinutes <= LUNCH_END_MIN;
+}
+
+// Kept for backwards compatibility with existing callsites
+function isBudapestLunchWindow(dateStr: string, timeStr: string): boolean {
+  return isWithinPickupWindow(dateStr, timeStr, false);
 }
 
 // Normalize any Hungarian phone input to canonical "+36XXXXXXXXX" (9 digits after +36).
@@ -128,6 +147,10 @@ interface OrderRequest {
   items: OrderItem[];
   coupon_code?: string | null;
   session_id?: string | null;
+  // Optional 15-min bucket sent by the client so retries of the SAME customer
+  // intent (network error/timeout) collapse into a single order via the
+  // idempotency_key unique index. Missing → server derives its own bucket.
+  idempotency_bucket?: number | null;
 }
 
 serve(async (req) => {
@@ -180,6 +203,7 @@ serve(async (req) => {
       items,
       coupon_code,
       session_id,
+      idempotency_bucket: clientIdempotencyBucket,
     }: OrderRequest = await req.json();
 
     // Backward-compat + safety net: whitelist payment_method so we never bounce off the check constraint.
@@ -237,19 +261,25 @@ serve(async (req) => {
 
 
 
-    // ── Idempotency: dedupe network retries / double-clicks within a 5-minute window.
-    //    Key = session_id + phone + items shape. A fresh session_id (issued per Checkout mount)
-    //    lets the same customer legitimately place a second identical order later.
+    // ── Idempotency: dedupe network retries / double-clicks.
+    //    Key = session_id + phone + items shape + 15-min bucket.
+    //    The bucket ensures the SAME customer intent (network retry within
+    //    15 minutes) collapses to one row via orders.idempotency_key unique
+    //    index, but a legit second identical order 15+ minutes later gets a
+    //    fresh key and goes through instead of being silently merged.
     let idempotency_key: string | null = null;
     if (session_id && customer?.phone && Array.isArray(items)) {
       const totalQty = items.reduce((s, it) => s + (Number(it?.qty) || 0), 0);
-      idempotency_key = `${session_id}|${customer.phone}|${items.length}|${totalQty}|${pickup_date || ''}|${pickup_time_slot || ''}`.slice(0, 255);
+      const bucket = typeof clientIdempotencyBucket === 'number' && Number.isFinite(clientIdempotencyBucket)
+        ? clientIdempotencyBucket
+        : Math.floor(Date.now() / (15 * 60 * 1000));
+      idempotency_key = `${session_id}|${customer.phone}|${items.length}|${totalQty}|${pickup_date || ''}|${pickup_time_slot || ''}|b${bucket}`.slice(0, 255);
       try {
         const { data: existing } = await supabase
           .from('orders')
           .select('id, code, total_huf')
           .eq('idempotency_key', idempotency_key)
-          .gt('created_at', new Date(Date.now() - 5 * 60 * 1000).toISOString())
+          .gt('created_at', new Date(Date.now() - 30 * 60 * 1000).toISOString())
           .maybeSingle();
         if (existing) {
           console.warn(`[${requestId}] Duplicate submission detected — returning existing order ${existing.code}`);
@@ -532,8 +562,35 @@ serve(async (req) => {
       if (dailyDate !== nowBudapest.date) {
         throw new Error('Napi ajánlatot csak a saját napjára, időpont választással lehet előrendelni');
       }
-      if (!isBudapestLunchWindow(nowBudapest.date, nowBudapest.time)) {
-        throw new Error('Napi ajánlatot mielőbbi átvétellel csak 10:30 és 15:00 között lehet rendelni');
+      const isBreakfastOnlyCart = (items || []).length > 0
+        && (items || []).every((it: any) => it?.is_breakfast === true);
+      if (!isWithinPickupWindow(nowBudapest.date, nowBudapest.time, isBreakfastOnlyCart)) {
+        const win = isBreakfastOnlyCart ? '07:00 és 10:00' : '10:30 és 16:00';
+        throw new Error(`Mielőbbi átvétellel csak ${win} között lehet rendelni`);
+      }
+      const [nowH, nowM] = nowBudapest.time.split(':').map(Number);
+      if (nowH * 60 + nowM >= TODAY_ORDER_CUTOFF_MIN) {
+        throw new Error('Ma már nem tudunk új rendelést fogadni (15:30 után).');
+      }
+    }
+
+    // Extra safety net: ASAP order with no pickup_time / pickup_date at all.
+    // Previously this path completely bypassed weekend/hours validation.
+    if (!pickup_date && !pickup_time_slot && !pickup_time) {
+      const nowBudapest = getBudapestParts();
+      const dow = budapestDayOfWeek(nowBudapest.date);
+      if (dow === 0 || dow === 6) {
+        throw new Error('Hétvégén zárva tartunk — kérjük hétfőn (vagy egy nyitva tartó napra) adj le rendelést.');
+      }
+      const isBreakfastOnlyCart = (items || []).length > 0
+        && (items || []).every((it: any) => it?.is_breakfast === true);
+      if (!isWithinPickupWindow(nowBudapest.date, nowBudapest.time, isBreakfastOnlyCart)) {
+        const win = isBreakfastOnlyCart ? '07:00 és 10:00' : '10:30 és 16:00';
+        throw new Error(`Éppen zárva vagyunk — mielőbbi átvételes rendelés csak ${win} között lehetséges.`);
+      }
+      const [nowH, nowM] = nowBudapest.time.split(':').map(Number);
+      if (nowH * 60 + nowM >= TODAY_ORDER_CUTOFF_MIN) {
+        throw new Error('Ma már nem tudunk új rendelést fogadni (15:30 után). Kérjük válassz holnapi időpontot.');
       }
     }
 
@@ -681,24 +738,40 @@ serve(async (req) => {
       if (capacityError && capacityError.code === 'PGRST116') {
         console.log('Capacity slot not found, creating fallback slot for:', date, time);
         
-        // Validate business hours (Budapest local) BEFORE creating slot,
-        // and align with validate_pickup_time (10:30–15:00 weekdays only).
+        // Validate business hours (Budapest local) BEFORE creating slot.
+        // Broader window than the old lunch-only rule: 07:00–16:00 weekdays;
+        // breakfast-only carts must be inside 07:00–10:00, everything else
+        // inside 10:30–16:00.
         const dayOfWeek = budapestDayOfWeek(date);
         const [hours, minutes] = time.split(':').map(Number);
         const totalMinutes = hours * 60 + minutes;
 
-        console.log(`Validating business hours (Budapest): date=${date}, time=${time}, dow=${dayOfWeek}, mins=${totalMinutes}`);
+        const isBreakfastOnlyCart = (items || []).length > 0
+          && (items || []).every((it: any) => it?.is_breakfast === true);
+
+        console.log(`Validating business hours (Budapest): date=${date}, time=${time}, dow=${dayOfWeek}, mins=${totalMinutes}, breakfastOnly=${isBreakfastOnlyCart}`);
 
         if (dayOfWeek === 0 || dayOfWeek === 6) {
           console.error(`[${requestId}] Rejected: weekend closed (dow=${dayOfWeek})`);
           throw new Error('Hétvégén zárva tartunk');
         }
 
-        // Lunch window: 10:30 – 15:00 (matches validate_pickup_time trigger)
-        const isValidTime = totalMinutes >= 10 * 60 + 30 && totalMinutes <= 15 * 60;
+        const isValidTime = isWithinPickupWindow(date, time, isBreakfastOnlyCart);
         if (!isValidTime) {
-          console.error(`[${requestId}] Rejected: outside lunch window (${time})`);
-          throw new Error('A kiválasztott időpont nyitvatartási időn kívül esik (10:30 – 15:00)');
+          const win = isBreakfastOnlyCart ? '07:00 – 10:00 (reggeli)' : '10:30 – 16:00 (ebéd)';
+          console.error(`[${requestId}] Rejected: outside pickup window (${time}, window=${win})`);
+          throw new Error(`A kiválasztott időpont nyitvatartási időn kívül esik (${win})`);
+        }
+
+        // Same-day cutoff: after 15:30 no more today-orders (owner rule).
+        const nowBp = getBudapestParts();
+        if (date === nowBp.date) {
+          const [nowH, nowM] = nowBp.time.split(':').map(Number);
+          const nowMin = nowH * 60 + nowM;
+          if (nowMin >= TODAY_ORDER_CUTOFF_MIN) {
+            console.error(`[${requestId}] Rejected: past today's 15:30 cutoff (now=${nowBp.time})`);
+            throw new Error('Ma már nem tudunk új rendelést fogadni (15:30 után). Kérjük válassz holnapi vagy későbbi időpontot.');
+          }
         }
 
         console.log('Business hours validation passed');

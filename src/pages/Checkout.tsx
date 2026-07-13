@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,10 +14,20 @@ import { useToast } from "@/components/ui/use-toast";
 import { LoadingSpinner } from "@/components/ui/loading";
 import { Badge } from "@/components/ui/badge";
 import ModernNavigation from "@/components/ModernNavigation";
-import { ArrowLeft, Check, Clock, CreditCard, ShoppingCart, User, FileText } from "lucide-react";
+import { ArrowLeft, Check, Clock, CreditCard, ShoppingCart, User, FileText, AlertTriangle, RefreshCw } from "lucide-react";
 import { persistCheckoutSnapshot, useAbandonedCartTracking } from "@/hooks/useAbandonedCartTracking";
 
 const DEV = import.meta.env.DEV;
+
+// ─── Opening-hours business rules (single source of truth) ─────────────────
+// Mon–Fri only. Weekends closed. Same-day orders accepted only until 15:30.
+//   Breakfast pickup window: 07:00 – 10:00
+//   Lunch pickup window:     10:30 – 16:00
+const TODAY_ORDER_CUTOFF_MIN = 15 * 60 + 30;
+const BREAKFAST_START_MIN = 7 * 60;
+const BREAKFAST_END_MIN = 10 * 60;
+const LUNCH_START_MIN = 10 * 60 + 30;
+const LUNCH_END_MIN = 16 * 60;
 
 // --- Progress Indicator Component ---
 const CheckoutProgress = () => {
@@ -133,6 +143,15 @@ const Checkout = () => {
   const [couponCode, setCouponCode] = useState("");
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponMessage, setCouponMessage] = useState<{ success: boolean; text: string } | null>(null);
+  const [networkError, setNetworkError] = useState<string | null>(null);
+
+  // Hard duplicate-submit lock: gates the very first line of handleSubmit,
+  // BEFORE React re-render can disable the button. Prevents duplicate orders
+  // on double-tap, slow networks, or race conditions.
+  const submissionLockRef = useRef(false);
+  // Stable per-attempt idempotency bucket. Reused if the previous attempt
+  // failed on network/timeout so the backend dedupes the retry.
+  const idempotencyBucketRef = useRef<number | null>(null);
 
   // Track abandoned carts while the user fills in checkout
   const cartSessionId = useAbandonedCartTracking({
@@ -194,17 +213,37 @@ const Checkout = () => {
     return new Date(Date.UTC(year, month - 1, day)).getUTCDay();
   };
 
-  const isBudapestLunchWindow = (date: string, time?: string) => {
+  // Does this cart include only breakfast items? Then use breakfast pickup window.
+  // Otherwise use lunch window (or both if mixed - defensively allow lunch).
+  const cartIsBreakfastOnly = useMemo(() => {
+    if (cart.items.length === 0) return false;
+    return cart.items.every((it) => (it as any).is_breakfast === true);
+  }, [cart.items]);
+
+  const isWithinPickupWindow = (date: string, time?: string) => {
     const dayOfWeek = getDayOfWeekFromDateStr(date);
     if (dayOfWeek === 0 || dayOfWeek === 6) return false;
     if (!time) return true;
     const mins = minutesFromTime(time);
-    return mins >= 10 * 60 + 30 && mins <= 15 * 60;
+    if (cartIsBreakfastOnly) {
+      return mins >= BREAKFAST_START_MIN && mins <= BREAKFAST_END_MIN;
+    }
+    // Default (lunch / mixed): allow the full lunch window.
+    return mins >= LUNCH_START_MIN && mins <= LUNCH_END_MIN;
+  };
+
+  // Backwards-compat alias used elsewhere in this file
+  const isBudapestLunchWindow = isWithinPickupWindow;
+
+  const canOrderForToday = () => {
+    const bp = getBudapestNowParts();
+    return minutesFromTime(bp.time) < TODAY_ORDER_CUTOFF_MIN;
   };
 
   const canUseAsap = () => {
     const bp = getBudapestNowParts();
-    if (!isBudapestLunchWindow(bp.date, bp.time)) return false;
+    if (!isWithinPickupWindow(bp.date, bp.time)) return false;
+    if (!canOrderForToday()) return false;
     if (dailyDates.length === 0) return true;
     return dailyDates.length === 1 && dailyDates[0] === bp.date;
   };
@@ -247,9 +286,10 @@ const Checkout = () => {
     if (dayOfWeek === 0 || dayOfWeek === 6) return [];
 
     const slots: TimeSlot[] = [];
-    // Lunch service: 10:30 – 15:00, every 30 minutes
-    const startMinutes = 10 * 60 + 30;
-    const endMinutes = 15 * 60;
+    // Cart-aware windows: breakfast-only carts → 07:00–10:00,
+    // everything else → 10:30–16:00.
+    const startMinutes = cartIsBreakfastOnly ? BREAKFAST_START_MIN : LUNCH_START_MIN;
+    const endMinutes = cartIsBreakfastOnly ? BREAKFAST_END_MIN : LUNCH_END_MIN;
     for (let m = startMinutes; m <= endMinutes; m += 30) {
       const hour = Math.floor(m / 60);
       const minute = m % 60;
@@ -369,19 +409,20 @@ const Checkout = () => {
         })
         .filter(slot => {
           const key = `${slot.date}_${slot.timeslot}`;
-          
+
           if (bufferBlockedSlots.has(key)) return false;
-          
+
           const bp = getBudapestNowParts();
           if (slot.date < bp.date) return false;
           if (slot.date === bp.date) {
+            // Same-day cutoff: after 15:30 no more today-slots at all.
+            if (minutesFromTime(bp.time) >= TODAY_ORDER_CUTOFF_MIN) return false;
             const slotMinutes = minutesFromTime(slot.timeslot);
-            // 10-min lead time. Backend still validates 10:30–15:00 window, so
-            // any slot inside business hours + 10 min lead is safe.
+            // 10-min lead time.
             const minAllowedMinutes = minutesFromTime(bp.time) + 10;
             if (slotMinutes <= minAllowedMinutes) return false;
           }
-          
+
           return true;
         })
         .sort((a, b) => {
@@ -482,6 +523,24 @@ const Checkout = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // ── Hard duplicate-submit lock ──
+    // Runs BEFORE any React state update, so back-to-back native submit events
+    // (double-tap, "enter" spam, screen reader activation) can never fire the
+    // fetch twice. Released only on validation failure or in the finally block.
+    if (submissionLockRef.current) {
+      if (DEV) console.log('[Checkout] Submit ignored — lock already held');
+      return;
+    }
+    submissionLockRef.current = true;
+
+    // Clear any previous network-error banner from a prior retry
+    setNetworkError(null);
+
+    // Helper: release lock on early return
+    const releaseLock = () => {
+      submissionLockRef.current = false;
+    };
+
     const normalizedForTracking = normalizeHungarianPhone(formData.phone);
     const trackingPhone = normalizedForTracking ? `+36${normalizedForTracking}` : formData.phone;
 
@@ -527,6 +586,7 @@ const Checkout = () => {
         description: message,
         variant: "destructive",
       });
+      releaseLock();
       return;
     }
 
@@ -538,6 +598,7 @@ const Checkout = () => {
         description: nameErr || phoneErr || emailErr,
         variant: "destructive",
       });
+      releaseLock();
       return;
     }
 
@@ -548,17 +609,17 @@ const Checkout = () => {
         description: "Az átvételhez kérjük válassz egy elérhető időpontot a listából.",
         variant: "destructive",
       });
+      releaseLock();
       return;
     }
 
-    
     if (DEV) console.log('=== RENDELÉS LEADÁS DEBUG ===', {
       itemCount: cart.items.length,
       dailyDates,
       multipleDailyDates: hasMultipleDailyDates(),
       businessHours: isBusinessHours(),
     });
-    
+
     if (hasMultipleDailyDates()) {
       await persistValidationBlock("Különböző dátumú napi ajánlatok/menük nem rendelhetőek egyszerre");
       toast({
@@ -566,16 +627,17 @@ const Checkout = () => {
         description: "Különböző dátumú napi ajánlatok/menük nem rendelhetőek egyszerre",
         variant: "destructive"
       });
+      releaseLock();
       return;
     }
-    
+
     if (formData.pickup_type === 'scheduled' && formData.pickup_date && formData.pickup_time) {
       const bp = getBudapestNowParts();
       const selectedMinutes = minutesFromTime(formData.pickup_time);
       const selectedIsPast =
         formData.pickup_date < bp.date ||
         (formData.pickup_date === bp.date && selectedMinutes <= minutesFromTime(bp.time));
-      
+
       if (selectedIsPast) {
         await persistValidationBlock("Múltbeli időpontra nem lehet rendelni");
         toast({
@@ -583,33 +645,56 @@ const Checkout = () => {
           description: "Múltbeli időpontra nem lehet rendelni",
           variant: "destructive"
         });
+        releaseLock();
         return;
       }
-      
+
       const dayOfWeek = getDayOfWeekFromDateStr(formData.pickup_date);
-      
+
       if (dayOfWeek === 0 || dayOfWeek === 6) {
         await persistValidationBlock("Hétvégén zárva tartunk");
         toast({
-          title: "Hiba", 
+          title: "Hiba",
           description: "Hétvégén zárva tartunk",
           variant: "destructive"
         });
+        releaseLock();
         return;
       }
-      
-      if (!isBudapestLunchWindow(formData.pickup_date, formData.pickup_time)) {
-        await persistValidationBlock("A kiválasztott időpont nyitvatartási időn kívül esik (10:30–15:00)");
+
+      if (!isWithinPickupWindow(formData.pickup_date, formData.pickup_time)) {
+        const window = cartIsBreakfastOnly ? "07:00–10:00 (reggeli)" : "10:30–16:00 (ebéd)";
+        const msg = `A kiválasztott időpont nyitvatartási időn kívül esik (${window})`;
+        await persistValidationBlock(msg);
         toast({
           title: "Hiba",
-          description: "A kiválasztott időpont nyitvatartási időn kívül esik (10:30–15:00)",
+          description: msg,
           variant: "destructive"
         });
+        releaseLock();
+        return;
+      }
+
+      // Same-day cutoff: after 15:30 no more today-orders.
+      if (formData.pickup_date === bp.date && minutesFromTime(bp.time) >= TODAY_ORDER_CUTOFF_MIN) {
+        const msg = "Ma már nem tudunk új rendelést fogadni (15:30 után). Kérjük válassz holnapi vagy későbbi időpontot.";
+        await persistValidationBlock(msg);
+        toast({ title: "Rendelési határidő lejárt", description: msg, variant: "destructive" });
+        releaseLock();
         return;
       }
     }
 
     setIsSubmitting(true);
+
+    // Reuse the same 15-min idempotency bucket across retries of the SAME
+    // customer intent (network error / timeout / user hits retry). This
+    // guarantees the backend dedupes a retry into the original order rather
+    // than creating a duplicate. Bucket is reset on successful submission.
+    if (idempotencyBucketRef.current === null) {
+      idempotencyBucketRef.current = Math.floor(Date.now() / (15 * 60 * 1000));
+    }
+    const idempotencyBucket = idempotencyBucketRef.current;
 
     let normalizedPhone = "";
     let submitBody: Record<string, any> | null = null;
@@ -632,6 +717,7 @@ const Checkout = () => {
         pickup_time_slot: formData.pickup_type === "asap" ? null : formData.pickup_time,
         coupon_code: cart.coupon?.code || null,
         session_id: cartSessionId,
+        idempotency_bucket: idempotencyBucket,
         items: cart.items.map(item => ({
           item_id: item.id,
           name_snapshot: item.name,
@@ -657,7 +743,7 @@ const Checkout = () => {
 
       const timeoutPromise = new Promise<never>((_, reject) => {
         timeoutId = window.setTimeout(() => {
-          reject(new Error("A rendelés leadása túl sokáig tart. A rendelési kísérletet rögzítettük, az étterem látni fogja."));
+          reject(new Error("__NETWORK_TIMEOUT__"));
         }, 30000);
       });
 
@@ -666,16 +752,28 @@ const Checkout = () => {
         window.clearTimeout(timeoutId);
         timeoutId = undefined;
       }
-      
+
       if (DEV) console.log('Edge function response:', { ok: !error, hasData: Boolean(data) });
-      
+
       if (error) throw error;
-      
+
+      // Success — reset bucket so a second legitimate order starts fresh.
+      idempotencyBucketRef.current = null;
       clearCart();
       navigate(`/order-confirmation?code=${data.order_code}&phone=${encodeURIComponent(`+36${normalizedPhone}`)}&email=${encodeURIComponent(formData.email || "")}`);
-      
+      // Deliberately DON'T release the lock on success — navigation unmounts.
+
     } catch (error: any) {
       console.error("Order submission error:", error);
+      const rawMessage = error?.message || "";
+      const isNetworkIssue =
+        rawMessage === "__NETWORK_TIMEOUT__" ||
+        /failed to fetch|network|networkerror|load failed|abort/i.test(rawMessage);
+
+      const userMessage = isNetworkIssue
+        ? "Nem sikerült elérni a rendelési szervert. Ellenőrizd az internetet és próbáld újra — nem lesz duplikált rendelés."
+        : (rawMessage || "Ismeretlen rendelésleadási hiba");
+
       await persistCheckoutSnapshot({
         sessionId: cartSessionId,
         cartItems: cart.items,
@@ -684,16 +782,28 @@ const Checkout = () => {
         phone: normalizedPhone ? `+36${normalizedPhone}` : formData.phone,
         email: formData.email,
         step: "submit_failed",
-        errorMessage: error?.message || "Ismeretlen rendelésleadási hiba",
+        errorMessage: userMessage,
       });
+
+      // Show inline red banner (persists until user retries / edits)
+      setNetworkError(userMessage);
+
       toast({
-        title: "Hiba a rendelés leadásakor",
-        description: error.message || "A rendelési kísérletet rögzítettük. Kérjük próbáld újra, vagy jelezd az étteremnek.",
+        title: isNetworkIssue ? "Hálózati hiba" : "Hiba a rendelés leadásakor",
+        description: userMessage,
         variant: "destructive"
       });
+
+      // On network issues we KEEP the idempotency bucket so retry dedupes.
+      // On non-network errors (validation, sold out) we reset it so the next
+      // attempt after cart edits gets a fresh key.
+      if (!isNetworkIssue) {
+        idempotencyBucketRef.current = null;
+      }
     } finally {
       if (timeoutId) window.clearTimeout(timeoutId);
       setIsSubmitting(false);
+      releaseLock();
     }
   };
   
@@ -1074,7 +1184,20 @@ const Checkout = () => {
                         )}
                       </div>
                     )}
-                    
+
+                    {networkError && (
+                      <div className="flex gap-3 rounded-lg border-2 border-destructive bg-destructive/10 p-4">
+                        <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                        <div className="flex-1 space-y-2">
+                          <p className="font-semibold text-destructive text-sm">Nem sikerült leadni a rendelést</p>
+                          <p className="text-sm text-destructive/90">{networkError}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Nyugodtan próbáld újra — dupla rendelés nem jöhet létre, a rendszer felismeri az ismétlést.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
                     <Button
                       type="submit"
                       className="w-full bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm"
@@ -1084,6 +1207,11 @@ const Checkout = () => {
                         <>
                           <LoadingSpinner className="h-4 w-4 mr-2" />
                           Rendelés feldolgozása…
+                        </>
+                      ) : networkError ? (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          Próbáld újra - {cart.totalAfterDiscount.toLocaleString()} Ft
                         </>
                       ) : (
                         `Rendelés leadása - ${cart.totalAfterDiscount.toLocaleString()} Ft`
