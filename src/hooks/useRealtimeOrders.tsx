@@ -17,38 +17,28 @@ export interface Order {
 
 // Fallback polling interval — safety net for the case where the realtime
 // websocket silently drops (laptop sleep, network switch, proxy timeout).
-// Owner reported "orders don't arrive on admin" tickets that were actually
-// realtime drops — the row was in the DB the whole time.
 const POLL_INTERVAL_MS = 30_000;
 
+// Reconnect backoff: exponential 2s → 4s → 8s → 16s → 32s → 60s (cap).
+const BASE_RECONNECT_MS = 2_000;
+const MAX_RECONNECT_MS = 60_000;
+
+/**
+ * List-only hook for admin/staff order pages.
+ *
+ * IMPORTANT: This hook deliberately does NOT play sounds or fire toasts for
+ * new orders. That is the single responsibility of `useGlobalOrderNotifications`
+ * (mounted app-wide via OrderNotificationsProvider). Duplicating the
+ * notification here caused double-fire (toast + modal + double sound) whenever
+ * both hooks were active on the admin orders page.
+ */
 export const useRealtimeOrders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Track order IDs we've already surfaced so poll-triggered inserts also
-  // fire the "new order" sound/toast exactly once.
   const knownIdsRef = useRef<Set<string>>(new Set());
-  const isFirstLoadRef = useRef(true);
-
-  const playNotificationSound = () => {
-    try {
-      const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmAUABt11/LNeSsFJoHO8diJOAcXaLvtYJ5NEAxQp+PwtmNEGRlttv71xs+COwYfabLs655PFAxQp+LxtGIbATCV1/LKeSwGI3fH8N1PRAgWdLnl63VIFAs=');
-      audio.volume = 0.3;
-      audio.play().catch(console.error);
-    } catch (error) {
-      console.error('Could not play notification sound:', error);
-    }
-  };
-
-  const notifyNewOrder = useCallback((order: Order) => {
-    playNotificationSound();
-    toast({
-      title: "Új rendelés! 🔔",
-      description: `${order.name} - ${order.code}`,
-      duration: 5000,
-    });
-  }, [toast]);
+  const reconnectAttemptRef = useRef(0);
 
   const fetchOrders = useCallback(async (opts?: { silent?: boolean }) => {
     try {
@@ -70,32 +60,19 @@ export const useRealtimeOrders = () => {
       }
 
       const rows = (data || []) as Order[];
-
-      // Detect brand-new orders that arrived via polling (realtime miss).
-      if (!isFirstLoadRef.current) {
-        for (const row of rows) {
-          if (!knownIdsRef.current.has(row.id) && row.status === 'new') {
-            notifyNewOrder(row);
-          }
-        }
-      }
       knownIdsRef.current = new Set(rows.map(r => r.id));
-      isFirstLoadRef.current = false;
-
       setOrders(rows);
     } catch (error) {
       console.error('Error fetching orders:', error);
     } finally {
       setLoading(false);
     }
-  }, [notifyNewOrder, toast]);
+  }, [toast]);
 
   useEffect(() => {
     fetchOrders();
 
-    // ── Realtime subscription ──
-    // Auto-recreates on channel error / closed state so a dropped websocket
-    // (laptop sleep, wifi switch) doesn't silently stop delivering new orders.
+    // ── Realtime subscription (list updates only, no notifications) ──
     let channel: ReturnType<typeof supabase.channel> | null = null;
     let reconnectTimer: number | null = null;
 
@@ -110,7 +87,6 @@ export const useRealtimeOrders = () => {
             if (!newOrder?.id) return;
             if (knownIdsRef.current.has(newOrder.id)) return;
             knownIdsRef.current.add(newOrder.id);
-            notifyNewOrder(newOrder);
             setOrders(prev => [newOrder, ...prev]);
           }
         )
@@ -125,8 +101,15 @@ export const useRealtimeOrders = () => {
           }
         )
         .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            reconnectAttemptRef.current = 0;
+            return;
+          }
           if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-            console.warn(`[useRealtimeOrders] Channel status=${status} — resubscribing in 3s and refetching`);
+            const attempt = reconnectAttemptRef.current;
+            const delay = Math.min(BASE_RECONNECT_MS * Math.pow(2, attempt), MAX_RECONNECT_MS);
+            reconnectAttemptRef.current = attempt + 1;
+            console.warn(`[useRealtimeOrders] Channel status=${status} — reconnect in ${delay}ms (attempt ${attempt + 1})`);
             if (channel) {
               try { supabase.removeChannel(channel); } catch { /* ignore */ }
               channel = null;
@@ -135,24 +118,19 @@ export const useRealtimeOrders = () => {
             reconnectTimer = window.setTimeout(() => {
               fetchOrders({ silent: true });
               subscribe();
-            }, 3000);
+            }, delay);
           }
         });
     };
 
     subscribe();
 
-    // ── Polling fallback ──
-    // Every 30s, force-refetch orders. If the websocket silently dropped, this
-    // guarantees new orders still show up (and trigger the notification via
-    // the notifyNewOrder path in fetchOrders).
+    // ── Polling fallback (30s) ──
     const pollId = window.setInterval(() => {
       fetchOrders({ silent: true });
     }, POLL_INTERVAL_MS);
 
     // ── Visibility handler ──
-    // When the admin tab comes back to the foreground (laptop wake, tab focus)
-    // immediately refetch so the owner sees anything that arrived while away.
     const onVisible = () => {
       if (document.visibilityState === 'visible') {
         fetchOrders({ silent: true });
@@ -172,7 +150,7 @@ export const useRealtimeOrders = () => {
         try { supabase.removeChannel(channel); } catch { /* ignore */ }
       }
     };
-  }, [fetchOrders, notifyNewOrder]);
+  }, [fetchOrders]);
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     try {

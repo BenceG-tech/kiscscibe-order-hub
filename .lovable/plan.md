@@ -1,84 +1,51 @@
-## RLS-regresszió fix — Opció A, minimális önálló commit
 
-Csak és kizárólag az RLS policy-k átírása. K1/K2/egyéb javítás **nem része** ennek a commitnak.
+## 1. Idővonal-diagnózis — eredmény
 
-### 1. Idővonal-egyeztetés (fix ELŐTT, jelentéssel)
+Migrációk `>= 20260625` (schema_migrations):
 
-Két read-only lekérdezés a diagnózis validálására:
+| version | mit csinált |
+|---|---|
+| 20260630093708 | `get_daily_data` létrehozás, `menu_items.portion_size/unit` |
+| 20260630093724 | `REVOKE EXECUTE … get_daily_data FROM PUBLIC; GRANT … anon` (csak get_daily_data) |
+| **20260702072303** | `validate_pickup_time` — ablak **10:30–15:00** |
+| **20260702144801** | idempotency_key + `atomic_coupon_increment` + `validate_order_date` (5 perc grace) |
+| 20260713145510 | `update_daily_portions` — hozzáadva `daily_offer_menus` ág; `validate_pickup_time` → **07:00–16:00** |
+| 20260713153108 | abandoned_carts dedupe + idempotency uniq index |
+| **20260713154724** | tömeges `REVOKE EXECUTE … FROM PUBLIC, anon, authenticated` MINDEN SECURITY DEFINER függvényre, is_admin* csak `authenticated` |
+| 20260713180046 | mai RLS-fix (általunk kiadott) |
 
-```sql
-SELECT version, name FROM supabase_migrations.schema_migrations
- WHERE version >= '20260701' ORDER BY version;
-```
+### Döntés: **„második ok gyanú"** — a diagnózis NEM teljes.
 
-Majd az érintett migrációk SQL tartalmának letöltése (a `supabase/migrations/` fájlokból), grep `REVOKE` + `is_admin` mintára, hogy pontosan azonosítható legyen **az első** anon EXECUTE revoke migrációja.
+Az `is_admin` / `is_admin_or_staff` anon EXECUTE revoke **először 2026-07-13 15:47 UTC-kor** történt (20260713154724). Ez nem magyarázza a 07-02-i leállást.
 
-**Két lehetséges kimenet:**
-- (a) Az első revoke 07-02 körüli → magyarázza a 07-02-i leállást; jelentem és megyünk a fix-re.
-- (b) Az első revoke csak 07-13-i → **STOP**: második gyökér-ok létezik a 07-02–07-12 időszakra. Nem javítok, hanem `postgres_logs` mélyebb analitikáját futtatom (2026-07-01 → 07-12) a `permission denied for function` mintára, és a `submit-order` `edge_logs`-ot ugyanerre az időszakra. A user jóváhagyása nélkül nem megyek tovább.
+Amit a 07-02-i migrációk viszont megmagyaráznak — erős második gyökérok-jelölt:
 
-### 2. Coupons: NEM nyitunk anon SELECT-et
+- **20260702072303**: `validate_pickup_time` ablakot **10:30–15:00**-ra szűkítette. A 07-13-i migráció ezt korrigálta 07:00–16:00-ra egy explicit üzenettel: *„The edge function keeps the finer-grained rule (breakfast items → 07:00–10:00, lunch items → 10:30–16:00), but the DB-level guard just needs to allow the full daily window instead of the previous lunch-only 10:30–15:00."*
+- Következmény: **2026-07-02 és 2026-07-13 között** minden 07:00–10:29 közötti reggeli időpont + minden 15:01–16:00 közötti délutáni időpont → `validate_order_date` trigger `RAISE EXCEPTION 'Pickup time is outside business hours'` → INSERT rollback → **rendelés nem íródik az `orders` táblába, admin nem lát semmit, email nem indul**.
+- 20260713145510 megjegyzése expliciten dokumentálja: a szűk ablak élesben rendeléseket törölt.
+- A 07-13-i RLS regresszió (154724) ezután, néhány órán belül lezárta még az étlap-olvasást is anon-nak → a mai állapot.
 
-- **Kód-audit előre**: `rg -n "from\(['\"]coupons" src/` + `rg -n "\.rpc\(.*coupon" src/` — megnézem, van-e kliens-oldali `.from('coupons').select(...)` anon hívás.
-- Létező helyzet: a `validate_coupon_code(p_code, p_order_total)` RPC már létezik és `SECURITY DEFINER`, csak érvényességet ad vissza, nem listáz — a kliens ezt hívja. Nem kell új RPC.
-- **Fix**: `"Admin full access to coupons"` policy scope `{public}` → `{authenticated}`. Anon SELECT policy **nem** készül.
-- Ha az audit talál közvetlen `.from('coupons').select(...)` anon hívást: **STOP** és jelentem — kód-refaktor kell hozzá, ami már nem RLS-fix.
+### Javaslat verifikációra (nem kód, csak lekérdezés)
 
-### 3. Szisztematikus sweep — nem csak az 5 találat
+Mielőtt zárom a diagnózist, futtatnám:
+- `postgres_logs` grep `Pickup time is outside business hours` 07-02–07-13 közti retention-en belüli része
+- `orders` count 07-02–07-13 vs. 06-15–07-01 összehasonlítás, pickup_time óra-hisztogram
+Ha a logban / hiányban látszik, hogy tömegesen dobta a triggert 10:00 és 15:30 körüli időpontokra → **kettős gyökérok igazolva**, mindkettő már javítva (145510 + 154724 + a mai policy fix). Zárható.
 
-Előfutás (read-only):
+Ha nem látszik ilyen minta → tovább kell keresni (edge function logok, deploy history).
 
-```sql
-SELECT tablename, policyname, roles::text, cmd, qual, with_check
-FROM pg_policies
-WHERE schemaname='public'
-  AND roles::text = '{public}'
-  AND (qual ~ 'is_admin|is_admin_or_staff|is_staff|is_owner|has_role'
-    OR with_check ~ 'is_admin|is_admin_or_staff|is_staff|is_owner|has_role');
-```
+---
 
-Az EDÉSZ találati listát a migrációban lekezelem, két minta szerint:
+## 2. Fix-prioritás — jóváhagyott sorrend
 
-**Minta A — csak admin/staff/mutáció policy (nincs anon szükséglet):**
-`DROP POLICY ... ; CREATE POLICY ... TO authenticated USING (is_admin(auth.uid()))` (`{public}` → `{authenticated}` szűkítés, változatlan qual).
+Elfogadva, egyesével, minden lépés után Playwright anon E2E + postgres_logs verifikáció, csak utána a következő:
 
-**Minta B — vegyes: publikus olvasás + admin bypass egy policy-ban (menu_items, daily_offers, daily_offer_items, daily_offer_menus mintája):**
-Szétbontás két külön policy-ra:
-```sql
--- Anon: csak a publikus feltétel, függvényhívás NÉLKÜL
-CREATE POLICY "Anon can view <x>" ON public.<t> FOR SELECT TO anon
-  USING (<publikus_feltétel>);
--- Authenticated: publikus VAGY admin
-CREATE POLICY "Authenticated can view <x>" ON public.<t> FOR SELECT TO authenticated
-  USING (<publikus_feltétel> OR public.is_admin_or_staff(auth.uid()));
-```
+1. **K1** — Realtime dedupe: `useRealtimeOrders` már csak lista frissít (toast/hang eltávolítva), `useGlobalOrderNotifications` az egyetlen forrás. Fix 3s reconnect → exponenciális backoff (2s → 4s → 8s → … max 60s, ugyanaz a flap-védelem mint a másik hookban).
+2. **M5+M4** — `email_send_log(order_id, recipient, status, error, created_at)` tábla + GRANTs + RLS (admin/staff read, service_role write). `submit-order` minden `resend.emails.send` hívást logol, a bcc → két külön hívás (tulaj + Bence, két külön log sor). Admin rendeléslistán ikon oszlop: ✓ küldve / ⚠ hiba / — nincs.
+3. **M1** — idempotency_key generálás a kliensen (submit előtt UUID), payment_method mindig kitöltve, `submit-order` visszaadja a meglévő rendelést 409 helyett 200 + `duplicate: true`.
+4. **K3** — DST-fix előkészítés: `budapestWallTimeToUtcIso` cseréje `Intl.DateTimeFormat`-alapúra unit tesztekkel a márciusi (2027-03-28) és októberi (2026-10-25) váltó napokra. Nem éles refaktor még, csak PR-készenlét backlogban.
+5. **K2** — `create_order_with_items` tranzakció-RPC: **csak akkor**, ha éles forgalomban megjelenik order_items nélküli fantom `orders` sor. Addig backlog, `email_send_log` + admin badge elég a megfigyeléshez.
 
-**Már ismert érintettek (bővíthető a sweep alapján):**
-`menu_items`, `daily_offers`, `daily_offer_items`, `daily_offer_menus`, `coupons`. Az audit alapján valószínűleg még: `menu_item_sides`, `menu_categories`, `daily_menus`, `daily_menu_items`, `capacity_slots` (UPDATE), `gallery_images`, `item_modifiers`, `item_modifier_options`, `blackout_dates`, `settings` — de a sweep query végleges listája dönt.
+### Első teendő build módban
 
-A `service_role` policy-kat és auth-only táblák (`orders`, `profiles`, `user_roles`, `invoices`, stb.) admin policy-jait **nem** módosítom, ha nincs `{public}`+`is_*` kombináció.
-
-### 4. Verifikáció a fix után (mielőtt lezárom)
-
-Négy explicit lépés, mindegyik pass kell:
-
-1. **Anon curl mátrix**: minden érintett tábla + a sweep listája → mind `HTTP 200`. Táblázatos jelentés.
-2. **Playwright anon inkognitó, end-to-end**: `/` → `/etlap` → item kosárba → `/checkout` → form kitöltés (teszt telefonszám `+36301234567`, holnap 10:00 pickup) → submit → `/order-confirmation` betöltés. **Screenshot minden lépésnél.** Ez az email-ágat is éles teszteli (Resend valóban küld → utána a rendelést töröljük).
-3. **`postgres_logs`** a Playwright futás időablakára szűrve: `event_message ~ 'permission denied for function'` **0 találat kell**.
-4. **Admin realtime**: külön Playwright tab admin session-nel a `/admin/orders`-en, screenshot közvetlenül a submit után **refresh nélkül** — a teszt-rendelés látszik-e.
-
-Ha bármelyik pass el nem éri: rollback nem kell (a policy-k idempotensek DROP+CREATE-tel), de jelentem és nem lezárom.
-
-**Cleanup**: a Playwright teszt-rendelés törlése azonnal (`DELETE FROM orders WHERE code = 'TEST_...'`), plus a hozzátartozó `order_items`, `capacity_slots.booked_orders--`.
-
-### 5. Commit-scope korlát
-
-- Egyetlen migráció (`fix_rls_anon_regression`).
-- **Nem** módosítok: Realtime hookokat (K1), `submit-order` edge fn-t, `validate_order_date` triggert (K3), tranzakciós refaktort (K2), sw.js-t, egyéb frontendet.
-- Egyetlen kivétel a scope-on belül: **ha** a coupons kód-audit anon-`.from('coupons')` hívást talál, **STOP** és külön kérdezek — nem toldom hozzá csendben.
-
-### Kimenet, amit adok
-
-- Idővonal-jelentés (1. pont) → várok jóváhagyásra, ha (b) forgatókönyv áll fenn.
-- Sweep-találati lista + migráció SQL preview → migration tool → user approve.
-- Verifikációs jelentés (4×): anon curl mátrix, Playwright screenshot-sorozat, postgres_logs 0-találat bizonyíték, admin realtime screenshot.
+Ha a fenti idővonal-eredményt elfogadod (**„második ok gyanú, valószínűleg validate_pickup_time szűk ablak — mindkettő már javítva"**), K1-gyel kezdek. Ha előbb a postgres_logs verifikációt szeretnéd („Pickup time is outside business hours" gyakoriság 07-02–07-13), azt kérésre lefuttatom, mielőtt egy sor kód is íródik.
