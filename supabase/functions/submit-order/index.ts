@@ -261,19 +261,25 @@ serve(async (req) => {
 
 
 
-    // ── Idempotency: dedupe network retries / double-clicks within a 5-minute window.
-    //    Key = session_id + phone + items shape. A fresh session_id (issued per Checkout mount)
-    //    lets the same customer legitimately place a second identical order later.
+    // ── Idempotency: dedupe network retries / double-clicks.
+    //    Key = session_id + phone + items shape + 15-min bucket.
+    //    The bucket ensures the SAME customer intent (network retry within
+    //    15 minutes) collapses to one row via orders.idempotency_key unique
+    //    index, but a legit second identical order 15+ minutes later gets a
+    //    fresh key and goes through instead of being silently merged.
     let idempotency_key: string | null = null;
     if (session_id && customer?.phone && Array.isArray(items)) {
       const totalQty = items.reduce((s, it) => s + (Number(it?.qty) || 0), 0);
-      idempotency_key = `${session_id}|${customer.phone}|${items.length}|${totalQty}|${pickup_date || ''}|${pickup_time_slot || ''}`.slice(0, 255);
+      const bucket = typeof clientIdempotencyBucket === 'number' && Number.isFinite(clientIdempotencyBucket)
+        ? clientIdempotencyBucket
+        : Math.floor(Date.now() / (15 * 60 * 1000));
+      idempotency_key = `${session_id}|${customer.phone}|${items.length}|${totalQty}|${pickup_date || ''}|${pickup_time_slot || ''}|b${bucket}`.slice(0, 255);
       try {
         const { data: existing } = await supabase
           .from('orders')
           .select('id, code, total_huf')
           .eq('idempotency_key', idempotency_key)
-          .gt('created_at', new Date(Date.now() - 5 * 60 * 1000).toISOString())
+          .gt('created_at', new Date(Date.now() - 30 * 60 * 1000).toISOString())
           .maybeSingle();
         if (existing) {
           console.warn(`[${requestId}] Duplicate submission detected — returning existing order ${existing.code}`);
