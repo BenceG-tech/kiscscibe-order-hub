@@ -91,7 +91,9 @@ const handler = async (req: Request): Promise<Response> => {
       `,
     });
 
-    console.log("Welcome newsletter sent to:", email);
+    const messageId = (sendResult as any)?.data?.id || (sendResult as any)?.id || null;
+    console.log(`Welcome newsletter sent to: ${email} | Resend message_id: ${messageId}`);
+
 
     return new Response(
       JSON.stringify({ success: true }),
