@@ -93,6 +93,7 @@ interface Order {
   items?: OrderItem[];
   coupon_code?: string | null;
   discount_huf?: number;
+  email_status?: EmailStatusSummary;
 }
 
 /** Format date as Hungarian string */
