@@ -17,6 +17,8 @@ import ModernNavigation from "@/components/ModernNavigation";
 import { ArrowLeft, Check, Clock, CreditCard, ShoppingCart, User, FileText } from "lucide-react";
 import { persistCheckoutSnapshot, useAbandonedCartTracking } from "@/hooks/useAbandonedCartTracking";
 
+const DEV = import.meta.env.DEV;
+
 // --- Progress Indicator Component ---
 const CheckoutProgress = () => {
   const steps = [
@@ -85,11 +87,19 @@ const validateName = (v: string): string | undefined => {
   return undefined;
 };
 
+const normalizeHungarianPhone = (v: string): string => {
+  let digits = v.replace(/\D/g, "");
+  if (digits.startsWith("0036")) digits = digits.slice(4);
+  else if (digits.startsWith("36") && digits.length >= 10) digits = digits.slice(2);
+  if (digits.startsWith("06")) digits = digits.slice(2);
+  else if (digits.startsWith("0")) digits = digits.slice(1);
+  return digits;
+};
+
 const validatePhone = (v: string): string | undefined => {
   if (!v) return undefined;
-  // Allow spaces, dashes, leading 0; require 8-9 digits after stripping
-  const digits = v.replace(/\D/g, "").replace(/^0+/, "");
-  if (digits.length < 8 || digits.length > 9) return "Kérjük, adj meg egy érvényes telefonszámot (pl. 30 123 4567)";
+  const digits = normalizeHungarianPhone(v);
+  if (digits.length < 8 || digits.length > 9) return "Kérjük, adj meg egy érvényes telefonszámot (pl. 30 123 4567 vagy 06 30 123 4567)";
   return undefined;
 };
 
@@ -155,21 +165,60 @@ const Checkout = () => {
   };
 
   const hasValidationErrors = Object.values(fieldErrors).some(Boolean);
-  const requiredFieldsMissing = !formData.name || !formData.phone || !formData.email;
+  const requiredFieldsMissing = !formData.name || !formData.phone;
+
+  const getBudapestNowParts = () => {
+    const now = new Date();
+    const date = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Europe/Budapest",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(now);
+    const time = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/Budapest",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(now);
+    return { date, time };
+  };
+
+  const minutesFromTime = (time: string) => {
+    const [hours, minutes] = time.split(":").map(Number);
+    return hours * 60 + minutes;
+  };
+
+  const getDayOfWeekFromDateStr = (dateStr: string) => {
+    const [year, month, day] = dateStr.split("-").map(Number);
+    return new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+  };
+
+  const isBudapestLunchWindow = (date: string, time?: string) => {
+    const dayOfWeek = getDayOfWeekFromDateStr(date);
+    if (dayOfWeek === 0 || dayOfWeek === 6) return false;
+    if (!time) return true;
+    const mins = minutesFromTime(time);
+    return mins >= 10 * 60 + 30 && mins <= 15 * 60;
+  };
+
+  const canUseAsap = () => {
+    const bp = getBudapestNowParts();
+    if (!isBudapestLunchWindow(bp.date, bp.time)) return false;
+    if (dailyDates.length === 0) return true;
+    return dailyDates.length === 1 && dailyDates[0] === bp.date;
+  };
   
   // Debug: log which condition blocks the submit button
   useEffect(() => {
     const isDisabled = isSubmitting || hasMultipleDailyDates() || hasValidationErrors || requiredFieldsMissing || (formData.pickup_type === "scheduled" && (!formData.pickup_date || !formData.pickup_time));
     if (isDisabled) {
-      console.log('[Checkout] Submit blocked:', {
+      if (DEV) console.log('[Checkout] Submit blocked:', {
         isSubmitting,
         hasMultipleDailyDates: hasMultipleDailyDates(),
         hasValidationErrors,
         fieldErrors,
         requiredFieldsMissing,
-        formName: formData.name,
-        formPhone: formData.phone,
-        formEmail: formData.email,
         pickupType: formData.pickup_type,
         pickupDate: formData.pickup_date,
         pickupTime: formData.pickup_time,
@@ -199,10 +248,9 @@ const Checkout = () => {
 
     const slots: TimeSlot[] = [];
     // Lunch service: 10:30 – 15:00, every 30 minutes
-    // Generates: 10:30, 11:00, 11:30, 12:00, 12:30, 13:00, 13:30, 14:00, 14:30
     const startMinutes = 10 * 60 + 30;
     const endMinutes = 15 * 60;
-    for (let m = startMinutes; m < endMinutes; m += 30) {
+    for (let m = startMinutes; m <= endMinutes; m += 30) {
       const hour = Math.floor(m / 60);
       const minute = m % 60;
       const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:00`;
@@ -324,13 +372,13 @@ const Checkout = () => {
           
           if (bufferBlockedSlots.has(key)) return false;
           
-          const slotDate = makeDate(slot.date);
-          const [hours, minutes] = slot.timeslot.split(':').map(Number);
-          slotDate.setHours(hours, minutes, 0, 0);
-          
-          const now = new Date();
-          const minFutureTime = new Date(now.getTime() + 30 * 60 * 1000);
-          if (slotDate <= minFutureTime) return false;
+          const bp = getBudapestNowParts();
+          if (slot.date < bp.date) return false;
+          if (slot.date === bp.date) {
+            const slotMinutes = minutesFromTime(slot.timeslot);
+            const minAllowedMinutes = minutesFromTime(bp.time) + 15;
+            if (slotMinutes <= minAllowedMinutes) return false;
+          }
           
           return true;
         })
@@ -382,7 +430,7 @@ const Checkout = () => {
       return;
     }
     
-    if (dailyDates.length > 0 && formData.pickup_type === "asap") {
+    if (dailyDates.length > 0 && formData.pickup_type === "asap" && !canUseAsap()) {
       setFormData(prev => ({ ...prev, pickup_type: "scheduled" }));
     }
     
@@ -413,19 +461,7 @@ const Checkout = () => {
   };
 
   const isBusinessHours = () => {
-    const now = new Date();
-    const currentHour = now.getHours();
-    const currentDay = now.getDay();
-    
-    if (currentDay === 0) return false;
-    
-    if (currentDay >= 1 && currentDay <= 5) {
-      return currentHour >= 7 && currentHour < 15;
-    } else if (currentDay === 6) {
-      return currentHour >= 8 && currentHour < 14;
-    }
-    
-    return false;
+    return canUseAsap();
   };
   
   const formatTimeSlot = (date: string, time: string) => {
@@ -444,6 +480,32 @@ const Checkout = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    const normalizedForTracking = normalizeHungarianPhone(formData.phone);
+    const trackingPhone = normalizedForTracking ? `+36${normalizedForTracking}` : formData.phone;
+
+    await persistCheckoutSnapshot({
+      sessionId: cartSessionId,
+      cartItems: cart.items,
+      totalHuf: cart.totalAfterDiscount || cart.total,
+      name: formData.name,
+      phone: trackingPhone,
+      email: formData.email,
+      step: "submit_attempt",
+    });
+
+    const persistValidationBlock = async (message: string) => {
+      await persistCheckoutSnapshot({
+        sessionId: cartSessionId,
+        cartItems: cart.items,
+        totalHuf: cart.totalAfterDiscount || cart.total,
+        name: formData.name,
+        phone: trackingPhone,
+        email: formData.email,
+        step: "validation_blocked",
+        errorMessage: message,
+      });
+    };
+
     // Mark all fields touched and run validation
     setTouched({ name: true, phone: true, email: true });
     const nameErr = validateName(formData.name);
@@ -454,12 +516,13 @@ const Checkout = () => {
     const missing: string[] = [];
     if (!formData.name) missing.push("Név");
     if (!formData.phone) missing.push("Telefonszám");
-    if (!formData.email) missing.push("E-mail cím");
 
     if (missing.length > 0) {
+      const message = `Kérjük töltsd ki: ${missing.join(", ")}`;
+      await persistValidationBlock(message);
       toast({
         title: "Hiányzó adatok",
-        description: `Kérjük töltsd ki: ${missing.join(", ")}`,
+        description: message,
         variant: "destructive",
       });
       return;
@@ -467,6 +530,7 @@ const Checkout = () => {
 
     if (nameErr || phoneErr || emailErr) {
       setFieldErrors({ name: nameErr, phone: phoneErr, email: emailErr });
+      await persistValidationBlock(nameErr || phoneErr || emailErr || "Hibás adatok");
       toast({
         title: "Hibás adatok",
         description: nameErr || phoneErr || emailErr,
@@ -476,6 +540,7 @@ const Checkout = () => {
     }
 
     if (formData.pickup_type === "scheduled" && (!formData.pickup_date || !formData.pickup_time)) {
+      await persistValidationBlock("Nincs kiválasztva átvételi időpont");
       toast({
         title: "Válassz időpontot",
         description: "Az átvételhez kérjük válassz egy elérhető időpontot a listából.",
@@ -485,14 +550,15 @@ const Checkout = () => {
     }
 
     
-    console.log('=== RENDELÉS LEADÁS DEBUG ===');
-    console.log('Form data:', formData);
-    console.log('Cart items:', cart.items);
-    console.log('Daily dates:', dailyDates);
-    console.log('Multiple daily dates:', hasMultipleDailyDates());
-    console.log('Business hours:', isBusinessHours());
+    if (DEV) console.log('=== RENDELÉS LEADÁS DEBUG ===', {
+      itemCount: cart.items.length,
+      dailyDates,
+      multipleDailyDates: hasMultipleDailyDates(),
+      businessHours: isBusinessHours(),
+    });
     
     if (hasMultipleDailyDates()) {
+      await persistValidationBlock("Különböző dátumú napi ajánlatok/menük nem rendelhetőek egyszerre");
       toast({
         title: "Hiba",
         description: "Különböző dátumú napi ajánlatok/menük nem rendelhetőek egyszerre",
@@ -502,10 +568,14 @@ const Checkout = () => {
     }
     
     if (formData.pickup_type === 'scheduled' && formData.pickup_date && formData.pickup_time) {
-      const selectedTime = new Date(`${formData.pickup_date}T${formData.pickup_time}`);
-      const now = new Date();
+      const bp = getBudapestNowParts();
+      const selectedMinutes = minutesFromTime(formData.pickup_time);
+      const selectedIsPast =
+        formData.pickup_date < bp.date ||
+        (formData.pickup_date === bp.date && selectedMinutes <= minutesFromTime(bp.time));
       
-      if (selectedTime < now) {
+      if (selectedIsPast) {
+        await persistValidationBlock("Múltbeli időpontra nem lehet rendelni");
         toast({
           title: "Hiba",
           description: "Múltbeli időpontra nem lehet rendelni",
@@ -514,29 +584,23 @@ const Checkout = () => {
         return;
       }
       
-      const dayOfWeek = selectedTime.getDay();
-      const hour = selectedTime.getHours();
+      const dayOfWeek = getDayOfWeekFromDateStr(formData.pickup_date);
       
-      if (dayOfWeek === 0) {
+      if (dayOfWeek === 0 || dayOfWeek === 6) {
+        await persistValidationBlock("Hétvégén zárva tartunk");
         toast({
           title: "Hiba", 
-          description: "Vasárnap zárva tartunk",
+          description: "Hétvégén zárva tartunk",
           variant: "destructive"
         });
         return;
       }
       
-      let isValidTime = false;
-      if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-        isValidTime = hour >= 7 && hour < 15;
-      } else if (dayOfWeek === 6) {
-        isValidTime = hour >= 8 && hour < 14;
-      }
-      
-      if (!isValidTime) {
+      if (!isBudapestLunchWindow(formData.pickup_date, formData.pickup_time)) {
+        await persistValidationBlock("A kiválasztott időpont nyitvatartási időn kívül esik (10:30–15:00)");
         toast({
           title: "Hiba",
-          description: "A kiválasztott időpont nyitvatartási időn kívül esik",
+          description: "A kiválasztott időpont nyitvatartási időn kívül esik (10:30–15:00)",
           variant: "destructive"
         });
         return;
@@ -550,13 +614,13 @@ const Checkout = () => {
     let timeoutId: number | undefined;
 
     try {
-      console.log('Calling submit-order edge function...');
-      normalizedPhone = formData.phone.replace(/\D/g, "").replace(/^0+/, "");
+      if (DEV) console.log('Calling submit-order edge function...');
+      normalizedPhone = normalizeHungarianPhone(formData.phone);
       submitBody = {
         customer: {
           name: formData.name,
           phone: `+36${normalizedPhone}`,
-          email: formData.email,
+          email: formData.email || null,
           notes: (tableNumber ? `[Asztal: ${tableNumber}] ` : '') + (formData.notes || '') || null
         },
         payment_method: formData.payment_method,
@@ -586,16 +650,6 @@ const Checkout = () => {
         }))
       };
 
-      await persistCheckoutSnapshot({
-        sessionId: cartSessionId,
-        cartItems: cart.items,
-        totalHuf: cart.totalAfterDiscount || cart.total,
-        name: formData.name,
-        phone: `+36${normalizedPhone}`,
-        email: formData.email,
-        step: "submit_attempt",
-      });
-      
       const invokePromise = supabase.functions.invoke("submit-order", { body: submitBody });
       invokePromise.catch(() => undefined);
 
@@ -611,12 +665,12 @@ const Checkout = () => {
         timeoutId = undefined;
       }
       
-      console.log('Edge function response:', { data, error });
+      if (DEV) console.log('Edge function response:', { ok: !error, hasData: Boolean(data) });
       
       if (error) throw error;
       
       clearCart();
-      navigate(`/order-confirmation?code=${data.order_code}&phone=${encodeURIComponent(`+36${normalizedPhone}`)}&email=${encodeURIComponent(formData.email)}`);
+      navigate(`/order-confirmation?code=${data.order_code}&phone=${encodeURIComponent(`+36${normalizedPhone}`)}&email=${encodeURIComponent(formData.email || "")}`);
       
     } catch (error: any) {
       console.error("Order submission error:", error);
@@ -780,7 +834,7 @@ const Checkout = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form onSubmit={handleSubmit} noValidate className="space-y-6">
                   {/* Customer Info */}
                   <div className="space-y-4">
                     <div>
@@ -824,15 +878,14 @@ const Checkout = () => {
                     </div>
                     
                     <div>
-                      <Label htmlFor="email">E-mail cím *</Label>
+                      <Label htmlFor="email">E-mail cím</Label>
                       <Input
                         id="email"
                         type="email"
                         value={formData.email}
                         onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                         onBlur={() => handleBlur("email")}
-                        required
-                        placeholder="pelda@email.com"
+                        placeholder="pelda@email.com (opcionális)"
                       />
                       {fieldErrors.email && (
                         <p className="text-sm text-destructive mt-1">{fieldErrors.email}</p>
@@ -886,14 +939,14 @@ const Checkout = () => {
                         <RadioGroupItem 
                           value="asap" 
                           id="asap" 
-                          disabled={!canOrderToday || getDailyItemDates().length > 0} 
+                          disabled={!canUseAsap()} 
                         />
-                        <Label htmlFor="asap" className={(!canOrderToday || getDailyItemDates().length > 0) ? "text-muted-foreground" : ""}>
+                        <Label htmlFor="asap" className={!canUseAsap() ? "text-muted-foreground" : ""}>
                           Minél hamarabb (15-20 perc)
                           {!canOrderToday && (
                             <Badge variant="secondary" className="ml-2">Zárva</Badge>
                           )}
-                          {getDailyItemDates().length > 0 && (
+                          {getDailyItemDates().length > 0 && !canUseAsap() && (
                             <Badge variant="secondary" className="ml-2">Csak ütemezetten</Badge>
                           )}
                         </Label>
@@ -996,7 +1049,7 @@ const Checkout = () => {
                     {(hasMultipleDailyDates() || requiredFieldsMissing || hasValidationErrors || (formData.pickup_type === "scheduled" && (!formData.pickup_date || !formData.pickup_time))) && (
                       <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg space-y-1">
                         {requiredFieldsMissing && (
-                          <p>• Kérjük töltse ki az összes kötelező mezőt (név, telefon, email)</p>
+                          <p>• Kérjük töltse ki a kötelező mezőket (név, telefon)</p>
                         )}
                         {hasValidationErrors && !requiredFieldsMissing && (
                           <p>• Kérjük javítsa a hibás mezőket</p>

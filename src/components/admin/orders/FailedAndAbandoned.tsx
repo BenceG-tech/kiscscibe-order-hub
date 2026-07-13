@@ -54,6 +54,10 @@ const getStepLabel = (step?: string | null) => {
       return "Leadási kísérlet";
     case "submit_failed":
       return "Leadás hibára futott";
+    case "validation_blocked":
+      return "Adat/időpont miatt blokkolt";
+    case "submit_success":
+      return "Sikeresen leadva";
     case "details":
       return "Adatok kitöltése";
     default:
@@ -229,7 +233,7 @@ export const AbandonedCartsList = () => {
       const cutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString();
       setItems(((data as any) || []).filter((item: AbandonedCart) => {
         const step = item.step || "";
-        return step.startsWith("submit_") || item.last_activity_at < cutoff;
+        return step.startsWith("submit_") || step === "validation_blocked" || item.last_activity_at < cutoff;
       }));
     }
     setLoading(false);
@@ -252,7 +256,7 @@ export const AbandonedCartsList = () => {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Vendégek, akik elkezdték a rendelést, de 5+ perce nem aktívak és nem fejezték be.
+          Vendégek, akik elkezdték a rendelést, leadásnál elakadtak, vagy 5+ perce nem aktívak.
         </p>
         <Button variant="outline" size="sm" onClick={load} disabled={loading}>
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
@@ -281,7 +285,7 @@ export const AbandonedCartsList = () => {
                   </span>
                 </CardTitle>
                 <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                  <Badge variant={c.step === "submit_failed" ? "destructive" : "outline"}>
+                  <Badge variant={c.step === "submit_failed" || c.step === "validation_blocked" ? "destructive" : "outline"}>
                     {getStepLabel(c.step)}
                   </Badge>
                   {c.customer_phone && (

@@ -1,50 +1,92 @@
-## Amit most látok
+## Amit eddig bizonyítottan látok
 
-- Az `orders` táblában a legutóbbi rendelés 2026-07-02, tehát jelenleg nem arról van szó, hogy az admin felület szűri el a friss rendeléseket.
-- Az `order_attempts` táblában is csak egy régi, július 2-i sikertelen próbálkozás van.
-- Az `abandoned_carts` üres, tehát a checkout nyomkövetés sem jelez friss beírt/elhagyott rendelést.
-- A Supabase function edge HTTP logokban nem látszik friss `submit-order` hívás.
-- A mai napi ajánlatok publikusak és van készlet, blackout nincs.
+- Az `orders` táblában az utolsó rendelés július 2-i; az elmúlt 14 napban nincs friss rendelés.
+- Az `order_attempts` táblában sincs friss sikertelen leadási nyom.
+- Az `abandoned_carts` üres, tehát a mostani tracking nem kapja el azokat az eseteket, amikor a felhasználó el sem jut a tényleges submit hívásig.
+- A `submit-order` edge function logokban nincs friss hívás. Ez alapján a probléma nagy része nem a rendelés mentése közben, hanem még a kliensoldali checkout blokkolásnál történik.
+- A múlt heti pénteki napi ajánlat publikálva volt, készlet volt, kapacitás-slot tábla üres, de ez önmagában nem akadály, mert a rendszer fallback slotokat használ.
 
-Ez alapján a legvalószínűbb hiba: a vendég oldali rendelési folyamat nem jut el a `submit-order` edge function hívásig, vagy a function hívás nincs megfelelően naplózva/diagnosztizálva. Emiatt az étterem nem lát sem rendelést, sem sikertelen próbálkozást.
+## Legvalószínűbb gyökérokok
 
-## Sürgős javítási terv
+1. **Telefonszám-mező túl szigorú és félrevezető**
+   - A mező előtt fixen látszik a `+36`, de ha valaki megszokásból `06...` vagy `+36...` formában írja/pasztázza be a számot, a validáció hibásnak minősítheti.
+   - Ez tipikusan pont visszatérő, idősebb vagy telefonról rendelő vendégeknél fordulhat elő.
 
-### 1. Checkout hibanyom megfogása kliens oldalon
-- A `Checkout` oldalon minden submit-kísérletnél azonnal rögzítek egy diagnosztikai sort az `abandoned_carts` táblába `step='submit_attempt'` értékkel.
-- Ha a `submit-order` function hibával tér vissza, timeoutol, vagy hálózati hibát dob, frissítem ugyanazt a sort `step='submit_failed'` állapotra a hibaüzenettel.
-- Így akkor is látni fogjátok az adminban, hogy valaki rendelni próbált, ha maga az order insert nem sikerült.
+2. **Az email kötelező, és a böngésző natív validációja még a saját hibakezelés előtt megállíthatja a rendelést**
+   - Ha valaki nem ad emailt, vagy hibás emailt ír, a form submit el sem indulhat.
+   - Ilyenkor nincs edge function hívás, nincs `order_attempts`, nincs `abandoned_carts` submit nyom.
 
-### 2. Function-hívás timeout és barátságos hiba
-- A `submit-order` hívást explicit timeouttal védem, hogy a vendég ne ragadjon végtelen spinnerben.
-- Hiba esetén érthető üzenetet kap: „A rendelési kísérletet rögzítettük, az étterem látni fogja. Kérjük próbáld újra vagy jelezd az étteremnek.”
+3. **A napi ajánlat/menü csak időpontra rendelhető, és az időpontlista túl szűk**
+   - A napi menünél az ASAP le van tiltva.
+   - Az UI csak 10:30–14:30 slotokat generál, miközben a backend 15:00-ig engedne.
+   - Pénteken délután egy 30 perces előretekintő szűrő miatt könnyen eltűnhet minden időpont, miközben az étterem még nyitva van.
 
-### 3. Admin „Sikertelen/Félbehagyott” láthatóság erősítése
-- A rendeléskezelő felület fejlécében kiemelem, ha van friss sikertelen vagy submit-kísérlet.
-- A „Sikertelen” / „Félbehagyott” füleken badge számláló jelenjen meg, ne kelljen rákattintani ahhoz, hogy feltűnjön.
-- A listában külön jelölöm a `submit_attempt` és `submit_failed` állapotokat.
+4. **A checkout tracking túl későn indul**
+   - Csak 20 másodperces debounce után vagy sikeres React submiton ír trackinget.
+   - Natív formvalidáció, hiányzó email, hibás telefon vagy időpontválasztás esetén sok sikertelen próbálkozás láthatatlan marad.
 
-### 4. Backend diagnosztika a `submit-order` functionben
-- A function elején és minden fő hibaponton megbízhatóbb `order_attempts` rögzítést tartok fenn.
-- A `complete_menu` mezőket ellenőrzöm: a frontend már `daily_id ?? menu_id` értéket küld, de a TypeScript típusban a `complete_menu` hiányzik; ezt javítom, hogy ne legyen rejtett típushiba.
-- A még fennmaradó audit-kockázatokból a közvetlen rendelésvesztést okozókat javítom: opció insert hibák ne legyenek csendben elnyelve, kupon rollback kerüljön be, kapacitás-slot race kezelése.
+5. **A pénteki javítások valószínűleg nem védik a publikus/custom domaint, amíg nincs frissen publikálva**
+   - A vásárlók a `kiscsibe-etterem.hu` / publikált domaint használják, nem a preview-t.
+   - A korábbi stabilizáló módosítások csak akkor segítenek élesben, ha a friss verzió publikálva van.
 
-### 5. Ellenőrzés
-- Ellenőrzöm a mai menü/kosár útvonalat böngészőből.
-- Leadási próbával validálom, hogy legalább a submit-kísérlet megjelenik az adminban akkor is, ha a rendelés mentése hibázna.
-- Megnézem újra az `orders`, `order_attempts`, `abandoned_carts` táblákat és a function logokat.
+## Javítási terv
 
-## Technikai részletek
+### 1. Checkout blokkolók azonnali lazítása és pontosítása
+- A checkout formon kikapcsolom a böngésző natív validációját (`noValidate`), hogy minden hiba a saját kódban fusson át és naplózható legyen.
+- Az email mezőt opcionálissá teszem rendelésleadáshoz.
+- Ha van email, validáljuk; ha nincs email, a rendelés akkor is leadható.
+- A telefon normalizálást úgy javítom, hogy ezek mind elfogadottak legyenek:
+  - `30 123 4567`
+  - `06301234567`
+  - `06 30 123 4567`
+  - `+36301234567`
+  - `36 30 123 4567`
+- A hibaszövegeket vendégbarátabbá teszem, hogy ne csak tiltson, hanem megmondja pontosan mit kell javítani.
 
-Érintett területek:
-- `src/pages/Checkout.tsx`
-- `src/hooks/useAbandonedCartTracking.tsx`
-- `src/components/admin/orders/FailedAndAbandoned.tsx`
-- `src/pages/admin/OrdersManagement.tsx`
-- `supabase/functions/submit-order/index.ts`
+### 2. Minden sikertelen kattintás legyen látható az adminban
+- Minden `Rendelés leadása` kattintásnál azonnal mentek egy `submit_attempt` sort az `abandoned_carts` táblába, még validáció előtt.
+- Ha név/telefon/email/időpont miatt blokkol a checkout, `submit_failed` vagy `validation_blocked` állapottal frissítem a sort és beleteszem a konkrét okot.
+- A tracking hook kap publikus anon-key fallbacket, hogy éles buildben se némuljon el, ha az env változó hiányzik.
 
-Adatbázis-séma módosítás várhatóan nem kell, mert az `abandoned_carts` már tartalmazza a szükséges mezőket: `step`, `cart_snapshot`, `customer_*`, `last_activity_at`.
+### 3. Napi ajánlat / menü időpontlogika javítása
+- A napi menüknél engedélyezek egy egyszerűbb “mielőbb” rendelési utat az aznapi menüre, ha Budapest szerint még rendelhető időben vagyunk.
+- A scheduled slot lista 15:00-ig menjen, ne csak 14:30-ig.
+- A frontend időellenőrzés Budapest időzónával dolgozzon, ne a felhasználó eszközének lokális időzónájára támaszkodjon.
+- Ha nincs választható slot, ne zsákutca legyen: mutasson alternatívát vagy engedje a mielőbbi leadást, ahol üzletileg biztonságos.
 
-## Prioritás
+### 4. Backend elfogadás rugalmasabbá tétele
+- A `submit-order` edge functionben az emailt opcionálissá teszem.
+- Email nélkül nem bukhat a rendelés; a rendelés bekerül, a vendég visszaigazolása pedig a rendelés-visszaigazoló oldalon történik.
+- A backend is Budapest-idő szerint validálja az ASAP/napi rendeléseket, hogy ne legyen frontend/backend eltérés.
+- A hibaválaszok maradjanak konkrétak, hogy az adminban pontosan látszódjon: telefon, email, időpont, készlet vagy egyéb gond volt.
 
-Először azt javítom, hogy semmilyen rendelési próbálkozás ne tűnhessen el nyomtalanul. Utána jönnek a kényelmi/admin átláthatósági elemek.
+### 5. Admin láthatóság megerősítése
+- A “Sikertelen/Félbehagyott” rendeléseknél külön jelölöm:
+  - validáció miatt blokkolt
+  - tényleges submit hiba
+  - timeout
+  - félbehagyott checkout
+- Az admin rendeléskezelő tetején legyen feltűnő figyelmeztetés, ha az elmúlt 24 órában volt leadási kísérlet, ami nem lett rendelés.
+
+### 6. Audit riport frissítése
+- Frissítem az audit dokumentációt a ténylegesen talált okokkal:
+  - miért nem látszottak az érintett vendégek próbálkozásai,
+  - milyen mezők/időpontok blokkolhatták őket,
+  - mit javítottunk,
+  - hogyan ellenőrizhető az adminban.
+
+### 7. Ellenőrzés
+- Böngészős próba több tipikus adattal:
+  - email nélkül,
+  - `06...` telefonszámmal,
+  - `+36...` telefonszámmal,
+  - napi menüvel,
+  - pénteki/késői időpont-szituációval.
+- Adatbázis ellenőrzés:
+  - sikertelen validáció megjelenik-e `abandoned_carts` alatt,
+  - sikeres rendelés bekerül-e `orders` alá,
+  - admin látja-e azonnal.
+
+## Fontos élesítési megjegyzés
+
+A javítás után a publikus/custom domainre is publikálni kell, különben a vendégek továbbra is a régi checkout kódot használhatják.

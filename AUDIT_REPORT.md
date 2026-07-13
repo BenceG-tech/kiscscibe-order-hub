@@ -1,5 +1,34 @@
 # 🐥 Kiscsibe Order Hub — Teljes körű audit jelentés
 
+## 2026-07-13 — Sürgős rendelésleadási audit
+
+### Bizonyított állapot
+- Az `orders` táblában az utolsó rendelés 2026-07-02-i volt, tehát az elmúlt napok problémája nem admin-lista szűrési hiba.
+- Az `order_attempts` táblában nem volt friss sikertelen próbálkozás.
+- Az `abandoned_carts` üres volt, vagyis a checkout tracking nem fogta meg azokat az eseteket, amikor a vendég el sem jutott a szerverhívásig.
+- A `submit-order` edge function logokban nem látszott friss hívás, ezért a fő hibaút kliensoldali blokkolás volt.
+- A múlt heti pénteki napi ajánlat publikálva volt, készlet volt, a kapacitás-slot hiánya nem önmagában blokkoló, mert a backend fallback slotot tud létrehozni.
+
+### Gyökérokok
+1. A telefonszám mező a `+36` előtag ellenére sok valós formátumot hibásnak vehetett (`06...`, `+36...`, `36...`).
+2. Az email kötelező volt, és a böngésző natív validációja a React submit előtt megállíthatta a rendelést, ezért nem keletkezett sem szerverlog, sem adminban látható sikertelen próbálkozás.
+3. A napi menü csak ütemezetten volt leadható, miközben az időpontlista 14:30-nál megállt, a backend viszont 15:00-ig enged.
+4. A checkout tracking túl későn indult: validációs blokkoláskor nem minden esetben írt látható nyomot.
+
+### Javítás
+- Email opcionális lett rendelésleadásnál; ha van, továbbra is validáljuk.
+- Telefon normalizálás elfogadja a `30 123 4567`, `06301234567`, `06 30 123 4567`, `+36301234567`, `36 30 123 4567` formákat.
+- A checkout form `noValidate` módban fut, így minden hiba saját kódban kezelhető és naplózható.
+- Minden rendelésleadási kattintás azonnal `submit_attempt` nyomot ír.
+- Validációs blokkolás esetén `validation_blocked` állapot és konkrét hibaüzenet kerül a kosárdiagnosztikába.
+- Az időpontlista 15:00-ig mutat slotokat, és a kliensoldali időellenőrzés Budapest-idő szerint fut.
+- A `submit-order` backend nem utasítja el a rendelést email hiánya miatt; email nélkül csak a visszaigazoló email marad el.
+- Az adminban a sikertelen/félbehagyott nézet külön jelöli a validáció miatt blokkolt leadásokat.
+
+### Üzemeltetési teendő
+- A frontend módosításokat publikálni kell, mert a vendégek a custom/published domaint használják.
+- Az adminban figyelni kell a „Sikertelen” és „Félbehagyott” füleket: ha ott megjelenik telefonos leadási kísérlet, azonnal visszahívható a vendég.
+
 **Dátum:** 2026. május 17.
 **Tesztkörnyezet:** Preview (391×844 mobil + 1223×854 desktop), bejelentkezve `gataibence@gmail.com` (owner)
 

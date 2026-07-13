@@ -56,7 +56,7 @@ import { cn } from "@/lib/utils";
 import { exportOrdersToCSV } from "@/lib/orderExport";
 import InfoTip from "@/components/admin/InfoTip";
 import { FailedAttemptsList, AbandonedCartsList } from "@/components/admin/orders/FailedAndAbandoned";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { SystemHealthCheck } from "@/components/admin/SystemHealthCheck";
 
 
@@ -246,7 +246,7 @@ const OrdersManagement = () => {
         ? 0
         : (((cartsResult.data as any[]) || []).filter((item) => {
             const step = String(item.step || "");
-            return step.startsWith("submit_") || String(item.last_activity_at || "") < cutoff;
+            return step.startsWith("submit_") || step === "validation_blocked" || String(item.last_activity_at || "") < cutoff;
           }).length);
 
       setTrackingCounts({ failed, abandoned });
@@ -490,6 +490,9 @@ const OrdersManagement = () => {
               <DialogContent className="max-w-2xl max-h-[calc(100dvh-2rem)] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Rendszer önellenőrzés</DialogTitle>
+                  <DialogDescription>
+                    Gyors ellenőrzés a rendelési rendszer állapotáról és javítható hibáiról.
+                  </DialogDescription>
                 </DialogHeader>
                 <SystemHealthCheck />
               </DialogContent>
