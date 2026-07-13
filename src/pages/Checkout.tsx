@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,10 +14,20 @@ import { useToast } from "@/components/ui/use-toast";
 import { LoadingSpinner } from "@/components/ui/loading";
 import { Badge } from "@/components/ui/badge";
 import ModernNavigation from "@/components/ModernNavigation";
-import { ArrowLeft, Check, Clock, CreditCard, ShoppingCart, User, FileText } from "lucide-react";
+import { ArrowLeft, Check, Clock, CreditCard, ShoppingCart, User, FileText, AlertTriangle, RefreshCw } from "lucide-react";
 import { persistCheckoutSnapshot, useAbandonedCartTracking } from "@/hooks/useAbandonedCartTracking";
 
 const DEV = import.meta.env.DEV;
+
+// ─── Opening-hours business rules (single source of truth) ─────────────────
+// Mon–Fri only. Weekends closed. Same-day orders accepted only until 15:30.
+//   Breakfast pickup window: 07:00 – 10:00
+//   Lunch pickup window:     10:30 – 16:00
+const TODAY_ORDER_CUTOFF_MIN = 15 * 60 + 30;
+const BREAKFAST_START_MIN = 7 * 60;
+const BREAKFAST_END_MIN = 10 * 60;
+const LUNCH_START_MIN = 10 * 60 + 30;
+const LUNCH_END_MIN = 16 * 60;
 
 // --- Progress Indicator Component ---
 const CheckoutProgress = () => {
