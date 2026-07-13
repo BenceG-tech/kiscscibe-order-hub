@@ -376,7 +376,9 @@ const Checkout = () => {
           if (slot.date < bp.date) return false;
           if (slot.date === bp.date) {
             const slotMinutes = minutesFromTime(slot.timeslot);
-            const minAllowedMinutes = minutesFromTime(bp.time) + 15;
+            // 10-min lead time. Backend still validates 10:30–15:00 window, so
+            // any slot inside business hours + 10 min lead is safe.
+            const minAllowedMinutes = minutesFromTime(bp.time) + 10;
             if (slotMinutes <= minAllowedMinutes) return false;
           }
           
