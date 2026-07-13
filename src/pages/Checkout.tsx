@@ -409,19 +409,20 @@ const Checkout = () => {
         })
         .filter(slot => {
           const key = `${slot.date}_${slot.timeslot}`;
-          
+
           if (bufferBlockedSlots.has(key)) return false;
-          
+
           const bp = getBudapestNowParts();
           if (slot.date < bp.date) return false;
           if (slot.date === bp.date) {
+            // Same-day cutoff: after 15:30 no more today-slots at all.
+            if (minutesFromTime(bp.time) >= TODAY_ORDER_CUTOFF_MIN) return false;
             const slotMinutes = minutesFromTime(slot.timeslot);
-            // 10-min lead time. Backend still validates 10:30–15:00 window, so
-            // any slot inside business hours + 10 min lead is safe.
+            // 10-min lead time.
             const minAllowedMinutes = minutesFromTime(bp.time) + 10;
             if (slotMinutes <= minAllowedMinutes) return false;
           }
-          
+
           return true;
         })
         .sort((a, b) => {
