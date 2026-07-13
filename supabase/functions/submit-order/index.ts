@@ -1236,6 +1236,34 @@ serve(async (req) => {
     }
 
 
+    // Mark abandoned_carts row as failed with the exact reason (non-fatal).
+    if (attemptCtx.session_id && attemptCtx.supabase) {
+      try {
+        await attemptCtx.supabase.from('abandoned_carts').upsert({
+          session_id: attemptCtx.session_id,
+          customer_name: attemptCtx.customer?.name || null,
+          customer_phone: attemptCtx.customer?.phone || null,
+          customer_email: attemptCtx.customer?.email || null,
+          cart_snapshot: {
+            items: attemptCtx.items || [],
+            diagnostic: {
+              step: 'submit_failed',
+              source: 'edge_function',
+              request_id: requestId,
+              error_message: error?.message || 'Ismeretlen hiba',
+              recorded_at: new Date().toISOString(),
+            },
+          },
+          total_huf: (attemptCtx.items || []).reduce((s: number, it: any) => s + (Number(it?.qty) || 0) * (Number(it?.unit_price_huf) || 0), 0),
+          step: 'submit_failed',
+          user_agent: attemptCtx.userAgent,
+          last_activity_at: new Date().toISOString(),
+        }, { onConflict: 'session_id' });
+      } catch (e) {
+        console.warn(`[${requestId}] Could not mark abandoned cart submit_failed:`, e);
+      }
+    }
+
     // Log the failed attempt for admin visibility (non-fatal)
     try {
       if (attemptCtx.supabase) {
