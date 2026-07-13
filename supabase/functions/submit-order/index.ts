@@ -147,6 +147,10 @@ interface OrderRequest {
   items: OrderItem[];
   coupon_code?: string | null;
   session_id?: string | null;
+  // Optional 15-min bucket sent by the client so retries of the SAME customer
+  // intent (network error/timeout) collapse into a single order via the
+  // idempotency_key unique index. Missing → server derives its own bucket.
+  idempotency_bucket?: number | null;
 }
 
 serve(async (req) => {
