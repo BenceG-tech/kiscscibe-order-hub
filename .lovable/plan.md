@@ -1,79 +1,49 @@
+## Diagnosztikai futtatás — B → A sorrend
 
-# Rendelés-audit v2 — mit néztem át és mit javítok
+Célja: eldönteni, hogy a rendelés-elakadás oka **RLS-regresszió** (`is_admin` permission denied az anon útvonalon), **Realtime hiba**, vagy **egyik sem**. Kód-változtatás nincs, csak bizonyíték-gyűjtés.
 
-Az előző körben javítottam a napi menü elutasítást, duplakattintást, 30s timeout retry-t, egységes nyitvatartást, ASAP validációt. Most **mindent újra átnéztem** (Checkout.tsx, submit-order edge function, DB függvények, indexek, publikációk, RLS, CORS, hookok, Resend). Öt új, valós hibaforrást találtam, amelyek pont a "rendelés nem jön be / nincs email" tünetet okozhatják.
+### B) Anon frontend smoke (először)
 
----
+1. **Direkt anon REST curl-ök** a Supabase REST-en, `apikey=<anon>` + `Authorization: Bearer <anon>` fejlécekkel, pontosan a frontend query-kre:
+   - `GET /rest/v1/menu_items?select=*&is_active=eq.true`
+   - `GET /rest/v1/daily_menus?select=*&date=eq.<ma>`
+   - `GET /rest/v1/daily_menu_items?select=*`
+   - `GET /rest/v1/daily_offer_menus?select=*`
+   - `GET /rest/v1/capacity_slots?select=*&date=eq.<ma>`
+   - `POST /rest/v1/rpc/get_daily_data` body `{ "target_date": "<ma>" }`
+   
+   Minden hívás HTTP státuszát + response bodyt rögzítem. `permission denied for function is_admin` = találat.
 
-## Új kritikus problémák
+2. **Playwright** headless Chromium, `viewport 1280x1800`, cache kikapcsolva (`context = browser.new_context(bypass_csp=True)` + `page.route` cache-headerekkel), incognito-szerű friss context, hard reload a `/` és `/etlap` oldalakra. Console + network hibák kigyűjtése, screenshot.
 
-### 1. [KRITIKUS] Idempotencia kulcsra NINCS unique index
-A `submit-order` pre-check-el keres, majd insert. Két gyors kérés között **ugyanaz az `idempotency_key` átcsúszhat két külön `orders` sorba** → két rendelés, két email, kapacitás/adag kétszer levonva. A 23505 dedup ág sem sülhet el, mert nincs constraint.
+3. **Ha bármelyik REST hívás elesik**: `supabase--read_query` `EXPLAIN`-nel `authenticated` role szimulációval (`SET LOCAL role authenticated`), és a `pg_policies` táblából lekérdezem a table policy-ket, hogy megnevezhessem melyik policy ág hivatkozik `is_admin`-ra. Két fix-javaslatot jelentek, de **nem javítok**:
+   - (a) `GRANT EXECUTE ON FUNCTION public.is_admin(uuid) TO anon` visszaadása, vagy
+   - (b) policy átírás: `is_admin` hívás áthelyezése `SELECT public.is_admin(...)` szubszelekt alá vagy két külön policy szétválasztása (`FOR SELECT TO anon USING (is_published)` + `FOR SELECT TO authenticated USING (is_admin(...) OR is_published)`).
 
-**Fix:** migrációban `CREATE UNIQUE INDEX orders_idempotency_key_uniq ON orders (idempotency_key) WHERE idempotency_key IS NOT NULL`.
+### A) T9 Realtime INSERT smoke (B után)
 
-### 2. [KRITIKUS] `abandoned_carts.session_id` unique constraint hiányzik → upsert csendben duplikál
-A `on_conflict: 'session_id'` és a szerveroldali `upsert({...}, { onConflict: 'session_id' })` **constraint nélkül nem dedupál** — vagy hibát dob, vagy több sort hoz létre. Ezért lehet az adminban zavaros / hiányos „megkísérelt rendelés" nyoma.
+Előfeltételek betartva:
+- `pickup_time` = **holnap 10:00 Europe/Budapest** (hétköznap; ha holnap hétvége, a legközelebbi hétköznap 10:00). Elkerüli a `validate_order_date_trigger`-t.
+- `code = 'TEST_' || substr(gen_random_uuid()::text,1,6)`, `name='RENDSZERTESZT'`, `phone='+36000000000'`, `total_huf=1`, `status='new'`, `payment_method='cash'`, `notes='T9 smoke — törlendő'`.
+- **Figyelmeztetés a tulajnak**: pontos időpontot előre jelzek üzenetben ("Most futtatom, ~10 mp múlva TEST_ értesítés jöhet"). Az `A` szakaszt csak azután indítom.
 
-**Fix:** `CREATE UNIQUE INDEX abandoned_carts_session_id_uniq ON abandoned_carts (session_id)`.
+Lépések:
+1. Playwright script indít egy háttér-listener klienset (anon apikey nem elég — Realtime a `orders`-re az `SELECT` policy alapján fut; szükség lehet egy staff/admin session-re). A preview-session token használata itt megfelelő, mert az admin csatornát pont ő látja.
+2. Két csatornára feliratkozom párhuzamosan, ahogy a frontend teszi: `order-notifications-*` és bármely `orders-changes-*` mintát is figyelek. Rögzítem a `SUBSCRIBED` ack idejét.
+3. `supabase--insert` INSERT a fenti sorral. `t0 = INSERT válasz`. Rögzítem: `t1_channel1`, `t1_channel2` — Realtime esemény beérkezésének idői, delta ms-ben.
+4. Azonnali cleanup: `DELETE FROM orders WHERE code = '<test_code>'`, plusz `order_items` / `capacity_slots` (nincs is, hiszen nem hívjuk a submit-order edge fn-t) — csak az orders sor.
+5. Rögzítem: `edge_logs` (`submit-order`) érintetlen (nem hívtuk); `postgres_logs`-ban látszik-e a trigger sikere.
 
-### 3. [KRITIKUS] Realtime értesítés kieshet — admin nem lát új rendelést, pedig a DB-ben ott van
-Az `orders` benne van a `supabase_realtime` publikációban, de a `useRealtimeOrders` hook **egyszer** iratkozik fel, nincs újracsatlakozás alvó laptop / hálózatváltás után, nincs polling fallback. Ez pontosan az a tünet, amit a tulaj látott: „nem érkezik meg az admin felületre" — miközben a DB-ben ott a rendelés.
+### Kimenet, amit adok
 
-**Fix a hookban** (kizárólag admin oldali kód, a rendelésfogadást nem érinti):
-- Websocket lecsatlakozás → automatikus resubscribe.
-- **30 másodperces polling fallback** (`SELECT * FROM orders ORDER BY created_at DESC LIMIT 20`) → ha realtime kiesik, akkor is bejön a lista.
-- Ablak visszakapcsolás (`visibilitychange` = visible) → azonnali refetch.
-- Hangriasztás + toast változatlan.
+Táblázat:
+- **Hipotézis:** RLS-regresszió (`is_admin` anon-nak) — igazolt / cáfolt, bizonyítékkal (HTTP státusz + policy név).
+- **Hipotézis:** Realtime — igazolt / cáfolt (delta ms + mindkét csatorna kapta-e).
+- **Egyéb váratlan lelet** ha van.
+- **Következő javaslat**: melyik fixet kellene elsőként jóváhagyni (K3/RLS vs. K1/Realtime dedup vs. K2/tranzakció). **Kódot nem módosítok**, csak jelentek.
 
-### 4. [KRITIKUS] Resend feladó domain lehet nem verifikált → NULLA email megy ki
-A feladó `rendeles@kiscsibe-etterem.hu` (kötőjeles), a BCC viszont `info@kiscsibeetterem.hu` (kötőjel nélküli). A tulaj domainje `kiscsibeetterem.hu` — ha a Resendben csak ez a verifikált domain, akkor a `send()` némán 403-mal elhal (és fire-and-forget, a rendelés amúgy létrejön → tulaj panasza: „nem kap emailt").
+### Kockázatkezelés
 
-**Fix:**
-- Feladó átírása `rendeles@kiscsibeetterem.hu`-ra (a tulaj bejáratott domainje).
-- BCC lista változatlanul `info@kiscsibeetterem.hu` + `gataibence@gmail.com`.
-- Email hiba **naplózása** `abandoned_carts` diagnosztikába (`email_send_status`) — a tulaj a felületen lássa, ha bármi email nem ment ki.
-
-### 5. Reggeli átvételi ablak sosem aktiválódik
-A `cartIsBreakfastOnly` a `cart.items.every(it => it.is_breakfast === true)` alapján dönt, de **a kosárba tett tételekben `is_breakfast` sehol nem kerül beállításra** (kód-átvizsgálás igazolta). Emiatt reggeli-only rendelésnél is a 10:30–16:00 lunch ablakot kényszeríti — reggeli tételre 8:00-ra soha nem lehet átvételi időpontot foglalni.
-
-**Fix:**
-- `CartContext.tsx` / `DailyItemSelector` / `BreakfastSection` `addToCart` hívások: reggeli kategóriájú tételeknél `is_breakfast: true` a payloadban.
-- Egyszerű detektálás: `menu_categories.slug` vagy `menu_categories.name` tartalmazza a „reggeli" szót → `is_breakfast: true`.
-
----
-
-## Amit még átnéztem és rendben van
-
-- **CORS**: mindkét custom domain (`kiscsibe-etterem.hu`, `kiscsibeetterem.hu`) engedélyezve, subdomain wildcard is.
-- **Payment method whitelist**: `normalizePaymentMethod` levédi az ismeretlen értékeket → sosem lesz 23514 check constraint hiba.
-- **Telefon normalizáció**: kliens + szerver oldalon egységesen `+36XXXXXXXXX`.
-- **Rollback kompenzációk**: adag + kapacitás + kupon + rendelés törlés reverse order — helyes.
-- **Idempotency 15-min bucket** kliens+szerver: rendben (csak a unique index hiányzik hozzá).
-- **Email fire-and-forget + `EdgeRuntime.waitUntil`**: nem blokkolja a választ, jó.
-- **ASAP + weekend + 15:30 cutoff + reggeli/ebéd ablak validáció**: mind a három rétegben (kliens, edge, DB trigger) egységes.
-- **RLS `orders` INSERT**: csak service_role — edge function service key-jel ír, kliens sosem tud direkt beírni.
-
----
-
-## Változtatások összefoglaló
-
-**DB migráció (1 db):**
-1. `CREATE UNIQUE INDEX orders_idempotency_key_uniq ON public.orders (idempotency_key) WHERE idempotency_key IS NOT NULL;`
-2. `CREATE UNIQUE INDEX abandoned_carts_session_id_uniq ON public.abandoned_carts (session_id);` (előtte duplikátumok deduplikálása `MAX(last_activity_at)` alapján).
-
-**Kód:**
-- `src/hooks/useRealtimeOrders.tsx` — resubscribe + 30s polling + visibilitychange refetch.
-- `supabase/functions/submit-order/index.ts` — feladó `rendeles@kiscsibeetterem.hu`; email status naplózás abandoned_carts diagnosztikába.
-- `src/contexts/CartContext.tsx` (+ `BreakfastSection.tsx` / `DailyItemSelector.tsx` addToCart hívók) — `is_breakfast: true` a reggeli kategóriás tételekre.
-- `src/data/adminChangelog.ts` — új v-es bejegyzés.
-
-**Verifikáció:**
-- Playwright: teljes menü rendelés → DB `orders` sor + admin realtime toast lejön 5s-en belül.
-- Kézi: laptop 2 percre elalvasztás → visszaébredés után polling fallback behúzza az új rendelést.
-- Resend: éles email teszt `rendeles@kiscsibeetterem.hu` feladóval, sikeres delivery log.
-- DB: `SELECT indexdef FROM pg_indexes WHERE indexname IN ('orders_idempotency_key_uniq','abandoned_carts_session_id_uniq')` visszatér.
-
-**Kockázat:** minimális. Az idempotency unique index ütközne, ha a jelenlegi `orders` táblában lennének azonos `idempotency_key`-jű sorok — a migráció a NULL-ekre nem vonatkozik, és a nem-null kulcsok között az elmúlt hónapokban nincs duplikátum (ellenőriztem).
-
-Jóváhagyás után indul az implementáció.
+- T9 INSERT `bypass`-olja a `submit-order` edge fn-t, tehát: nem küld emailt (Resend nem hívódik), nem foglal kapacitást (`capacity_slots` érintetlen), nem hoz létre `order_items`-et. Tiszta Realtime-teszt.
+- A törlés az INSERT után max 5 mp-en belül lefut → invoice-trigger nem sül el (csak `status='completed'`-re fut).
+- Ha a tulaj offline: 0 hangos értesítés kockázat. Ha online: max 1 rövid teszt-hang, előre bejelentve.
