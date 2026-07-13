@@ -287,13 +287,16 @@ const handler = async (req: Request): Promise<Response> => {
       const emailPromises = batch.map((sub) =>
         resend.emails
           .send({
-            from: "Kiscsibe Reggeliző & Étterem <onboarding@resend.dev>",
+            from: "Kiscsibe Étterem <rendeles@kiscsibe-etterem.hu>",
+            reply_to: "info@kiscsibeetterem.hu",
             to: [sub.email],
             subject,
             html: emailHtml,
           })
-          .then(() => {
+          .then((res) => {
             totalSent++;
+            const mid = (res as any)?.data?.id || (res as any)?.id || null;
+            console.log(`weekly-menu sent to ${sub.email} | message_id: ${mid}`);
           })
           .catch((err: Error) => {
             totalErrors++;
@@ -301,6 +304,7 @@ const handler = async (req: Request): Promise<Response> => {
           })
       );
       await Promise.all(emailPromises);
+
     }
 
     // 7. Save last sent info to settings
