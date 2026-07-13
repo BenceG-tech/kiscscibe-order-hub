@@ -725,6 +725,13 @@ serve(async (req) => {
             .maybeSingle();
           if (existing) {
             console.warn(`Idempotency race resolved — returning existing order ${existing.code}`);
+            if (compensations.length > 0) {
+              console.log(`[${requestId}] Rolling back duplicate request mutations before returning existing order...`);
+              for (let i = compensations.length - 1; i >= 0; i--) {
+                try { await compensations[i](); } catch (e) { console.error(`[${requestId}] Duplicate compensation ${i} failed:`, e); }
+              }
+              compensations.length = 0;
+            }
             return new Response(
               JSON.stringify({ success: true, order_code: existing.code, total_huf: existing.total_huf, request_id: requestId, loyalty_reward: null, duplicate: true }),
               { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
