@@ -1184,7 +1184,20 @@ const Checkout = () => {
                         )}
                       </div>
                     )}
-                    
+
+                    {networkError && (
+                      <div className="flex gap-3 rounded-lg border-2 border-destructive bg-destructive/10 p-4">
+                        <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                        <div className="flex-1 space-y-2">
+                          <p className="font-semibold text-destructive text-sm">Nem sikerült leadni a rendelést</p>
+                          <p className="text-sm text-destructive/90">{networkError}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Nyugodtan próbáld újra — dupla rendelés nem jöhet létre, a rendszer felismeri az ismétlést.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
                     <Button
                       type="submit"
                       className="w-full bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm"
@@ -1194,6 +1207,11 @@ const Checkout = () => {
                         <>
                           <LoadingSpinner className="h-4 w-4 mr-2" />
                           Rendelés feldolgozása…
+                        </>
+                      ) : networkError ? (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          Próbáld újra - {cart.totalAfterDiscount.toLocaleString()} Ft
                         </>
                       ) : (
                         `Rendelés leadása - ${cart.totalAfterDiscount.toLocaleString()} Ft`
