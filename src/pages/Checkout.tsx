@@ -376,7 +376,9 @@ const Checkout = () => {
           if (slot.date < bp.date) return false;
           if (slot.date === bp.date) {
             const slotMinutes = minutesFromTime(slot.timeslot);
-            const minAllowedMinutes = minutesFromTime(bp.time) + 15;
+            // 10-min lead time. Backend still validates 10:30–15:00 window, so
+            // any slot inside business hours + 10 min lead is safe.
+            const minAllowedMinutes = minutesFromTime(bp.time) + 10;
             if (slotMinutes <= minAllowedMinutes) return false;
           }
           
@@ -861,9 +863,18 @@ const Checkout = () => {
                         <Input
                           id="phone"
                           type="tel"
+                          inputMode="tel"
+                          autoComplete="tel"
                           value={formData.phone}
                           onChange={(e) => {
-                            const val = e.target.value.replace(/[^\d\s]/g, '');
+                            // Only keep digits/spaces; then silently strip the
+                            // country code / trunk prefix the user may have typed
+                            // in addition to the visible "+36" chip.
+                            let val = e.target.value.replace(/[^\d\s]/g, '');
+                            const digitsOnly = val.replace(/\s/g, '');
+                            if (digitsOnly.startsWith('0036')) val = val.replace(/^\s*0036\s?/, '');
+                            else if (digitsOnly.startsWith('36') && digitsOnly.length > 9) val = val.replace(/^\s*36\s?/, '');
+                            else if (digitsOnly.startsWith('06')) val = val.replace(/^\s*06\s?/, '');
                             setFormData(prev => ({ ...prev, phone: val }));
                           }}
                           onBlur={() => handleBlur("phone")}
@@ -872,6 +883,7 @@ const Checkout = () => {
                           className="rounded-l-none"
                         />
                       </div>
+                      <p className="text-xs text-muted-foreground mt-1">Csak a számokat írd, országhívó nem kell (pl. 30 123 4567).</p>
                       {fieldErrors.phone && (
                         <p className="text-sm text-destructive mt-1">{fieldErrors.phone}</p>
                       )}

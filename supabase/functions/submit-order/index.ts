@@ -61,6 +61,32 @@ function isBudapestLunchWindow(dateStr: string, timeStr: string): boolean {
   return totalMinutes >= 10 * 60 + 30 && totalMinutes <= 15 * 60;
 }
 
+// Normalize any Hungarian phone input to canonical "+36XXXXXXXXX" (9 digits after +36).
+// Accepts: "06 30 …", "+36 30 …", "3630…", "0036…", spaces, dashes, etc.
+// Returns the original trimmed string if it doesn't look like a HU number so we don't
+// silently corrupt legitimate international numbers.
+function normalizeHungarianPhoneServer(raw: string | null | undefined): string {
+  if (!raw) return '';
+  const trimmed = String(raw).trim();
+  let digits = trimmed.replace(/\D/g, '');
+  if (digits.startsWith('0036')) digits = digits.slice(4);
+  else if (digits.startsWith('36') && digits.length >= 10) digits = digits.slice(2);
+  if (digits.startsWith('06')) digits = digits.slice(2);
+  else if (digits.startsWith('0')) digits = digits.slice(1);
+  if (digits.length >= 8 && digits.length <= 9) return `+36${digits}`;
+  return trimmed;
+}
+
+// Whitelist payment_method against orders_payment_method_check to avoid silent 23514 failures.
+function normalizePaymentMethod(raw: string | null | undefined): string {
+  const v = String(raw || '').toLowerCase().trim();
+  if (v === 'cash') return 'cash';
+  if (v === 'pos' || v === 'card' || v === 'terminal' || v === 'bankkartya') return 'pos';
+  if (v === 'card_online' || v === 'online' || v === 'stripe') return 'card_online';
+  // Anything unknown → safest default: cash (customer pays on pickup).
+  return 'cash';
+}
+
 
 interface OrderModifier {
   label_snapshot: string;
@@ -156,13 +182,21 @@ serve(async (req) => {
       session_id,
     }: OrderRequest = await req.json();
 
-    // Backward-compat: older clients sent 'card' which is not in orders_payment_method_check.
-    let payment_method_normalized = payment_method;
-    if (payment_method_normalized === 'card') {
-      console.warn(`[${requestId}] Legacy payment_method='card' received — normalizing to 'pos'`);
-      payment_method_normalized = 'pos';
+    // Backward-compat + safety net: whitelist payment_method so we never bounce off the check constraint.
+    const payment_method_final = normalizePaymentMethod(payment_method);
+    if (payment_method_final !== payment_method) {
+      console.warn(`[${requestId}] payment_method normalized: '${payment_method}' → '${payment_method_final}'`);
     }
-    const payment_method_final = payment_method_normalized;
+
+    // Server-side phone normalization → single canonical form.
+    // Keeps idempotency, loyalty and admin views consistent no matter what shape the client sent.
+    if (customer && typeof customer.phone === 'string') {
+      const normalized = normalizeHungarianPhoneServer(customer.phone);
+      if (normalized !== customer.phone) {
+        console.log(`[${requestId}] phone normalized: '${customer.phone}' → '${normalized}'`);
+        customer.phone = normalized;
+      }
+    }
 
     attemptCtx.customer = customer;
     attemptCtx.items = items || [];
@@ -170,6 +204,38 @@ serve(async (req) => {
     attemptCtx.pickup_date = pickup_date || null;
     attemptCtx.pickup_time_slot = pickup_time_slot || null;
     attemptCtx.session_id = session_id || null;
+
+    // === Server-side "attempted submission" beacon ===
+    // Write to abandoned_carts using the service role IMMEDIATELY so we have a durable record
+    // even if the client-side x-session-id header is stripped by a CDN/proxy, or the browser
+    // crashes mid-request. This is our source-of-truth "someone tried to order" signal.
+    if (session_id) {
+      try {
+        await supabase.from('abandoned_carts').upsert({
+          session_id,
+          customer_name: customer?.name || null,
+          customer_phone: customer?.phone || null,
+          customer_email: customer?.email || null,
+          cart_snapshot: {
+            items: items || [],
+            diagnostic: {
+              step: 'submit_attempt',
+              source: 'edge_function',
+              request_id: requestId,
+              recorded_at: new Date().toISOString(),
+            },
+          },
+          total_huf: (items || []).reduce((s: number, it: any) => s + (Number(it?.qty) || 0) * (Number(it?.unit_price_huf) || 0), 0),
+          step: 'submit_attempt',
+          user_agent: attemptCtx.userAgent,
+          last_activity_at: new Date().toISOString(),
+        }, { onConflict: 'session_id' });
+      } catch (e) {
+        console.warn(`[${requestId}] Server-side submit_attempt beacon failed (non-fatal):`, e);
+      }
+    }
+
+
 
     // ── Idempotency: dedupe network retries / double-clicks within a 5-minute window.
     //    Key = session_id + phone + items shape. A fresh session_id (issued per Checkout mount)
@@ -1169,6 +1235,34 @@ serve(async (req) => {
       }
     }
 
+
+    // Mark abandoned_carts row as failed with the exact reason (non-fatal).
+    if (attemptCtx.session_id && attemptCtx.supabase) {
+      try {
+        await attemptCtx.supabase.from('abandoned_carts').upsert({
+          session_id: attemptCtx.session_id,
+          customer_name: attemptCtx.customer?.name || null,
+          customer_phone: attemptCtx.customer?.phone || null,
+          customer_email: attemptCtx.customer?.email || null,
+          cart_snapshot: {
+            items: attemptCtx.items || [],
+            diagnostic: {
+              step: 'submit_failed',
+              source: 'edge_function',
+              request_id: requestId,
+              error_message: error?.message || 'Ismeretlen hiba',
+              recorded_at: new Date().toISOString(),
+            },
+          },
+          total_huf: (attemptCtx.items || []).reduce((s: number, it: any) => s + (Number(it?.qty) || 0) * (Number(it?.unit_price_huf) || 0), 0),
+          step: 'submit_failed',
+          user_agent: attemptCtx.userAgent,
+          last_activity_at: new Date().toISOString(),
+        }, { onConflict: 'session_id' });
+      } catch (e) {
+        console.warn(`[${requestId}] Could not mark abandoned cart submit_failed:`, e);
+      }
+    }
 
     // Log the failed attempt for admin visibility (non-fatal)
     try {
