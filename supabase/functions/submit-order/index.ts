@@ -1524,9 +1524,10 @@ Kiscsibe Reggeliző & Étterem
       statusCode = 500; // Internal Server Error
     }
     
+    const userMessage = mapDbErrorToHungarian(error);
     return new Response(
       JSON.stringify({
-        error: error.message || 'Ismeretlen hiba történt',
+        error: userMessage,
         request_id: requestId
       }),
       {
@@ -1534,5 +1535,6 @@ Kiscsibe Reggeliző & Étterem
         status: statusCode,
       }
     );
+
   }
 });
