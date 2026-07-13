@@ -286,9 +286,10 @@ const Checkout = () => {
     if (dayOfWeek === 0 || dayOfWeek === 6) return [];
 
     const slots: TimeSlot[] = [];
-    // Lunch service: 10:30 – 15:00, every 30 minutes
-    const startMinutes = 10 * 60 + 30;
-    const endMinutes = 15 * 60;
+    // Cart-aware windows: breakfast-only carts → 07:00–10:00,
+    // everything else → 10:30–16:00.
+    const startMinutes = cartIsBreakfastOnly ? BREAKFAST_START_MIN : LUNCH_START_MIN;
+    const endMinutes = cartIsBreakfastOnly ? BREAKFAST_END_MIN : LUNCH_END_MIN;
     for (let m = startMinutes; m <= endMinutes; m += 30) {
       const hour = Math.floor(m / 60);
       const minute = m % 60;
