@@ -73,7 +73,7 @@ interface OrderItem {
   modifiers: OrderModifier[];
   sides: OrderSide[];
   // Daily item specific fields
-  daily_type?: 'offer' | 'menu';
+  daily_type?: 'offer' | 'menu' | 'complete_menu';
   daily_date?: string;
   daily_id?: string;
 }
@@ -491,6 +491,24 @@ serve(async (req) => {
         throw new Error('Ez a kupon időközben elfogyott');
       }
 
+      const couponIdForRollback = coupon.id;
+      compensations.push(async () => {
+        try {
+          const { data: cur } = await supabase
+            .from('coupons')
+            .select('used_count')
+            .eq('id', couponIdForRollback)
+            .single();
+          await supabase
+            .from('coupons')
+            .update({ used_count: Math.max(0, Number(cur?.used_count || 0) - 1) })
+            .eq('id', couponIdForRollback);
+          console.log(`Rollback: decremented coupon usage ${couponIdForRollback}`);
+        } catch (e) {
+          console.error('Coupon rollback failed:', e);
+        }
+      });
+
       console.log(`Coupon ${coupon.code} applied: -${discountHuf} Ft`);
     }
 
@@ -509,8 +527,8 @@ serve(async (req) => {
     console.log('Generated order code:', orderCode);
 
     // Handle capacity slot update if pickup_time is specified
-    let date: string;
-    let time: string;
+    let date = '';
+    let time = '';
     
     // Helper function to normalize time string to HH:MM:SS format
     const normalizeTimeString = (timeStr: string): string => {
@@ -607,11 +625,16 @@ serve(async (req) => {
           .single();
         
         if (createError) {
-          console.error('Capacity slot creation error:', createError);
-          throw new Error('Hiba az időpont létrehozásakor');
+          const duplicateSlot = createError.code === '23505' || String(createError.message || '').toLowerCase().includes('duplicate');
+          if (duplicateSlot) {
+            console.warn('Capacity slot was created by a concurrent request, continuing with atomic update:', date, time);
+          } else {
+            console.error('Capacity slot creation error:', createError);
+            throw new Error('Hiba az időpont létrehozásakor');
+          }
+        } else {
+          capacityData = newCapacityData;
         }
-        
-        capacityData = newCapacityData;
       } else if (capacityError) {
         console.error('Capacity check error:', capacityError);
         throw new Error('Időpont nem elérhető');
@@ -730,10 +753,18 @@ serve(async (req) => {
     // so we don't leave phantom rows with no items visible to staff.
     compensations.push(async () => {
       try {
-        await supabase.from('order_items').delete().eq('order_id', orderId);
+        const { data: orderItemsForRollback } = await supabase
+          .from('order_items')
+          .select('id')
+          .eq('order_id', orderId);
+        const rollbackItemIds = (orderItemsForRollback || []).map((r: any) => r.id);
+        if (rollbackItemIds.length > 0) {
+          await supabase.from('order_item_options').delete().in('order_item_id', rollbackItemIds);
+        }
         await supabase.from('order_item_options').delete().in('order_item_id',
           (await supabase.from('order_items').select('id').eq('order_id', orderId)).data?.map((r: any) => r.id) || []
         );
+        await supabase.from('order_items').delete().eq('order_id', orderId);
         await supabase.from('orders').delete().eq('id', orderId);
         console.log(`Rollback: deleted order ${orderId}`);
       } catch (e) {
@@ -792,7 +823,7 @@ serve(async (req) => {
         
         if (dailyError) {
           console.error('Daily item metadata insert error:', dailyError);
-          // Don't fail the whole order for metadata errors
+          throw new Error('Napi tétel metaadat mentési hiba');
         }
       }
 
@@ -810,7 +841,7 @@ serve(async (req) => {
 
           if (modError) {
             console.error('Modifier insert error:', modError);
-            // Don't fail the whole order for modifier errors
+            throw new Error('Rendelési opció mentési hiba');
           }
         }
 
@@ -827,7 +858,7 @@ serve(async (req) => {
 
           if (sideError) {
             console.error('Side insert error:', sideError);
-            // Don't fail the whole order for side errors
+            throw new Error('Köret mentési hiba');
           }
         }
       }
