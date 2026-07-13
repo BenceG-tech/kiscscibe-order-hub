@@ -807,6 +807,47 @@ export type Database = {
           },
         ]
       }
+      email_send_log: {
+        Row: {
+          created_at: string
+          email_type: string
+          error: string | null
+          id: string
+          order_id: string | null
+          recipient: string
+          resend_message_id: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          email_type: string
+          error?: string | null
+          id?: string
+          order_id?: string | null
+          recipient: string
+          resend_message_id?: string | null
+          status: string
+        }
+        Update: {
+          created_at?: string
+          email_type?: string
+          error?: string | null
+          id?: string
+          order_id?: string | null
+          recipient?: string
+          resend_message_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_send_log_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gallery_images: {
         Row: {
           alt_text: string
