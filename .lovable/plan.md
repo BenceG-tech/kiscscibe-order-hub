@@ -1,51 +1,81 @@
 
-## 1. Idővonal-diagnózis — eredmény
+## Idővonal-válasz (megismételve, egyértelműen)
 
-Migrációk `>= 20260625` (schema_migrations):
+`SELECT version, name FROM supabase_migrations.schema_migrations WHERE version >= '20260625' ORDER BY version;` már lefutott az előző körben. Eredmény:
 
-| version | mit csinált |
+| version | mit csinált (releváns rész) |
 |---|---|
-| 20260630093708 | `get_daily_data` létrehozás, `menu_items.portion_size/unit` |
-| 20260630093724 | `REVOKE EXECUTE … get_daily_data FROM PUBLIC; GRANT … anon` (csak get_daily_data) |
-| **20260702072303** | `validate_pickup_time` — ablak **10:30–15:00** |
-| **20260702144801** | idempotency_key + `atomic_coupon_increment` + `validate_order_date` (5 perc grace) |
-| 20260713145510 | `update_daily_portions` — hozzáadva `daily_offer_menus` ág; `validate_pickup_time` → **07:00–16:00** |
-| 20260713153108 | abandoned_carts dedupe + idempotency uniq index |
-| **20260713154724** | tömeges `REVOKE EXECUTE … FROM PUBLIC, anon, authenticated` MINDEN SECURITY DEFINER függvényre, is_admin* csak `authenticated` |
-| 20260713180046 | mai RLS-fix (általunk kiadott) |
+| 20260630093708 | `get_daily_data` létrehozás |
+| 20260630093724 | `REVOKE EXECUTE … get_daily_data FROM PUBLIC` + `GRANT … anon` (csak ez az egy fv) |
+| **20260702072303** | `validate_pickup_time` ablak **10:30–15:00**-ra szűkítve |
+| 20260702144801 | idempotency_key + `validate_order_date` 5 perc grace |
+| 20260713145510 | `update_daily_portions` + `daily_offer_menus` ág, `validate_pickup_time` → **07:00–16:00** javítás |
+| 20260713153108 | abandoned_carts dedupe |
+| **20260713154724** | tömeges `REVOKE EXECUTE … is_admin/is_admin_or_staff/is_staff/is_owner/has_role FROM anon` |
+| 20260713180046 | mai RLS-fix (általunk) |
 
-### Döntés: **„második ok gyanú"** — a diagnózis NEM teljes.
+**Az anon EXECUTE először 2026-07-13 15:47 UTC-kor lett megvonva** (20260713154724). Ez **nem** magyarázza a 07-02-i leállást.
 
-Az `is_admin` / `is_admin_or_staff` anon EXECUTE revoke **először 2026-07-13 15:47 UTC-kor** történt (20260713154724). Ez nem magyarázza a 07-02-i leállást.
+### Döntés: „második ok gyanú" — kettős gyökérok
 
-Amit a 07-02-i migrációk viszont megmagyaráznak — erős második gyökérok-jelölt:
+A 07-02 óta tartó rendelés-leállás bizonyíték-alapú gyökéroka a **20260702072303**: `validate_pickup_time` **10:30–15:00**-ra szűkült. Következmény: minden 07:00–10:29 közötti reggeli és 15:01–16:00 közötti délutáni pickup INSERT-nél a `validate_order_date` trigger `RAISE EXCEPTION 'Pickup time is outside business hours'` → rollback → nincs `orders` sor → admin nem lát semmit → email nem indul. A 20260713145510 migráció commit-üzenete ezt explicit dokumentálja („previous lunch-only 10:30–15:00").
 
-- **20260702072303**: `validate_pickup_time` ablakot **10:30–15:00**-ra szűkítette. A 07-13-i migráció ezt korrigálta 07:00–16:00-ra egy explicit üzenettel: *„The edge function keeps the finer-grained rule (breakfast items → 07:00–10:00, lunch items → 10:30–16:00), but the DB-level guard just needs to allow the full daily window instead of the previous lunch-only 10:30–15:00."*
-- Következmény: **2026-07-02 és 2026-07-13 között** minden 07:00–10:29 közötti reggeli időpont + minden 15:01–16:00 közötti délutáni időpont → `validate_order_date` trigger `RAISE EXCEPTION 'Pickup time is outside business hours'` → INSERT rollback → **rendelés nem íródik az `orders` táblába, admin nem lát semmit, email nem indul**.
-- 20260713145510 megjegyzése expliciten dokumentálja: a szűk ablak élesben rendeléseket törölt.
-- A 07-13-i RLS regresszió (154724) ezután, néhány órán belül lezárta még az étlap-olvasást is anon-nak → a mai állapot.
+A 07-13-i RLS regresszió (154724) ehhez képest egy második, független hiba: már csak az étlap anon olvasását törte, néhány órán át.
 
-### Javaslat verifikációra (nem kód, csak lekérdezés)
-
-Mielőtt zárom a diagnózist, futtatnám:
-- `postgres_logs` grep `Pickup time is outside business hours` 07-02–07-13 közti retention-en belüli része
-- `orders` count 07-02–07-13 vs. 06-15–07-01 összehasonlítás, pickup_time óra-hisztogram
-Ha a logban / hiányban látszik, hogy tömegesen dobta a triggert 10:00 és 15:30 körüli időpontokra → **kettős gyökérok igazolva**, mindkettő már javítva (145510 + 154724 + a mai policy fix). Zárható.
-
-Ha nem látszik ilyen minta → tovább kell keresni (edge function logok, deploy history).
+**Mindkét gyökérok javítva:** validate_pickup_time (20260713145510), RLS anon (20260713180046). Verifikációhoz futni fog: `postgres_logs` grep `Pickup time is outside business hours` 07-02–07-13 közti retention-en → ha a mintázat 10:00 és 15:30 körüli időpontokra tömeges → diagnózis lezárva.
 
 ---
 
-## 2. Fix-prioritás — jóváhagyott sorrend
+## K1 verifikációs terv (build módban futtatva)
 
-Elfogadva, egyesével, minden lépés után Playwright anon E2E + postgres_logs verifikáció, csak utána a következő:
+Egyetlen turn-ben, három bizonyítékkal + idővonal-log-vizsgálattal.
 
-1. **K1** — Realtime dedupe: `useRealtimeOrders` már csak lista frissít (toast/hang eltávolítva), `useGlobalOrderNotifications` az egyetlen forrás. Fix 3s reconnect → exponenciális backoff (2s → 4s → 8s → … max 60s, ugyanaz a flap-védelem mint a másik hookban).
-2. **M5+M4** — `email_send_log(order_id, recipient, status, error, created_at)` tábla + GRANTs + RLS (admin/staff read, service_role write). `submit-order` minden `resend.emails.send` hívást logol, a bcc → két külön hívás (tulaj + Bence, két külön log sor). Admin rendeléslistán ikon oszlop: ✓ küldve / ⚠ hiba / — nincs.
-3. **M1** — idempotency_key generálás a kliensen (submit előtt UUID), payment_method mindig kitöltve, `submit-order` visszaadja a meglévő rendelést 409 helyett 200 + `duplicate: true`.
-4. **K3** — DST-fix előkészítés: `budapestWallTimeToUtcIso` cseréje `Intl.DateTimeFormat`-alapúra unit tesztekkel a márciusi (2027-03-28) és októberi (2026-10-25) váltó napokra. Nem éles refaktor még, csak PR-készenlét backlogban.
-5. **K2** — `create_order_with_items` tranzakció-RPC: **csak akkor**, ha éles forgalomban megjelenik order_items nélküli fantom `orders` sor. Addig backlog, `email_send_log` + admin badge elég a megfigyeléshez.
+### 1. Anon E2E — Playwright inkognitó, hard reload
 
-### Első teendő build módban
+Script: `/ + /etlap + kosárba tétel + /checkout-ig navigálás (submit nélkül)`. Rögzít: minden Supabase network kérés státusza, screenshot. **Elvárás: 0 db 4xx/5xx a supabase.co és functions.supabase.co host-ra.**
 
-Ha a fenti idővonal-eredményt elfogadod (**„második ok gyanú, valószínűleg validate_pickup_time szűk ablak — mindkettő már javítva"**), K1-gyel kezdek. Ha előbb a postgres_logs verifikációt szeretnéd („Pickup time is outside business hours" gyakoriság 07-02–07-13), azt kérésre lefuttatom, mielőtt egy sor kód is íródik.
+### 2. K1-specifikus admin teszt — bejelentkezett tulaj sessionnel
+
+Playwright script `LOVABLE_BROWSER_SUPABASE_*` env-el restore-olva, `/admin/orders` betöltése, `console` capture bekapcsolva. Lépések:
+
+**(a) Egyetlen forrás:** grep a console-ban `useRealtimeOrders` vs `[Notifications]` toast/hang előfordulást. Elvárás: `useRealtimeOrders` **nem** logol értesítést, csak `[Notifications] 🔔 New order` jön.
+
+**(b) Egyszeri értesítés — kontrollált INSERT/DELETE:**
+```sql
+INSERT INTO orders (code, name, phone, total_huf, status, payment_method, pickup_time, notes)
+VALUES ('TEST_K1', 'TEST_K1_dedupe', '+36301234567', 100, 'new', 'cash',
+        (NOW() + INTERVAL '2 hours')::timestamptz, 'K1_TEST_MARKER');
+-- 3s várakozás, screenshot, majd:
+DELETE FROM orders WHERE notes = 'K1_TEST_MARKER';
+```
+Idő: azonnal a teszt elején, hogy a tulaj ne kapja el. Elvárás: `[Notifications] 🔔 New order: TEST_K1` **pontosan 1×**, `OrderNotificationModal` render **1×**, `useRealtimeOrders` INSERT handler is lefut (lista frissül) de nem szól. Rögzített időbélyeg-diff INSERT ↔ két csatorna realtime event között.
+
+**(c) Exponenciális backoff:** böngészőben `supabase.removeChannel(channel)` + `channel.unsubscribe()` erőltetéssel, majd offline/online togglerrel csatornahiba szimuláció. Grep: `[useRealtimeOrders] Channel status=... — reconnect in Xms (attempt N)`. Elvárás: **2000 → 4000 → 8000 → 16000 ms** progresszió, nem fix 3000.
+
+### 3. postgres_logs — teszt-ablak
+
+A teszt ISO-timestamp-tartományában: `event_message ILIKE '%permission denied%'` count = **0**. Egyben lefuttatom a régi `Pickup time is outside business hours` grep-et is 07-02–07-13-ra a retention határáig, hogy az idővonal-diagnózis második okát empirikusan is lezárjam.
+
+### Kimenet
+
+Egyetlen verifikációs jelentés a chatben, benne:
+- 1., 2a., 2b., 2c. bizonyítékok (log-részlet + screenshot-utalás)
+- 3. `permission denied` count = 0
+- Idővonal-log ítélet: „diagnózis teljes: kettős gyökérok igazolva" **vagy** „harmadik ok gyanú: X"
+
+## Ha zöld → M5+M4
+
+Külön migráció:
+- `email_send_log` tábla: `id`, `order_id`, `recipient`, `email_type` (`customer`|`owner`|`bence`), `status` (`sent`|`failed`), `error text NULL`, `resend_message_id text NULL`, `created_at`. GRANTs: `authenticated` SELECT, `service_role` ALL. RLS: `is_admin_or_staff` SELECT.
+- `orders` publikációhoz kapcsolva marad; új tábla nem realtime.
+
+Edge function (`submit-order`):
+- bcc-szétbontás: `resend.emails.send` külön hívás tulaj (`kiscsibeetterem@gmail.com`) és Bence címére. Egyenként log-sor.
+- vevőnek küldött email is log-sort ír.
+- minden send hívás try/catch, hiba esetén status=`failed` + error message rögzítve, de a rendelés-válasz sikeres marad (nem blokkoló).
+
+Frontend (`OrdersManagement`/rendeléslista):
+- új oszlop/badge: „Email" — összesített státusz az adott rendelésre (`email_send_log` join a rendeléshez). Ikonok: ✓ (mind sent), ⚠ (van failed), — (nincs sor).
+- Rendelés-részletnél lista: melyik címre mikor ment, mi a status/error.
+
+Verifikáció M5+M4 után: Playwright anon TELJES rendelés (submit-tel is), majd admin oldal ellenőrzés — 3 log sor (customer, owner, bence), mind ✓, `resend_message_id` kitöltve.
