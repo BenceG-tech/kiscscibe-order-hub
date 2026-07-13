@@ -56,6 +56,7 @@ import { cn } from "@/lib/utils";
 import { exportOrdersToCSV } from "@/lib/orderExport";
 import InfoTip from "@/components/admin/InfoTip";
 import { FailedAttemptsList, AbandonedCartsList } from "@/components/admin/orders/FailedAndAbandoned";
+import { EmailStatusBadge, aggregateEmailLogs, type EmailStatusSummary } from "@/components/admin/orders/EmailStatusBadge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { SystemHealthCheck } from "@/components/admin/SystemHealthCheck";
 
@@ -92,6 +93,7 @@ interface Order {
   items?: OrderItem[];
   coupon_code?: string | null;
   discount_huf?: number;
+  email_status?: EmailStatusSummary;
 }
 
 /** Format date as Hungarian string */
@@ -207,7 +209,7 @@ const OrdersManagement = () => {
       return;
     }
 
-    const mapped = (data || []).map((order: any) => ({
+    const mapped: Order[] = (data || []).map((order: any) => ({
       ...order,
       items: (order.order_items || []).map((item: any) => ({
         id: item.id,
@@ -223,6 +225,19 @@ const OrdersManagement = () => {
         })),
       })),
     }));
+
+    // Batch-fetch email_send_log for visible orders and merge status.
+    const orderIds = mapped.map((o) => o.id);
+    if (orderIds.length > 0) {
+      const { data: logs, error: logErr } = await supabase
+        .from("email_send_log" as any)
+        .select("order_id, email_type, status, created_at")
+        .in("order_id", orderIds);
+      if (!logErr && logs) {
+        const summaryMap = aggregateEmailLogs(logs as any);
+        for (const o of mapped) o.email_status = summaryMap.get(o.id);
+      }
+    }
 
     setOrders(mapped);
     setLoading(false);
@@ -776,6 +791,7 @@ const ActiveOrderCard = ({
                 <StatusIcon className="h-3 w-3 mr-1" />
                 {statusConfig.label}
               </Badge>
+              <EmailStatusBadge status={order.email_status} />
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
               <Calendar className="h-4 w-4 inline mr-1" />
@@ -1192,6 +1208,7 @@ const PastOrderAdminCard = ({
               >
                 {order.status === "completed" ? "Átvéve" : "Lemondva"}
               </Badge>
+              <EmailStatusBadge status={order.email_status} />
               {expanded ? (
                 <ChevronDown className="h-4 w-4 text-muted-foreground" />
               ) : (
