@@ -129,7 +129,7 @@ function generateEmailHtml(days: DayData[], dateRange: string): string {
     <div style="color: #92400e; font-size: 14px; text-align: center;">
       <p style="margin: 4px 0;"><strong>Kiscsibe Reggeliző & Étterem</strong></p>
       <p style="margin: 4px 0;">📍 1145 Budapest, Vezér utca 12.</p>
-      <p style="margin: 4px 0;">📞 +36 1 234 5678</p>
+      
       <p style="margin: 4px 0;">✉️ info@kiscsibeetterem.hu</p>
     </div>
 
