@@ -8,7 +8,7 @@
 // Run with: deno test --allow-net --allow-env supabase/functions/submit-order/mapper_test.ts
 
 import { assertEquals, assertStringIncludes } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { mapDbErrorToHungarian } from "./index.ts";
+import { mapDbErrorToHungarian } from "./mapper.ts";
 
 // ---- (a) Hungarian passthrough — must not be rewritten -----------------
 
