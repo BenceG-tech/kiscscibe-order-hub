@@ -110,23 +110,48 @@ function normalizePaymentMethod(raw: string | null | undefined): string {
 // Keeps validate_pickup_time / validate_order_date / update_daily_portions /
 // update_capacity_slot / atomic_coupon_increment failures from leaking as
 // English DB text or a generic "Rendelés mentési hiba".
-function mapDbErrorToHungarian(err: unknown): string {
+//
+// opts.phone / opts.email come from public.settings.restaurant_contact.
+// If a phone is configured the fallback tells the customer to call; otherwise
+// it falls back to email. Future-proof: enabling phone contact is a single
+// settings-row update, zero code changes.
+export function mapDbErrorToHungarian(
+  err: unknown,
+  opts?: { phone?: string | null; email?: string | null }
+): string {
+  const email = opts?.email || 'info@kiscsibeetterem.hu';
+  const contactSuffix = opts?.phone
+    ? `hívj minket: ${opts.phone}`
+    : `írj nekünk: ${email}`;
+  const softFallback = `Nem sikerült a rendelést menteni — kérjük próbáld újra pár másodperc múlva, vagy ${contactSuffix}.`;
+
   const raw = String(
     (err as any)?.message ??
     (err as any)?.error_description ??
     (err as any)?.details ??
     err ?? ''
   );
-  if (!raw) return 'Rendelés mentési hiba — kérjük próbáld újra, vagy hívj minket.';
+  if (!raw) return softFallback;
 
   const lower = raw.toLowerCase();
 
-  // Already a Hungarian message from our code — pass through.
-  // Heuristic: contains typical Hungarian order words.
+  // K-1 root-cause coverage: cart payload arrived without name_snapshot /
+  // unit_price_huf / line_total_huf → order_items NOT NULL constraint bites.
+  // Empirically seen from a stale FE cache (AUDIT TESZT E2, 2026-07-14 00:12 Europe/Budapest).
+  if (
+    lower.includes('null value in column "name_snapshot"') ||
+    lower.includes('null value in column "unit_price_huf"') ||
+    lower.includes('null value in column "line_total_huf"')
+  ) {
+    return 'A kosár egyik tétele hiányos adatokkal érkezett — kérjük frissítsd az oldalt (Ctrl+F5) és próbáld újra.';
+  }
+
+  // Already a Hungarian message from our code — pass through unchanged.
+  // Heuristic: contains accented chars or typical Hungarian order words.
   if (/[őűáéíóöúü]/.test(raw) || /rendel|kupon|adag|időpont|napi|köret|étel|hétvég|nyitvatart|múltbeli|foglalt|betelt|elfogyott|feliratkoz|nyitva|zárva|Kiscsibe/i.test(raw)) {
-    // Except a few known raw-throws that we want to soften.
-    if (raw === 'Rendelés mentési hiba') {
-      return 'Nem sikerült a rendelést menteni — kérjük próbáld újra pár másodperc múlva, vagy hívj minket.';
+    // Except the raw internal throws we want to soften with a contact suffix.
+    if (raw === 'Rendelés mentési hiba' || raw === 'Rendelési tétel mentési hiba') {
+      return softFallback;
     }
     return raw;
   }
@@ -154,15 +179,38 @@ function mapDbErrorToHungarian(err: unknown): string {
     return 'Ez a rendelés már be lett rögzítve — kérjük ellenőrizd az email értesítőt.';
   }
   if (lower.includes('permission denied') || lower.includes('rls')) {
-    return 'Jogosultsági hiba történt — kérjük próbáld újra, vagy hívj minket.';
+    return `Jogosultsági hiba történt — kérjük próbáld újra, vagy ${contactSuffix}.`;
   }
   if (lower.includes('timeout') || lower.includes('timed out')) {
     return 'A rendelési szerver túl lassan válaszolt — kérjük próbáld újra.';
   }
 
-  // Unknown DB error — generic soft fallback.
-  return 'Nem sikerült a rendelést menteni — kérjük próbáld újra pár másodperc múlva, vagy hívj minket.';
+  // Unknown DB error — generic soft fallback with dynamic contact suffix.
+  return softFallback;
 }
+
+// Fetch restaurant contact info from public.settings.restaurant_contact.
+// Falls back to { phone: null, email: 'info@kiscsibeetterem.hu' } when the row
+// is missing or the fetch fails so callers always get a usable email suffix.
+async function getRestaurantContact(
+  supabase: any
+): Promise<{ phone: string | null; email: string }> {
+  try {
+    const { data } = await supabase
+      .from('settings')
+      .select('value_json')
+      .eq('key', 'restaurant_contact')
+      .maybeSingle();
+    const v = (data?.value_json ?? {}) as { phone?: string | null; email?: string | null };
+    return {
+      phone: typeof v.phone === 'string' && v.phone.trim() ? v.phone.trim() : null,
+      email: typeof v.email === 'string' && v.email.trim() ? v.email.trim() : 'info@kiscsibeetterem.hu',
+    };
+  } catch {
+    return { phone: null, email: 'info@kiscsibeetterem.hu' };
+  }
+}
+
 
 
 
