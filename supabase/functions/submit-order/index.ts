@@ -306,6 +306,12 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     attemptCtx.supabase = supabase;
 
+    // Load restaurant contact from settings.restaurant_contact once per request,
+    // so mapDbErrorToHungarian can emit "call us / email us" fallbacks with the
+    // configured contact. See getRestaurantContact() for the default fallback.
+    attemptCtx.restaurantContact = await getRestaurantContact(supabase);
+
+
 
     const {
       customer,
