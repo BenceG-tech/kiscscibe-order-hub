@@ -115,7 +115,7 @@ const handler = async (req: Request): Promise<Response> => {
           <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
           <div style="color: #666; font-size: 14px;">
             <p style="margin: 4px 0;"><strong>Kiscsibe Reggeliző & Étterem</strong></p>
-            <p style="margin: 4px 0;">📍 1145 Budapest, Vezér utca 12.</p>
+            <p style="margin: 4px 0;">📍 1141 Budapest, Vezér u. 110.</p>
             
             <p style="margin: 4px 0;">✉️ info@kiscsibeetterem.hu</p>
           </div>
