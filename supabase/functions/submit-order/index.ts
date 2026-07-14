@@ -1034,7 +1034,7 @@ serve(async (req) => {
 
     if (orderInsertError || !orderData) {
       console.error('Order insert error:', orderInsertError);
-      throw new Error(mapDbErrorToHungarian(orderInsertError));
+      throw new Error(mapDbErrorToHungarian(orderInsertError, attemptCtx.restaurantContact));
     }
 
 
@@ -1583,7 +1583,7 @@ Kiscsibe Reggeliző & Étterem
       statusCode = 500; // Internal Server Error
     }
     
-    const userMessage = mapDbErrorToHungarian(error);
+    const userMessage = mapDbErrorToHungarian(error, attemptCtx.restaurantContact);
     return new Response(
       JSON.stringify({
         error: userMessage,
