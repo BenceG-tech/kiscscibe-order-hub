@@ -279,6 +279,7 @@ serve(async (req) => {
     pickup_time_slot: string | null;
     session_id: string | null;
     userAgent: string;
+    restaurantContact: { phone: string | null; email: string };
   } = {
     supabase: null,
     customer: null,
@@ -288,7 +289,11 @@ serve(async (req) => {
     pickup_time_slot: null,
     session_id: null,
     userAgent: req.headers.get('user-agent') || '',
+    // Safe defaults so the outer catch always has a valid contact suffix,
+    // even if the settings lookup below has not run yet.
+    restaurantContact: { phone: null, email: 'info@kiscsibeetterem.hu' },
   };
+
 
   // Rollback safety net: registered compensations run in reverse order if any step after
   // capacity/portion mutations throws. Prevents "ghost" bookings when the final INSERT fails.
