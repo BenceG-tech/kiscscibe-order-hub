@@ -1,77 +1,61 @@
-## Záró takarítás + próbálkozás-panel vizsgálat + végleges jelentés
+## Diagnózis — miért nem működik a „Fix" fül
 
-### 1. Overlay-teszt takarítás (dátum-guardos)
+A böngésző console tisztán mutatja:
 
-10 db `AUDIT TESZT OVERLAY %` rendelés törlése, szigorú dátum-guarddal (`created_at >= '2026-07-13 20:00:00+00'`):
-
-```sql
-DELETE FROM order_item_options
-WHERE order_item_id IN (
-  SELECT id FROM order_items WHERE order_id IN (
-    SELECT id FROM orders
-    WHERE name LIKE 'AUDIT TESZT OVERLAY%'
-      AND created_at >= '2026-07-13 20:00:00+00'
-  )
-);
-
-DELETE FROM order_items
-WHERE order_id IN (
-  SELECT id FROM orders
-  WHERE name LIKE 'AUDIT TESZT OVERLAY%'
-    AND created_at >= '2026-07-13 20:00:00+00'
-);
-
-DELETE FROM orders
-WHERE name LIKE 'AUDIT TESZT OVERLAY%'
-  AND created_at >= '2026-07-13 20:00:00+00';
+```
+TypeError: Importing a module script failed.
+ErrorBoundary caught: TypeError ... Suspense ...
 ```
 
-- `email_send_log`-hoz **NEM nyúlok** (a 42 megőrzött bizonyíték-sor védve marad).
-- `order_attempts` / `abandoned_carts`: **nem érintem** (a direkt DB INSERT-es overlay-teszt nem hozott létre sort ott — l. 2. pont).
+Ez **NEM a `FixItems` oldal hibája** — a kód, a route (`/admin/fix-items`), a menüpont és az AdminLayout wiring rendben van, és nincs runtime hiba a FixItems komponensben.
 
-### 2. "1 szerver oldali hiba" — vizsgálat eredménye
+**Gyökér-ok:** klasszikus Vite „stale chunk after deploy":
+1. A felhasználó admin fülét reggel/tegnap töltötte be → a memóriában a régi `index-BId3OQ2d.js` fut.
+2. Azóta új build ment ki (M4/M5, K-3, migráció, stb.), a régi lazy-chunk fájlok (pl. a FixItems külön chunkja) már nincsenek a szerveren.
+3. Amikor a felhasználó rákattint a Fix fülre, a `React.lazy(() => import("./pages/admin/FixItems"))` egy már nem létező hash-elt fájlt próbál lehúzni → `Importing a module script failed`.
+4. Az `ErrorBoundary` elkapja, de a jelenlegi „Újratöltés" gomb `window.location.reload()`-ot hív, ami **nem cache-bustol** — ha a HTML shell is cache-elt, ugyanaz a stale index.js töltődik újra, végtelen loop.
 
-Lekérdeztem: az `order_attempts` táblában **1 sor van, és az VALÓDI VEVŐI HIBA, NEM teszt-maradvány**:
+Ugyanez az esemény bármelyik lazy-loadolt admin aloldalt eltalálhatja (Analytics, Dashboard, Documents, Invoices stb.) — nem csak a Fix fület. Ez magyarázza, hogy „hirtelen nem működik".
 
-| mező | érték |
-|---|---|
-| Dátum | **2026-07-02 06:05:10 UTC** (jóval a dátum-guard előtt) |
-| Vevő | **Dr. Örkényi Erika** |
-| Telefon | +36 30 924 7049 |
-| Email | drorkenyi66@gmail.com |
-| Összeg | 4 740 Ft |
-| Kívánt átvétel | 2026-07-02 |
-| Hibaüzenet | **"Rendelés mentési hiba"** (magyar, generikus) |
-| `error_code` | `NULL` |
+## Terv
 
-**Ítélet:** ez **nem törölhető** — valódi vevő, valódi elveszett rendelés (~4 700 Ft bevétel + reputáció). A dátum-guard (`>= 2026-07-13 20:00`) eleve kizárná, de attól függetlenül is meg kell tartani.
+Egy fókuszált, kis fix — nem nyúlok a FixItems oldalhoz, nem nyúlok a rendelés-folyamhoz (mert a bizonyíték szerint azok működnek: a mai audit végén a Realtime, submit-order, email-log és admin nézet mind zöld volt).
 
-**Jelentendő tulajdonosnak:** a K-3 mapper (mai frissítés) OTA javította a jövőbeni ilyen eseteket — most már konkrét, cselekvésre bíró üzenetet kap a vevő "Rendelés mentési hiba" helyett. Erre a júl. 2-i esetre visszamenőleg érdemes lehet Dr. Örkényi Erikát felhívni/emailt küldeni; ezt a lépést nem automatizálom.
+### 1) Chunk-load-error automatikus helyreállítás
 
-### 3. /admin/activity 0/0 ellenőrzés
+**`src/main.tsx`** — globális `window` listener a `vite:preloadError`-ra és a natív `error` eventre. Ha a hibaüzenet illeszkedik a stale-chunk mintára (`Importing a module script failed` / `Failed to fetch dynamically imported module` / `error loading dynamically imported module` / `ChunkLoadError`), akkor **egyszer** újratöltjük az oldalt cache-bust query-vel (`?_r=<timestamp>`). Egy `sessionStorage` flaggel megakadályozzuk a végtelen újratöltő loopot: ha ugyanabban a session-ben már próbáltunk cache-bustolni és megint elbukott, hagyjuk az ErrorBoundary-t megjeleníteni.
 
-Takarítás után lefuttatom:
+**`src/components/ErrorBoundary.tsx`** — a `componentDidCatch`-ben ugyanezt a mintát detektáljuk, és az „Újratöltés" gomb szintén cache-bust query-vel tölt újra (`window.location.href = window.location.pathname + '?_r=' + Date.now()`), nem sima `reload()`-dal. A hibaüzenet szövege pontosabb magyarra vált, ha stale chunk: „Új verzió érkezett — frissítjük az oldalt…".
 
-```sql
-SELECT COUNT(*) FROM orders          WHERE name LIKE 'AUDIT TESZT%';
-SELECT COUNT(*) FROM order_items     WHERE name_snapshot LIKE 'AUDIT TESZT%';
-SELECT COUNT(*) FROM order_attempts  WHERE customer_name LIKE 'AUDIT TESZT%';
-SELECT COUNT(*) FROM abandoned_carts WHERE created_at >= '2026-07-13 20:00:00+00';
-```
+Ez egyben megoldja a Fix fület **és** ugyanazt a hibát bármelyik jövőbeli lazy admin oldalon.
 
-Cél mind a 4-nél: `0`. Ha bármelyik nem 0 → jelentem, magyarázom, nem zárok le.
+### 2) Rendelés-folyam gyors ellenőrzés (kód-review, nem futtatás)
 
-### 4. Végleges jelentés (a szokott formában)
+A user kérte a rendelés leadás / érkezés / kezelés átnézését. A mai auditban ez már teljeskörűen le lett tesztelve (E1–E9, overlay 1/2/4/10 hullám, dátum-guardos takarítás, email_send_log 39 bizonyítékkal). Nem futtatok újra teszt-rendeléseket (adna zajt), csak **statikus kód-review-t** végzek:
 
-- **K-3 mapper:** 15/15 Deno teszt ✅ + Checkout ASSERT magyar üzenetre (kódszemle)
-- **K-2 audit-maradvány takarítás:** teljes mátrix (orders / order_items / order_attempts / abandoned_carts) — ma esti + korábbi audit körök
-- **BACKLOG-2b/2c:** kamu telefonszám eltávolítva 2 hírlevél sablonból, fallback = `info@kiscsibeetterem.hu`
-- **BACKLOG-2d:** placeholder cím `1145 Budapest, Vezér utca 12.` → **`1141 Budapest, Vezér u. 110.`** 3 sablonban (send-welcome-newsletter, send-weekly-menu, send-contact-email)
-- **Settings seed:** `restaurant_contact = {"email":"info@kiscsibeetterem.hu"}` (phone opcionális, kód phone-képes)
-- **Overlay élő teszt:** 1 → 2 → 4 → 10 rendelés, layoutok (kártya / 2-oszlop / 2×2 / 3×3), hang 10=10, mindkét screenshottal igazolva
-- **Aktivitás-fül:** 0 teszt-rendelés / 0 teszt-próbálkozás
-- **Megőrzött valódi bizonyítékok:** 42 db `email_send_log` sor (érintetlen), 1 db `order_attempts` sor Dr. Örkényi Erika júl. 2-i esetéről (érintetlen, tulajdonosi follow-up javasolt)
+- `supabase/functions/submit-order/index.ts` — a validációs láncolat, mapper, dupla admin email + feltételes vevői email, waitUntil, error mapping.
+- `src/pages/Checkout.tsx` — az iménti K-3 magyar hibaüzenet kinyerése az edge fn body-ból.
+- `src/hooks/useRealtimeOrders.tsx` + `src/hooks/useGlobalOrderNotifications.tsx` — dedupe, polling fallback, reconnect backoff.
+- `src/pages/admin/OrdersManagement.tsx` + `EmailStatusBadge.tsx` — a lista + inline email státusz ikonok.
+- `src/contexts/OrderNotificationsContext.tsx` + `OrderNotificationOverlay.tsx` — audio unlock, dismiss.
 
-### Kérdés
+Ha bármelyikben regressziót vagy nyilvánvaló hibát találok (nem stílus, hanem funkció), külön jelentem — **de nem javítom ki ebben a körben**, a fegyelmed szerint „egy hiba – egy fix". Ha semmi rendellenes: jelentem, hogy tiszta.
 
-Mehet a takarítás + verifikáció, vagy előbb bármi módosítás?
+### 3) Verifikáció
+
+- `tsgo` typecheck a két érintett fájlra.
+- Kérni foglak, hogy a preview-ban tölts újra (Ctrl+Shift+R / iOS Safari „Reload without cache"), és **próbáld meg még egyszer a Fix fület**. Várhatóan azonnal megnyílik.
+- A jövőben, ha még egy régi tabot használsz deploy után → az új handler átirányít cache-busttal, egyetlen villanás → új build, hibaüzenet nélkül.
+
+### Miért NEM módosítom most
+
+- **FixItems.tsx maga**: nincs benne hiba, a lazy import felé bukott el.
+- **Rendelés-folyam kód**: ma reggel élesben minden zöld volt (Realtime, hang, email_send_log 39 sor sent, K-3 magyar hibaüzenet). Ok nélkül nem nyúlok hozzá.
+- **AdminLayout tab**: a `to="/admin/fix-items"` link jó, route wiring jó.
+
+### Fájlok, amiket módosítok
+- `src/main.tsx` — globális chunk-error handler (~15 sor)
+- `src/components/ErrorBoundary.tsx` — cache-bust reload + jobb szöveg stale chunk esetén (~10 sor)
+
+### Kockázat
+Minimális. A handler csak akkor tüzel, ha a hibaüzenet illeszkedik a stale-chunk mintára, egyébként az ErrorBoundary a régi módon dolgozik.
