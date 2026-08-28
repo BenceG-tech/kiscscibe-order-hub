@@ -429,8 +429,10 @@ const MenuManagement = () => {
               >
                 📌 Fix tételek ({menuItems.filter(i => i.is_always_available).length})
               </Badge>
-              {categories.map(category => {
-                const count = menuItems.filter(i => i.category_id === category.id).length;
+              {renderCategories.map(category => {
+                const count = category.id === UNCATEGORIZED_ID
+                  ? uncategorizedCount
+                  : menuItems.filter(i => i.category_id === category.id).length;
                 return (
                   <Badge
                     key={category.id}
@@ -453,8 +455,11 @@ const MenuManagement = () => {
         </Card>
 
         <div className="grid gap-6">
-          {categories.map((category) => {
-            const categoryItems = filteredMenuItems.filter(item => item.category_id === category.id);
+          {renderCategories.map((category) => {
+            const categoryItems = category.id === UNCATEGORIZED_ID
+              ? filteredMenuItems.filter(item => !item.category_id)
+              : filteredMenuItems.filter(item => item.category_id === category.id);
+
             
             // Hide empty categories when searching or filtering
             if (categoryItems.length === 0 && (searchTerm !== "" || selectedCategory !== "all")) {
