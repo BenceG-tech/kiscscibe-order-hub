@@ -145,7 +145,8 @@ const StreamlinedDailyOffers = () => {
         .from('menu_items')
         .select('*')
         .eq('is_active', true)
-        .order('name'),
+        .order('name')
+        .range(0, 4999),
       supabase
         .from('menu_categories')
         .select('*')

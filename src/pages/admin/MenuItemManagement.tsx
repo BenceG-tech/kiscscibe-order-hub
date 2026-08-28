@@ -103,7 +103,8 @@ const MenuItemManagement = () => {
       supabase
         .from('menu_items')
         .select('*')
-        .order('name'),
+        .order('name')
+        .range(0, 4999),
       supabase
         .from('menu_categories')
         .select('*')

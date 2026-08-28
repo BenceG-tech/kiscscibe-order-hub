@@ -99,7 +99,7 @@ const MenuManagement = () => {
   const fetchData = async () => {
     const [categoriesResult, itemsResult] = await Promise.all([
       supabase.from('menu_categories').select('*').order('sort'),
-      supabase.from('menu_items').select('*').order('name')
+      supabase.from('menu_items').select('*').order('name').range(0, 4999)
     ]);
 
     if (categoriesResult.error) {
