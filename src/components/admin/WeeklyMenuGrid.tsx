@@ -130,20 +130,34 @@ export default function WeeklyMenuGrid() {
     );
   }, [categories]);
 
-  // Fetch menu items
+  // Fetch menu items (paginated to bypass the 1000-row default limit)
   const { data: menuItems = [] } = useQuery({
     queryKey: ["menu-items-all"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("menu_items")
-        .select("id, name, category_id, price_huf, image_url")
-        .eq("is_active", true)
-        .order("name");
-      
-      if (error) throw error;
-      return data as MenuItem[];
+      const all: MenuItem[] = [];
+      const pageSize = 1000;
+      for (let from = 0; ; from += pageSize) {
+        const { data, error } = await supabase
+          .from("menu_items")
+          .select("id, name, category_id, price_huf, image_url")
+          .eq("is_active", true)
+          .order("name")
+          .range(from, from + pageSize - 1);
+
+        if (error) throw error;
+        all.push(...((data || []) as MenuItem[]));
+        if (!data || data.length < pageSize) break;
+      }
+      return all;
     },
   });
+
+  // Category id -> name lookup (used to label cross-category search hits)
+  const categoryNames = useMemo(() => {
+    const map: Record<string, string> = {};
+    categories.forEach(c => { map[c.id] = c.name; });
+    return map;
+  }, [categories]);
 
   // Group menu items by category
   const itemsByCategory = useMemo(() => {
@@ -158,6 +172,7 @@ export default function WeeklyMenuGrid() {
     });
     return grouped;
   }, [menuItems]);
+
 
   // Fetch daily offers for the week
   const { data: dailyOffers = [], isLoading: offersLoading } = useQuery({
