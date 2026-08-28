@@ -67,19 +67,30 @@ const MenuManagement = () => {
     is_always_available: false
   });
 
+  const UNCATEGORIZED_ID = "__uncategorized__";
+
   // Filter menu items based on search and category
   const filteredMenuItems = menuItems.filter(item => {
     const normalizedSearch = normalizeText(searchTerm);
     const matchesSearch = searchTerm === "" || 
-      normalizeText(item.name).includes(normalizedSearch) ||
+      normalizeText(item.name || "").includes(normalizedSearch) ||
       (item.description && normalizeText(item.description).includes(normalizedSearch));
     const matchesCategory = selectedCategory === "all" 
       ? true 
       : selectedCategory === "fix" 
         ? item.is_always_available 
-        : item.category_id === selectedCategory;
+        : selectedCategory === UNCATEGORIZED_ID
+          ? !item.category_id
+          : item.category_id === selectedCategory;
     return matchesSearch && matchesCategory;
   });
+
+  // Categories to render, including a virtual group for items without category
+  const uncategorizedCount = menuItems.filter(i => !i.category_id).length;
+  const renderCategories: MenuCategory[] = uncategorizedCount > 0
+    ? [...categories, { id: UNCATEGORIZED_ID, name: "Besorolás nélkül", sort: 9999 }]
+    : categories;
+
 
   useEffect(() => {
     fetchData();
