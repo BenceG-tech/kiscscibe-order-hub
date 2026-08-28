@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Plus, X, ImageIcon, Pencil, Ban } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, normalizeText } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { QuickImageUpload } from "./QuickImageUpload";
@@ -16,6 +16,7 @@ interface MenuItem {
   name: string;
   price_huf: number;
   image_url?: string | null;
+  category_id?: string | null;
 }
 
 interface SelectedItem {
@@ -35,6 +36,10 @@ interface WeeklyGridCellProps {
   categoryId: string;
   categoryName: string;
   items: MenuItem[];
+  /** All menu items (any category) so search is not limited to this row */
+  allItems?: MenuItem[];
+  /** Map of categoryId -> category name, used to label cross-category hits */
+  categoryNames?: Record<string, string>;
   selectedItems: SelectedItem[];
   onAddItem: (itemId: string) => void;
   onRemoveItem: (offerItemId: string) => void;
@@ -45,8 +50,11 @@ interface WeeklyGridCellProps {
 }
 
 export function WeeklyGridCell({
+  categoryId,
   categoryName,
   items,
+  allItems,
+  categoryNames,
   selectedItems,
   onAddItem,
   onRemoveItem,
@@ -56,8 +64,10 @@ export function WeeklyGridCell({
   onItemEdit,
 }: WeeklyGridCellProps) {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+
 
   const handleSelect = (itemId: string) => {
     onAddItem(itemId);
