@@ -1055,7 +1055,10 @@ export default function WeeklyMenuGrid() {
                             categoryId={category.id}
                             categoryName={category.name}
                             items={categoryItems}
+                            allItems={menuItems}
+                            categoryNames={categoryNames}
                             selectedItems={cellItems}
+
                             onAddItem={(itemId) => handleAddItem(dateStr, itemId)}
                             onRemoveItem={handleRemoveItem}
                             onImageUpdated={handleImageUpdated}
