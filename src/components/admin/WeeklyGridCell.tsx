@@ -71,8 +71,10 @@ export function WeeklyGridCell({
 
   const handleSelect = (itemId: string) => {
     onAddItem(itemId);
+    setQuery("");
     setOpen(false);
   };
+
 
   const handleEditClick = (itemId: string) => {
     setEditingItemId(itemId);
