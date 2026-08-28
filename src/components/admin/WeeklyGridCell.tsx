@@ -246,33 +246,54 @@ export function WeeklyGridCell({
             {selectedItems.length === 0 ? "Válassz..." : "Hozzáadás"}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[280px] p-0" align="start">
-          <Command>
-            <CommandInput placeholder={`Keresés: ${categoryName}...`} className="h-9" />
+        <PopoverContent className="w-[320px] p-0" align="start">
+          <Command shouldFilter={false}>
+            <CommandInput
+              placeholder="Keresés az összes ételben..."
+              className="h-9"
+              value={query}
+              onValueChange={setQuery}
+            />
             <CommandList>
               <CommandEmpty>Nincs találat.</CommandEmpty>
-              <CommandGroup>
-                {availableItems.map((item) => (
-                  <CommandItem
-                    key={item.id}
-                    value={item.name}
-                    onSelect={() => handleSelect(item.id)}
-                    className="text-sm"
-                  >
-                    {item.image_url && (
-                      <img
-                        src={item.image_url}
-                        alt=""
-                        className="h-6 w-6 rounded object-cover mr-2 shrink-0"
-                      />
-                    )}
-                    <span className="flex-1 truncate">{item.name}</span>
-                    <span className="text-xs text-muted-foreground ml-2">
-                      {item.price_huf} Ft
-                    </span>
-                  </CommandItem>
-                ))}
+              <CommandGroup
+                heading={query ? `Találatok (${visibleItems.length})` : categoryName}
+              >
+                {visibleItems.map((item) => {
+                  const otherCategory =
+                    item.category_id && item.category_id !== categoryId
+                      ? categoryNames?.[item.category_id]
+                      : null;
+                  return (
+                    <CommandItem
+                      key={item.id}
+                      value={item.id}
+                      onSelect={() => handleSelect(item.id)}
+                      className="text-sm"
+                    >
+                      {item.image_url && (
+                        <img
+                          src={item.image_url}
+                          alt=""
+                          className="h-6 w-6 rounded object-cover mr-2 shrink-0"
+                        />
+                      )}
+                      <span className="flex-1 min-w-0">
+                        <span className="block truncate">{item.name}</span>
+                        {otherCategory && (
+                          <span className="block text-[10px] text-muted-foreground truncate">
+                            {otherCategory}
+                          </span>
+                        )}
+                      </span>
+                      <span className="text-xs text-muted-foreground ml-2 shrink-0">
+                        {item.price_huf} Ft
+                      </span>
+                    </CommandItem>
+                  );
+                })}
               </CommandGroup>
+
             </CommandList>
           </Command>
         </PopoverContent>
