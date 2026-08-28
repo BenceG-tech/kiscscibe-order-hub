@@ -67,19 +67,30 @@ const MenuManagement = () => {
     is_always_available: false
   });
 
+  const UNCATEGORIZED_ID = "__uncategorized__";
+
   // Filter menu items based on search and category
   const filteredMenuItems = menuItems.filter(item => {
     const normalizedSearch = normalizeText(searchTerm);
     const matchesSearch = searchTerm === "" || 
-      normalizeText(item.name).includes(normalizedSearch) ||
+      normalizeText(item.name || "").includes(normalizedSearch) ||
       (item.description && normalizeText(item.description).includes(normalizedSearch));
     const matchesCategory = selectedCategory === "all" 
       ? true 
       : selectedCategory === "fix" 
         ? item.is_always_available 
-        : item.category_id === selectedCategory;
+        : selectedCategory === UNCATEGORIZED_ID
+          ? !item.category_id
+          : item.category_id === selectedCategory;
     return matchesSearch && matchesCategory;
   });
+
+  // Categories to render, including a virtual group for items without category
+  const uncategorizedCount = menuItems.filter(i => !i.category_id).length;
+  const renderCategories: MenuCategory[] = uncategorizedCount > 0
+    ? [...categories, { id: UNCATEGORIZED_ID, name: "Besorolás nélkül", sort: 9999 }]
+    : categories;
+
 
   useEffect(() => {
     fetchData();
@@ -88,7 +99,7 @@ const MenuManagement = () => {
   const fetchData = async () => {
     const [categoriesResult, itemsResult] = await Promise.all([
       supabase.from('menu_categories').select('*').order('sort'),
-      supabase.from('menu_items').select('*').order('name')
+      supabase.from('menu_items').select('*').order('name').range(0, 4999)
     ]);
 
     if (categoriesResult.error) {
@@ -418,8 +429,10 @@ const MenuManagement = () => {
               >
                 📌 Fix tételek ({menuItems.filter(i => i.is_always_available).length})
               </Badge>
-              {categories.map(category => {
-                const count = menuItems.filter(i => i.category_id === category.id).length;
+              {renderCategories.map(category => {
+                const count = category.id === UNCATEGORIZED_ID
+                  ? uncategorizedCount
+                  : menuItems.filter(i => i.category_id === category.id).length;
                 return (
                   <Badge
                     key={category.id}
@@ -442,8 +455,11 @@ const MenuManagement = () => {
         </Card>
 
         <div className="grid gap-6">
-          {categories.map((category) => {
-            const categoryItems = filteredMenuItems.filter(item => item.category_id === category.id);
+          {renderCategories.map((category) => {
+            const categoryItems = category.id === UNCATEGORIZED_ID
+              ? filteredMenuItems.filter(item => !item.category_id)
+              : filteredMenuItems.filter(item => item.category_id === category.id);
+
             
             // Hide empty categories when searching or filtering
             if (categoryItems.length === 0 && (searchTerm !== "" || selectedCategory !== "all")) {

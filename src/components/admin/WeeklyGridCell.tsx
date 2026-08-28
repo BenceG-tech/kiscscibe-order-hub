@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Plus, X, ImageIcon, Pencil, Ban } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, normalizeText } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { QuickImageUpload } from "./QuickImageUpload";
@@ -16,6 +16,7 @@ interface MenuItem {
   name: string;
   price_huf: number;
   image_url?: string | null;
+  category_id?: string | null;
 }
 
 interface SelectedItem {
@@ -35,6 +36,10 @@ interface WeeklyGridCellProps {
   categoryId: string;
   categoryName: string;
   items: MenuItem[];
+  /** All menu items (any category) so search is not limited to this row */
+  allItems?: MenuItem[];
+  /** Map of categoryId -> category name, used to label cross-category hits */
+  categoryNames?: Record<string, string>;
   selectedItems: SelectedItem[];
   onAddItem: (itemId: string) => void;
   onRemoveItem: (offerItemId: string) => void;
@@ -45,8 +50,11 @@ interface WeeklyGridCellProps {
 }
 
 export function WeeklyGridCell({
+  categoryId,
   categoryName,
   items,
+  allItems,
+  categoryNames,
   selectedItems,
   onAddItem,
   onRemoveItem,
@@ -56,13 +64,17 @@ export function WeeklyGridCell({
   onItemEdit,
 }: WeeklyGridCellProps) {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
 
+
   const handleSelect = (itemId: string) => {
     onAddItem(itemId);
+    setQuery("");
     setOpen(false);
   };
+
 
   const handleEditClick = (itemId: string) => {
     setEditingItemId(itemId);
@@ -92,6 +104,27 @@ export function WeeklyGridCell({
   const availableItems = items.filter(
     item => !selectedItems.some(sel => sel.itemId === item.id)
   );
+
+  // When searching, look through ALL items (any category), not just this row's category
+  const searchPool = allItems && allItems.length > 0 ? allItems : items;
+
+  const visibleItems = useMemo(() => {
+    const q = normalizeText(query.trim());
+    if (!q) return availableItems.slice(0, 100);
+    return searchPool
+      .filter(item => !selectedItems.some(sel => sel.itemId === item.id))
+      .filter(item => normalizeText(item.name || "").includes(q))
+      .sort((a, b) => {
+        // Items from this row's category first
+        const aOwn = a.category_id === categoryId ? 0 : 1;
+        const bOwn = b.category_id === categoryId ? 0 : 1;
+        if (aOwn !== bOwn) return aOwn - bOwn;
+        return (a.name || "").localeCompare(b.name || "", "hu");
+      })
+      .slice(0, 100);
+  }, [query, availableItems, searchPool, selectedItems, categoryId]);
+
+
 
   return (
     <div className="space-y-1 min-h-[36px]">
@@ -213,33 +246,54 @@ export function WeeklyGridCell({
             {selectedItems.length === 0 ? "Válassz..." : "Hozzáadás"}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[280px] p-0" align="start">
-          <Command>
-            <CommandInput placeholder={`Keresés: ${categoryName}...`} className="h-9" />
+        <PopoverContent className="w-[320px] p-0" align="start">
+          <Command shouldFilter={false}>
+            <CommandInput
+              placeholder="Keresés az összes ételben..."
+              className="h-9"
+              value={query}
+              onValueChange={setQuery}
+            />
             <CommandList>
               <CommandEmpty>Nincs találat.</CommandEmpty>
-              <CommandGroup>
-                {availableItems.map((item) => (
-                  <CommandItem
-                    key={item.id}
-                    value={item.name}
-                    onSelect={() => handleSelect(item.id)}
-                    className="text-sm"
-                  >
-                    {item.image_url && (
-                      <img
-                        src={item.image_url}
-                        alt=""
-                        className="h-6 w-6 rounded object-cover mr-2 shrink-0"
-                      />
-                    )}
-                    <span className="flex-1 truncate">{item.name}</span>
-                    <span className="text-xs text-muted-foreground ml-2">
-                      {item.price_huf} Ft
-                    </span>
-                  </CommandItem>
-                ))}
+              <CommandGroup
+                heading={query ? `Találatok (${visibleItems.length})` : categoryName}
+              >
+                {visibleItems.map((item) => {
+                  const otherCategory =
+                    item.category_id && item.category_id !== categoryId
+                      ? categoryNames?.[item.category_id]
+                      : null;
+                  return (
+                    <CommandItem
+                      key={item.id}
+                      value={item.id}
+                      onSelect={() => handleSelect(item.id)}
+                      className="text-sm"
+                    >
+                      {item.image_url && (
+                        <img
+                          src={item.image_url}
+                          alt=""
+                          className="h-6 w-6 rounded object-cover mr-2 shrink-0"
+                        />
+                      )}
+                      <span className="flex-1 min-w-0">
+                        <span className="block truncate">{item.name}</span>
+                        {otherCategory && (
+                          <span className="block text-[10px] text-muted-foreground truncate">
+                            {otherCategory}
+                          </span>
+                        )}
+                      </span>
+                      <span className="text-xs text-muted-foreground ml-2 shrink-0">
+                        {item.price_huf} Ft
+                      </span>
+                    </CommandItem>
+                  );
+                })}
               </CommandGroup>
+
             </CommandList>
           </Command>
         </PopoverContent>
