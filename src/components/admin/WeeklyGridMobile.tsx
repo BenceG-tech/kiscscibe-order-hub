@@ -37,6 +37,8 @@ interface WeeklyGridMobileProps {
   weekDates: Date[];
   categories: Category[];
   itemsByCategory: Record<string, MenuItem[]>;
+  allItems?: MenuItem[];
+  categoryNames?: Record<string, string>;
   gridData: Record<string, Record<string, SelectedItem[]>>;
   priceData: Record<string, { offerId: string; price: number | null }>;
   categoryColors: Record<string, string>;
@@ -241,6 +243,8 @@ export function WeeklyGridMobile({
                           categoryId={category.id}
                           categoryName={category.name}
                           items={categoryItems}
+                          allItems={allItems}
+                          categoryNames={categoryNames}
                           selectedItems={cellItems}
                           onAddItem={(itemId) => onAddItem(dateStr, itemId)}
                           onRemoveItem={onRemoveItem}
