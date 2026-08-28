@@ -1,61 +1,33 @@
-## Diagnózis — miért nem működik a „Fix" fül
+# Étlap kereső hibák javítása (admin)
 
-A böngésző console tisztán mutatja:
+Megnéztem az adatbázist és a keresőket. Négy konkrét hibát találtam, ezek magyarázzák, miért nem talál meg az asszisztens korábban felvitt ételeket.
 
-```
-TypeError: Importing a module script failed.
-ErrorBoundary caught: TypeError ... Suspense ...
-```
+## Amit a vizsgálat kimutatott
 
-Ez **NEM a `FixItems` oldal hibája** — a kód, a route (`/admin/fix-items`), a menüpont és az AdminLayout wiring rendben van, és nincs runtime hiba a FixItems komponensben.
+1. **A részletes étlap-kereső összeomlik gépeléskor.** A szűrő a leírás mezőt is átnézi, de 940 ételből **649-nek nincs leírása** (üres érték). Az első leütésnél hibára fut a kód, így nem jelenik meg találat (üres lista / megakadt oldal). Ez a legvalószínűbb ok arra, amit Krisztián jelzett.
+2. **6 aktív étel egyetlen listában sem jelenik meg**, mert nincs kategóriájuk. Az étlap oldal kategóriánként rendezve rajzol ki mindent, a kategória nélküli tételek kimaradnak – keresésre sem jönnek elő.
+3. **Ékezet-érzéketlen keresés hiányzik** a részletes étlap-keresőben ("porkolt" nem találja a "Pörköltet"), miközben a többi kereső már kezeli.
+4. **A heti rácsban soronként (kategóriánként) keres.** Ha egy étel más kategóriába került (pl. "Tokány / Pörkölt / Ragu" a "Főételek" helyett), a rossz sorban keresve nem található. Emellett 33 duplikált nevű étel van, ami tovább zavaró.
 
-**Gyökér-ok:** klasszikus Vite „stale chunk after deploy":
-1. A felhasználó admin fülét reggel/tegnap töltötte be → a memóriában a régi `index-BId3OQ2d.js` fut.
-2. Azóta új build ment ki (M4/M5, K-3, migráció, stb.), a régi lazy-chunk fájlok (pl. a FixItems külön chunkja) már nincsenek a szerveren.
-3. Amikor a felhasználó rákattint a Fix fülre, a `React.lazy(() => import("./pages/admin/FixItems"))` egy már nem létező hash-elt fájlt próbál lehúzni → `Importing a module script failed`.
-4. Az `ErrorBoundary` elkapja, de a jelenlegi „Újratöltés" gomb `window.location.reload()`-ot hív, ami **nem cache-bustol** — ha a HTML shell is cache-elt, ugyanaz a stale index.js töltődik újra, végtelen loop.
+Kiegészítő kockázat: 940 étel van, a lekérdezések alapértelmezett felső korlátja 1000 sor. Néhány héten belül az étlap egy része szó nélkül eltűnik a listákból, ha nincs lapozás.
 
-Ugyanez az esemény bármelyik lazy-loadolt admin aloldalt eltalálhatja (Analytics, Dashboard, Documents, Invoices stb.) — nem csak a Fix fület. Ez magyarázza, hogy „hirtelen nem működik".
+## Mit csinálok
 
-## Terv
+1. **Kereső-összeomlás javítása** – a leírás hiányát biztonságosan kezeli a szűrő, és ékezet-független keresésre áll át (a meglévő `normalizeText` segédfüggvénnyel), névre és leírásra egyaránt.
+2. **Kategória nélküli ételek megjelenítése** – az étlap oldal kap egy „Besorolás nélkül" csoportot, hogy a 6 (és bármely jövőbeli) tétel látszódjon és szerkeszthető legyen.
+3. **Globális keresés a heti rácsban** – a cellák keresője az összes ételben keres, nem csak az adott sor kategóriájában; a találat mellett kis címkén látszik, melyik kategóriából jön. Így nem kell tudni, hova lett besorolva.
+4. **1000 soros korlát megelőzése** – az admin étel-lekérdezések lapozva töltenek be minden tételt.
+5. **Duplikátumok** – készítek egy listát a 33 duplikált névről, de **nem törlök semmit**, csak megmutatom, hogy döntsetek róla.
 
-Egy fókuszált, kis fix — nem nyúlok a FixItems oldalhoz, nem nyúlok a rendelés-folyamhoz (mert a bizonyíték szerint azok működnek: a mai audit végén a Realtime, submit-order, email-log és admin nézet mind zöld volt).
+## Ellenőrzés
 
-### 1) Chunk-load-error automatikus helyreállítás
+- Playwright: admin étlap kereső ("pörkölt", "porkolt", részszavak), heti rács cella-kereső más kategóriás étellel, kategória nélküli tételek megjelenése.
+- Konzol- és hálózati napló hibamentessége, adatmódosítás nélkül.
 
-**`src/main.tsx`** — globális `window` listener a `vite:preloadError`-ra és a natív `error` eventre. Ha a hibaüzenet illeszkedik a stale-chunk mintára (`Importing a module script failed` / `Failed to fetch dynamically imported module` / `error loading dynamically imported module` / `ChunkLoadError`), akkor **egyszer** újratöltjük az oldalt cache-bust query-vel (`?_r=<timestamp>`). Egy `sessionStorage` flaggel megakadályozzuk a végtelen újratöltő loopot: ha ugyanabban a session-ben már próbáltunk cache-bustolni és megint elbukott, hagyjuk az ErrorBoundary-t megjeleníteni.
+## Technikai részletek
 
-**`src/components/ErrorBoundary.tsx`** — a `componentDidCatch`-ben ugyanezt a mintát detektáljuk, és az „Újratöltés" gomb szintén cache-bust query-vel tölt újra (`window.location.href = window.location.pathname + '?_r=' + Date.now()`), nem sima `reload()`-dal. A hibaüzenet szövege pontosabb magyarra vált, ha stale chunk: „Új verzió érkezett — frissítjük az oldalt…".
-
-Ez egyben megoldja a Fix fület **és** ugyanazt a hibát bármelyik jövőbeli lazy admin oldalon.
-
-### 2) Rendelés-folyam gyors ellenőrzés (kód-review, nem futtatás)
-
-A user kérte a rendelés leadás / érkezés / kezelés átnézését. A mai auditban ez már teljeskörűen le lett tesztelve (E1–E9, overlay 1/2/4/10 hullám, dátum-guardos takarítás, email_send_log 39 bizonyítékkal). Nem futtatok újra teszt-rendeléseket (adna zajt), csak **statikus kód-review-t** végzek:
-
-- `supabase/functions/submit-order/index.ts` — a validációs láncolat, mapper, dupla admin email + feltételes vevői email, waitUntil, error mapping.
-- `src/pages/Checkout.tsx` — az iménti K-3 magyar hibaüzenet kinyerése az edge fn body-ból.
-- `src/hooks/useRealtimeOrders.tsx` + `src/hooks/useGlobalOrderNotifications.tsx` — dedupe, polling fallback, reconnect backoff.
-- `src/pages/admin/OrdersManagement.tsx` + `EmailStatusBadge.tsx` — a lista + inline email státusz ikonok.
-- `src/contexts/OrderNotificationsContext.tsx` + `OrderNotificationOverlay.tsx` — audio unlock, dismiss.
-
-Ha bármelyikben regressziót vagy nyilvánvaló hibát találok (nem stílus, hanem funkció), külön jelentem — **de nem javítom ki ebben a körben**, a fegyelmed szerint „egy hiba – egy fix". Ha semmi rendellenes: jelentem, hogy tiszta.
-
-### 3) Verifikáció
-
-- `tsgo` typecheck a két érintett fájlra.
-- Kérni foglak, hogy a preview-ban tölts újra (Ctrl+Shift+R / iOS Safari „Reload without cache"), és **próbáld meg még egyszer a Fix fület**. Várhatóan azonnal megnyílik.
-- A jövőben, ha még egy régi tabot használsz deploy után → az új handler átirányít cache-busttal, egyetlen villanás → új build, hibaüzenet nélkül.
-
-### Miért NEM módosítom most
-
-- **FixItems.tsx maga**: nincs benne hiba, a lazy import felé bukott el.
-- **Rendelés-folyam kód**: ma reggel élesben minden zöld volt (Realtime, hang, email_send_log 39 sor sent, K-3 magyar hibaüzenet). Ok nélkül nem nyúlok hozzá.
-- **AdminLayout tab**: a `to="/admin/fix-items"` link jó, route wiring jó.
-
-### Fájlok, amiket módosítok
-- `src/main.tsx` — globális chunk-error handler (~15 sor)
-- `src/components/ErrorBoundary.tsx` — cache-bust reload + jobb szöveg stale chunk esetén (~10 sor)
-
-### Kockázat
-Minimális. A handler csak akkor tüzel, ha a hibaüzenet illeszkedik a stale-chunk mintára, egyébként az ErrorBoundary a régi módon dolgozik.
+- `src/pages/admin/MenuItemManagement.tsx`: null-safe + `normalizeText` alapú szűrés.
+- `src/pages/admin/MenuManagement.tsx`: kategória nélküli tételek külön csoportban (`category_id is null`).
+- `src/components/admin/WeeklyMenuGrid.tsx` + `WeeklyGridCell.tsx`: cella-kereső a teljes `menuItems` listán, kategória-címkével; a beszúrás továbbra is az adott sor napjára/szerepére megy.
+- Admin `menu_items` lekérdezések: `range()` alapú lapozás 1000-es kötegekben.
+- Backend, RLS, rendelési logika nem változik.
