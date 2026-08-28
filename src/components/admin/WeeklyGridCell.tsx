@@ -105,6 +105,27 @@ export function WeeklyGridCell({
     item => !selectedItems.some(sel => sel.itemId === item.id)
   );
 
+  // When searching, look through ALL items (any category), not just this row's category
+  const searchPool = allItems && allItems.length > 0 ? allItems : items;
+
+  const visibleItems = useMemo(() => {
+    const q = normalizeText(query.trim());
+    if (!q) return availableItems.slice(0, 100);
+    return searchPool
+      .filter(item => !selectedItems.some(sel => sel.itemId === item.id))
+      .filter(item => normalizeText(item.name || "").includes(q))
+      .sort((a, b) => {
+        // Items from this row's category first
+        const aOwn = a.category_id === categoryId ? 0 : 1;
+        const bOwn = b.category_id === categoryId ? 0 : 1;
+        if (aOwn !== bOwn) return aOwn - bOwn;
+        return (a.name || "").localeCompare(b.name || "", "hu");
+      })
+      .slice(0, 100);
+  }, [query, availableItems, searchPool, selectedItems, categoryId]);
+
+
+
   return (
     <div className="space-y-1 min-h-[36px]">
       {/* Selected Items List */}
