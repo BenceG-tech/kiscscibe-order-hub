@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { capitalizeFirst } from "@/lib/utils";
+import { capitalizeFirst, normalizeText } from "@/lib/utils";
 import { 
   Plus, 
   Edit, 
@@ -288,14 +288,16 @@ const MenuItemManagement = () => {
   // Filtered and sorted items
   const filteredItems = useMemo(() => {
     let filtered = menuItems.filter(item => {
-      // Search filter
+      // Search filter (accent-insensitive, null-safe)
       if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        if (!item.name.toLowerCase().includes(query) && 
-            !item.description.toLowerCase().includes(query)) {
+        const query = normalizeText(searchQuery);
+        const name = normalizeText(item.name || "");
+        const description = normalizeText(item.description || "");
+        if (!name.includes(query) && !description.includes(query)) {
           return false;
         }
       }
+
 
       // Category filter
       if (selectedCategory !== "all" && item.category_id !== selectedCategory) {
