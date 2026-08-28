@@ -69,6 +69,9 @@ export function WeeklyGridMobile({
   weekDates,
   categories,
   itemsByCategory,
+  allItems,
+  categoryNames,
+
   gridData,
   priceData,
   categoryColors,

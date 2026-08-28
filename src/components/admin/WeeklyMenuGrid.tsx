@@ -730,6 +730,9 @@ export default function WeeklyMenuGrid() {
           weekDates={weekDates}
           categories={foodCategories}
           itemsByCategory={itemsByCategory}
+          allItems={menuItems}
+          categoryNames={categoryNames}
+
           gridData={gridData}
           priceData={priceData}
           categoryColors={Object.fromEntries(Object.entries(CATEGORY_COLORS).map(([k, v]) => [k, v.row]))}
