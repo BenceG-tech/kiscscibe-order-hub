@@ -41,6 +41,8 @@ interface MenuItem {
   item_image_url?: string;
 }
 
+interface RawMenuItem extends MenuItem {}
+
 interface DailyOffersData {
   offer_id: string;
   offer_date: string;
@@ -90,18 +92,21 @@ const Etlap = () => {
         const result = data[0];
         
         const items: MenuItem[] = Array.isArray(result.items) 
-          ? result.items.map((item: any) => ({
-              id: item.id,
-              item_id: item.item_id,
-              is_menu_part: item.is_menu_part,
-              menu_role: item.menu_role,
-              is_sold_out: item.is_sold_out || false,
-              item_name: item.item_name,
-              item_description: item.item_description,
-              item_price_huf: item.item_price_huf,
-              item_allergens: item.item_allergens,
-              item_image_url: item.item_image_url
-            }))
+          ? result.items.map((rawItem) => {
+              const item = rawItem as unknown as RawMenuItem;
+              return {
+                id: item.id,
+                item_id: item.item_id,
+                is_menu_part: item.is_menu_part,
+                menu_role: item.menu_role,
+                is_sold_out: item.is_sold_out || false,
+                item_name: item.item_name,
+                item_description: item.item_description,
+                item_price_huf: item.item_price_huf,
+                item_allergens: item.item_allergens,
+                item_image_url: item.item_image_url
+              };
+            })
           : [];
         
         setDailyData({
@@ -120,7 +125,7 @@ const Etlap = () => {
           .select('facebook_image_url')
           .eq('date', dateStr)
           .maybeSingle();
-        setFacebookImageUrl((offerRow as any)?.facebook_image_url || null);
+        setFacebookImageUrl(offerRow?.facebook_image_url || null);
 
         if (result.menu_id) {
           const soup = items.find(item => item.is_menu_part && item.menu_role === 'leves') || null;

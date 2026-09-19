@@ -27,6 +27,8 @@ interface MenuItem {
   item_image_url?: string;
 }
 
+interface RawMenuItem extends MenuItem {}
+
 interface DailyOffersData {
   offer_id: string;
   offer_date: string;
@@ -134,17 +136,20 @@ const UnifiedDailySection = () => {
         
         // Parse items from jsonb with proper typing
         const items: MenuItem[] = Array.isArray(result.items) 
-          ? result.items.map((item: any) => ({
-              id: item.id,
-              item_id: item.item_id,
-              is_menu_part: item.is_menu_part,
-              menu_role: item.menu_role,
-              item_name: item.item_name,
-              item_description: item.item_description,
-              item_price_huf: item.item_price_huf,
-              item_allergens: item.item_allergens,
-              item_image_url: item.item_image_url
-            }))
+          ? result.items.map((rawItem) => {
+              const item = rawItem as unknown as RawMenuItem;
+              return {
+                id: item.id,
+                item_id: item.item_id,
+                is_menu_part: item.is_menu_part,
+                menu_role: item.menu_role,
+                item_name: item.item_name,
+                item_description: item.item_description,
+                item_price_huf: item.item_price_huf,
+                item_allergens: item.item_allergens,
+                item_image_url: item.item_image_url
+              };
+            })
           : [];
         
         // Set daily offers data
@@ -164,7 +169,7 @@ const UnifiedDailySection = () => {
           .select('facebook_image_url')
           .eq('date', dateStr)
           .maybeSingle();
-        setFacebookImageUrl((offerRow as any)?.facebook_image_url || null);
+        setFacebookImageUrl(offerRow?.facebook_image_url || null);
 
         // Set menu data if exists
         if (result.menu_id) {
