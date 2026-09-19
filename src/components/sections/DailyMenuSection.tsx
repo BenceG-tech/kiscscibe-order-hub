@@ -3,10 +3,10 @@ import UnifiedDailySection from "@/components/UnifiedDailySection";
 const DailyMenuSection = () => {
   return (
     <section id="napi-ajanlat" className="py-10 md:py-14">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8 md:flex md:items-end md:justify-between">
           <div>
-            <span className="section-kicker">Heti választék</span>
+            <span className="section-kicker">A heti tábla</span>
           <h2 className="section-title">
             Mai ajánlatunk
           </h2>

@@ -38,21 +38,21 @@ const AlwaysAvailableTeaser = () => {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <Link
           to="/etlap#mindig-elerheto"
-          className="group relative block overflow-hidden border border-primary/30 bg-card shadow-lg hover:shadow-xl hover:border-primary/60 hover:-translate-y-0.5 transition-all duration-300"
+          className="group relative block overflow-hidden border-y border-primary-foreground/30 bg-transparent text-primary-foreground transition-colors duration-300 hover:bg-primary-foreground/10"
           aria-label="Mindig elérhető tételek megtekintése"
         >
           <div className="relative flex items-center gap-4 p-4 sm:p-5">
             {/* Icon */}
-            <div className="shrink-0 h-12 w-12 rounded-xl bg-primary/15 text-primary flex items-center justify-center ring-1 ring-primary/30">
+            <div className="shrink-0 h-12 w-12 bg-foreground text-background flex items-center justify-center">
               <Package className="h-6 w-6" />
             </div>
 
             {/* Text */}
             <div className="flex-1 min-w-0">
-              <h3 className="font-sofia font-bold text-base sm:text-lg leading-tight text-foreground">
+               <h3 className="font-sofia font-bold text-lg sm:text-xl leading-tight text-primary-foreground">
                 Mindig elérhető kedvenceink
               </h3>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 line-clamp-2">
+               <p className="text-xs sm:text-sm text-primary-foreground/75 mt-0.5 line-clamp-2">
                 Italok, reggeli, savanyúságok és további fix tételek — bármikor rendelhetők
               </p>
             </div>
@@ -62,7 +62,7 @@ const AlwaysAvailableTeaser = () => {
               {previews.map((item) => (
                 <div
                   key={item.id}
-                  className="h-16 w-16 border-2 border-card bg-muted overflow-hidden shadow-md transition-transform duration-300 even:rotate-2 odd:-rotate-2 group-hover:rotate-0"
+                    className="h-16 w-16 border-2 border-primary bg-muted overflow-hidden transition-transform duration-300 even:translate-y-1 group-hover:translate-y-0"
                   title={item.name}
                 >
                   {item.image_url ? (
@@ -89,7 +89,7 @@ const AlwaysAvailableTeaser = () => {
             </div>
 
             {/* Arrow */}
-            <ArrowRight className="shrink-0 h-5 w-5 text-primary group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="shrink-0 h-5 w-5 text-primary-foreground group-hover:translate-x-1 transition-transform" />
           </div>
 
           {/* Mobile preview row */}

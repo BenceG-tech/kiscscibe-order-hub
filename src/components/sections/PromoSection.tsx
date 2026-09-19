@@ -53,7 +53,7 @@ const PromoSection = () => {
   return (
     <section className="py-8 md:py-10">
       <div className="max-w-5xl mx-auto px-4">
-         <div className="relative overflow-hidden border border-primary/20 shadow-xl">
+         <div className="relative overflow-hidden border-y border-foreground/25">
           
           {/* Background image with blur */}
           <div className="absolute inset-0" style={{ transform: 'translateZ(0)' }}>
@@ -67,7 +67,7 @@ const PromoSection = () => {
           </div>
 
           {/* Gradient overlay */}
-           <div className="absolute inset-0 bg-background/85" />
+            <div className="absolute inset-0 bg-background/90" />
 
           {/* Content */}
           <div className="relative z-10 p-5 md:p-8">
@@ -77,13 +77,13 @@ const PromoSection = () => {
               
               {/* Left: Icon + Price */}
               <div className="flex items-center gap-4">
-                 <div className="w-14 h-14 bg-primary flex items-center justify-center shadow-lg">
-                  <UtensilsCrossed className="h-7 w-7 text-primary-foreground" />
+                  <div className="w-14 h-14 bg-accent flex items-center justify-center">
+                    <UtensilsCrossed className="h-7 w-7 text-accent-foreground" />
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Napi menü helyben</p>
                   <div className="flex items-baseline gap-2">
-                    <p className="text-3xl font-bold text-primary font-sofia">{displayPrice} Ft</p>
+                    <p className="text-3xl font-bold text-accent font-sofia">{displayPrice} Ft</p>
                   </div>
                 </div>
               </div>
@@ -119,13 +119,13 @@ const PromoSection = () => {
             <div className="md:hidden space-y-4">
               {/* Icon + Price */}
               <div className="flex items-center gap-3">
-                 <div className="w-12 h-12 bg-primary flex items-center justify-center">
-                  <UtensilsCrossed className="h-6 w-6 text-primary-foreground" />
+                  <div className="w-12 h-12 bg-accent flex items-center justify-center">
+                   <UtensilsCrossed className="h-6 w-6 text-accent-foreground" />
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Napi menü helyben</p>
                   <div className="flex items-baseline gap-2">
-                    <p className="text-xl font-bold text-primary font-sofia">{displayPrice} Ft</p>
+                    <p className="text-xl font-bold text-accent font-sofia">{displayPrice} Ft</p>
                   </div>
                 </div>
               </div>

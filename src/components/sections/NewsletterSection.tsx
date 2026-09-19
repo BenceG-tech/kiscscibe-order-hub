@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -74,16 +74,16 @@ const NewsletterSection = () => {
   return (
     <section className="py-8 md:py-16" ref={ref}>
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <Card className={cn(
-            "chalkboard border border-primary/25 shadow-xl",
+        <div className={cn(
+            "border-y border-editorial-foreground/20 bg-transparent",
           "transition-all duration-700",
           isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
         )}>
           <CardHeader className="text-center pb-2 md:pb-6">
-            <div className="inline-flex items-center justify-center w-12 h-12 md:w-16 md:h-16 bg-primary/10 rounded-full mb-3 md:mb-4 mx-auto animate-float">
-              <Mail className="h-6 w-6 md:h-8 md:w-8 text-primary" />
+            <div className="inline-flex items-center justify-center w-12 h-12 md:w-16 md:h-16 bg-accent text-accent-foreground mb-3 md:mb-4 mx-auto">
+               <Mail className="h-6 w-6 md:h-8 md:w-8" />
             </div>
-           <CardTitle className="font-sofia text-2xl font-bold text-primary md:text-4xl">
+            <CardTitle className="font-sofia text-2xl font-bold text-editorial-foreground md:text-4xl">
               Heti menü e-mailben
             </CardTitle>
              <p className="text-editorial-muted text-sm md:text-lg">
@@ -106,7 +106,7 @@ const NewsletterSection = () => {
                 </div>
                 <Button
                   type="submit"
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold min-h-[44px] px-8 relative overflow-hidden group"
+                   className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold min-h-[44px] px-8 relative overflow-hidden group"
                   disabled={isLoading}
                 >
                   <span className="relative z-10">{isLoading ? "Feliratkozás..." : "Feliratkozom"}</span>
@@ -115,7 +115,7 @@ const NewsletterSection = () => {
               </div>
             </form>
           </CardContent>
-        </Card>
+        </div>
       </div>
     </section>
   );
