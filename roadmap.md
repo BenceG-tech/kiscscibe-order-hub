@@ -1,8 +1,9 @@
 # Kiscsibe weboldal 2.0
-- [x] Kockás márkarendszer és közös mozgások
-- [x] Hero és élő napi menütábla finomhangolása
+- [ ] Prémium Kiscsibe képvilág és új nyitóélmény
+- [ ] Minden piros kockás/csíkos dekoráció eltávolítása
+- [ ] Saját sárga tányérív-motívum és közös mozgások
 - [x] Napi ajánlat, reggeli és állandó kínálat
 - [x] Galéria, értékek, vélemények és promóció
 - [x] Térkép, kérdések, hírlevél, navigáció és lábléc
 - [x] Nyilvános aloldalak összehangolása
-- [x] Mobil és asztali működés ellenőrzése
+- [ ] Mobil és asztali működés ellenőrzése

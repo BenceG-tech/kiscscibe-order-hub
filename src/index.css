@@ -58,8 +58,6 @@
     --editorial: 218 14% 16%;
     --editorial-foreground: 220 18% 92%;
     --editorial-muted: 218 12% 73%;
-    --gingham-red: 2 58% 48%;
-    --gingham-red-deep: 2 48% 34%;
     --chalk: 48 32% 92%;
     --chalkboard: 215 12% 13%;
     --paper: 45 55% 96%;
@@ -142,8 +140,6 @@
     --editorial: 218 14% 16%;
     --editorial-foreground: 220 18% 92%;
     --editorial-muted: 218 12% 73%;
-    --gingham-red: 2 58% 48%;
-    --gingham-red-deep: 2 48% 34%;
     --chalk: 48 28% 90%;
     --chalkboard: 215 12% 11%;
     --paper: 45 18% 18%;
@@ -180,13 +176,7 @@
   }
 
   .gingham-strip {
-    background-color: hsl(var(--paper));
-    background-image:
-      linear-gradient(90deg, hsl(var(--gingham-red) / 0.2) 50%, transparent 50%),
-      linear-gradient(hsl(var(--gingham-red) / 0.2) 50%, transparent 50%),
-      linear-gradient(90deg, transparent 50%, hsl(var(--gingham-red) / 0.1) 50%),
-      linear-gradient(transparent 50%, hsl(var(--gingham-red) / 0.1) 50%);
-    background-size: 2rem 2rem, 2rem 2rem, 1rem 1rem, 1rem 1rem;
+    background-color: hsl(var(--secondary) / 0.55);
   }
 
   .gingham-edge {
@@ -198,12 +188,8 @@
     position: absolute;
     inset-inline: 0;
     bottom: 0;
-    height: 0.5rem;
-    background-color: hsl(var(--paper));
-    background-image:
-      linear-gradient(90deg, hsl(var(--gingham-red) / 0.65) 50%, transparent 50%),
-      linear-gradient(hsl(var(--gingham-red) / 0.65) 50%, transparent 50%);
-    background-size: 1rem 1rem;
+    height: 0.2rem;
+    background: linear-gradient(90deg, transparent, hsl(var(--primary)), transparent);
   }
 
   .chalkboard {
@@ -239,7 +225,7 @@
     inset: 0;
     z-index: 2;
     pointer-events: none;
-    box-shadow: inset 0 -0.45rem 0 hsl(var(--gingham-red) / 0.86);
+    box-shadow: inset 0 0 0 1px hsl(var(--primary) / 0.12);
   }
 
   .reveal-up {
@@ -247,7 +233,34 @@
   }
 
   .marquee-gingham {
-    animation: gingham-drift 16s linear infinite;
+    animation: none;
+  }
+
+  .brand-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.85), transparent);
+  }
+
+  .plate-frame {
+    position: relative;
+    overflow: hidden;
+    border-radius: 48% 52% 46% 54% / 54% 43% 57% 46%;
+    box-shadow: 0 2rem 5rem -2rem hsl(var(--editorial) / 0.75);
+  }
+
+  .plate-frame::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border: 1px solid hsl(var(--primary) / 0.35);
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  .brand-orbit {
+    border: 1px solid hsl(var(--primary) / 0.25);
+    border-radius: 50%;
+    animation: brand-orbit 18s linear infinite;
   }
 
   .homepage-editorial .editorial-band > section {
@@ -275,9 +288,8 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes gingham-drift {
-  from { background-position: 0 0, 0 0, 0 0, 0 0; }
-  to { background-position: 4rem 0, 4rem 0, 2rem 0, 2rem 0; }
+@keyframes brand-orbit {
+  to { transform: rotate(360deg); }
 }
 
 @media (max-width: 767px) {
