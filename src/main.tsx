@@ -10,7 +10,8 @@ import "./index.css";
 // module". Reload once with a cache-bust query so the browser fetches the new
 // index.html + new asset manifest. A sessionStorage flag prevents infinite
 // reload loops if the real problem is not stale chunks.
-const STALE_CHUNK_FLAG = "__stale_chunk_reload__";
+const STALE_CHUNK_FLAG = "__stale_chunk_reload_at__";
+const STALE_CHUNK_COOLDOWN_MS = 60_000;
 const STALE_PATTERNS = [
   "Importing a module script failed",
   "Failed to fetch dynamically imported module",
@@ -25,8 +26,9 @@ const looksLikeStaleChunk = (msg: unknown): boolean => {
 
 const recoverFromStaleChunk = () => {
   try {
-    if (sessionStorage.getItem(STALE_CHUNK_FLAG) === "1") return;
-    sessionStorage.setItem(STALE_CHUNK_FLAG, "1");
+    const lastReload = Number(sessionStorage.getItem(STALE_CHUNK_FLAG) ?? "0");
+    if (Date.now() - lastReload < STALE_CHUNK_COOLDOWN_MS) return;
+    sessionStorage.setItem(STALE_CHUNK_FLAG, Date.now().toString());
   } catch { /* private mode — proceed anyway */ }
   const url = new URL(window.location.href);
   url.searchParams.set("_r", Date.now().toString());
@@ -52,13 +54,14 @@ window.addEventListener("unhandledrejection", (event) => {
   }
 });
 
-// Clear the flag once the fresh build has successfully loaded.
-window.addEventListener("load", () => {
-  try { sessionStorage.removeItem(STALE_CHUNK_FLAG); } catch { /* ignore */ }
-});
+const rootElement = document.getElementById("root");
 
-createRoot(document.getElementById("root")!).render(
-  <HelmetProvider>
-    <App />
-  </HelmetProvider>
-);
+if (!rootElement) {
+  document.body.textContent = "Az oldal nem tölthető be. Kérjük, frissítse az oldalt.";
+} else {
+  createRoot(rootElement).render(
+    <HelmetProvider>
+      <App />
+    </HelmetProvider>,
+  );
+}
