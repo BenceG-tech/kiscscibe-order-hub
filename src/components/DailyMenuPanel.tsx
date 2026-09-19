@@ -37,7 +37,7 @@ interface DailyMenuPanelProps {
 
 const MenuItemCard = ({ item, label }: { item: MenuItem; label: string }) => (
   <article className="food-frame group flex h-full flex-col border-primary/15 bg-card/95">
-    <div className="aspect-[5/4] w-full overflow-hidden bg-muted">
+    <div className="aspect-[16/10] w-full overflow-hidden border-b border-border/50 bg-muted">
       {item.item_image_url ? (
         <img 
           src={item.item_image_url} 
@@ -45,16 +45,18 @@ const MenuItemCard = ({ item, label }: { item: MenuItem; label: string }) => (
           className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.035]"
         />
       ) : (
-        <div className="flex h-full w-full items-center justify-center bg-secondary/50">
-          <img src={kiscsibeLogo} alt="Kiscsibe" className="h-[60%] md:h-[70%] w-auto object-contain opacity-80 drop-shadow-lg" />
+        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-secondary/55 via-card to-background">
+          <div className="flex h-20 w-20 items-center justify-center rounded-full border border-primary/20 bg-background/35 shadow-soft">
+            <img src={kiscsibeLogo} alt="" className="h-12 w-12 object-contain opacity-65" />
+          </div>
         </div>
       )}
     </div>
-    <div className="flex flex-1 flex-col p-3.5 md:p-5">
+    <div className="flex flex-1 flex-col p-4 md:p-5">
       <span className="mb-1.5 w-fit rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase text-primary md:text-xs">{label}</span>
-      <h4 className="font-sofia text-[17px] font-bold leading-[1.2] text-card-foreground md:text-[22px]">{capitalizeFirst(item.item_name)}</h4>
+      <h4 className="line-clamp-3 font-sofia text-[20px] font-bold leading-[1.22] text-card-foreground md:text-[23px]">{capitalizeFirst(item.item_name)}</h4>
       {item.item_description && (
-        <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground md:text-sm">{item.item_description}</p>
+        <p className="mt-2 line-clamp-2 text-[14px] leading-relaxed text-muted-foreground md:text-[15px]">{item.item_description}</p>
       )}
     </div>
   </article>
@@ -145,7 +147,7 @@ const DailyMenuPanel = ({ date, menuData, loading }: DailyMenuPanelProps) => {
     <Card className="soft-panel overflow-hidden">
       <CardContent className="p-0">
         {/* Header with prominent price */}
-        <div className="chalkboard border-b border-primary/35 px-4 pb-5 pt-4 md:px-6">
+        <div className="chalkboard border-b border-primary/35 px-4 py-4 md:px-6 md:py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 md:gap-3">
               <ChefHat className="h-5 w-5 md:h-6 md:w-6 text-primary" />
@@ -154,15 +156,15 @@ const DailyMenuPanel = ({ date, menuData, loading }: DailyMenuPanelProps) => {
                 <p className="text-xs md:text-sm text-editorial-muted">Leves + Főétel</p>
               </div>
             </div>
-             <Badge className="bg-primary text-primary-foreground text-lg md:text-xl px-4 py-1.5 shadow-lg font-bold">
+             <span className="whitespace-nowrap text-[18px] font-bold text-editorial-foreground md:text-[19px]">
               {menuData.menu_price_huf.toLocaleString('hu-HU')} Ft
-            </Badge>
+             </span>
           </div>
         </div>
         
         {/* Food cards - 2 columns always */}
         <div className="p-3 md:p-6">
-          <div className="grid grid-cols-2 items-stretch gap-3 md:gap-5">
+          <div className="grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 md:gap-5">
             {menuData.soup && (
               <MenuItemCard item={menuData.soup} label="Leves" />
             )}
@@ -172,18 +174,18 @@ const DailyMenuPanel = ({ date, menuData, loading }: DailyMenuPanelProps) => {
           </div>
 
           {/* Premium CTA Section */}
-          <div className="mt-4 rounded-xl border border-border/50 bg-primary/5 p-3 md:mt-6 md:p-5">
+          <div className="mt-4 border-t border-border/50 pt-4 md:mt-6 md:pt-5">
             <div className="flex items-center justify-center">
               <Button 
                 onClick={handleAddMenuToCart}
                 size="lg"
-                 className="w-full bg-primary shadow-lg hover:bg-primary/90 hover:shadow-xl transition-all px-6 h-12"
+                 className="h-12 w-full bg-primary px-6 text-base font-bold shadow-warm transition-all hover:bg-primary/90 hover:shadow-lg"
                 disabled={!isAvailable}
               >
                 <ShoppingCart className="h-5 w-5 mr-2" />
                 {isAvailable ? "Menü kosárba" : "Elfogyott"}
                 {isAvailable && (
-                   <span className="ml-2 bg-primary-foreground/10 px-2.5 py-0.5 rounded-full text-sm font-semibold">
+                   <span className="ml-2 border-l border-primary-foreground/25 pl-3 text-sm font-semibold">
                     {menuData.menu_price_huf.toLocaleString('hu-HU')} Ft
                   </span>
                 )}
