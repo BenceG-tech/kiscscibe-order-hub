@@ -91,21 +91,21 @@ const Footer = ({ className }: FooterProps) => {
         href="https://www.facebook.com/kiscsibeetteremXIV" 
         target="_blank" 
         rel="noopener noreferrer"
-        className={`${size} rounded-lg bg-primary/20 flex items-center justify-center hover:bg-primary hover:text-white transition-colors text-primary`}
+        className={`${size} rounded-lg bg-primary/20 flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors text-primary`}
         aria-label="Facebook"
       >
         <Facebook className={iconSize} />
       </a>
       <a 
         href="#" 
-        className={`${size} rounded-lg bg-gray-700 flex items-center justify-center hover:bg-gray-600 transition-colors text-gray-400 opacity-60`}
+        className={`${size} rounded-lg bg-editorial-foreground/10 flex items-center justify-center hover:bg-editorial-foreground/20 transition-colors text-editorial-muted opacity-60`}
         aria-label="Instagram (hamarosan)"
       >
         <Instagram className={iconSize} />
       </a>
       <a 
         href="#" 
-        className={`${size} rounded-lg bg-gray-700 flex items-center justify-center hover:bg-gray-600 transition-colors text-gray-400 opacity-60`}
+        className={`${size} rounded-lg bg-editorial-foreground/10 flex items-center justify-center hover:bg-editorial-foreground/20 transition-colors text-editorial-muted opacity-60`}
         aria-label="TikTok (hamarosan)"
       >
         <TikTokIcon className={iconSize} />
@@ -170,9 +170,9 @@ const Footer = ({ className }: FooterProps) => {
                 <Clock className="h-4 w-4 text-primary shrink-0" />
                 <span className="text-xs">Hétfő - Péntek</span>
               </li>
-              <li className="text-xs ml-5 text-green-400 font-medium">{monFriHours}</li>
-              <li className="text-xs ml-5 text-gray-500 mt-1">Szombat - Vasárnap</li>
-              <li className="text-xs ml-5 text-red-400">{isSatClosed && isSunClosed ? "Zárva" : isSatClosed ? `Szo: Zárva • V: ${openingHours.sun}` : `Szo: ${openingHours.sat} • V: Zárva`}</li>
+               <li className="text-xs ml-5 text-primary font-medium">{monFriHours}</li>
+               <li className="text-xs ml-5 text-editorial-muted mt-1">Szombat - Vasárnap</li>
+               <li className="text-xs ml-5 text-destructive">{isSatClosed && isSunClosed ? "Zárva" : isSatClosed ? `Szo: Zárva • V: ${openingHours.sun}` : `Szo: ${openingHours.sat} • V: Zárva`}</li>
             </ul>
           </div>
 
@@ -269,9 +269,9 @@ const Footer = ({ className }: FooterProps) => {
                 <Clock className="h-5 w-5 text-primary shrink-0" />
                 <span className="text-sm">Hétfő - Péntek</span>
               </li>
-              <li className="text-sm ml-7 text-green-400 font-medium">{monFriHours}</li>
-              <li className="text-sm ml-7 text-gray-500 mt-2">Szombat - Vasárnap</li>
-              <li className="text-sm ml-7 text-red-400">{isSatClosed && isSunClosed ? "Zárva" : isSatClosed ? `Szo: Zárva • V: ${openingHours.sun}` : `Szo: ${openingHours.sat} • V: Zárva`}</li>
+               <li className="text-sm ml-7 text-primary font-medium">{monFriHours}</li>
+               <li className="text-sm ml-7 text-editorial-muted mt-2">Szombat - Vasárnap</li>
+               <li className="text-sm ml-7 text-destructive">{isSatClosed && isSunClosed ? "Zárva" : isSatClosed ? `Szo: Zárva • V: ${openingHours.sun}` : `Szo: ${openingHours.sat} • V: Zárva`}</li>
             </ul>
           </div>
 

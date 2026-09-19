@@ -36,7 +36,7 @@ const CookieConsent = () => {
         animateOut ? "translate-y-full opacity-0" : "translate-y-0 opacity-100"
       }`}
     >
-      <div className="max-w-4xl mx-auto bg-card border border-border rounded-2xl shadow-2xl p-3 md:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-3 md:gap-4">
+      <div className="max-w-4xl mx-auto bg-card border border-border rounded-lg shadow-2xl p-3 md:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-3 md:gap-4">
         <Cookie className="h-5 w-5 sm:h-7 sm:w-7 text-primary shrink-0" />
         <div className="flex-1 text-xs sm:text-sm text-muted-foreground">
           <p>
