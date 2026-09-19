@@ -235,11 +235,11 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
       {/* Mobile: Today's offer first, then calendar */}
       <div className="block md:hidden space-y-6">
         {/* Today's Content Card - Mobile */}
-        <Card className="rounded-2xl shadow-lg border-primary/30 bg-gradient-to-br from-background to-primary/5">
+        <Card className="soft-panel border-primary/25 bg-gradient-to-br from-background to-primary/5">
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary/10 rounded-lg">
+                <div className="rounded-xl bg-primary/10 p-2 shadow-soft">
                   <CalendarDays className="h-5 w-5 text-primary" />
                 </div>
                 <div>
@@ -259,7 +259,7 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
           <CardContent>
             {isWeekend(currentDate) ? (
               <div className="text-center py-8">
-                <div className="p-4 bg-muted/50 rounded-lg">
+                 <div className="rounded-xl bg-muted/50 p-4">
                   <p className="text-muted-foreground text-lg font-medium mb-2">
                     Hétvégén zárva
                   </p>
@@ -297,7 +297,7 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
                   </div>
                 ) : (
                   <div className="text-center py-8">
-                    <div className="p-4 bg-muted/50 rounded-lg">
+                     <div className="rounded-xl bg-muted/50 p-4">
                       <p className="text-muted-foreground text-center">
                         Ezen a napon nincs napi ajánlat
                       </p>
@@ -322,7 +322,7 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
                   </div>
                 ) : (
                   <div className="text-center py-8">
-                    <div className="p-4 bg-muted/50 rounded-lg">
+                    <div className="rounded-xl bg-muted/50 p-4">
                       <p className="text-muted-foreground text-center">
                         Ezen a napon nincs napi menü
                       </p>
@@ -336,7 +336,7 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
         </Card>
 
         {/* Calendar - Mobile */}
-        <Card className="rounded-2xl shadow-md border-primary/20">
+        <Card className="soft-panel border-primary/20">
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg font-bold text-foreground">
@@ -358,7 +358,7 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
               selected={currentDate}
               onSelect={handleDateSelect}
               locale={hu}
-              className="rounded-md border-0 p-0 w-full [&_table]:w-full [&_td]:p-2 [&_button]:h-12 [&_button]:w-full"
+              className="border-0 p-0 w-full [&_table]:w-full [&_td]:p-1.5 [&_button]:h-12 [&_button]:w-full [&_button]:rounded-xl [&_button]:transition-[transform,background-color,box-shadow] [&_button]:duration-200 [&_button:hover]:-translate-y-0.5 [&_button:hover]:shadow-soft"
             modifiers={{
               hasContent: (date) => hasAnyOnDate(date),
               weekend: (date) => isWeekend(date)
@@ -368,14 +368,15 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
                 backgroundColor: 'hsl(var(--primary))',
                 color: 'hsl(var(--primary-foreground))',
                 fontWeight: 'bold',
-                borderRadius: '8px'
+                borderRadius: '12px',
+                boxShadow: 'var(--shadow-soft)'
               },
               weekend: {
                 backgroundColor: 'hsl(var(--muted))',
                 color: 'hsl(var(--muted-foreground))',
                 textDecoration: 'line-through',
                 opacity: 0.6,
-                borderRadius: '8px'
+                borderRadius: '12px'
               }
             }}
             />
@@ -397,7 +398,7 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
       <div className="hidden md:block">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Calendar - Desktop */}
-          <Card className="rounded-2xl shadow-md border-primary/20">
+          <Card className="soft-panel border-primary/20">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-xl font-bold text-foreground flex items-center gap-3">
@@ -420,7 +421,7 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
                 selected={currentDate}
                 onSelect={handleDateSelect}
                 locale={hu}
-                className="rounded-md border-0 p-0"
+                className="border-0 p-0 [&_td]:p-1 [&_button]:rounded-xl [&_button]:transition-[transform,background-color,box-shadow] [&_button]:duration-200 [&_button:hover]:-translate-y-0.5 [&_button:hover]:shadow-soft"
                 modifiers={{
                   hasContent: (date) => hasAnyOnDate(date),
                   weekend: (date) => isWeekend(date)
@@ -430,14 +431,15 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
                     backgroundColor: 'hsl(var(--primary))',
                     color: 'hsl(var(--primary-foreground))',
                     fontWeight: 'bold',
-                    borderRadius: '6px'
+                    borderRadius: '12px',
+                    boxShadow: 'var(--shadow-soft)'
                   },
                   weekend: {
                     backgroundColor: 'hsl(var(--muted))',
                     color: 'hsl(var(--muted-foreground))',
                     textDecoration: 'line-through',
                     opacity: 0.6,
-                    borderRadius: '6px'
+                    borderRadius: '12px'
                   }
                 }}
               />
@@ -455,7 +457,7 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
           </Card>
 
           {/* Selected Day's Content - Desktop */}
-          <Card className="rounded-2xl shadow-lg border-primary/30 bg-gradient-to-br from-background to-primary/5">
+          <Card className="soft-panel border-primary/25 bg-gradient-to-br from-background to-primary/5">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
@@ -474,7 +476,7 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
             <CardContent>
               {isWeekend(currentDate) ? (
                 <div className="text-center py-12">
-                  <div className="p-6 bg-muted/50 rounded-lg">
+                   <div className="rounded-xl bg-muted/50 p-6">
                     <p className="text-muted-foreground text-xl font-medium mb-2">
                       Hétvégén zárva
                     </p>
@@ -512,7 +514,7 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
                     </div>
                   ) : (
                     <div className="text-center py-12">
-                      <div className="p-6 bg-muted/50 rounded-lg">
+                       <div className="rounded-xl bg-muted/50 p-6">
                         <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                         <p className="text-muted-foreground text-lg">
                           Ezen a napon nincs napi ajánlat
@@ -541,7 +543,7 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
                     </div>
                   ) : (
                     <div className="text-center py-12">
-                      <div className="p-6 bg-muted/50 rounded-lg">
+                       <div className="rounded-xl bg-muted/50 p-6">
                         <Coffee className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                         <p className="text-muted-foreground text-lg">
                           Ezen a napon nincs napi menü
