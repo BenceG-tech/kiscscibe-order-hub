@@ -27,7 +27,7 @@ interface MenuItem {
   item_image_url?: string;
 }
 
-interface RawMenuItem extends MenuItem {}
+type RawMenuItem = MenuItem;
 
 interface DailyOffersData {
   offer_id: string;
