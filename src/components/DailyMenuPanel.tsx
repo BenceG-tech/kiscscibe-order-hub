@@ -36,13 +36,13 @@ interface DailyMenuPanelProps {
 }
 
 const MenuItemCard = ({ item, label }: { item: MenuItem; label: string }) => (
-  <div className="food-frame group overflow-hidden hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
+  <div className="food-frame group">
     <div className="aspect-square md:aspect-[4/3] w-full overflow-hidden">
       {item.item_image_url ? (
         <img 
           src={item.item_image_url} 
           alt={item.item_name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.035]"
         />
       ) : (
         <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center">
@@ -102,7 +102,7 @@ const DailyMenuPanel = ({ date, menuData, loading }: DailyMenuPanelProps) => {
 
   if (loading) {
     return (
-      <Card className="border-0 bg-card/95 backdrop-blur-sm shadow-xl rounded-3xl overflow-hidden">
+      <Card className="soft-panel overflow-hidden border-0">
         <CardContent className="p-0">
           <div className="bg-primary/10 px-6 py-4">
             <div className="flex items-center gap-3">
@@ -112,8 +112,8 @@ const DailyMenuPanel = ({ date, menuData, loading }: DailyMenuPanelProps) => {
           </div>
           <div className="p-6">
             <div className="animate-pulse space-y-4">
-              <div className="h-4 bg-muted rounded w-3/4"></div>
-              <div className="h-4 bg-muted rounded w-1/2"></div>
+              <div className="h-4 w-3/4 rounded-full bg-muted"></div>
+              <div className="h-4 w-1/2 rounded-full bg-muted"></div>
             </div>
           </div>
         </CardContent>
@@ -123,7 +123,7 @@ const DailyMenuPanel = ({ date, menuData, loading }: DailyMenuPanelProps) => {
 
   if (!menuData) {
     return (
-      <Card className="border-0 bg-card/95 backdrop-blur-sm shadow-xl rounded-3xl overflow-hidden">
+      <Card className="soft-panel overflow-hidden border-0">
         <CardContent className="p-0">
           <div className="bg-primary/10 px-6 py-4">
             <div className="flex items-center gap-3">
@@ -142,7 +142,7 @@ const DailyMenuPanel = ({ date, menuData, loading }: DailyMenuPanelProps) => {
   const isAvailable = menuData.menu_remaining_portions > 0;
 
   return (
-    <Card className="overflow-hidden border border-border/60 bg-card shadow-xl">
+    <Card className="soft-panel overflow-hidden">
       <CardContent className="p-0">
         {/* Header with prominent price */}
         <div className="chalkboard border-b border-primary/35 px-4 pb-5 pt-4 md:px-6">
@@ -172,7 +172,7 @@ const DailyMenuPanel = ({ date, menuData, loading }: DailyMenuPanelProps) => {
           </div>
 
           {/* Premium CTA Section */}
-          <div className="mt-4 border-t border-border/60 bg-primary/5 p-3 md:mt-6 md:p-5">
+          <div className="mt-4 rounded-xl border border-border/50 bg-primary/5 p-3 md:mt-6 md:p-5">
             <div className="flex items-center justify-center">
               <Button 
                 onClick={handleAddMenuToCart}

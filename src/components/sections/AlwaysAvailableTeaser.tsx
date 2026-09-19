@@ -38,12 +38,12 @@ const AlwaysAvailableTeaser = () => {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <Link
           to="/etlap#mindig-elerheto"
-          className="group relative block overflow-hidden border-y border-primary-foreground/30 bg-transparent text-primary-foreground transition-colors duration-300 hover:bg-primary-foreground/10"
+          className="group relative block overflow-hidden rounded-2xl border border-primary-foreground/25 bg-primary-foreground/[0.04] text-primary-foreground shadow-soft backdrop-blur-sm transition-[transform,background-color,border-color,box-shadow] duration-300 hover:-translate-y-0.5 hover:border-primary-foreground/40 hover:bg-primary-foreground/10 hover:shadow-lg"
           aria-label="Mindig elérhető tételek megtekintése"
         >
           <div className="relative flex items-center gap-4 p-4 sm:p-5">
             {/* Icon */}
-            <div className="shrink-0 h-12 w-12 bg-foreground text-background flex items-center justify-center">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-foreground text-background shadow-soft">
               <Package className="h-6 w-6" />
             </div>
 
@@ -62,7 +62,7 @@ const AlwaysAvailableTeaser = () => {
               {previews.map((item) => (
                 <div
                   key={item.id}
-                    className="h-16 w-16 border-2 border-primary bg-muted overflow-hidden transition-transform duration-300 even:translate-y-1 group-hover:translate-y-0"
+                    className="h-16 w-16 overflow-hidden rounded-xl border-2 border-primary bg-muted shadow-md transition-transform duration-300 even:translate-y-1 group-hover:translate-y-0"
                   title={item.name}
                 >
                   {item.image_url ? (
@@ -82,7 +82,7 @@ const AlwaysAvailableTeaser = () => {
                 </div>
               ))}
               {remaining > 0 && (
-                <div className="h-16 w-16 border-2 border-card bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold shadow-md">
+                <div className="flex h-16 w-16 items-center justify-center rounded-xl border-2 border-card bg-primary text-xs font-bold text-primary-foreground shadow-md">
                   +{remaining}
                 </div>
               )}
