@@ -1,13 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/components/ui/use-toast";
 import { capitalizeFirst } from "@/lib/utils";
-import { Coffee, Clock, Plus } from "lucide-react";
-import kiscsibeLogo from "@/assets/kiscsibe_logo_round.png";
+import { Coffee, Clock } from "lucide-react";
 import { PortionBadge } from "@/components/PortionBadge";
+import FoodCard from "@/components/FoodCard";
 
 interface BreakfastItem {
   id: string;
@@ -103,59 +102,17 @@ const BreakfastSection = ({ variant = "page" }: BreakfastSectionProps) => {
           </Badge>
         </div>
 
-        {/* Compact horizontal list */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((item) => (
-            <div
+            <FoodCard
               key={item.id}
-               className="group grid grid-cols-[5.5rem_1fr_auto] items-center gap-3 overflow-hidden rounded-2xl border border-transparent bg-transparent p-2 transition-[transform,background-color,border-color,box-shadow] duration-300 ease-out hover:-translate-y-0.5 hover:border-border/60 hover:bg-secondary/35 hover:shadow-soft"
-            >
-              {/* Small image */}
-                <div className="h-24 w-[5.5rem] shrink-0 overflow-hidden rounded-xl bg-muted shadow-soft">
-                {item.image_url ? (
-                  <img
-                    src={item.image_url}
-                    alt={item.name}
-                    className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.035]"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
-                    <img
-                      src={kiscsibeLogo}
-                      alt="Kiscsibe"
-                      className="h-[60%] w-auto object-contain opacity-70"
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Name + description */}
-              <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-semibold leading-tight truncate flex items-center gap-1.5">
-                  <span className="truncate">{capitalizeFirst(item.name)}</span>
-                  <PortionBadge size={item.portion_size} unit={item.portion_unit} />
-                </h3>
-                {item.description && (
-                  <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
-                    {item.description}
-                  </p>
-                )}
-                <p className="text-sm font-bold text-primary mt-1">
-                  {item.price_huf} Ft
-                </p>
-              </div>
-
-              {/* Icon-only add button */}
-              <Button
-                onClick={() => handleAdd(item)}
-                size="icon"
-                 className="mr-2 h-11 w-11 shrink-0 bg-primary text-primary-foreground hover:bg-primary/90"
-                aria-label={`${item.name} kosárba`}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
+              name={capitalizeFirst(item.name)}
+              description={item.description}
+              priceHuf={item.price_huf}
+              imageUrl={item.image_url}
+              onAdd={() => handleAdd(item)}
+              meta={<PortionBadge size={item.portion_size} unit={item.portion_unit} />}
+            />
           ))}
         </div>
       </div>

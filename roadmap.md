@@ -24,3 +24,9 @@
 - [x] Nagyobb, olvashatóbb ételnevek és tisztább információs sorrend
 - [x] Modern kompakt kép–szöveg–ár–kosár elrendezés
 - [x] Mobil, asztali és rendelési művelet ellenőrzése
+
+# /etlap food-commerce kártyarendszer
+- [x] Újrahasznosítható, nagy képes publikus ételkártya
+- [x] Napi, reggeli és mindig elérhető kártyák egységesítése
+- [ ] Napi menü arányainak finomítása
+- [ ] Desktop, mobil, placeholder és rendelési műveletek ellenőrzése

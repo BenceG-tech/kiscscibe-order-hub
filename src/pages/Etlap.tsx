@@ -16,8 +16,7 @@ import WeeklyDateStrip from "@/components/WeeklyDateStrip";
 import { format, getDay, isPast } from "date-fns";
 import { hu } from "date-fns/locale";
 import { getSmartInitialDate, getContentLabel } from "@/lib/dateUtils";
-import { capitalizeFirst, cn } from "@/lib/utils";
-import kiscsibeLogo from "@/assets/kiscsibe_logo_round.png";
+import { capitalizeFirst } from "@/lib/utils";
 import heroImage from "@/assets/kiscsibe-serving-plate.jpg";
 import SEO from "@/components/SEO";
 import DailyMenuPanel from "@/components/DailyMenuPanel";
@@ -27,6 +26,7 @@ import FavoriteOrdersPanel from "@/components/FavoriteOrdersPanel";
 import OrderHistoryLookup from "@/components/OrderHistoryLookup";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { History } from "lucide-react";
+import FoodCard from "@/components/FoodCard";
 
 interface MenuItem {
   id: string;
@@ -387,70 +387,27 @@ const Etlap = () => {
                 {extraItems.length > 0 && (
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold">További napi ételek</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2">
                       {extraItems.map((item) => {
                         const itemSoldOut = isSoldOut || item.is_sold_out;
                         return (
-                        <Card 
-                          key={item.id} 
-                          className={cn(
-                            "food-frame group bg-card/95 backdrop-blur-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300",
-                            itemSoldOut && "opacity-50 pointer-events-none"
-                          )}
-                        >
-                          <CardContent className="p-0">
-                             <div className="aspect-[4/3] overflow-hidden">
-                              {item.item_image_url ? (
-                                <img 
-                                  src={item.item_image_url} 
-                                  alt={item.item_name}
-                                  className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
-                                />
-                              ) : (
-                                <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center">
-                                  <img src={kiscsibeLogo} alt="Kiscsibe" className="h-[70%] w-auto object-contain opacity-80 drop-shadow-lg" />
-                                </div>
-                              )}
-                            </div>
-                            <div className="p-4 md:p-6 space-y-3">
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="flex-1 min-w-0">
-                                  <h4 className="font-semibold">{capitalizeFirst(item.item_name)}</h4>
-                                  {item.is_menu_part && (
-                                    <Badge variant="outline" className="mt-1 text-[10px] border-primary/40 text-primary">
-                                      Menüben is
-                                    </Badge>
-                                  )}
-                                </div>
-                                <Badge variant="secondary" className="shrink-0 bg-primary/10 text-primary font-semibold">
-                                  {item.item_price_huf} Ft
-                                </Badge>
-                              </div>
-                              {item.item_description && (
-                                <p className="text-sm text-muted-foreground line-clamp-2">
-                                  {item.item_description}
-                                </p>
-                              )}
-                              {item.item_allergens && item.item_allergens.length > 0 && (
-                                <div className="flex flex-wrap gap-1">
-                                  {item.item_allergens.map((allergen, idx) => (
-                                    <Badge key={idx} variant="outline" className="text-xs">
-                                      {allergen}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              )}
-                              <Button 
-                                onClick={() => handleAddItemToCart(item)}
-                                className="w-full"
-                                size="sm"
-                                disabled={itemSoldOut}
-                              >
-                                {itemSoldOut ? "Elfogyott" : "Kosárba"}
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
+                          <FoodCard
+                            key={item.id}
+                            name={capitalizeFirst(item.item_name)}
+                            description={item.item_description}
+                            priceHuf={item.item_price_huf}
+                            imageUrl={item.item_image_url}
+                            onAdd={() => handleAddItemToCart(item)}
+                            disabled={itemSoldOut}
+                            badge={item.is_menu_part ? (
+                              <Badge variant="outline" className="border-primary/35 bg-card/90 text-[10px] font-bold text-primary backdrop-blur-sm">
+                                Menüben is
+                              </Badge>
+                            ) : undefined}
+                            meta={item.item_allergens && item.item_allergens.length > 0 ? (
+                              <span className="shrink-0 text-xs text-muted-foreground">{item.item_allergens.length} allergén</span>
+                            ) : undefined}
+                          />
                         );
                       })}
                     </div>
