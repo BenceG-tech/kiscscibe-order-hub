@@ -43,8 +43,8 @@
     --accent: 46 96% 57%;
     --accent-foreground: 220 25% 10%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 48 100% 99%;
+    --destructive: 38 92% 45%;
+    --destructive-foreground: 220 25% 10%;
 
     /* Borders and inputs */
     --border: 48 35% 75%; /* Darker border for better visibility */
@@ -125,8 +125,8 @@
     --accent: 46 96% 57%;
     --accent-foreground: 220 25% 10%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%; /* Light text on red */
+    --destructive: 38 92% 50%;
+    --destructive-foreground: 220 25% 10%;
 
     /* Borders and inputs */
     --border: 220 15% 35%; /* Slightly lighter for visibility */
