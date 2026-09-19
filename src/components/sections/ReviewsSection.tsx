@@ -112,7 +112,7 @@ const ReviewsSection = () => {
   const ReviewCard = ({ review, index }: { review: typeof reviews[0]; index: number }) => (
     <Card 
       className={cn(
-        "rounded-3xl shadow-soft relative overflow-hidden tilt-card glow-border",
+        "relative overflow-hidden border border-border/60 bg-card shadow-soft",
         "transition-all duration-500",
         isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
       )}
@@ -159,17 +159,16 @@ const ReviewsSection = () => {
     <section className="py-8 md:py-20" ref={ref}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-4 md:mb-12">
-          <span className="text-xs md:text-sm uppercase tracking-[0.2em] text-muted-foreground font-medium">
+        <div className="mb-6 md:mb-12">
+          <span className="section-kicker">
             Vélemények
           </span>
-          <h2 className="text-2xl md:text-4xl font-bold text-foreground mt-2 mb-3 md:mb-4 font-sofia">
+          <h2 className="section-title mb-3 md:mb-4">
             Mit mondanak vendégeink?
           </h2>
-          <div className="w-12 h-1 bg-primary mx-auto mb-4 md:mb-6 rounded-full" />
           
           {/* Overall Rating */}
-          <div className="flex items-center justify-center gap-2 mb-1 md:mb-2">
+          <div className="flex items-center gap-2 mb-1 md:mb-2">
             <div className="flex items-center gap-1">
               {renderStars(Math.round(averageRating))}
             </div>
@@ -224,7 +223,7 @@ const ReviewsSection = () => {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button 
               onClick={() => document.getElementById('napi-ajanlat')?.scrollIntoView({ behavior: 'smooth' })}
-              className="bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm text-primary-foreground font-semibold px-6 py-3 relative overflow-hidden group"
+                 className="bg-primary hover:bg-primary/90 hover:shadow-warm text-primary-foreground font-semibold px-6 py-3 relative overflow-hidden group"
             >
               <span className="relative z-10">Napi menü megtekintése</span>
               <div className="absolute inset-0 shimmer-btn opacity-0 group-hover:opacity-100 transition-opacity" />

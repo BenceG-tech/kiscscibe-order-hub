@@ -169,7 +169,7 @@ const HeroSection = () => {
         <ArrowRight className="h-5 w-5 text-primary" />
       </button>
 
-      <div className="absolute bottom-5 left-4 z-20 flex items-center gap-2 sm:left-6 lg:left-8">
+      <div className="absolute bottom-5 left-4 z-20 hidden items-center gap-2 md:flex sm:left-6 lg:left-8">
         <Button variant="outline" size="icon" onClick={() => changeSlide(-1)} className="h-9 w-9 border-editorial-foreground/30 bg-editorial/40 text-editorial-foreground backdrop-blur-sm hover:bg-primary hover:text-primary-foreground" aria-label="Előző kép">
           <ChevronLeft className="h-4 w-4" />
         </Button>

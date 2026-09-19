@@ -130,7 +130,7 @@ const AlwaysAvailableSection = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 border-b border-border/60 pb-3">
         <Package className="h-5 w-5 text-primary" />
         <h3 className="text-xl font-bold">{title}</h3>
       </div>
@@ -158,15 +158,15 @@ const AlwaysAvailableSection = ({
                 {group.items.map((item) => (
                   <Card
                     key={item.id}
-                    className="group border-0 bg-card/95 backdrop-blur-sm shadow-md rounded-2xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
+                     className="food-frame group bg-card/95 backdrop-blur-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
                   >
                     <CardContent className="p-0">
                       <div className="aspect-[4/3] overflow-hidden">
                         {item.image_url ? (
-                          <img
+                           <img
                             src={item.image_url}
                             alt={item.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                             loading="lazy"
                           />
                         ) : (

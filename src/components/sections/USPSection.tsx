@@ -41,17 +41,16 @@ const USPSection = () => {
   }));
 
   return (
-    <section className="py-8 md:py-20" ref={ref}>
+    <section className="py-8 text-editorial-foreground md:py-20" ref={ref}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section header */}
-        <div className="text-center mb-6 md:mb-12">
-          <span className="text-xs md:text-sm uppercase tracking-[0.2em] text-muted-foreground font-medium">
+        <div className="mb-8 md:mb-12">
+          <span className="section-kicker">
             Miért minket válassz?
           </span>
-          <h2 className="text-2xl md:text-4xl font-bold text-foreground mt-2 font-sofia">
-            Értékeink
+          <h2 className="mt-3 max-w-2xl font-sofia text-3xl font-bold leading-tight text-editorial-foreground md:text-5xl">
+            Házias étel. Egyenes válasz.
           </h2>
-          <div className="w-12 h-1 bg-primary mx-auto mt-3 md:mt-4 rounded-full" />
         </div>
         
         {/* Mobile: compact 2x2 grid */}
@@ -59,8 +58,8 @@ const USPSection = () => {
           {features.map((feature, index) => (
             <Card 
               key={index} 
-              className={cn(
-                "rounded-2xl shadow-soft border-0 bg-card text-center glow-border",
+               className={cn(
+                 "border border-editorial-foreground/10 bg-editorial-foreground/5 text-left",
                 "transition-all duration-500",
                 isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
               )}
@@ -71,8 +70,8 @@ const USPSection = () => {
                   <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-primary/30 to-warmth/30 animate-spin-slow opacity-0 group-hover:opacity-100 transition-opacity" />
                   <feature.IconComponent className="h-5 w-5 text-primary relative z-10 transition-transform duration-300 group-hover:scale-110" strokeWidth={1.5} />
                 </div>
-                <h3 className="font-bold text-foreground text-base mb-1 font-sofia">{feature.title}</h3>
-                <p className="text-muted-foreground text-xs leading-relaxed">{feature.description}</p>
+                 <h3 className="font-bold text-editorial-foreground text-base mb-1 font-sofia">{feature.title}</h3>
+                 <p className="text-editorial-muted text-xs leading-relaxed">{feature.description}</p>
               </CardContent>
             </Card>
           ))}
@@ -84,19 +83,19 @@ const USPSection = () => {
             <Card 
               key={index} 
               className={cn(
-                "rounded-3xl shadow-soft border-0 bg-card text-center glow-border group cursor-default",
+                 "group cursor-default border-l border-editorial-foreground/15 bg-transparent text-left",
                 "transition-all duration-500",
                 isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
               )}
               style={{ transitionDelay: `${index * 150}ms` }}
             >
-              <CardContent className="p-6 md:p-8">
+               <CardContent className="p-6 md:p-8">
                 <div className="relative inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary/20 to-warmth/20 rounded-2xl shadow-soft mb-5 overflow-hidden">
                   <div className="absolute inset-0 rounded-2xl bg-gradient-conic from-primary/40 via-transparent to-primary/40 animate-spin-slow opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                   <feature.IconComponent className="h-8 w-8 text-primary relative z-10 transition-transform duration-300 group-hover:scale-125" strokeWidth={1.5} />
                 </div>
-                <h3 className="font-bold text-foreground text-xl mb-3 font-sofia">{feature.title}</h3>
-                <p className="text-muted-foreground text-base leading-relaxed">{feature.description}</p>
+                 <h3 className="font-bold text-editorial-foreground text-xl mb-3 font-sofia">{feature.title}</h3>
+                 <p className="text-editorial-muted text-base leading-relaxed">{feature.description}</p>
               </CardContent>
             </Card>
           ))}
