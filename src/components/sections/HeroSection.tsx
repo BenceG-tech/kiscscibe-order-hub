@@ -64,7 +64,7 @@ const HeroSection = () => {
             src={desktopHeroWebp.url}
             alt="Házias Kiscsibe fogások piros-fehér kockás terítőn"
             className="hero-food-image absolute inset-0 h-full w-full object-cover motion-reduce:animate-none"
-            fetchPriority="high"
+            loading="eager"
             decoding="async"
             width={1365}
             height={768}
