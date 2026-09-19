@@ -18,7 +18,7 @@ import { hu } from "date-fns/locale";
 import { getSmartInitialDate, getContentLabel } from "@/lib/dateUtils";
 import { capitalizeFirst, cn } from "@/lib/utils";
 import kiscsibeLogo from "@/assets/kiscsibe_logo_round.png";
-import heroImage from "@/assets/hero-desktop.png";
+import heroImage from "@/assets/kiscsibe-serving-plate.jpg";
 import SEO from "@/components/SEO";
 import DailyMenuPanel from "@/components/DailyMenuPanel";
 import AlwaysAvailableSection from "@/components/sections/AlwaysAvailableSection";
@@ -288,7 +288,7 @@ const Etlap = () => {
           </div>
         )}
         {/* Hero Section with image */}
-        <section className="gingham-edge relative h-[35vh] md:h-[40vh] overflow-hidden">
+        <section className="relative h-[35vh] md:h-[40vh] overflow-hidden border-b border-primary/25">
           <img 
             src={heroImage} 
             alt="Napi ajánlat"
@@ -361,7 +361,7 @@ const Etlap = () => {
                 )}
                 {/* Facebook Image - uploaded by admin */}
                 {facebookImageUrl && (
-                   <Card className="gingham-strip border border-border/60 p-2 shadow-lg overflow-hidden">
+                   <Card className="border border-primary/20 bg-secondary/35 p-2 shadow-lg overflow-hidden">
                     <CardContent className="p-0">
                        <button
                         onClick={() => setLightboxOpen(true)}
