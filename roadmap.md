@@ -5,4 +5,4 @@
 - [x] Galéria, értékek, vélemények és promóció
 - [x] Térkép, kérdések, hírlevél, navigáció és lábléc
 - [x] Nyilvános aloldalak összehangolása
-- [ ] Mobil és asztali működés ellenőrzése
+- [x] Mobil és asztali működés ellenőrzése
