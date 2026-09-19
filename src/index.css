@@ -175,23 +175,6 @@
     border-top: 1px solid hsl(var(--border) / 0.55);
   }
 
-  .gingham-strip {
-    background-color: hsl(var(--secondary) / 0.55);
-  }
-
-  .gingham-edge {
-    position: relative;
-  }
-
-  .gingham-edge::after {
-    content: "";
-    position: absolute;
-    inset-inline: 0;
-    bottom: 0;
-    height: 0.2rem;
-    background: linear-gradient(90deg, transparent, hsl(var(--primary)), transparent);
-  }
-
   .chalkboard {
     color: hsl(var(--chalk));
     background-color: hsl(var(--chalkboard));
@@ -230,10 +213,6 @@
 
   .reveal-up {
     animation: reveal-up 0.7s cubic-bezier(0.2, 0.75, 0.25, 1) both;
-  }
-
-  .marquee-gingham {
-    animation: none;
   }
 
   .brand-divider {
