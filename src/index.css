@@ -15,9 +15,9 @@
 
 @layer base {
   :root {
-    /* Kiscsibe Reggeliző Brand Colors - Light Theme */
-    --background: 43 100% 95%; /* warm paper */
-    --foreground: 0 0% 9%; /* print ink */
+    /* Kiscsibe Reggeliző Brand Colors - restrained warm light theme */
+    --background: 43 60% 94%;
+    --foreground: 220 13% 10%;
 
     /* Cards and containers */
     --card: 43 100% 97%;
@@ -39,11 +39,9 @@
     --muted: 48 25% 88%;
     --muted-foreground: 24 15% 35%; /* Darker for better contrast */
 
-    /* Accent - warm brown for highlights */
-    --accent: 4 69% 51%;
-    --accent-foreground: 43 100% 97%;
-    --tomato: 4 69% 51%;
-    --tomato-foreground: 43 100% 97%;
+    /* Accent - Kiscsibe yellow, never interface red */
+    --accent: 46 96% 57%;
+    --accent-foreground: 220 25% 10%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 48 100% 99%;
@@ -63,7 +61,7 @@
     --chalk: 48 32% 92%;
     --chalkboard: 215 12% 13%;
     --paper: 43 100% 95%;
-    --hero-paper-shade: linear-gradient(90deg, hsl(var(--background) / 0.97) 0%, hsl(var(--background) / 0.91) 34%, hsl(var(--background) / 0.45) 53%, transparent 73%);
+    --hero-paper-shade: linear-gradient(90deg, hsl(220 28% 7% / 0.96) 0%, hsl(220 26% 8% / 0.88) 36%, hsl(220 23% 9% / 0.48) 62%, hsl(220 20% 8% / 0.18) 100%);
     
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
@@ -123,11 +121,9 @@
     --muted: 220 10% 25%;
     --muted-foreground: 220 5% 85%; /* Much lighter for better contrast */
 
-    /* Accent - warm brown for highlights */
-    --accent: 4 69% 56%;
-    --accent-foreground: 0 0% 98%;
-    --tomato: 4 69% 56%;
-    --tomato-foreground: 0 0% 98%;
+    /* Accent - Kiscsibe yellow */
+    --accent: 46 96% 57%;
+    --accent-foreground: 220 25% 10%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%; /* Light text on red */
@@ -147,7 +143,7 @@
     --chalk: 48 28% 90%;
     --chalkboard: 215 12% 11%;
     --paper: 45 18% 18%;
-    --hero-paper-shade: linear-gradient(90deg, hsl(var(--background) / 0.97) 0%, hsl(var(--background) / 0.9) 35%, hsl(var(--background) / 0.4) 58%, transparent 77%);
+    --hero-paper-shade: linear-gradient(90deg, hsl(220 28% 7% / 0.97) 0%, hsl(220 26% 8% / 0.88) 36%, hsl(220 23% 9% / 0.48) 62%, hsl(220 20% 8% / 0.18) 100%);
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -180,18 +176,31 @@
     background-size: 6px 6px;
   }
 
-  .gingham-band {
-    background-color: hsl(var(--background));
-    background-image:
-      linear-gradient(90deg, hsl(var(--tomato) / 0.12) 50%, transparent 50%),
-      linear-gradient(hsl(var(--tomato) / 0.12) 50%, transparent 50%);
-    background-size: 3rem 3rem;
-    background-position: 0 0, 1.5rem 1.5rem;
-  }
-
   .homepage-editorial .editorial-band {
     position: relative;
     border-top: 1px solid hsl(var(--border) / 0.55);
+  }
+
+  .homepage-editorial {
+    background: hsl(var(--background));
+  }
+
+  .homepage-editorial .dark-band {
+    background-color: hsl(var(--editorial));
+    color: hsl(var(--editorial-foreground));
+  }
+
+  .homepage-editorial .dark-band .section-title {
+    color: hsl(var(--editorial-foreground));
+  }
+
+  .homepage-editorial .dark-band .text-muted-foreground {
+    color: hsl(var(--editorial-muted));
+  }
+
+  .homepage-editorial .paper-panel {
+    background-color: hsl(var(--paper));
+    color: hsl(var(--foreground));
   }
 
   .chalkboard {
@@ -295,11 +304,17 @@
 
 @media (max-width: 767px) {
   .bg-hero-paper-shade {
-    background: linear-gradient(180deg, hsl(var(--background) / 0.96) 0%, hsl(var(--background) / 0.82) 30%, transparent 56%, hsl(var(--foreground) / 0.08) 100%);
+    background: linear-gradient(180deg, hsl(220 28% 7% / 0.95) 0%, hsl(220 26% 8% / 0.8) 38%, hsl(220 22% 9% / 0.16) 67%, hsl(220 28% 7% / 0.72) 100%);
   }
 
   .hero-food-image {
     object-position: center center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-motion-video {
+    display: none;
   }
 }
 

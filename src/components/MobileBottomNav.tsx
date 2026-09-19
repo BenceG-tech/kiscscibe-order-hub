@@ -40,20 +40,20 @@ const MobileBottomNav = () => {
               to={tab.href}
               className={`flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors relative ${
                 active
-                   ? "text-accent"
+                   ? "text-primary"
                    : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <div className="relative">
                 <Icon className="h-5 w-5" />
                 {showBadge && (
-                  <span className="absolute -top-1.5 -right-2.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-accent text-accent-foreground text-[9px] font-bold px-1">
+                  <span className="absolute -top-1.5 -right-2.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[9px] font-bold px-1">
                     {cart.itemCount}
                   </span>
                 )}
               </div>
               <span>{tab.label}</span>
-               {active && <div className="absolute inset-x-3 bottom-0 h-0.5 bg-accent" />}
+               {active && <div className="absolute inset-x-3 bottom-0 h-0.5 bg-primary" />}
             </Link>
           );
         })}

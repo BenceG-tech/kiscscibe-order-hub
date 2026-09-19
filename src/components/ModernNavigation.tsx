@@ -79,7 +79,7 @@ const ModernNavigation = () => {
       >
         Ugrás a tartalomra
       </a>
-    <nav className={`fixed top-0 left-0 right-0 z-50 border-b border-foreground/15 bg-background/95 text-foreground backdrop-blur-md transition-all duration-300 ease-in-out transform ${
+    <nav className={`fixed top-0 left-0 right-0 z-50 border-b border-editorial-foreground/15 bg-editorial/95 text-editorial-foreground backdrop-blur-md transition-all duration-300 ease-in-out transform ${
       visible 
         ? "translate-y-0 opacity-100" 
         : "-translate-y-full opacity-0"
@@ -127,9 +127,9 @@ const ModernNavigation = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             {/* Logo */}
-            <span 
+             <span
               onClick={handleLogoClick}
-               className="flex items-center gap-2 font-sofia font-bold text-lg text-foreground hover:text-accent transition-all duration-300 cursor-pointer select-none md:text-xl"
+               className="flex items-center gap-2 font-sofia font-bold text-lg text-editorial-foreground hover:text-primary transition-all duration-300 cursor-pointer select-none md:text-xl"
             >
                <img src={kiscsibeLogo} alt="" className="h-9 w-9 rounded-full border border-foreground/20 object-cover" />
                <span>Kiscsibe <span className="hidden lg:inline">Reggeliző &amp; Étterem</span></span>
@@ -141,14 +141,14 @@ const ModernNavigation = () => {
                 <Link
                   key={link.href}
                   to={link.href}
-                   className={`text-sm font-bold transition-all duration-300 hover:text-accent relative group ${
+                   className={`text-sm font-bold transition-all duration-300 hover:text-primary relative group ${
                     location.pathname === link.href 
-                       ? "text-accent" 
-                        : "text-foreground/75"
+                       ? "text-primary"
+                         : "text-editorial-foreground/75"
                   }`}
                 >
                   {link.label}
-                   <div className={`absolute -bottom-1 left-0 h-0.5 bg-accent transition-all duration-300 ${
+                    <div className={`absolute -bottom-1 left-0 h-0.5 bg-primary transition-all duration-300 ${
                     location.pathname === link.href ? "w-full" : "w-0 group-hover:w-full"
                   }`} />
                 </Link>
@@ -162,13 +162,13 @@ const ModernNavigation = () => {
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                   className="hover:bg-accent/10 hover:text-accent"
+                    className="text-editorial-foreground hover:bg-primary/10 hover:text-primary"
                   onClick={() => setIsCartOpen(true)}
                 >
                   <ShoppingCart className="h-5 w-5" />
                   {cart.itemCount > 0 && (
                     <Badge 
-                       className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 bg-accent text-accent-foreground text-xs"
+                       className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 bg-primary text-primary-foreground text-xs"
                     >
                       {cart.itemCount}
                     </Badge>
@@ -184,13 +184,13 @@ const ModernNavigation = () => {
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                   className="hover:bg-accent/10 hover:text-accent"
+                    className="text-editorial-foreground hover:bg-primary/10 hover:text-primary"
                   onClick={() => setIsCartOpen(true)}
                 >
                   <ShoppingCart className="h-5 w-5" />
                   {cart.itemCount > 0 && (
                     <Badge 
-                       className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 bg-accent text-accent-foreground text-xs"
+                       className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 bg-primary text-primary-foreground text-xs"
                     >
                       {cart.itemCount}
                     </Badge>
@@ -204,7 +204,7 @@ const ModernNavigation = () => {
                   <Button
                     variant="ghost"
                     size="icon"
-                     className="hover:bg-accent/10 hover:text-accent"
+                     className="text-editorial-foreground hover:bg-primary/10 hover:text-primary"
                   >
                     <Menu className="h-6 w-6" />
                   </Button>
@@ -222,7 +222,7 @@ const ModernNavigation = () => {
                         onClick={closeMenu}
                         className={`font-medium text-lg py-2 px-3 rounded-lg transition-all duration-300 hover:bg-primary/10 hover:text-primary ${
                           location.pathname === link.href 
-                             ? "text-accent bg-accent/10" 
+                             ? "text-primary bg-primary/10"
                             : "text-foreground"
                         }`}
                       >
@@ -238,7 +238,7 @@ const ModernNavigation = () => {
                       
                       <Button 
                         asChild
-                         className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-bold"
+                         className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold"
                         onClick={closeMenu}
                       >
                          <Link to="/etlap">Rendelj most</Link>

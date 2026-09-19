@@ -80,7 +80,7 @@ const NewsletterSection = () => {
           isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
         )}>
           <CardHeader className="text-center pb-2 md:pb-6">
-            <div className="inline-flex items-center justify-center w-12 h-12 md:w-16 md:h-16 bg-accent text-accent-foreground mb-3 md:mb-4 mx-auto">
+            <div className="inline-flex items-center justify-center w-12 h-12 md:w-16 md:h-16 bg-primary text-primary-foreground mb-3 md:mb-4 mx-auto">
                <Mail className="h-6 w-6 md:h-8 md:w-8" />
             </div>
             <CardTitle className="font-sofia text-2xl font-bold text-editorial-foreground md:text-4xl">
@@ -106,7 +106,7 @@ const NewsletterSection = () => {
                 </div>
                 <Button
                   type="submit"
-                   className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold min-h-[44px] px-8 relative overflow-hidden group"
+                   className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold min-h-[44px] px-8 relative overflow-hidden group"
                   disabled={isLoading}
                 >
                   <span className="relative z-10">{isLoading ? "Feliratkozás..." : "Feliratkozom"}</span>

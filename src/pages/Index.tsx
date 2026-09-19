@@ -27,31 +27,31 @@ const Index = () => {
       <ModernNavigation />
       <main id="main-content" className="homepage-editorial pt-[5.25rem] md:pt-24">
         <HeroSection />
-        <div className="gingham-band border-y border-accent/25 py-4 text-foreground" aria-label="Kiscsibe értékei">
+        <div className="border-y border-primary/25 bg-editorial py-4 text-editorial-foreground" aria-label="Kiscsibe értékei">
           <div className="mx-auto flex max-w-7xl items-center justify-center gap-3 overflow-hidden px-4 text-center text-[11px] font-bold uppercase tracking-[0.16em] sm:gap-8 sm:text-xs">
-             <span>Frissen készül</span><span className="text-accent">•</span><span>Házias adagok</span><span className="hidden text-accent sm:inline">•</span><span className="hidden sm:inline">Zuglóban, hétköznap</span>
+             <span>Frissen készül</span><span className="text-primary">•</span><span>Házias adagok</span><span className="hidden text-primary sm:inline">•</span><span className="hidden sm:inline">Zuglóban, hétköznap</span>
           </div>
         </div>
-        <div className="editorial-band editorial-band-compact bg-background">
+        <div className="editorial-band editorial-band-compact dark-band">
           <BreakfastSection variant="homepage" />
         </div>
-        <div className="editorial-band bg-paper-texture">
+        <div className="editorial-band dark-band">
           <DailyMenuSection />
         </div>
         <div className="editorial-band editorial-band-compact bg-primary"><AlwaysAvailableTeaser /></div>
         <div className="editorial-band bg-editorial text-editorial-foreground"><USPSection /></div>
-        <div className="editorial-band bg-background">
+        <div className="editorial-band dark-band">
           <ReviewsSection />
         </div>
-        <div className="editorial-band bg-paper-texture"><GallerySection /></div>
-        <div className="editorial-band gingham-band">
+        <div className="editorial-band dark-band"><GallerySection /></div>
+        <div className="editorial-band dark-band">
           <PromoSection />
         </div>
-        <div className="editorial-band bg-background"><AllergenSection /></div>
+        <div className="editorial-band dark-band"><AllergenSection /></div>
         <div className="editorial-band bg-primary">
           <MapSection />
         </div>
-        <div className="editorial-band bg-paper-texture"><FAQSection /></div>
+        <div className="editorial-band paper-panel"><FAQSection /></div>
         <div className="editorial-band bg-editorial text-editorial-foreground">
           <NewsletterSection />
         </div>
