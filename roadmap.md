@@ -28,5 +28,5 @@
 # /etlap food-commerce kártyarendszer
 - [x] Újrahasznosítható, nagy képes publikus ételkártya
 - [x] Napi, reggeli és mindig elérhető kártyák egységesítése
-- [ ] Napi menü arányainak finomítása
-- [ ] Desktop, mobil, placeholder és rendelési műveletek ellenőrzése
+- [x] Napi menü arányainak finomítása
+- [x] Desktop, mobil, placeholder és rendelési műveletek ellenőrzése
