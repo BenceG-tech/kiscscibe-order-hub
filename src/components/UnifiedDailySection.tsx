@@ -242,7 +242,7 @@ const UnifiedDailySection = () => {
 
       {/* Facebook Image - uploaded by admin */}
       {!loading && facebookImageUrl && (
-         <div className="mb-6 gingham-strip p-2">
+         <div className="mb-6 border border-primary/20 bg-secondary/35 p-2">
            <Card className="overflow-hidden border border-border/60 bg-card shadow-lg">
             <CardContent className="p-0">
               <button

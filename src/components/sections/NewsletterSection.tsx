@@ -75,7 +75,7 @@ const NewsletterSection = () => {
     <section className="py-8 md:py-16" ref={ref}>
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <Card className={cn(
-           "chalkboard gingham-edge border border-editorial-foreground/15 shadow-xl",
+            "chalkboard border border-primary/25 shadow-xl",
           "transition-all duration-700",
           isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
         )}>

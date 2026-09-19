@@ -38,7 +38,7 @@ const AlwaysAvailableTeaser = () => {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <Link
           to="/etlap#mindig-elerheto"
-          className="gingham-edge group relative block overflow-hidden border border-primary/30 bg-card shadow-lg hover:shadow-xl hover:border-primary/60 hover:-translate-y-0.5 transition-all duration-300"
+          className="group relative block overflow-hidden border border-primary/30 bg-card shadow-lg hover:shadow-xl hover:border-primary/60 hover:-translate-y-0.5 transition-all duration-300"
           aria-label="Mindig elérhető tételek megtekintése"
         >
           <div className="relative flex items-center gap-4 p-4 sm:p-5">

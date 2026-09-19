@@ -119,7 +119,7 @@ const Footer = ({ className }: FooterProps) => {
   const isSunClosed = openingHours.sun === "closed";
 
   return (
-    <footer className={`gingham-edge bg-editorial text-editorial-muted ${className || ""}`}>
+    <footer className={`border-t border-primary/25 bg-editorial text-editorial-muted ${className || ""}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         
         {/* Mobile: Logo centered on top */}
@@ -316,7 +316,7 @@ const Footer = ({ className }: FooterProps) => {
               className="group flex flex-col items-center focus:outline-none"
               aria-label="Személyzeti belépés"
             >
-              <div className="w-16 h-16 rounded-full overflow-hidden border border-gray-700 transition-transform duration-200 group-active:scale-95 opacity-60 hover:opacity-80">
+              <div className="w-16 h-16 rounded-full overflow-hidden border border-editorial-foreground/20 transition-transform duration-200 group-active:scale-95 opacity-60 hover:opacity-80">
                 <img
                   src={kiscsibeLogo}
                   alt="Kiscsibe"

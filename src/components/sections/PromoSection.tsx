@@ -53,7 +53,7 @@ const PromoSection = () => {
   return (
     <section className="py-8 md:py-10">
       <div className="max-w-5xl mx-auto px-4">
-         <div className="gingham-edge relative overflow-hidden border border-border/60 shadow-xl">
+         <div className="relative overflow-hidden border border-primary/20 shadow-xl">
           
           {/* Background image with blur */}
           <div className="absolute inset-0" style={{ transform: 'translateZ(0)' }}>

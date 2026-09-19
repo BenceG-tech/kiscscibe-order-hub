@@ -292,6 +292,11 @@
   to { transform: rotate(360deg); }
 }
 
+@keyframes hero-breathe {
+  from { transform: scale(1); }
+  to { transform: scale(1.035); }
+}
+
 @media (max-width: 767px) {
   .bg-hero-shade {
     background: linear-gradient(180deg, hsl(218 18% 8% / 0.22) 0%, hsl(218 18% 8% / 0.55) 35%, hsl(218 18% 8% / 0.97) 78%, hsl(218 18% 8% / 1) 100%);
