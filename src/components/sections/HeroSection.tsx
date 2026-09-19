@@ -73,7 +73,7 @@ const HeroSection = () => {
   };
 
   return (
-    <section className="relative isolate min-h-[calc(100svh-3.5rem)] md:min-h-[calc(100svh-2rem)] overflow-hidden bg-editorial text-editorial-foreground">
+    <section className="relative isolate min-h-[72svh] md:min-h-[78svh] overflow-hidden bg-editorial text-editorial-foreground">
       <div className="absolute inset-0" aria-hidden="true">
         {slides.map((slide, index) => (
           <img
@@ -92,7 +92,7 @@ const HeroSection = () => {
         <div className="absolute inset-0 bg-hero-shade" />
       </div>
 
-      <div className="relative z-10 mx-auto flex min-h-[calc(100svh-3.5rem)] max-w-7xl items-end px-4 pb-20 pt-40 sm:px-6 md:items-center md:pb-16 md:pt-36 lg:px-8">
+      <div className="relative z-10 mx-auto flex min-h-[72svh] max-w-7xl items-end px-4 pb-20 pt-40 sm:px-6 md:min-h-[78svh] md:items-center md:pb-16 md:pt-36 lg:px-8">
         <div className="grid w-full items-end gap-10 md:grid-cols-[minmax(0,1fr)_22rem] lg:gap-20">
           <div className="max-w-3xl animate-fade-in-up motion-reduce:animate-none">
             <p className="mb-5 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.22em] text-primary sm:text-sm">
