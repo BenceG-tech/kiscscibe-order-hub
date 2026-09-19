@@ -4,7 +4,7 @@ import MobileBottomNav from "@/components/MobileBottomNav";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLegalContent } from "@/hooks/useLegalContent";
-import heroImage from "@/assets/hero-desktop.png";
+import heroImage from "@/assets/kiscsibe-hero-serving.jpg";
 
 const CookiePolicy = () => {
   const { data: content, isLoading } = useLegalContent("legal_cookies");

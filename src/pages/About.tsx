@@ -6,8 +6,8 @@ import Footer from "@/components/Footer";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import { Card, CardContent } from "@/components/ui/card";
 import { CalendarDays, Users, ChefHat, Star, Heart, Clock, Leaf, Award, Coffee, Utensils, MapPin, ThumbsUp, type LucideIcon } from "lucide-react";
-import heroImage from "@/assets/hero-desktop.png";
-import heroBreakfast from "@/assets/hero-breakfast.jpg";
+import heroImage from "@/assets/kiscsibe-hero-serving.jpg";
+import heroBreakfast from "@/assets/kiscsibe-breakfast-table.jpg";
 import type { AboutPageContent } from "@/components/admin/AboutPageEditor";
 
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -67,7 +67,7 @@ const About = () => {
       <ModernNavigation />
       <main className="pt-20">
         {/* Hero Section */}
-         <section className="gingham-edge relative h-[35vh] md:h-[40vh] overflow-hidden">
+         <section className="relative h-[35vh] md:h-[40vh] overflow-hidden border-b border-primary/25">
           <img src={heroImg} alt="Kiscsibe Reggeliző belső tere" className="w-full h-full object-cover" />
            <div className="absolute inset-0 bg-hero-shade" />
           <div className="absolute inset-0 flex items-center justify-center">
@@ -104,7 +104,7 @@ const About = () => {
             {/* Story */}
             <section className="py-12 md:py-16">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 items-center">
-                 <div className="food-frame gingham-edge relative overflow-hidden shadow-2xl order-2 lg:order-1">
+                 <div className="plate-frame relative overflow-hidden shadow-2xl order-2 lg:order-1">
                   <img src={storyImg} alt="Kiscsibe ételek" className="w-full aspect-[4/3] object-cover" />
                 </div>
                 <div className="space-y-6 order-1 lg:order-2">
@@ -141,7 +141,7 @@ const About = () => {
 
             {/* Mission */}
             <section className="py-12 md:py-16">
-               <Card className="chalkboard gingham-edge border border-editorial-foreground/15 shadow-xl overflow-hidden">
+               <Card className="chalkboard border border-primary/25 shadow-xl overflow-hidden">
                 <CardContent className="p-8 md:p-12 text-center relative">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
                   <div className="absolute bottom-0 left-0 w-24 h-24 bg-primary/10 rounded-full translate-y-1/2 -translate-x-1/2 blur-2xl" />

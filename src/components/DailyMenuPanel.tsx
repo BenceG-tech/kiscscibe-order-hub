@@ -145,7 +145,7 @@ const DailyMenuPanel = ({ date, menuData, loading }: DailyMenuPanelProps) => {
     <Card className="overflow-hidden border border-border/60 bg-card shadow-xl">
       <CardContent className="p-0">
         {/* Header with prominent price */}
-        <div className="chalkboard gingham-edge px-4 pb-6 pt-4 md:px-6">
+        <div className="chalkboard border-b border-primary/35 px-4 pb-5 pt-4 md:px-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 md:gap-3">
               <ChefHat className="h-5 w-5 md:h-6 md:w-6 text-primary" />

@@ -1,17 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { ArrowDown, ArrowRight, ChevronLeft, ChevronRight, Clock3, MapPin, UtensilsCrossed } from "lucide-react";
+import { ArrowDown, ArrowRight, Clock3, MapPin, Sparkles, UtensilsCrossed } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getSmartInitialDate } from "@/lib/dateUtils";
 import { capitalizeFirst } from "@/lib/utils";
 import { formatOpeningHoursOneLiner, useRestaurantSettings } from "@/hooks/useRestaurantSettings";
-import heroBreakfast from "@/assets/hero-breakfast.jpg";
-import heroSchnitzel from "@/assets/hero-schnitzel.jpg";
-import heroGoulash from "@/assets/hero-goulash.jpg";
-import heroRestaurant from "@/assets/hero-desktop.png";
+import heroServing from "@/assets/kiscsibe-hero-serving.jpg";
 
 interface HeroMenuItem {
   item_name?: string;
@@ -24,15 +21,7 @@ interface HeroDailyRow {
   menu_price_huf?: number | null;
 }
 
-const slides = [
-  { src: heroSchnitzel, alt: "Frissen sült rántott hús petrezselymes burgonyával" },
-  { src: heroGoulash, alt: "Gőzölgő, házias gulyásleves friss kenyérrel" },
-  { src: heroBreakfast, alt: "Friss reggeli a Kiscsibe Étteremben" },
-  { src: heroRestaurant, alt: "A Kiscsibe Reggeliző és Étterem hangulata" },
-];
-
 const HeroSection = () => {
-  const [activeSlide, setActiveSlide] = useState(0);
   const { openingHours, address } = useRestaurantSettings();
 
   const { data: dailyMenu, isLoading } = useQuery({
@@ -54,47 +43,22 @@ const HeroSection = () => {
     staleTime: 5 * 60 * 1000,
   });
 
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (mediaQuery.matches) return;
-    const interval = window.setInterval(() => {
-      setActiveSlide((current) => (current + 1) % slides.length);
-    }, 6500);
-    return () => window.clearInterval(interval);
-  }, []);
-
   const menuLines = useMemo(
     () => [dailyMenu?.soup, dailyMenu?.main].filter((item): item is string => Boolean(item)),
     [dailyMenu],
   );
 
-  const changeSlide = (direction: number) => {
-    setActiveSlide((current) => (current + direction + slides.length) % slides.length);
-  };
-
   return (
-    <section className="relative isolate min-h-[72svh] md:min-h-[78svh] overflow-hidden bg-editorial text-editorial-foreground">
+    <section className="relative isolate min-h-[calc(100svh-5rem)] overflow-hidden bg-editorial text-editorial-foreground md:min-h-[82svh]">
       <div className="absolute inset-0" aria-hidden="true">
-        {slides.map((slide, index) => (
-          <img
-            key={slide.src}
-            src={slide.src}
-            alt=""
-            className={`absolute inset-0 h-full w-full object-cover object-center transition-[opacity,transform] duration-[1800ms] ease-out motion-reduce:transition-none ${
-               index === activeSlide ? "scale-[1.03] opacity-100" : "scale-[1.08] opacity-0"
-            }`}
-            loading={index === 0 ? "eager" : "lazy"}
-            decoding="async"
-            width={1920}
-            height={1080}
-          />
-        ))}
+        <img src={heroServing} alt="Gőzölgő levest mernek a Kiscsibe kifőzde pultjánál" className="absolute inset-0 h-full w-full object-cover object-[62%_center] motion-safe:animate-[hero-breathe_14s_ease-in-out_infinite_alternate]" fetchPriority="high" decoding="async" width={1920} height={1088} />
         <div className="absolute inset-0 bg-hero-shade" />
+        <div className="brand-orbit absolute -right-32 -top-40 h-[34rem] w-[34rem] opacity-40 motion-reduce:animate-none" />
       </div>
 
-      <div className="relative z-10 mx-auto flex min-h-[72svh] max-w-7xl items-end px-4 pb-20 pt-40 sm:px-6 md:min-h-[78svh] md:items-center md:pb-16 md:pt-36 lg:px-8">
-        <div className="grid w-full items-end gap-10 md:grid-cols-[minmax(0,1fr)_22rem] lg:gap-20">
-          <div className="max-w-3xl animate-fade-in-up motion-reduce:animate-none">
+      <div className="relative z-10 mx-auto flex min-h-[calc(100svh-5rem)] max-w-7xl items-end px-4 pb-36 pt-36 sm:px-6 md:min-h-[82svh] md:items-center md:pb-24 md:pt-32 lg:px-8">
+        <div className="w-full">
+          <div className="max-w-2xl animate-fade-in-up motion-reduce:animate-none">
             <p className="mb-5 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.16em] text-primary sm:text-sm">
               <span className="h-px w-10 bg-primary" />
               Zugló házias konyhája
@@ -104,7 +68,7 @@ const HeroSection = () => {
               <span className="mt-2 block text-[0.52em] leading-tight text-primary">Reggeliző &amp; Étterem</span>
             </h1>
             <p className="mt-6 max-w-xl text-base leading-relaxed text-editorial-muted sm:text-lg md:text-xl">
-              Friss reggeli, kiadós napi menü és ismerős, házias ízek minden hétköznap.
+              Amit ma megfőztünk, azt ma adjuk. Bőséges, házias ebéd Zuglóban — gyors átvétellel.
             </p>
 
             <div className="mt-7 flex flex-wrap gap-3 text-xs text-editorial-muted sm:text-sm">
@@ -126,40 +90,13 @@ const HeroSection = () => {
               </Button>
             </div>
           </div>
-
-           <button
-            type="button"
-            onClick={() => document.getElementById("napi-ajanlat")?.scrollIntoView({ behavior: "smooth" })}
-             className="chalkboard gingham-edge group hidden min-h-64 rotate-[-1.5deg] border border-editorial-foreground/20 p-6 text-left backdrop-blur-md transition-transform duration-500 hover:rotate-0 hover:-translate-y-2 md:block"
-            aria-label="Ugrás a mai ajánlathoz"
-          >
-            <div className="flex items-center justify-between border-b border-editorial-foreground/15 pb-4">
-               <span className="inline-flex items-center gap-2 font-sofia text-xl font-bold text-primary"><UtensilsCrossed className="h-4 w-4" /> Mai menü</span>
-              {dailyMenu?.price ? <span className="text-lg font-bold text-editorial-foreground">{dailyMenu.price.toLocaleString("hu-HU")} Ft</span> : null}
-            </div>
-            <div className="space-y-4 py-6">
-              {isLoading ? (
-                <p className="text-sm text-editorial-muted">A mai ajánlat betöltése…</p>
-              ) : menuLines.length > 0 ? (
-                menuLines.map((line, index) => (
-                  <div key={line} className="flex gap-3">
-                    <span className="font-sofia text-2xl text-primary">0{index + 1}</span>
-                    <p className="pt-1 font-sofia text-xl font-bold leading-tight text-editorial-foreground">{capitalizeFirst(line)}</p>
-                  </div>
-                ))
-              ) : (
-                <p className="font-sofia text-xl leading-snug text-editorial-foreground">Nézd meg a következő elérhető napi ajánlatunkat.</p>
-              )}
-            </div>
-            <span className="inline-flex items-center gap-2 text-sm font-semibold text-primary">Megnézem <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" /></span>
-          </button>
         </div>
       </div>
 
       <button
         type="button"
         onClick={() => document.getElementById("napi-ajanlat")?.scrollIntoView({ behavior: "smooth" })}
-        className="chalkboard gingham-edge absolute inset-x-4 bottom-4 z-20 flex items-center justify-between border border-editorial-foreground/20 px-4 py-3 text-left md:hidden"
+        className="absolute inset-x-4 bottom-5 z-20 flex items-center justify-between border border-editorial-foreground/20 bg-editorial/90 px-4 py-3 text-left shadow-xl backdrop-blur-md md:hidden"
         aria-label="Ugrás a mai ajánlathoz"
       >
         <span>
@@ -169,19 +106,15 @@ const HeroSection = () => {
         <ArrowRight className="h-5 w-5 text-primary" />
       </button>
 
-      <div className="absolute bottom-5 left-4 z-20 hidden items-center gap-2 md:flex sm:left-6 lg:left-8">
-        <Button variant="outline" size="icon" onClick={() => changeSlide(-1)} className="h-9 w-9 border-editorial-foreground/30 bg-editorial/40 text-editorial-foreground backdrop-blur-sm hover:bg-primary hover:text-primary-foreground" aria-label="Előző kép">
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <div className="flex gap-1.5" aria-label={`Kép ${activeSlide + 1} / ${slides.length}`}>
-          {slides.map((slide, index) => (
-            <button key={slide.alt} type="button" onClick={() => setActiveSlide(index)} className={`h-1.5 transition-all ${index === activeSlide ? "w-8 bg-primary" : "w-3 bg-editorial-foreground/40"}`} aria-label={`${index + 1}. kép`} />
-          ))}
-        </div>
-        <Button variant="outline" size="icon" onClick={() => changeSlide(1)} className="h-9 w-9 border-editorial-foreground/30 bg-editorial/40 text-editorial-foreground backdrop-blur-sm hover:bg-primary hover:text-primary-foreground" aria-label="Következő kép">
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
+      <button type="button" onClick={() => document.getElementById("napi-ajanlat")?.scrollIntoView({ behavior: "smooth" })} className="absolute bottom-6 left-1/2 z-20 hidden w-[min(44rem,calc(100%-3rem))] -translate-x-1/2 items-center gap-5 border border-editorial-foreground/20 bg-editorial/90 px-5 py-4 text-left shadow-2xl backdrop-blur-md transition-colors hover:border-primary/60 md:flex" aria-label="Ugrás a mai ajánlathoz">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"><UtensilsCrossed className="h-5 w-5" /></span>
+        <span className="min-w-0 flex-1">
+          <span className="mb-1 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-primary"><Sparkles className="h-3 w-3" /> Mai ajánlat</span>
+          <span className="block truncate font-sofia text-lg font-bold text-editorial-foreground">{isLoading ? "A mai ajánlat betöltése…" : menuLines.map(capitalizeFirst).join(" · ") || "Nézd meg a következő elérhető ajánlatot"}</span>
+        </span>
+        {dailyMenu?.price ? <span className="shrink-0 text-lg font-bold text-editorial-foreground">{dailyMenu.price.toLocaleString("hu-HU")} Ft</span> : null}
+        <ArrowRight className="h-5 w-5 shrink-0 text-primary" />
+      </button>
 
       <button type="button" onClick={() => document.getElementById("napi-ajanlat")?.scrollIntoView({ behavior: "smooth" })} className="absolute bottom-5 right-4 z-20 hidden items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-editorial-muted sm:flex sm:right-6 lg:right-8">
         Fedezd fel <ArrowDown className="h-4 w-4 motion-safe:animate-bounce" />

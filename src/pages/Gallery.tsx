@@ -23,7 +23,7 @@ const Gallery = () => {
       <ModernNavigation />
       
       {/* Hero section */}
-       <section className="gingham-edge bg-editorial pb-12 pt-28 text-editorial-foreground md:pb-16 md:pt-36 relative z-10">
+       <section className="border-b border-primary/25 bg-editorial pb-12 pt-28 text-editorial-foreground md:pb-16 md:pt-36 relative z-10">
          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
            <span className="section-kicker">
             Képek & Élmények

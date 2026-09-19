@@ -27,7 +27,11 @@ const Index = () => {
       <ModernNavigation />
       <main id="main-content" className="homepage-editorial pt-20">
         <HeroSection />
-        <div className="gingham-strip marquee-gingham h-3 border-y border-border/40" aria-hidden="true" />
+        <div className="border-y border-primary/20 bg-editorial py-3 text-editorial-foreground" aria-label="Kiscsibe értékei">
+          <div className="mx-auto flex max-w-7xl items-center justify-center gap-3 overflow-hidden px-4 text-center text-[11px] font-bold uppercase tracking-[0.16em] sm:gap-8 sm:text-xs">
+            <span>Frissen készül</span><span className="text-primary">•</span><span>Házias adagok</span><span className="hidden text-primary sm:inline">•</span><span className="hidden sm:inline">Zuglóban, hétköznap</span>
+          </div>
+        </div>
         <div className="editorial-band editorial-band-compact">
           <BreakfastSection variant="homepage" />
         </div>

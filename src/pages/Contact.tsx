@@ -2,7 +2,7 @@ import SEO from "@/components/SEO";
 import ModernNavigation from "@/components/ModernNavigation";
 import Footer from "@/components/Footer";
 import MobileBottomNav from "@/components/MobileBottomNav";
-import heroImage from "@/assets/hero-desktop.png";
+import heroImage from "@/assets/kiscsibe-hero-serving.jpg";
 import ContactInfo from "@/components/contact/ContactInfo";
 import ContactForm from "@/components/contact/ContactForm";
 
@@ -17,7 +17,7 @@ const Contact = () => {
       <ModernNavigation />
       <main className="pt-20">
         {/* Hero Section with image */}
-         <section className="gingham-edge relative h-[35vh] md:h-[40vh] overflow-hidden">
+         <section className="relative h-[35vh] md:h-[40vh] overflow-hidden border-b border-primary/25">
           <img 
             src={heroImage} 
             alt="Kapcsolat"
@@ -46,7 +46,7 @@ const Contact = () => {
           {/* Embedded Map */}
           <div className="mt-12 md:mt-16">
             <h2 className="text-2xl font-bold text-center text-foreground mb-8">Találjon meg minket!</h2>
-             <div className="gingham-strip overflow-hidden p-2 shadow-xl">
+             <div className="overflow-hidden border border-primary/20 bg-secondary/35 p-2 shadow-xl">
               <iframe
                 src="https://www.google.com/maps?q=1141+Budapest,+Vez%C3%A9r+u.+110&hl=hu&z=17&output=embed"
                 width="100%"

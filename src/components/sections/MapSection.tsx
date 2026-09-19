@@ -16,7 +16,7 @@ const MapSection = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 items-center">
           {/* Térkép - mobile: order-2 (after info) */}
           <div className="relative order-2 lg:order-none">
-             <div className="gingham-strip overflow-hidden p-2 shadow-lg">
+             <div className="overflow-hidden border border-primary/20 bg-secondary/35 p-2 shadow-lg">
                 <iframe
                   src={`https://www.google.com/maps?q=${mapsQuery}&hl=hu&z=17&output=embed`}
                 width="100%"
@@ -32,7 +32,7 @@ const MapSection = () => {
           </div>
           
           {/* Információk - mobile: order-1 (before map) */}
-           <Card className="gingham-edge shadow-md border-primary/10 order-1 lg:order-none">
+            <Card className="shadow-md border-primary/20 order-1 lg:order-none">
             <CardContent className="p-5 md:p-6">
               <div className="flex items-start gap-3 mb-4">
                 <MapPin className="h-6 w-6 text-primary mt-1 flex-shrink-0" />

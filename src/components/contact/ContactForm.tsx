@@ -73,7 +73,7 @@ const ContactForm = () => {
   };
 
   return (
-    <Card className="chalkboard gingham-edge border border-editorial-foreground/15 shadow-lg">
+    <Card className="chalkboard border border-primary/25 shadow-lg">
       <CardHeader>
         <CardTitle className="font-sofia text-3xl text-primary">Írjon nekünk!</CardTitle>
       </CardHeader>

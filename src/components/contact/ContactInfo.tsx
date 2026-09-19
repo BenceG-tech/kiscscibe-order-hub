@@ -17,7 +17,7 @@ const ContactInfo = () => {
   return (
     <div className="space-y-6">
       {/* Basic Info */}
-      <Card className="gingham-edge border border-border/60 bg-card shadow-lg">
+      <Card className="border border-primary/20 bg-card shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center gap-3">
             <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
