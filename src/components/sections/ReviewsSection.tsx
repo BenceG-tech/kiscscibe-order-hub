@@ -15,50 +15,11 @@ interface Review {
   verified: boolean;
 }
 
-const FALLBACK_REVIEWS: Review[] = [
-  {
-    name: "Kovács János",
-    rating: 5,
-    text: "Fantasztikus reggelik és kedves kiszolgálás! A rántotta tejszínes volt és a kávé tökéletes. Minden nap ide járok munkába menet.",
-    verified: true
-  },
-  {
-    name: "Nagy Éva",
-    rating: 5,
-    text: "A napi menü mindig friss és finom. Az árak teljesen korrektek, a kiszolgálás pedig gyors. Családbarát hely, gyerekekkel is szívesen látnak.",
-    verified: true
-  },
-  {
-    name: "Szabó Péter",
-    rating: 5,
-    text: "Jó ár-érték arány, bőséges adagok. A guláslevest különösen ajánlom! Az étterem kellemes, tiszta környezet.",
-    verified: false
-  },
-  {
-    name: "Molnár Andrea",
-    rating: 5,
-    text: "Hihetetlenül finom húsgombóc leves! Mindig van valami jó napi ajánlat. A személyzet nagyon kedves és figyelmes.",
-    verified: true
-  },
-  {
-    name: "Tóth Márk",
-    rating: 5,
-    text: "Kiváló helyi étterem a környéken. A schnitzel nagyszerű volt, és a köretek is finomak. Tiszta, rendezett hely.",
-    verified: false
-  },
-  {
-    name: "Kiss Zsuzsanna",
-    rating: 5,
-    text: "Minden alkalommal elégedett vagyok! Friss alapanyagok, otthonos ízek. A csirkemell grillezve különösen finom volt.",
-    verified: true
-  }
-];
-
 const ReviewsSection = () => {
   const { ref, isVisible } = useScrollFadeIn();
   const isMobile = useIsMobile();
 
-  const [reviews, setReviews] = useState<Review[]>(FALLBACK_REVIEWS);
+  const [reviews, setReviews] = useState<Review[]>([]);
 
   useEffect(() => {
     import("@/integrations/supabase/client").then(({ supabase }) => {
@@ -74,8 +35,9 @@ const ReviewsSection = () => {
     });
   }, []);
 
-  const averageRating = 5.0;
-  const totalReviews = 127;
+  const averageRating = reviews.length > 0
+    ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
+    : null;
 
   const [emblaRef, emblaApi] = useEmblaCarousel({ 
     loop: true, 
@@ -168,20 +130,18 @@ const ReviewsSection = () => {
           </h2>
           
           {/* Overall Rating */}
-          <div className="flex items-center gap-2 mb-1 md:mb-2">
-            <div className="flex items-center gap-1">
-              {renderStars(Math.round(averageRating))}
+          {averageRating !== null ? (
+            <div className="flex items-center gap-2 mb-1 md:mb-2">
+              <div className="flex items-center gap-1">{renderStars(Math.round(averageRating))}</div>
+              <span className="text-xl md:text-2xl font-bold text-foreground">{averageRating.toFixed(1)}</span>
             </div>
-            <span className="text-xl md:text-2xl font-bold text-foreground">{averageRating}</span>
-          </div>
-          
-          <p className="text-sm md:text-base text-muted-foreground">
-            {totalReviews} értékelés alapján
-          </p>
+          ) : (
+            <p className="max-w-xl text-sm text-muted-foreground md:text-base">Vendégeink visszajelzései hamarosan újra elérhetők.</p>
+          )}
         </div>
 
         {/* Mobile: Embla Carousel */}
-        {isMobile ? (
+        {reviews.length > 0 && (isMobile ? (
           <div className="overflow-hidden" ref={emblaRef}>
             <div className="flex gap-3">
               {reviews.slice(0, 4).map((review, index) => (
@@ -213,7 +173,7 @@ const ReviewsSection = () => {
               <ReviewCard key={index} review={review} index={index} />
             ))}
           </div>
-        )}
+        ))}
 
         {/* CTA */}
         <div className="text-center mt-8 md:mt-12">
