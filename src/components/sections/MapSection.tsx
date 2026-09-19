@@ -10,13 +10,13 @@ const MapSection = () => {
   return (
     <section className="py-8 md:py-16">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <span className="section-kicker">1141 Budapest, Vezér u. 110.</span>
+        <span className="section-kicker">{address.full}</span>
         <h2 className="section-title mb-6 md:mb-8">Találkozzunk a Kiscsibében</h2>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 items-center">
           {/* Térkép - mobile: order-2 (after info) */}
-          <div className="relative order-2 lg:order-none">
-             <div className="overflow-hidden border border-primary/20 bg-secondary/35 p-2 shadow-lg">
+           <div className="relative order-2 lg:order-none">
+             <div className="overflow-hidden border-2 border-foreground bg-background p-2">
                 <iframe
                   src={`https://www.google.com/maps?q=${mapsQuery}&hl=hu&z=17&output=embed`}
                 width="100%"
@@ -32,25 +32,25 @@ const MapSection = () => {
           </div>
           
           {/* Információk - mobile: order-1 (before map) */}
-            <Card className="shadow-md border-primary/20 order-1 lg:order-none">
+            <Card className="order-1 border-y border-primary-foreground/25 bg-foreground text-background shadow-none lg:order-none">
             <CardContent className="p-5 md:p-6">
               <div className="flex items-start gap-3 mb-4">
-                <MapPin className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
+                 <MapPin className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
                 <div>
-                  <h3 className="font-bold text-foreground text-lg mb-2">Kiscsibe Reggeliző & Étterem</h3>
-                  <p className="text-muted-foreground mb-1">{address.zip} {address.city}</p>
-                  <p className="text-muted-foreground mb-4">{address.street}</p>
+                   <h3 className="font-bold text-background text-lg mb-2">Kiscsibe Reggeliző & Étterem</h3>
+                   <p className="text-background/70 mb-1">{address.zip} {address.city}</p>
+                   <p className="text-background/70 mb-4">{address.street}</p>
                 </div>
               </div>
               
               <div className="mb-5 md:mb-6">
-                <p className="text-foreground text-sm md:text-base leading-relaxed">
+                 <p className="text-background text-sm md:text-base leading-relaxed">
                   Könnyű megközelítés és ingyenes parkolás.
                 </p>
               </div>
               
               <Button 
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold min-h-[44px]"
+                 className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-semibold min-h-[44px]"
                 asChild
               >
                 <a 

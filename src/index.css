@@ -16,15 +16,15 @@
 @layer base {
   :root {
     /* Kiscsibe Reggeliző Brand Colors - Light Theme */
-    --background: 48 95% 97%; /* #FFF8E6 világos háttér */
-    --foreground: 0 0% 16%; /* #2A2A2A sötétszürke szöveg */
+    --background: 43 100% 95%; /* warm paper */
+    --foreground: 0 0% 9%; /* print ink */
 
     /* Cards and containers */
-    --card: 48 100% 99%;
-    --card-foreground: 0 0% 16%;
+    --card: 43 100% 97%;
+    --card-foreground: 0 0% 9%;
 
-    --popover: 48 100% 99%;
-    --popover-foreground: 0 0% 16%;
+    --popover: 43 100% 97%;
+    --popover-foreground: 0 0% 9%;
 
     /* Primary - brand sárga #F6C22D */
     --primary: 46 96% 57%; /* #F6C22D */
@@ -40,8 +40,10 @@
     --muted-foreground: 24 15% 35%; /* Darker for better contrast */
 
     /* Accent - warm brown for highlights */
-    --accent: 35 45% 65%;
-    --accent-foreground: 48 100% 99%;
+    --accent: 4 69% 51%;
+    --accent-foreground: 43 100% 97%;
+    --tomato: 4 69% 51%;
+    --tomato-foreground: 43 100% 97%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 48 100% 99%;
@@ -55,13 +57,13 @@
     --warmth: 35 85% 75%;
     --comfort: 25 65% 85%;
     --fresh: 115 35% 65%;
-    --editorial: 218 14% 16%;
-    --editorial-foreground: 220 18% 92%;
-    --editorial-muted: 218 12% 73%;
+    --editorial: 0 0% 9%;
+    --editorial-foreground: 43 100% 95%;
+    --editorial-muted: 42 18% 73%;
     --chalk: 48 32% 92%;
     --chalkboard: 215 12% 13%;
-    --paper: 45 55% 96%;
-    --hero-shade: linear-gradient(90deg, hsl(218 18% 10% / 0.96) 0%, hsl(218 18% 10% / 0.78) 45%, hsl(218 18% 10% / 0.2) 76%, hsl(218 18% 10% / 0.38) 100%);
+    --paper: 43 100% 95%;
+    --hero-paper-shade: linear-gradient(90deg, hsl(var(--background) / 0.97) 0%, hsl(var(--background) / 0.91) 34%, hsl(var(--background) / 0.45) 53%, transparent 73%);
     
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
@@ -122,8 +124,10 @@
     --muted-foreground: 220 5% 85%; /* Much lighter for better contrast */
 
     /* Accent - warm brown for highlights */
-    --accent: 35 45% 65%;
-    --accent-foreground: 220 25% 15%;
+    --accent: 4 69% 56%;
+    --accent-foreground: 0 0% 98%;
+    --tomato: 4 69% 56%;
+    --tomato-foreground: 0 0% 98%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%; /* Light text on red */
@@ -143,7 +147,7 @@
     --chalk: 48 28% 90%;
     --chalkboard: 215 12% 11%;
     --paper: 45 18% 18%;
-    --hero-shade: linear-gradient(90deg, hsl(218 18% 8% / 0.96) 0%, hsl(218 18% 8% / 0.78) 45%, hsl(218 18% 8% / 0.2) 76%, hsl(218 18% 8% / 0.42) 100%);
+    --hero-paper-shade: linear-gradient(90deg, hsl(var(--background) / 0.97) 0%, hsl(var(--background) / 0.9) 35%, hsl(var(--background) / 0.4) 58%, transparent 77%);
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -166,8 +170,23 @@
 }
 
 @layer components {
-  .bg-hero-shade {
-    background: var(--hero-shade);
+  .bg-hero-paper-shade {
+    background: var(--hero-paper-shade);
+  }
+
+  .bg-paper-texture {
+    background-color: hsl(var(--paper));
+    background-image: radial-gradient(hsl(var(--foreground) / 0.055) 0.55px, transparent 0.55px);
+    background-size: 6px 6px;
+  }
+
+  .gingham-band {
+    background-color: hsl(var(--background));
+    background-image:
+      linear-gradient(90deg, hsl(var(--tomato) / 0.12) 50%, transparent 50%),
+      linear-gradient(hsl(var(--tomato) / 0.12) 50%, transparent 50%);
+    background-size: 3rem 3rem;
+    background-position: 0 0, 1.5rem 1.5rem;
   }
 
   .homepage-editorial .editorial-band {
@@ -184,17 +203,17 @@
   }
 
   .section-kicker {
-    @apply inline-flex items-center gap-2 text-xs font-bold uppercase text-primary;
+    @apply inline-flex items-center gap-2 text-xs font-bold uppercase text-accent;
     letter-spacing: 0.16em;
   }
 
   .section-kicker::before {
     content: "";
-    @apply block h-px w-8 bg-primary;
+    @apply block h-1 w-8 bg-primary;
   }
 
   .section-title {
-    @apply mt-3 font-sofia text-3xl font-bold leading-tight text-foreground md:text-5xl;
+    @apply mt-3 max-w-3xl font-sofia text-3xl font-bold leading-[0.95] text-foreground md:text-5xl;
     letter-spacing: 0;
   }
 
@@ -236,12 +255,6 @@
     pointer-events: none;
   }
 
-  .brand-orbit {
-    border: 1px solid hsl(var(--primary) / 0.25);
-    border-radius: 50%;
-    animation: brand-orbit 18s linear infinite;
-  }
-
   .homepage-editorial .editorial-band > section {
     padding-top: clamp(3.5rem, 7vw, 6.5rem);
     padding-bottom: clamp(3.5rem, 7vw, 6.5rem);
@@ -272,13 +285,21 @@
 }
 
 @keyframes hero-breathe {
-  from { transform: scale(1); }
-  to { transform: scale(1.035); }
+  from { transform: scale(1.01) translate3d(0, 0, 0); }
+  to { transform: scale(1.035) translate3d(-0.35%, 0, 0); }
+}
+
+.hero-food-image {
+  animation: hero-breathe 16s ease-in-out infinite alternate;
 }
 
 @media (max-width: 767px) {
-  .bg-hero-shade {
-    background: linear-gradient(180deg, hsl(218 18% 8% / 0.22) 0%, hsl(218 18% 8% / 0.55) 35%, hsl(218 18% 8% / 0.97) 78%, hsl(218 18% 8% / 1) 100%);
+  .bg-hero-paper-shade {
+    background: linear-gradient(180deg, hsl(var(--background) / 0.96) 0%, hsl(var(--background) / 0.82) 30%, transparent 56%, hsl(var(--foreground) / 0.08) 100%);
+  }
+
+  .hero-food-image {
+    object-position: center center;
   }
 }
 
@@ -335,12 +356,12 @@
   }
   
   .sticky-blur {
-    background: rgba(255, 250, 240, 0.85);
+    background: hsl(var(--background) / 0.85);
     backdrop-filter: blur(8px);
   }
   
   .dark .sticky-blur {
-    background: rgba(34, 42, 65, 0.85);
+    background: hsl(var(--background) / 0.85);
   }
 
   /* Badge variants for better contrast */

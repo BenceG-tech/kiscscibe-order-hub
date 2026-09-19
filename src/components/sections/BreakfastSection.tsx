@@ -72,7 +72,7 @@ const BreakfastSection = ({ variant = "page" }: BreakfastSectionProps) => {
   const Wrapper = ({ children }: { children: React.ReactNode }) =>
     variant === "homepage" ? (
       <section className="py-6 md:py-10">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">{children}</div>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">{children}</div>
       </section>
     ) : (
       <div className="space-y-3">{children}</div>
@@ -80,13 +80,13 @@ const BreakfastSection = ({ variant = "page" }: BreakfastSectionProps) => {
 
   return (
     <Wrapper>
-      <div className="border-y border-primary/20 bg-secondary/35 p-3 md:p-4">
-      <div className="bg-background/95 p-4 shadow-lg backdrop-blur-sm md:p-6 space-y-5">
+      <div className="border-y border-foreground/20 py-5 md:py-7">
+      <div className="space-y-6">
         {/* Compact header */}
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2.5">
-            <div className="h-9 w-9 bg-primary/15 flex items-center justify-center">
-              <Coffee className="h-4.5 w-4.5 text-primary" />
+            <div className="h-11 w-11 bg-accent text-accent-foreground flex items-center justify-center">
+              <Coffee className="h-5 w-5" />
             </div>
             <div>
               <h2 className="text-xl md:text-2xl font-sofia font-bold text-foreground leading-tight">
@@ -97,7 +97,7 @@ const BreakfastSection = ({ variant = "page" }: BreakfastSectionProps) => {
               </p>
             </div>
           </div>
-          <Badge className="bg-primary/90 text-primary-foreground gap-1 px-2.5 py-1 text-[11px] font-semibold">
+          <Badge className="bg-primary text-primary-foreground gap-1 px-3 py-1.5 text-[11px] font-bold">
             <Clock className="h-3 w-3" />
             H–P 7–10
           </Badge>
@@ -108,7 +108,7 @@ const BreakfastSection = ({ variant = "page" }: BreakfastSectionProps) => {
           {items.map((item) => (
             <div
               key={item.id}
-              className="group grid grid-cols-[5.5rem_1fr_auto] items-center gap-3 overflow-hidden border border-border/60 bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+               className="group grid grid-cols-[5.5rem_1fr_auto] items-center gap-3 overflow-hidden border-t border-foreground/20 bg-transparent py-3 transition-colors duration-300 hover:bg-secondary/40"
             >
               {/* Small image */}
                <div className="h-24 w-[5.5rem] shrink-0 overflow-hidden bg-muted">
@@ -141,7 +141,7 @@ const BreakfastSection = ({ variant = "page" }: BreakfastSectionProps) => {
                     {item.description}
                   </p>
                 )}
-                <p className="text-sm font-bold text-primary mt-1">
+                <p className="text-sm font-bold text-accent mt-1">
                   {item.price_huf} Ft
                 </p>
               </div>
@@ -150,7 +150,7 @@ const BreakfastSection = ({ variant = "page" }: BreakfastSectionProps) => {
               <Button
                 onClick={() => handleAdd(item)}
                 size="icon"
-                 className="mr-2 h-9 w-9 shrink-0 rounded-full"
+                 className="mr-2 h-11 w-11 shrink-0 bg-accent text-accent-foreground hover:bg-accent/90"
                 aria-label={`${item.name} kosárba`}
               >
                 <Plus className="h-4 w-4" />

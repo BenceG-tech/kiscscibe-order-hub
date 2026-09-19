@@ -79,22 +79,18 @@ const ModernNavigation = () => {
       >
         Ugrás a tartalomra
       </a>
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-in-out transform ${
+    <nav className={`fixed top-0 left-0 right-0 z-50 border-b border-foreground/15 bg-background/95 text-foreground backdrop-blur-md transition-all duration-300 ease-in-out transform ${
       visible 
         ? "translate-y-0 opacity-100" 
         : "-translate-y-full opacity-0"
-    } ${
-       scrolled 
-         ? "bg-editorial/95 text-editorial-foreground backdrop-blur-md shadow-lg border-b border-editorial-foreground/15" 
-         : "bg-editorial/90 text-editorial-foreground backdrop-blur-sm"
-    }`}>
+    } ${scrolled ? "shadow-lg" : ""}`}>
       {/* Top info bar - Thinner */}
-      <div className={`border-b border-primary/20 bg-primary/10 transition-all duration-300 ${
-        scrolled ? "py-1 md:py-1.5" : "py-1 md:py-2"
+      <div className={`border-b border-foreground/10 bg-primary transition-all duration-300 ${
+        scrolled ? "py-1" : "py-1 md:py-1.5"
       }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-1 md:gap-1.5">
-             <div className={`text-editorial-muted font-medium text-center md:text-left transition-all duration-300 ${
+             <div className={`text-primary-foreground font-bold text-center md:text-left transition-all duration-300 ${
               scrolled ? "text-[11px] md:text-xs" : "text-[11px] md:text-sm"
             }`}>
               Ma nyitva: {formatOpeningHoursOneLiner(openingHours)}
@@ -104,7 +100,7 @@ const ModernNavigation = () => {
               <Button 
                 onClick={() => document.getElementById('napi-ajanlat')?.scrollIntoView({ behavior: 'smooth' })}
                 size={scrolled ? "sm" : "default"}
-                className="bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm text-primary-foreground font-sofia font-bold text-base transition-all duration-300"
+                className="bg-accent text-accent-foreground hover:bg-accent/90 font-bold transition-all duration-300"
                 asChild
               >
                 <Link to="/etlap">Rendelj most</Link>
@@ -113,7 +109,7 @@ const ModernNavigation = () => {
               <Button 
                 variant="outline" 
                 size={scrolled ? "sm" : "default"}
-                className="border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300"
+                className="border-primary-foreground/40 bg-transparent text-primary-foreground hover:bg-primary-foreground hover:text-primary transition-all duration-300"
                 asChild
               >
                 <a href="https://www.facebook.com/kiscsibeetteremXIV" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2">
@@ -127,32 +123,32 @@ const ModernNavigation = () => {
       </div>
 
       {/* Main navigation */}
-      <div className={`transition-all duration-300 ${scrolled ? "py-2" : "py-4"}`}>
+      <div className={`transition-all duration-300 ${scrolled ? "py-1.5" : "py-2.5"}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             {/* Logo */}
             <span 
               onClick={handleLogoClick}
-              className="flex items-center gap-2 font-sofia font-bold text-lg md:text-2xl text-primary hover:text-primary/80 transition-all duration-300 cursor-pointer select-none"
+               className="flex items-center gap-2 font-sofia font-bold text-lg text-foreground hover:text-accent transition-all duration-300 cursor-pointer select-none md:text-xl"
             >
-              <img src={kiscsibeLogo} alt="" className="h-9 w-9 rounded-full border border-primary/40 object-cover" />
-              Kiscsibe Reggeliző & Étterem
+               <img src={kiscsibeLogo} alt="" className="h-9 w-9 rounded-full border border-foreground/20 object-cover" />
+               <span>Kiscsibe <span className="hidden lg:inline">Reggeliző &amp; Étterem</span></span>
             </span>
 
             {/* Desktop Menu */}
-            <div className="hidden md:flex items-center space-x-8">
+             <div className="hidden md:flex items-center gap-5 lg:gap-7">
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
                   to={link.href}
-                  className={`font-medium transition-all duration-300 hover:text-primary relative group ${
+                   className={`text-sm font-bold transition-all duration-300 hover:text-accent relative group ${
                     location.pathname === link.href 
-                      ? "text-primary" 
-                       : "text-editorial-muted"
+                       ? "text-accent" 
+                        : "text-foreground/75"
                   }`}
                 >
                   {link.label}
-                  <div className={`absolute -bottom-1 left-0 h-0.5 bg-primary transition-all duration-300 ${
+                   <div className={`absolute -bottom-1 left-0 h-0.5 bg-accent transition-all duration-300 ${
                     location.pathname === link.href ? "w-full" : "w-0 group-hover:w-full"
                   }`} />
                 </Link>
@@ -166,13 +162,13 @@ const ModernNavigation = () => {
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="hover:bg-primary/10"
+                   className="hover:bg-accent/10 hover:text-accent"
                   onClick={() => setIsCartOpen(true)}
                 >
                   <ShoppingCart className="h-5 w-5" />
                   {cart.itemCount > 0 && (
                     <Badge 
-                      className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 bg-primary text-primary-foreground text-xs"
+                       className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 bg-accent text-accent-foreground text-xs"
                     >
                       {cart.itemCount}
                     </Badge>
@@ -188,13 +184,13 @@ const ModernNavigation = () => {
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="hover:bg-primary/10"
+                   className="hover:bg-accent/10 hover:text-accent"
                   onClick={() => setIsCartOpen(true)}
                 >
                   <ShoppingCart className="h-5 w-5" />
                   {cart.itemCount > 0 && (
                     <Badge 
-                      className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 bg-primary text-primary-foreground text-xs"
+                       className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 bg-accent text-accent-foreground text-xs"
                     >
                       {cart.itemCount}
                     </Badge>
@@ -208,15 +204,15 @@ const ModernNavigation = () => {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="hover:bg-primary/10"
+                     className="hover:bg-accent/10 hover:text-accent"
                   >
                     <Menu className="h-6 w-6" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="right" className="w-[300px]">
+                 <SheetContent side="right" className="w-[300px] border-foreground/15 bg-background">
                   <div className="flex flex-col space-y-4 mt-8">
                     <div className="pb-4 border-b">
-                      <h2 className="font-sofia font-bold text-lg text-primary">Kiscsibe Reggeliző & Étterem</h2>
+                       <h2 className="font-sofia font-bold text-lg text-foreground">Kiscsibe Reggeliző & Étterem</h2>
                     </div>
                     
                     {navLinks.map((link) => (
@@ -226,7 +222,7 @@ const ModernNavigation = () => {
                         onClick={closeMenu}
                         className={`font-medium text-lg py-2 px-3 rounded-lg transition-all duration-300 hover:bg-primary/10 hover:text-primary ${
                           location.pathname === link.href 
-                            ? "text-primary bg-primary/10" 
+                             ? "text-accent bg-accent/10" 
                             : "text-foreground"
                         }`}
                       >
@@ -242,7 +238,7 @@ const ModernNavigation = () => {
                       
                       <Button 
                         asChild
-                        className="w-full bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm font-sofia font-bold text-base"
+                         className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-bold"
                         onClick={closeMenu}
                       >
                          <Link to="/etlap">Rendelj most</Link>
