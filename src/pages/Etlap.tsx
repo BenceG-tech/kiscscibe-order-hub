@@ -271,7 +271,7 @@ const Etlap = () => {
   const extraItems = dailyData?.items || [];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="homepage-editorial min-h-screen bg-background">
       <SEO
         title="Napi ajánlat & étlap — Online rendelés | Kiscsibe Étterem"
         description="Mai napi menü, levesek, főételek és állandó kedvencek. Rendelj online a Kiscsibe Étteremtől, gyors átvétellel Zuglóban."
@@ -288,19 +288,19 @@ const Etlap = () => {
           </div>
         )}
         {/* Hero Section with image */}
-        <section className="relative h-[35vh] md:h-[40vh] overflow-hidden">
+        <section className="gingham-edge relative h-[35vh] md:h-[40vh] overflow-hidden">
           <img 
             src={heroImage} 
             alt="Napi ajánlat"
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent" />
+           <div className="absolute inset-0 bg-hero-shade" />
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center text-white px-6">
+             <div className="text-center text-editorial-foreground px-6">
               <h1 className="text-3xl md:text-5xl font-sofia font-bold mb-2 animate-fade-in-up">
                 Napi Ajánlat
               </h1>
-              <p className="text-lg md:text-xl text-gray-200 animate-fade-in-up opacity-0" style={{ animationDelay: '0.2s', animationFillMode: 'forwards' }}>
+               <p className="text-lg md:text-xl text-editorial-muted animate-fade-in-up opacity-0" style={{ animationDelay: '0.2s', animationFillMode: 'forwards' }}>
                 Friss, házias ételek minden nap
               </p>
             </div>
@@ -361,17 +361,18 @@ const Etlap = () => {
                 )}
                 {/* Facebook Image - uploaded by admin */}
                 {facebookImageUrl && (
-                  <Card className="border-0 bg-card/95 backdrop-blur-sm shadow-lg rounded-3xl overflow-hidden">
+                   <Card className="gingham-strip border border-border/60 p-2 shadow-lg overflow-hidden">
                     <CardContent className="p-0">
-                      <button
+                       <button
                         onClick={() => setLightboxOpen(true)}
-                        className="w-full cursor-pointer focus:outline-none"
+                         className="group relative w-full cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
                         <img
                           src={facebookImageUrl}
                           alt={`Napi ajánlat - ${format(selectedDate, "MMMM d.", { locale: hu })}`}
-                          className="w-full h-auto rounded-3xl hover:opacity-95 transition-opacity"
+                           className="w-full h-auto transition-transform duration-500 group-hover:scale-[1.01]"
                         />
+                         <span className="absolute bottom-3 left-3 bg-editorial/90 px-3 py-1.5 text-xs font-bold text-editorial-foreground">Mai tábla · nagyítás</span>
                       </button>
                     </CardContent>
                   </Card>
@@ -393,12 +394,12 @@ const Etlap = () => {
                         <Card 
                           key={item.id} 
                           className={cn(
-                            "group border-0 bg-card/95 backdrop-blur-sm shadow-lg rounded-3xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300",
+                            "food-frame group bg-card/95 backdrop-blur-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300",
                             itemSoldOut && "opacity-50 pointer-events-none"
                           )}
                         >
                           <CardContent className="p-0">
-                            <div className="aspect-square overflow-hidden">
+                             <div className="aspect-[4/3] overflow-hidden">
                               {item.item_image_url ? (
                                 <img 
                                   src={item.item_image_url} 

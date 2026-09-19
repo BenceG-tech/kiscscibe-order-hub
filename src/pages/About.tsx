@@ -58,7 +58,7 @@ const About = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="homepage-editorial min-h-screen bg-background">
       <SEO
         title="Rólunk — A Kiscsibe Reggeliző & Étterem története"
         description="Ismerd meg a Kiscsibe Étterem csapatát, értékeit és történetét. Friss házi ízek minden hétköznap Zuglóban."
@@ -67,13 +67,13 @@ const About = () => {
       <ModernNavigation />
       <main className="pt-20">
         {/* Hero Section */}
-        <section className="relative h-[35vh] md:h-[40vh] overflow-hidden">
+         <section className="gingham-edge relative h-[35vh] md:h-[40vh] overflow-hidden">
           <img src={heroImg} alt="Kiscsibe Reggeliző belső tere" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent" />
+           <div className="absolute inset-0 bg-hero-shade" />
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center text-white px-6">
+             <div className="text-center text-editorial-foreground px-6">
               <h1 className="text-3xl md:text-5xl font-sofia font-bold mb-2 animate-fade-in-up">{heroTitle}</h1>
-              <p className="text-lg md:text-xl text-gray-200 animate-fade-in-up opacity-0" style={{ animationDelay: '0.2s', animationFillMode: 'forwards' }}>
+               <p className="text-lg md:text-xl text-editorial-muted animate-fade-in-up opacity-0" style={{ animationDelay: '0.2s', animationFillMode: 'forwards' }}>
                 {heroSubtitle}
               </p>
             </div>
@@ -89,7 +89,7 @@ const About = () => {
                 {stats.map((stat, i) => {
                   const IconComp = ICON_MAP[stat.icon] || Star;
                   return (
-                    <Card key={stat.id || i} className="border-0 bg-card/95 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+                     <Card key={stat.id || i} className="border border-border/60 bg-card/95 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
                       <CardContent className="p-4 md:p-6 text-center">
                         <IconComp className="h-6 w-6 md:h-8 md:w-8 mx-auto mb-2 md:mb-3 text-primary" />
                         <div className="text-2xl md:text-3xl font-bold text-foreground">{stat.number}</div>
@@ -104,7 +104,7 @@ const About = () => {
             {/* Story */}
             <section className="py-12 md:py-16">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 items-center">
-                <div className="relative rounded-3xl overflow-hidden shadow-2xl order-2 lg:order-1">
+                 <div className="food-frame gingham-edge relative overflow-hidden shadow-2xl order-2 lg:order-1">
                   <img src={storyImg} alt="Kiscsibe ételek" className="w-full aspect-[4/3] object-cover" />
                 </div>
                 <div className="space-y-6 order-1 lg:order-2">
@@ -125,9 +125,9 @@ const About = () => {
                 {values.map((value, index) => {
                   const IconComp = ICON_MAP[value.icon] || Star;
                   return (
-                    <Card key={value.id || index} className="border-0 bg-card shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                     <Card key={value.id || index} className="border-l border-border/60 bg-transparent shadow-none hover:bg-card/40 transition-all duration-300">
                       <CardContent className="p-6 text-center">
-                        <div className="w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-primary to-primary/70 rounded-2xl mx-auto mb-4 flex items-center justify-center text-primary-foreground shadow-lg">
+                         <div className="w-14 h-14 md:w-16 md:h-16 bg-primary mx-auto mb-4 flex items-center justify-center text-primary-foreground shadow-lg">
                           <IconComp className="h-7 w-7 md:h-8 md:w-8" />
                         </div>
                         <h3 className="font-bold text-lg mb-2 text-foreground">{value.title}</h3>
@@ -141,13 +141,13 @@ const About = () => {
 
             {/* Mission */}
             <section className="py-12 md:py-16">
-              <Card className="border-0 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent shadow-xl overflow-hidden">
+               <Card className="chalkboard gingham-edge border border-editorial-foreground/15 shadow-xl overflow-hidden">
                 <CardContent className="p-8 md:p-12 text-center relative">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
                   <div className="absolute bottom-0 left-0 w-24 h-24 bg-primary/10 rounded-full translate-y-1/2 -translate-x-1/2 blur-2xl" />
                   <div className="relative z-10">
-                    <h2 className="text-3xl md:text-4xl font-sofia font-bold text-foreground mb-6">{missionTitle}</h2>
-                    <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-3xl mx-auto">{missionText}</p>
+                     <h2 className="text-3xl md:text-4xl font-sofia font-bold text-primary mb-6">{missionTitle}</h2>
+                     <p className="text-lg md:text-xl text-editorial-muted leading-relaxed max-w-3xl mx-auto">{missionText}</p>
                   </div>
                 </CardContent>
               </Card>

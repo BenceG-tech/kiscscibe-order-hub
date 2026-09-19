@@ -73,41 +73,41 @@ const ContactForm = () => {
   };
 
   return (
-    <Card className="border-0 bg-card shadow-lg rounded-3xl">
+    <Card className="chalkboard gingham-edge border border-editorial-foreground/15 shadow-lg">
       <CardHeader>
-        <CardTitle>Írjon nekünk!</CardTitle>
+        <CardTitle className="font-sofia text-3xl text-primary">Írjon nekünk!</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Név *</Label>
+               <Label htmlFor="name" className="text-editorial-foreground">Név *</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
                 required
                 placeholder="Az Ön neve"
-                className="rounded-xl"
+                 className="bg-background text-foreground"
                 maxLength={100}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phone">Telefon</Label>
+               <Label htmlFor="phone" className="text-editorial-foreground">Telefon</Label>
               <Input
                 id="phone"
                 type="tel"
                 value={formData.phone}
                 onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
                 placeholder="+36 30 123 4567"
-                className="rounded-xl"
+                 className="bg-background text-foreground"
                 maxLength={30}
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email cím *</Label>
+             <Label htmlFor="email" className="text-editorial-foreground">Email cím *</Label>
             <Input
               id="email"
               type="email"
@@ -115,13 +115,13 @@ const ContactForm = () => {
               onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
               required
               placeholder="pelda@email.com"
-              className="rounded-xl"
+               className="bg-background text-foreground"
               maxLength={255}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="message">Üzenet *</Label>
+             <Label htmlFor="message" className="text-editorial-foreground">Üzenet *</Label>
             <Textarea
               id="message"
               value={formData.message}
@@ -129,20 +129,20 @@ const ContactForm = () => {
               required
               placeholder="Írja ide kérdését vagy üzenetét..."
               rows={5}
-              className="rounded-xl"
+               className="bg-background text-foreground"
               maxLength={2000}
             />
           </div>
 
           <Button
             type="submit"
-            className="w-full bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm rounded-xl"
+             className="w-full bg-primary hover:bg-primary/90 hover:shadow-warm"
             disabled={isSubmitting}
           >
             {isSubmitting ? "Küldés..." : "Üzenet küldése"}
           </Button>
 
-          <p className="text-sm text-muted-foreground text-center">
+           <p className="text-sm text-editorial-muted text-center">
             * Kötelező mezők. Általában 24 órán belül válaszolunk.
           </p>
         </form>

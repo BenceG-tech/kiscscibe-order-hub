@@ -14,31 +14,24 @@ const Gallery = () => {
   const [activeTab, setActiveTab] = useState("food");
 
   return (
-    <div className="min-h-screen bg-background relative">
+    <div className="homepage-editorial min-h-screen bg-background relative">
       <SEO
         title="Galéria — Ételeink és éttermünk fotói | Kiscsibe"
         description="Tekintsd meg a Kiscsibe Étterem fotóit: friss házi ételek, hangulatos belső tér Zuglóban. Ételek és éttermi galéria."
         path="/gallery"
       />
-      {/* Decorative background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-40 left-0 w-80 h-80 bg-secondary/5 rounded-full blur-3xl" />
-      </div>
-      
       <ModernNavigation />
       
       {/* Hero section */}
-      <section className="pt-24 pb-8 md:pt-32 md:pb-12 relative z-10">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <span className="text-xs md:text-sm uppercase tracking-[0.2em] text-muted-foreground font-medium">
+       <section className="gingham-edge bg-editorial pb-12 pt-28 text-editorial-foreground md:pb-16 md:pt-36 relative z-10">
+         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+           <span className="section-kicker">
             Képek & Élmények
           </span>
-          <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-foreground mt-2 mb-4">
+           <h1 className="mt-3 font-sofia text-4xl font-bold text-editorial-foreground md:text-6xl">
             Galéria
           </h1>
-          <div className="w-16 h-1 bg-primary mx-auto rounded-full" />
-          <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto mt-4">
+           <p className="text-editorial-muted text-base md:text-lg max-w-2xl mt-4">
             Fedezze fel ételeinket és hangulatos éttermünket
           </p>
         </div>

@@ -17,7 +17,7 @@ const ContactInfo = () => {
   return (
     <div className="space-y-6">
       {/* Basic Info */}
-      <Card className="border-0 bg-card shadow-lg rounded-3xl">
+      <Card className="gingham-edge border border-border/60 bg-card shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center gap-3">
             <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
@@ -74,7 +74,7 @@ const ContactInfo = () => {
       </Card>
 
       {/* Opening Hours */}
-      <Card className="border-0 bg-card shadow-lg rounded-3xl">
+      <Card className="border-y border-border/60 bg-card shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center gap-3">
             <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
@@ -98,7 +98,7 @@ const ContactInfo = () => {
       </Card>
 
       {/* Transportation */}
-      <Card className="border-0 bg-card shadow-lg rounded-3xl">
+      <Card className="border-y border-border/60 bg-card shadow-lg">
         <CardHeader>
           <CardTitle>Megközelítés</CardTitle>
         </CardHeader>
@@ -126,7 +126,7 @@ const ContactInfo = () => {
 
       {/* Map Button */}
       <Button
-        className="w-full bg-gradient-to-r from-primary to-primary-glow hover:shadow-warm rounded-xl"
+        className="w-full bg-primary hover:bg-primary/90 hover:shadow-warm"
         asChild
       >
         <a
