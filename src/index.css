@@ -314,7 +314,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .hero-motion-video {
-    display: none;
+    display: none !important;
   }
 }
 
