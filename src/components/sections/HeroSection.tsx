@@ -84,7 +84,6 @@ const HeroSection = () => {
               index === activeSlide ? "scale-100 opacity-100" : "scale-[1.04] opacity-0"
             }`}
             loading={index === 0 ? "eager" : "lazy"}
-            fetchPriority={index === 0 ? "high" : "auto"}
             decoding="async"
             width={1920}
             height={1080}
