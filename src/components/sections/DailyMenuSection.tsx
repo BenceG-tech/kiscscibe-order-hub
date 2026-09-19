@@ -4,11 +4,14 @@ const DailyMenuSection = () => {
   return (
     <section id="napi-ajanlat" className="py-10 md:py-14">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-6">
-          <h2 className="text-2xl md:text-3xl font-sofia font-bold text-foreground">
+        <div className="mb-8 md:flex md:items-end md:justify-between">
+          <div>
+            <span className="section-kicker">Heti választék</span>
+          <h2 className="section-title">
             Mai ajánlatunk
           </h2>
-          <p className="text-sm md:text-base text-muted-foreground mt-1">
+          </div>
+          <p className="mt-3 max-w-sm text-sm text-muted-foreground md:mt-0 md:text-right md:text-base">
             Válassz napot a heti menü megtekintéséhez
           </p>
         </div>

@@ -80,8 +80,8 @@ const HeroSection = () => {
             key={slide.src}
             src={slide.src}
             alt=""
-            className={`absolute inset-0 h-full w-full object-cover object-center transition-[opacity,transform] duration-1000 ease-out motion-reduce:transition-none ${
-              index === activeSlide ? "scale-100 opacity-100" : "scale-[1.04] opacity-0"
+            className={`absolute inset-0 h-full w-full object-cover object-center transition-[opacity,transform] duration-[1800ms] ease-out motion-reduce:transition-none ${
+               index === activeSlide ? "scale-[1.03] opacity-100" : "scale-[1.08] opacity-0"
             }`}
             loading={index === 0 ? "eager" : "lazy"}
             decoding="async"
@@ -95,7 +95,7 @@ const HeroSection = () => {
       <div className="relative z-10 mx-auto flex min-h-[72svh] max-w-7xl items-end px-4 pb-20 pt-40 sm:px-6 md:min-h-[78svh] md:items-center md:pb-16 md:pt-36 lg:px-8">
         <div className="grid w-full items-end gap-10 md:grid-cols-[minmax(0,1fr)_22rem] lg:gap-20">
           <div className="max-w-3xl animate-fade-in-up motion-reduce:animate-none">
-            <p className="mb-5 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.22em] text-primary sm:text-sm">
+            <p className="mb-5 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.16em] text-primary sm:text-sm">
               <span className="h-px w-10 bg-primary" />
               Zugló házias konyhája
             </p>
@@ -127,14 +127,14 @@ const HeroSection = () => {
             </div>
           </div>
 
-          <button
+           <button
             type="button"
             onClick={() => document.getElementById("napi-ajanlat")?.scrollIntoView({ behavior: "smooth" })}
-            className="group hidden min-h-64 rotate-[-2deg] border border-editorial-foreground/20 bg-editorial/85 p-6 text-left shadow-2xl backdrop-blur-md transition-transform duration-500 hover:rotate-0 hover:-translate-y-2 md:block"
+             className="chalkboard gingham-edge group hidden min-h-64 rotate-[-1.5deg] border border-editorial-foreground/20 p-6 text-left backdrop-blur-md transition-transform duration-500 hover:rotate-0 hover:-translate-y-2 md:block"
             aria-label="Ugrás a mai ajánlathoz"
           >
             <div className="flex items-center justify-between border-b border-editorial-foreground/15 pb-4">
-              <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-primary"><UtensilsCrossed className="h-4 w-4" /> Mai menü</span>
+               <span className="inline-flex items-center gap-2 font-sofia text-xl font-bold text-primary"><UtensilsCrossed className="h-4 w-4" /> Mai menü</span>
               {dailyMenu?.price ? <span className="text-lg font-bold text-editorial-foreground">{dailyMenu.price.toLocaleString("hu-HU")} Ft</span> : null}
             </div>
             <div className="space-y-4 py-6">
@@ -155,6 +155,19 @@ const HeroSection = () => {
           </button>
         </div>
       </div>
+
+      <button
+        type="button"
+        onClick={() => document.getElementById("napi-ajanlat")?.scrollIntoView({ behavior: "smooth" })}
+        className="chalkboard gingham-edge absolute inset-x-4 bottom-4 z-20 flex items-center justify-between border border-editorial-foreground/20 px-4 py-3 text-left md:hidden"
+        aria-label="Ugrás a mai ajánlathoz"
+      >
+        <span>
+          <span className="block font-sofia text-lg font-bold text-primary">Mai menü</span>
+          <span className="block max-w-[15rem] truncate text-xs text-editorial-muted">{menuLines[0] ?? "Nézd meg a következő ajánlatot"}</span>
+        </span>
+        <ArrowRight className="h-5 w-5 text-primary" />
+      </button>
 
       <div className="absolute bottom-5 left-4 z-20 flex items-center gap-2 sm:left-6 lg:left-8">
         <Button variant="outline" size="icon" onClick={() => changeSlide(-1)} className="h-9 w-9 border-editorial-foreground/30 bg-editorial/40 text-editorial-foreground backdrop-blur-sm hover:bg-primary hover:text-primary-foreground" aria-label="Előző kép">

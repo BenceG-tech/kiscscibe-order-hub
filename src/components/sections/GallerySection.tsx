@@ -10,6 +10,11 @@ const GallerySection = () => {
   return (
     <section className="py-12 md:py-20 relative overflow-hidden">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="mb-8 max-w-xl">
+          <span className="section-kicker">A pultból</span>
+          <h2 className="section-title">Ilyen nálunk az ebéd</h2>
+          <p className="mt-3 text-muted-foreground">Valódi adagok, frissen készült ételek és a Kiscsibe mindennapi hangulata.</p>
+        </div>
         {isMobile ? (
           /* Mobile: Tab-based navigation - limited preview */
           <Tabs defaultValue="food" className="w-full">

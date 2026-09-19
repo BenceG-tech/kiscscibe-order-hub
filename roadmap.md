@@ -1,5 +1,8 @@
-# Modern nyitóoldal
-- [x] Új, váltakozó képes hero élő napi ajánlattal
-- [x] Nyitóoldali szekciók egységes magazinos ritmusa
-- [x] Navigáció és mobil megjelenés összehangolása
-- [x] Asztali és mobil működés ellenőrzése
+# Kiscsibe weboldal 2.0
+- [ ] Kockás márkarendszer és közös mozgások
+- [ ] Hero és élő napi menütábla finomhangolása
+- [ ] Napi ajánlat, reggeli és állandó kínálat
+- [ ] Galéria, értékek, vélemények és promóció
+- [ ] Térkép, kérdések, hírlevél, navigáció és lábléc
+- [ ] Nyilvános aloldalak összehangolása
+- [ ] Mobil és asztali működés ellenőrzése

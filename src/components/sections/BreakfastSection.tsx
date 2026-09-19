@@ -80,11 +80,12 @@ const BreakfastSection = ({ variant = "page" }: BreakfastSectionProps) => {
 
   return (
     <Wrapper>
-      <div className="rounded-2xl border border-primary/20 bg-primary/[0.04] p-4 md:p-5 space-y-4">
+      <div className="gingham-strip border-y border-border/60 p-3 md:p-4">
+      <div className="bg-background/95 p-4 shadow-lg backdrop-blur-sm md:p-6 space-y-5">
         {/* Compact header */}
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2.5">
-            <div className="h-9 w-9 rounded-xl bg-primary/15 flex items-center justify-center">
+            <div className="h-9 w-9 bg-primary/15 flex items-center justify-center">
               <Coffee className="h-4.5 w-4.5 text-primary" />
             </div>
             <div>
@@ -107,15 +108,15 @@ const BreakfastSection = ({ variant = "page" }: BreakfastSectionProps) => {
           {items.map((item) => (
             <div
               key={item.id}
-              className="flex items-center gap-3 p-2 rounded-xl bg-card/95 border border-border/50 shadow-sm hover:shadow-md transition-shadow"
+              className="group grid grid-cols-[5.5rem_1fr_auto] items-center gap-3 overflow-hidden border border-border/60 bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
             >
               {/* Small image */}
-              <div className="h-16 w-16 shrink-0 rounded-lg overflow-hidden bg-muted">
+               <div className="h-24 w-[5.5rem] shrink-0 overflow-hidden bg-muted">
                 {item.image_url ? (
                   <img
                     src={item.image_url}
                     alt={item.name}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     loading="lazy"
                   />
                 ) : (
@@ -149,7 +150,7 @@ const BreakfastSection = ({ variant = "page" }: BreakfastSectionProps) => {
               <Button
                 onClick={() => handleAdd(item)}
                 size="icon"
-                className="h-8 w-8 shrink-0 rounded-full"
+                 className="mr-2 h-9 w-9 shrink-0 rounded-full"
                 aria-label={`${item.name} kosárba`}
               >
                 <Plus className="h-4 w-4" />
@@ -157,6 +158,7 @@ const BreakfastSection = ({ variant = "page" }: BreakfastSectionProps) => {
             </div>
           ))}
         </div>
+      </div>
       </div>
     </Wrapper>
   );
