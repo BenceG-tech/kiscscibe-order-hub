@@ -23,4 +23,4 @@
 # Prémium kompakt ételkártyák
 - [x] Nagyobb, olvashatóbb ételnevek és tisztább információs sorrend
 - [x] Modern kompakt kép–szöveg–ár–kosár elrendezés
-- [ ] Mobil, asztali és rendelési művelet ellenőrzése
+- [x] Mobil, asztali és rendelési művelet ellenőrzése
