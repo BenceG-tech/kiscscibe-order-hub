@@ -36,13 +36,13 @@ interface DailyMenuPanelProps {
 }
 
 const MenuItemCard = ({ item, label }: { item: MenuItem; label: string }) => (
-  <div className="bg-card rounded-2xl md:rounded-3xl overflow-hidden shadow-lg ring-1 ring-black/5 dark:ring-white/5 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300">
+  <div className="food-frame group overflow-hidden hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
     <div className="aspect-square md:aspect-[4/3] w-full overflow-hidden">
       {item.item_image_url ? (
         <img 
           src={item.item_image_url} 
           alt={item.item_name}
-          className="w-full h-full object-cover hover:scale-[1.02] transition-transform duration-300"
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
       ) : (
         <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center">
@@ -142,19 +142,19 @@ const DailyMenuPanel = ({ date, menuData, loading }: DailyMenuPanelProps) => {
   const isAvailable = menuData.menu_remaining_portions > 0;
 
   return (
-    <Card className="border-0 bg-card/95 backdrop-blur-sm shadow-xl rounded-3xl overflow-hidden">
+    <Card className="overflow-hidden border border-border/60 bg-card shadow-xl">
       <CardContent className="p-0">
         {/* Header with prominent price */}
-        <div className="bg-primary/10 px-4 md:px-6 py-4">
+        <div className="chalkboard gingham-edge px-4 pb-6 pt-4 md:px-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 md:gap-3">
               <ChefHat className="h-5 w-5 md:h-6 md:w-6 text-primary" />
               <div>
-                <h3 className="text-lg md:text-xl font-bold">Napi Menü</h3>
-                <p className="text-xs md:text-sm text-muted-foreground">Leves + Főétel</p>
+                <h3 className="font-sofia text-2xl font-bold text-primary md:text-3xl">Napi menü</h3>
+                <p className="text-xs md:text-sm text-editorial-muted">Leves + Főétel</p>
               </div>
             </div>
-            <Badge className="bg-primary text-primary-foreground text-lg md:text-xl px-4 py-1.5 shadow-lg font-bold">
+             <Badge className="bg-primary text-primary-foreground text-lg md:text-xl px-4 py-1.5 shadow-lg font-bold">
               {menuData.menu_price_huf.toLocaleString('hu-HU')} Ft
             </Badge>
           </div>
@@ -172,18 +172,18 @@ const DailyMenuPanel = ({ date, menuData, loading }: DailyMenuPanelProps) => {
           </div>
 
           {/* Premium CTA Section */}
-          <div className="mt-4 md:mt-6 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-2xl p-3 md:p-5">
+          <div className="mt-4 border-t border-border/60 bg-primary/5 p-3 md:mt-6 md:p-5">
             <div className="flex items-center justify-center">
               <Button 
                 onClick={handleAddMenuToCart}
                 size="lg"
-                className="w-full bg-gradient-to-r from-primary to-primary/80 shadow-lg hover:shadow-xl transition-all px-6 h-12"
+                 className="w-full bg-primary shadow-lg hover:bg-primary/90 hover:shadow-xl transition-all px-6 h-12"
                 disabled={!isAvailable}
               >
                 <ShoppingCart className="h-5 w-5 mr-2" />
                 {isAvailable ? "Menü kosárba" : "Elfogyott"}
                 {isAvailable && (
-                  <span className="ml-2 bg-white/20 px-2.5 py-0.5 rounded-full text-sm font-semibold">
+                   <span className="ml-2 bg-primary-foreground/10 px-2.5 py-0.5 rounded-full text-sm font-semibold">
                     {menuData.menu_price_huf.toLocaleString('hu-HU')} Ft
                   </span>
                 )}

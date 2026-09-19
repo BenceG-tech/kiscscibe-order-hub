@@ -66,14 +66,13 @@ const InteriorGallery = ({ compact = false, noHeader = false, maxImages }: Inter
       
       {!noHeader && (
         <div className="text-center mb-10 md:mb-12 relative z-10">
-          <span className="text-xs md:text-sm uppercase tracking-[0.2em] text-muted-foreground font-medium flex items-center justify-center gap-2">
+          <span className="section-kicker justify-center">
             <Building2 className="h-4 w-4" />
             Ismerj meg minket
           </span>
-          <h3 className="text-2xl md:text-4xl font-bold text-foreground mt-2">
+          <h3 className="section-title">
             Éttermünk
           </h3>
-          <div className="w-12 h-1 bg-primary mx-auto mt-4 rounded-full" />
           <p className="text-muted-foreground text-sm md:text-base mt-4 max-w-md mx-auto">
             Hangulatos belső tér, ahol minden vendég otthon érzi magát
           </p>

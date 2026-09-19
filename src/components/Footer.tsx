@@ -91,21 +91,21 @@ const Footer = ({ className }: FooterProps) => {
         href="https://www.facebook.com/kiscsibeetteremXIV" 
         target="_blank" 
         rel="noopener noreferrer"
-        className={`${size} rounded-lg bg-primary/20 flex items-center justify-center hover:bg-primary hover:text-white transition-colors text-primary`}
+        className={`${size} rounded-lg bg-primary/20 flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors text-primary`}
         aria-label="Facebook"
       >
         <Facebook className={iconSize} />
       </a>
       <a 
         href="#" 
-        className={`${size} rounded-lg bg-gray-700 flex items-center justify-center hover:bg-gray-600 transition-colors text-gray-400 opacity-60`}
+        className={`${size} rounded-lg bg-editorial-foreground/10 flex items-center justify-center hover:bg-editorial-foreground/20 transition-colors text-editorial-muted opacity-60`}
         aria-label="Instagram (hamarosan)"
       >
         <Instagram className={iconSize} />
       </a>
       <a 
         href="#" 
-        className={`${size} rounded-lg bg-gray-700 flex items-center justify-center hover:bg-gray-600 transition-colors text-gray-400 opacity-60`}
+        className={`${size} rounded-lg bg-editorial-foreground/10 flex items-center justify-center hover:bg-editorial-foreground/20 transition-colors text-editorial-muted opacity-60`}
         aria-label="TikTok (hamarosan)"
       >
         <TikTokIcon className={iconSize} />
@@ -119,7 +119,7 @@ const Footer = ({ className }: FooterProps) => {
   const isSunClosed = openingHours.sun === "closed";
 
   return (
-    <footer className={`bg-gray-900 text-gray-300 ${className || ""}`}>
+    <footer className={`gingham-edge bg-editorial text-editorial-muted ${className || ""}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         
         {/* Mobile: Logo centered on top */}
@@ -136,10 +136,10 @@ const Footer = ({ className }: FooterProps) => {
                 className="w-full h-full object-cover"
               />
             </div>
-            <h3 className="mt-2 text-white font-sofia font-bold text-base">
+             <h3 className="mt-2 text-editorial-foreground font-sofia font-bold text-base">
               Kiscsibe
             </h3>
-            <p className="text-gray-400 text-xs">Reggeliző & Étterem</p>
+             <p className="text-editorial-muted text-xs">Reggeliző & Étterem</p>
           </button>
         </div>
 
@@ -147,7 +147,7 @@ const Footer = ({ className }: FooterProps) => {
         <div className="grid grid-cols-2 gap-x-4 gap-y-6 md:hidden">
           {/* Contact Info */}
           <div>
-            <h4 className="text-white font-semibold text-sm mb-3">Elérhetőség</h4>
+            <h4 className="text-editorial-foreground font-semibold text-sm mb-3">Elérhetőség</h4>
             <ul className="space-y-2">
               <li className="flex items-start gap-1.5">
                 <MapPin className="h-4 w-4 text-primary shrink-0 mt-0.5" />
@@ -164,21 +164,21 @@ const Footer = ({ className }: FooterProps) => {
 
           {/* Opening Hours */}
           <div>
-            <h4 className="text-white font-semibold text-sm mb-3">Nyitvatartás</h4>
+            <h4 className="text-editorial-foreground font-semibold text-sm mb-3">Nyitvatartás</h4>
             <ul className="space-y-1.5">
               <li className="flex items-center gap-1.5">
                 <Clock className="h-4 w-4 text-primary shrink-0" />
                 <span className="text-xs">Hétfő - Péntek</span>
               </li>
-              <li className="text-xs ml-5 text-green-400 font-medium">{monFriHours}</li>
-              <li className="text-xs ml-5 text-gray-500 mt-1">Szombat - Vasárnap</li>
-              <li className="text-xs ml-5 text-red-400">{isSatClosed && isSunClosed ? "Zárva" : isSatClosed ? `Szo: Zárva • V: ${openingHours.sun}` : `Szo: ${openingHours.sat} • V: Zárva`}</li>
+               <li className="text-xs ml-5 text-primary font-medium">{monFriHours}</li>
+               <li className="text-xs ml-5 text-editorial-muted mt-1">Szombat - Vasárnap</li>
+               <li className="text-xs ml-5 text-destructive">{isSatClosed && isSunClosed ? "Zárva" : isSatClosed ? `Szo: Zárva • V: ${openingHours.sun}` : `Szo: ${openingHours.sat} • V: Zárva`}</li>
             </ul>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h4 className="text-white font-semibold text-sm mb-3">Gyors linkek</h4>
+            <h4 className="text-editorial-foreground font-semibold text-sm mb-3">Gyors linkek</h4>
             <ul className="space-y-1.5">
               {navLinks.map((link) => (
                 <li key={link.href}>
@@ -195,7 +195,7 @@ const Footer = ({ className }: FooterProps) => {
 
           {/* Legal Links */}
           <div>
-            <h4 className="text-white font-semibold text-sm mb-3">Jogi információk</h4>
+            <h4 className="text-editorial-foreground font-semibold text-sm mb-3">Jogi információk</h4>
             <ul className="space-y-1.5">
               {legalLinks.map((link) => (
                 <li key={link.href}>
@@ -212,7 +212,7 @@ const Footer = ({ className }: FooterProps) => {
 
           {/* Social - Mobile full width */}
           <div className="col-span-2">
-            <h4 className="text-white font-semibold text-sm mb-3">Kövess minket</h4>
+            <h4 className="text-editorial-foreground font-semibold text-sm mb-3">Kövess minket</h4>
             <SocialIcons />
           </div>
         </div>
@@ -233,10 +233,10 @@ const Footer = ({ className }: FooterProps) => {
                   className="w-full h-full object-cover"
                 />
               </div>
-              <h3 className="mt-3 text-white font-sofia font-bold text-lg">
+               <h3 className="mt-3 text-editorial-foreground font-sofia font-bold text-lg">
                 Kiscsibe
               </h3>
-              <p className="text-gray-400 text-sm">Reggeliző & Étterem</p>
+               <p className="text-editorial-muted text-sm">Reggeliző & Étterem</p>
             </button>
             {/* Social icons under logo on desktop */}
             <div className="mt-4">
@@ -246,7 +246,7 @@ const Footer = ({ className }: FooterProps) => {
 
           {/* Contact Info */}
           <div className="text-center md:text-left">
-            <h4 className="text-white font-semibold text-lg mb-4">Elérhetőség</h4>
+             <h4 className="text-editorial-foreground font-semibold text-lg mb-4">Elérhetőség</h4>
             <ul className="space-y-3">
               <li className="flex items-start justify-center md:justify-start gap-2">
                 <MapPin className="h-5 w-5 text-primary shrink-0 mt-0.5" />
@@ -263,21 +263,21 @@ const Footer = ({ className }: FooterProps) => {
 
           {/* Opening Hours */}
           <div className="text-center md:text-left">
-            <h4 className="text-white font-semibold text-lg mb-4">Nyitvatartás</h4>
+             <h4 className="text-editorial-foreground font-semibold text-lg mb-4">Nyitvatartás</h4>
             <ul className="space-y-2">
               <li className="flex items-center justify-center md:justify-start gap-2">
                 <Clock className="h-5 w-5 text-primary shrink-0" />
                 <span className="text-sm">Hétfő - Péntek</span>
               </li>
-              <li className="text-sm ml-7 text-green-400 font-medium">{monFriHours}</li>
-              <li className="text-sm ml-7 text-gray-500 mt-2">Szombat - Vasárnap</li>
-              <li className="text-sm ml-7 text-red-400">{isSatClosed && isSunClosed ? "Zárva" : isSatClosed ? `Szo: Zárva • V: ${openingHours.sun}` : `Szo: ${openingHours.sat} • V: Zárva`}</li>
+               <li className="text-sm ml-7 text-primary font-medium">{monFriHours}</li>
+               <li className="text-sm ml-7 text-editorial-muted mt-2">Szombat - Vasárnap</li>
+               <li className="text-sm ml-7 text-destructive">{isSatClosed && isSunClosed ? "Zárva" : isSatClosed ? `Szo: Zárva • V: ${openingHours.sun}` : `Szo: ${openingHours.sat} • V: Zárva`}</li>
             </ul>
           </div>
 
           {/* Quick Links */}
           <div className="text-center md:text-left">
-            <h4 className="text-white font-semibold text-lg mb-4">Gyors linkek</h4>
+             <h4 className="text-editorial-foreground font-semibold text-lg mb-4">Gyors linkek</h4>
             <ul className="space-y-2">
               {navLinks.map((link) => (
                 <li key={link.href}>
@@ -294,7 +294,7 @@ const Footer = ({ className }: FooterProps) => {
 
           {/* Legal Links */}
           <div className="text-center md:text-left">
-            <h4 className="text-white font-semibold text-lg mb-4">Jogi információk</h4>
+             <h4 className="text-editorial-foreground font-semibold text-lg mb-4">Jogi információk</h4>
             <ul className="space-y-2">
               {legalLinks.map((link) => (
                 <li key={link.href}>
@@ -328,8 +328,8 @@ const Footer = ({ className }: FooterProps) => {
         </div>
 
         {/* Divider */}
-        <div className="border-t border-gray-800 mt-8 md:mt-10 pt-4 md:pt-6">
-          <p className="text-center text-gray-500 text-xs md:text-sm">
+         <div className="border-t border-editorial-foreground/15 mt-8 md:mt-10 pt-4 md:pt-6">
+           <p className="text-center text-editorial-muted text-xs md:text-sm">
             © {new Date().getFullYear()} Kiscsibe Reggeliző & Étterem. Minden jog fenntartva.
           </p>
         </div>

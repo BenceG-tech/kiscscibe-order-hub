@@ -27,7 +27,7 @@ const MobileBottomNav = () => {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-editorial/95 text-editorial-foreground backdrop-blur-md border-t border-editorial-foreground/15 shadow-lg md:hidden pb-safe">
+    <div className="fixed bottom-2 left-2 right-2 z-50 overflow-hidden rounded-lg bg-editorial/95 text-editorial-foreground backdrop-blur-md border border-editorial-foreground/15 shadow-xl md:hidden pb-safe">
       <nav className="flex items-stretch h-14">
         {tabs.map((tab) => {
           const active = isActive(tab.href);
@@ -53,9 +53,7 @@ const MobileBottomNav = () => {
                 )}
               </div>
               <span>{tab.label}</span>
-              {active && (
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary rounded-full" />
-              )}
+               {active && <div className="absolute inset-x-3 inset-y-1 -z-10 bg-primary/10" />}
             </Link>
           );
         })}

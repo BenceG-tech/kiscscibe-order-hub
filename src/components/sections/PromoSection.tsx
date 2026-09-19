@@ -53,7 +53,7 @@ const PromoSection = () => {
   return (
     <section className="py-8 md:py-10">
       <div className="max-w-5xl mx-auto px-4">
-        <div className="relative overflow-hidden rounded-2xl animate-glow-pulse">
+         <div className="gingham-edge relative overflow-hidden border border-border/60 shadow-xl">
           
           {/* Background image with blur */}
           <div className="absolute inset-0" style={{ transform: 'translateZ(0)' }}>
@@ -61,13 +61,13 @@ const PromoSection = () => {
               src={soupBg}
               alt=""
               aria-hidden="true"
-              className="w-full h-full object-cover blur-sm opacity-50 scale-105"
+               className="w-full h-full object-cover opacity-65 scale-105"
               loading="lazy"
             />
           </div>
 
           {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/80 to-background/60 dark:from-background/95 dark:via-background/85 dark:to-background/70" />
+           <div className="absolute inset-0 bg-background/85" />
 
           {/* Content */}
           <div className="relative z-10 p-5 md:p-8">
@@ -77,7 +77,7 @@ const PromoSection = () => {
               
               {/* Left: Icon + Price */}
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-gradient-to-br from-primary to-warmth rounded-2xl flex items-center justify-center shadow-lg">
+                 <div className="w-14 h-14 bg-primary flex items-center justify-center shadow-lg">
                   <UtensilsCrossed className="h-7 w-7 text-primary-foreground" />
                 </div>
                 <div>
@@ -119,7 +119,7 @@ const PromoSection = () => {
             <div className="md:hidden space-y-4">
               {/* Icon + Price */}
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-primary to-warmth rounded-xl flex items-center justify-center">
+                 <div className="w-12 h-12 bg-primary flex items-center justify-center">
                   <UtensilsCrossed className="h-6 w-6 text-primary-foreground" />
                 </div>
                 <div>

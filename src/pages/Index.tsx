@@ -27,6 +27,7 @@ const Index = () => {
       <ModernNavigation />
       <main id="main-content" className="homepage-editorial pt-20">
         <HeroSection />
+        <div className="gingham-strip marquee-gingham h-3 border-y border-border/40" aria-hidden="true" />
         <div className="editorial-band editorial-band-compact">
           <BreakfastSection variant="homepage" />
         </div>
@@ -34,7 +35,7 @@ const Index = () => {
           <DailyMenuSection />
         </div>
         <div className="editorial-band editorial-band-compact"><AlwaysAvailableTeaser /></div>
-        <div className="editorial-band"><USPSection /></div>
+        <div className="editorial-band bg-editorial text-editorial-foreground"><USPSection /></div>
         <div className="editorial-band bg-secondary/30">
           <ReviewsSection />
         </div>

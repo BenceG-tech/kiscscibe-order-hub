@@ -9,6 +9,7 @@ import { CartDialog } from "@/components/CartDialog";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRestaurantSettings, formatOpeningHoursOneLiner } from "@/hooks/useRestaurantSettings";
+import kiscsibeLogo from "@/assets/kiscsibe_logo_round.png";
 
 const ModernNavigation = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -83,17 +84,17 @@ const ModernNavigation = () => {
         ? "translate-y-0 opacity-100" 
         : "-translate-y-full opacity-0"
     } ${
-      scrolled 
-        ? "bg-background/95 backdrop-blur-md shadow-lg border-b border-border" 
-        : "bg-background/90 backdrop-blur-sm"
+       scrolled 
+         ? "bg-editorial/95 text-editorial-foreground backdrop-blur-md shadow-lg border-b border-editorial-foreground/15" 
+         : "bg-editorial/90 text-editorial-foreground backdrop-blur-sm"
     }`}>
       {/* Top info bar - Thinner */}
-      <div className={`bg-primary/10 border-b border-primary/20 transition-all duration-300 ${
+      <div className={`border-b border-primary/20 bg-primary/10 transition-all duration-300 ${
         scrolled ? "py-1 md:py-1.5" : "py-1 md:py-2"
       }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-1 md:gap-1.5">
-            <div className={`text-foreground font-medium text-center md:text-left transition-all duration-300 ${
+             <div className={`text-editorial-muted font-medium text-center md:text-left transition-all duration-300 ${
               scrolled ? "text-[11px] md:text-xs" : "text-[11px] md:text-sm"
             }`}>
               Ma nyitva: {formatOpeningHoursOneLiner(openingHours)}
@@ -132,8 +133,9 @@ const ModernNavigation = () => {
             {/* Logo */}
             <span 
               onClick={handleLogoClick}
-              className="font-sofia font-bold text-xl md:text-2xl text-primary hover:text-primary/80 transition-all duration-300 cursor-pointer select-none"
+              className="flex items-center gap-2 font-sofia font-bold text-lg md:text-2xl text-primary hover:text-primary/80 transition-all duration-300 cursor-pointer select-none"
             >
+              <img src={kiscsibeLogo} alt="" className="h-9 w-9 rounded-full border border-primary/40 object-cover" />
               Kiscsibe Reggeliző & Étterem
             </span>
 
@@ -146,7 +148,7 @@ const ModernNavigation = () => {
                   className={`font-medium transition-all duration-300 hover:text-primary relative group ${
                     location.pathname === link.href 
                       ? "text-primary" 
-                      : "text-foreground/80"
+                       : "text-editorial-muted"
                   }`}
                 >
                   {link.label}

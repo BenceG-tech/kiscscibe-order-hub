@@ -43,12 +43,11 @@ const FAQSection = () => {
   return (
     <section className="py-8 md:py-16" ref={ref}>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-xl md:text-3xl font-bold text-center text-foreground mb-6 md:mb-8">
-          Gyakori kérdések
-        </h2>
+        <span className="section-kicker">Hasznos tudnivalók</span>
+        <h2 className="section-title mb-6 md:mb-8">Gyakori kérdések</h2>
         
         <div className={cn(
-          "bg-card rounded-2xl shadow-md border-0 p-4 md:p-6 transition-all duration-700",
+           "border-y border-border/60 bg-transparent p-1 md:p-2 transition-all duration-700",
           isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
         )}>
           <Accordion type="single" collapsible className="w-full">

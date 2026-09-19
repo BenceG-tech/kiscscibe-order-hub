@@ -10,14 +10,13 @@ const MapSection = () => {
   return (
     <section className="py-8 md:py-16">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-xl md:text-3xl font-bold text-center text-foreground mb-6 md:mb-8">
-          Megközelítés
-        </h2>
+        <span className="section-kicker">1141 Budapest, Vezér u. 110.</span>
+        <h2 className="section-title mb-6 md:mb-8">Találkozzunk a Kiscsibében</h2>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 items-center">
           {/* Térkép - mobile: order-2 (after info) */}
           <div className="relative order-2 lg:order-none">
-            <div className="rounded-2xl overflow-hidden shadow-lg">
+             <div className="gingham-strip overflow-hidden p-2 shadow-lg">
                 <iframe
                   src={`https://www.google.com/maps?q=${mapsQuery}&hl=hu&z=17&output=embed`}
                 width="100%"
@@ -33,7 +32,7 @@ const MapSection = () => {
           </div>
           
           {/* Információk - mobile: order-1 (before map) */}
-          <Card className="rounded-2xl shadow-md border-primary/10 order-1 lg:order-none">
+           <Card className="gingham-edge shadow-md border-primary/10 order-1 lg:order-none">
             <CardContent className="p-5 md:p-6">
               <div className="flex items-start gap-3 mb-4">
                 <MapPin className="h-6 w-6 text-primary mt-1 flex-shrink-0" />

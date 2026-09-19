@@ -73,9 +73,9 @@ const NewsletterSection = () => {
 
   return (
     <section className="py-8 md:py-16" ref={ref}>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <Card className={cn(
-          "rounded-2xl shadow-lg border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10 glow-border",
+           "chalkboard gingham-edge border border-editorial-foreground/15 shadow-xl",
           "transition-all duration-700",
           isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
         )}>
@@ -83,10 +83,10 @@ const NewsletterSection = () => {
             <div className="inline-flex items-center justify-center w-12 h-12 md:w-16 md:h-16 bg-primary/10 rounded-full mb-3 md:mb-4 mx-auto animate-float">
               <Mail className="h-6 w-6 md:h-8 md:w-8 text-primary" />
             </div>
-            <CardTitle className="text-xl md:text-3xl font-bold text-foreground">
+           <CardTitle className="font-sofia text-2xl font-bold text-primary md:text-4xl">
               Heti menü e-mailben
             </CardTitle>
-            <p className="text-muted-foreground text-sm md:text-lg">
+             <p className="text-editorial-muted text-sm md:text-lg">
               Iratkozz fel, és minden hétfőn elküldjük a menüt.
             </p>
           </CardHeader>

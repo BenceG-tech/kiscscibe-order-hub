@@ -242,18 +242,19 @@ const UnifiedDailySection = () => {
 
       {/* Facebook Image - uploaded by admin */}
       {!loading && facebookImageUrl && (
-        <div className="mb-6">
-          <Card className="border-0 bg-card/95 backdrop-blur-sm shadow-lg rounded-3xl overflow-hidden">
+         <div className="mb-6 gingham-strip p-2">
+           <Card className="overflow-hidden border border-border/60 bg-card shadow-lg">
             <CardContent className="p-0">
               <button
                 onClick={() => setLightboxOpen(true)}
-                className="w-full cursor-pointer focus:outline-none"
+                 className="group relative w-full cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <img
                   src={facebookImageUrl}
                   alt={`Napi ajánlat - ${format(selectedDate, "MMMM d.", { locale: hu })}`}
-                  className="w-full h-auto rounded-3xl hover:opacity-95 transition-opacity"
+                   className="w-full h-auto transition-transform duration-500 group-hover:scale-[1.01]"
                 />
+                 <span className="absolute bottom-3 left-3 bg-editorial/90 px-3 py-1.5 text-xs font-bold text-editorial-foreground">Mai tábla · nagyítás</span>
               </button>
             </CardContent>
           </Card>
@@ -285,7 +286,7 @@ const UnifiedDailySection = () => {
             {extraItems.map((item) => (
               <div
                 key={item.id}
-                className="flex items-center gap-3 p-4 bg-card/95 backdrop-blur-sm shadow-lg rounded-3xl overflow-hidden"
+                className="food-frame group flex items-center gap-3 p-4"
               >
                 {/* Bal: szöveg + ár + gomb */}
                 <div className="flex-1 min-w-0 space-y-2">
@@ -320,7 +321,7 @@ const UnifiedDailySection = () => {
                     <img
                       src={item.item_image_url}
                       alt={item.item_name}
-                      className="w-full h-full object-cover"
+                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">

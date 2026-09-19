@@ -38,12 +38,9 @@ const AlwaysAvailableTeaser = () => {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <Link
           to="/etlap#mindig-elerheto"
-          className="group relative block overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-card via-card to-primary/5 shadow-lg hover:shadow-xl hover:border-primary/60 hover:-translate-y-0.5 transition-all duration-300"
+          className="gingham-edge group relative block overflow-hidden border border-primary/30 bg-card shadow-lg hover:shadow-xl hover:border-primary/60 hover:-translate-y-0.5 transition-all duration-300"
           aria-label="Mindig elérhető tételek megtekintése"
         >
-          {/* Subtle gold accent glow */}
-          <div className="absolute -top-12 -right-12 w-40 h-40 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
-
           <div className="relative flex items-center gap-4 p-4 sm:p-5">
             {/* Icon */}
             <div className="shrink-0 h-12 w-12 rounded-xl bg-primary/15 text-primary flex items-center justify-center ring-1 ring-primary/30">
@@ -60,12 +57,12 @@ const AlwaysAvailableTeaser = () => {
               </p>
             </div>
 
-            {/* Avatar stack preview */}
-            <div className="hidden sm:flex items-center -space-x-3 shrink-0">
+            {/* Food collage preview */}
+            <div className="hidden sm:flex items-center -space-x-4 shrink-0 pr-2">
               {previews.map((item) => (
                 <div
                   key={item.id}
-                  className="h-11 w-11 rounded-full border-2 border-card bg-muted overflow-hidden shadow-md"
+                  className="h-16 w-16 border-2 border-card bg-muted overflow-hidden shadow-md transition-transform duration-300 even:rotate-2 odd:-rotate-2 group-hover:rotate-0"
                   title={item.name}
                 >
                   {item.image_url ? (
@@ -85,7 +82,7 @@ const AlwaysAvailableTeaser = () => {
                 </div>
               ))}
               {remaining > 0 && (
-                <div className="h-11 w-11 rounded-full border-2 border-card bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold shadow-md">
+                <div className="h-16 w-16 border-2 border-card bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold shadow-md">
                   +{remaining}
                 </div>
               )}

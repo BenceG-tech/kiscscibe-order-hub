@@ -70,7 +70,7 @@ const WeeklyDateStrip = ({
   };
 
   return (
-    <div className="bg-card/90 backdrop-blur-sm shadow-xl rounded-2xl p-3 md:p-5 border border-border/40">
+    <div className="border border-border/60 bg-card/90 p-3 shadow-xl backdrop-blur-sm md:p-5">
       {/* Month label */}
       <div className="text-center text-sm md:text-base font-semibold text-muted-foreground mb-3 md:mb-4 capitalize">
         {monthLabel}
@@ -101,9 +101,9 @@ const WeeklyDateStrip = ({
                 onClick={() => !disabled && onSelect(day)}
                 disabled={disabled}
                 className={cn(
-                  "relative flex flex-col items-center justify-center p-1.5 md:p-3 rounded-xl transition-all duration-300 min-w-[48px] md:min-w-[72px]",
+                   "relative flex flex-col items-center justify-center p-1.5 md:p-3 transition-all duration-300 min-w-[48px] md:min-w-[72px]",
                   isSelected 
-                    ? "bg-gradient-to-b from-primary to-primary/90 text-primary-foreground shadow-xl shadow-primary/40 scale-110 ring-2 ring-primary/60 animate-glow-pulse"
+                     ? "bg-primary text-primary-foreground shadow-lg scale-105 ring-2 ring-primary/60"
                     : hasContent
                       ? "bg-primary/15 hover:bg-primary/25 hover:scale-105"
                       : "hover:bg-muted/80",
@@ -114,7 +114,7 @@ const WeeklyDateStrip = ({
                 {/* "MA" badge for today */}
                 {isTodayDate && (
                   <span className={cn(
-                    "absolute -top-2 left-1/2 -translate-x-1/2 text-[9px] md:text-[10px] font-black px-1.5 py-0.5 rounded-full",
+                     "absolute -top-2 left-1/2 -translate-x-1/2 text-[9px] md:text-[10px] font-black px-1.5 py-0.5",
                     isSelected 
                       ? "bg-primary-foreground text-primary" 
                       : "bg-primary text-primary-foreground"
@@ -165,7 +165,7 @@ const WeeklyDateStrip = ({
       {allDaysPast && (
         <button
           onClick={handleNextWeek}
-          className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary/10 hover:bg-primary/20 border border-primary/30 transition-all text-sm font-semibold text-primary"
+           className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary/10 hover:bg-primary/20 border border-primary/30 transition-all text-sm font-semibold text-primary"
         >
           <span>Ez a hét lezárult — nézd a következő hetet!</span>
           <ArrowRight className="h-4 w-4" />
