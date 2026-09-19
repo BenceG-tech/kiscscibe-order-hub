@@ -392,7 +392,7 @@ const Etlap = () => {
                 {extraItems.length > 0 && (
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold">További napi ételek</h3>
-                    <div className="grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2">
+                    <div className="grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3">
                       {extraItems.map((item) => {
                         const itemSoldOut = isSoldOut || item.is_sold_out;
                         return (

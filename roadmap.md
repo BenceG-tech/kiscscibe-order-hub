@@ -30,3 +30,8 @@
 - [x] Napi, reggeli és mindig elérhető kártyák egységesítése
 - [x] Napi menü arányainak finomítása
 - [x] Desktop, mobil, placeholder és rendelési műveletek ellenőrzése
+
+# Célzott kártyaméret-finimítás
+- [x] Vízszintes, sűrű reggeli kártyavariáns
+- [x] Standard napi ajánlat és középre igazított napi menü kártyák
+- [ ] Desktop, mobil, kosár és köretválasztó ellenőrzése
