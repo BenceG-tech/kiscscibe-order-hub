@@ -7,3 +7,9 @@
 - [x] Térkép, kérdések, hírlevél, navigáció és lábléc
 - [x] Nyilvános aloldalak összehangolása
 - [x] Mobil és asztali működés ellenőrzése
+
+# Kiscsibe Modern Kifőzde homepage
+- [ ] Feltöltött desktop és mobil hero-kép optimalizálása és bekötése
+- [ ] Világos papír/ink/piros/sárga navigáció és hero
+- [ ] Főoldali szekciók egységes magazinos ritmusa
+- [ ] Asztali és mobil ellenőrzés, hibák javítása
