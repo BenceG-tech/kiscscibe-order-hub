@@ -16,6 +16,6 @@
 - [x] Piros felületi elemek eltávolítása, videós hero és reduced-motion fallback
 
 # Soft Editorial vizuális finomítás
-- [ ] Lágyabb ételfotó-, kártya- és gombformák
-- [ ] Heti dátumsáv és vendégoldali naptár finomítása
-- [ ] Mobil, asztali és reduced-motion ellenőrzés
+- [x] Lágyabb ételfotó-, kártya- és gombformák
+- [x] Heti dátumsáv és vendégoldali naptár finomítása
+- [x] Mobil, asztali és reduced-motion ellenőrzés
