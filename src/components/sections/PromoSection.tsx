@@ -77,13 +77,13 @@ const PromoSection = () => {
               
               {/* Left: Icon + Price */}
               <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 bg-accent flex items-center justify-center">
-                    <UtensilsCrossed className="h-7 w-7 text-accent-foreground" />
+                  <div className="w-14 h-14 bg-primary flex items-center justify-center">
+                    <UtensilsCrossed className="h-7 w-7 text-primary-foreground" />
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Napi menü helyben</p>
                   <div className="flex items-baseline gap-2">
-                    <p className="text-3xl font-bold text-accent font-sofia">{displayPrice} Ft</p>
+                    <p className="text-3xl font-bold text-primary font-sofia">{displayPrice} Ft</p>
                   </div>
                 </div>
               </div>
@@ -119,13 +119,13 @@ const PromoSection = () => {
             <div className="md:hidden space-y-4">
               {/* Icon + Price */}
               <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-accent flex items-center justify-center">
-                   <UtensilsCrossed className="h-6 w-6 text-accent-foreground" />
+                  <div className="w-12 h-12 bg-primary flex items-center justify-center">
+                   <UtensilsCrossed className="h-6 w-6 text-primary-foreground" />
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Napi menü helyben</p>
                   <div className="flex items-baseline gap-2">
-                    <p className="text-xl font-bold text-accent font-sofia">{displayPrice} Ft</p>
+                    <p className="text-xl font-bold text-primary font-sofia">{displayPrice} Ft</p>
                   </div>
                 </div>
               </div>

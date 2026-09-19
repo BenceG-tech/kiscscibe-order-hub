@@ -50,7 +50,7 @@ const MapSection = () => {
               </div>
               
               <Button 
-                 className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-semibold min-h-[44px]"
+                 className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold min-h-[44px]"
                 asChild
               >
                 <a 

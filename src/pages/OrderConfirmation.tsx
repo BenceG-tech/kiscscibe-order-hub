@@ -127,7 +127,7 @@ const OrderConfirmation = () => {
       case 'preparing': return 'bg-yellow-100 text-yellow-800';
       case 'ready': return 'bg-green-100 text-green-800';
       case 'completed': return 'bg-gray-100 text-gray-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
+      case 'cancelled': return 'bg-destructive/15 text-destructive';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -170,7 +170,7 @@ const OrderConfirmation = () => {
           <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <Card className="shadow-soft border-primary/20">
               <CardContent className="p-12">
-                <div className="w-16 h-16 bg-red-100 rounded-full mx-auto mb-6 flex items-center justify-center">
+                <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/15">
                   <span className="text-2xl">❌</span>
                 </div>
                 <h1 className="text-2xl font-bold mb-4 text-destructive">

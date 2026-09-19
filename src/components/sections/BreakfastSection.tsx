@@ -85,7 +85,7 @@ const BreakfastSection = ({ variant = "page" }: BreakfastSectionProps) => {
         {/* Compact header */}
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2.5">
-            <div className="h-11 w-11 bg-accent text-accent-foreground flex items-center justify-center">
+            <div className="h-11 w-11 bg-primary text-primary-foreground flex items-center justify-center">
               <Coffee className="h-5 w-5" />
             </div>
             <div>
@@ -141,7 +141,7 @@ const BreakfastSection = ({ variant = "page" }: BreakfastSectionProps) => {
                     {item.description}
                   </p>
                 )}
-                <p className="text-sm font-bold text-accent mt-1">
+                <p className="text-sm font-bold text-primary mt-1">
                   {item.price_huf} Ft
                 </p>
               </div>
@@ -150,7 +150,7 @@ const BreakfastSection = ({ variant = "page" }: BreakfastSectionProps) => {
               <Button
                 onClick={() => handleAdd(item)}
                 size="icon"
-                 className="mr-2 h-11 w-11 shrink-0 bg-accent text-accent-foreground hover:bg-accent/90"
+                 className="mr-2 h-11 w-11 shrink-0 bg-primary text-primary-foreground hover:bg-primary/90"
                 aria-label={`${item.name} kosárba`}
               >
                 <Plus className="h-4 w-4" />
