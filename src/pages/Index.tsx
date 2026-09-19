@@ -25,27 +25,29 @@ const Index = () => {
         path="/"
       />
       <ModernNavigation />
-      <main className="pt-20">
+      <main id="main-content" className="homepage-editorial pt-20">
         <HeroSection />
-        <BreakfastSection variant="homepage" />
-        <div className="bg-primary/5">
+        <div className="editorial-band editorial-band-compact">
+          <BreakfastSection variant="homepage" />
+        </div>
+        <div className="editorial-band bg-secondary/30">
           <DailyMenuSection />
         </div>
-        <AlwaysAvailableTeaser />
-        <USPSection />
-        <div className="bg-primary/5">
+        <div className="editorial-band editorial-band-compact"><AlwaysAvailableTeaser /></div>
+        <div className="editorial-band"><USPSection /></div>
+        <div className="editorial-band bg-secondary/30">
           <ReviewsSection />
         </div>
-        <GallerySection />
-        <div className="bg-primary/5">
+        <div className="editorial-band"><GallerySection /></div>
+        <div className="editorial-band bg-secondary/30">
           <PromoSection />
         </div>
-        <AllergenSection />
-        <div className="bg-primary/5">
+        <div className="editorial-band"><AllergenSection /></div>
+        <div className="editorial-band bg-secondary/30">
           <MapSection />
         </div>
-        <FAQSection />
-        <div className="bg-primary/5">
+        <div className="editorial-band"><FAQSection /></div>
+        <div className="editorial-band bg-editorial text-editorial-foreground">
           <NewsletterSection />
         </div>
       </main>

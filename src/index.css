@@ -55,6 +55,10 @@
     --warmth: 35 85% 75%;
     --comfort: 25 65% 85%;
     --fresh: 115 35% 65%;
+    --editorial: 218 14% 16%;
+    --editorial-foreground: 220 18% 92%;
+    --editorial-muted: 218 12% 73%;
+    --hero-shade: linear-gradient(90deg, hsl(218 18% 10% / 0.96) 0%, hsl(218 18% 10% / 0.78) 45%, hsl(218 18% 10% / 0.2) 76%, hsl(218 18% 10% / 0.38) 100%);
     
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
@@ -130,6 +134,10 @@
     --warmth: 35 85% 75%;
     --comfort: 25 65% 85%;
     --fresh: 115 35% 65%;
+    --editorial: 218 14% 16%;
+    --editorial-foreground: 220 18% 92%;
+    --editorial-muted: 218 12% 73%;
+    --hero-shade: linear-gradient(90deg, hsl(218 18% 8% / 0.96) 0%, hsl(218 18% 8% / 0.78) 45%, hsl(218 18% 8% / 0.2) 76%, hsl(218 18% 8% / 0.42) 100%);
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -148,6 +156,53 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .bg-hero-shade {
+    background: var(--hero-shade);
+  }
+
+  .homepage-editorial .editorial-band {
+    position: relative;
+    border-top: 1px solid hsl(var(--border) / 0.55);
+  }
+
+  .homepage-editorial .editorial-band > section {
+    padding-top: clamp(3.5rem, 7vw, 6.5rem);
+    padding-bottom: clamp(3.5rem, 7vw, 6.5rem);
+  }
+
+  .homepage-editorial .editorial-band-compact > section {
+    padding-top: clamp(2rem, 4vw, 3.5rem);
+    padding-bottom: clamp(2rem, 4vw, 3.5rem);
+  }
+
+  .homepage-editorial .rounded-3xl,
+  .homepage-editorial .rounded-2xl {
+    border-radius: 0.5rem;
+  }
+
+  .homepage-editorial section h2 {
+    letter-spacing: 0;
+  }
+}
+
+@media (max-width: 767px) {
+  .bg-hero-shade {
+    background: linear-gradient(180deg, hsl(218 18% 8% / 0.22) 0%, hsl(218 18% 8% / 0.55) 35%, hsl(218 18% 8% / 0.97) 78%, hsl(218 18% 8% / 1) 100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .homepage-editorial *,
+  .homepage-editorial *::before,
+  .homepage-editorial *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 

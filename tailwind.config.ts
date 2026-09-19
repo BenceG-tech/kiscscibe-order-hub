@@ -54,6 +54,11 @@ export default {
         warmth: "hsl(var(--warmth))",
         comfort: "hsl(var(--comfort))",
         fresh: "hsl(var(--fresh))",
+        editorial: {
+          DEFAULT: "hsl(var(--editorial))",
+          foreground: "hsl(var(--editorial-foreground))",
+          muted: "hsl(var(--editorial-muted))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",

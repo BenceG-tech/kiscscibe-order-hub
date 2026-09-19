@@ -27,7 +27,7 @@ const MobileBottomNav = () => {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border shadow-lg md:hidden pb-safe">
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-editorial/95 text-editorial-foreground backdrop-blur-md border-t border-editorial-foreground/15 shadow-lg md:hidden pb-safe">
       <nav className="flex items-stretch h-14">
         {tabs.map((tab) => {
           const active = isActive(tab.href);
