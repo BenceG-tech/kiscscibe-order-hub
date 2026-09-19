@@ -12,4 +12,4 @@
 - [x] Feltöltött desktop és mobil hero-kép optimalizálása és bekötése
 - [x] Világos papír/ink/piros/sárga navigáció és hero
 - [x] Főoldali szekciók egységes magazinos ritmusa
-- [ ] Asztali és mobil ellenőrzés, hibák javítása
+- [x] Asztali és mobil ellenőrzés, hibák javítása

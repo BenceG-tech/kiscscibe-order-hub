@@ -124,8 +124,8 @@
     --muted-foreground: 220 5% 85%; /* Much lighter for better contrast */
 
     /* Accent - warm brown for highlights */
-    --accent: 35 45% 65%;
-    --accent-foreground: 220 25% 15%;
+    --accent: 4 69% 56%;
+    --accent-foreground: 0 0% 98%;
     --tomato: 4 69% 56%;
     --tomato-foreground: 0 0% 98%;
 
