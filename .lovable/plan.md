@@ -1,36 +1,47 @@
-# Kiscsibe Modern Kifőzde – homepage implementation
+# Kiscsibe „Soft Editorial” vizuális finomítás
 
-## Goal
-Rebuild the public homepage around the supplied desktop and mobile food photography, with a warm editorial Budapest-kifőzde character. Preserve every existing data source, ordering flow, theme control, route, and hidden five-click admin entry.
+## Cél
+A jelenlegi sötét, filmes Kiscsibe-hangulat megtartása mellett megszüntetni a túl szögletes érzetet. Az eredmény lágyabb és modernebb lesz, de nem válik buborékos, játékos vagy generikus alkalmazásdizájnná.
 
-## Implementation
-1. **Hero assets and responsive delivery**
-   - Convert both supplied images to optimized WebP and AVIF variants and store them through the project asset flow.
-   - Use responsive `<picture>` sources with fixed intrinsic dimensions to prevent layout shift.
-   - Replace the dark hero with the supplied composition: readable copy in the quiet area, requested Hungarian text and CTAs, live opening hours/address, and a real-data-only daily-menu teaser with a useful unavailable state.
-   - Add one slow image-drift/reveal effect, disabled by reduced-motion preferences.
+## Megvalósítás
+1. **Egységes formai rendszer**
+   - Megszüntetem azt a főoldali felülírást, amely a nagyobb lekerekítéseket 8 px-re kényszeríti.
+   - Három következetes ívet használok: kisebb vezérlők, normál panelek, nagy ételfotók.
+   - A sarkok jellemzően 12–18 px között maradnak; teljes kapszulaforma csak címkéknél és kompakt akcióknál lesz.
 
-2. **Editorial design system**
-   - Define semantic paper, ink, tomato-red, Kiscsibe-yellow, and large-scale gingham tokens in the global theme.
-   - Add subtle paper texture, thin print rules, strong focus states, restrained square geometry, and typography rules using Sofia selectively.
-   - Keep dark-theme support coherent rather than removing the existing toggle.
+2. **Ételképek és tartalmi panelek**
+   - A napi menü, reggeli, állandó kínálat és galéria képei lágyabb sarkot, finom belső fényt és visszafogott mélységi árnyékot kapnak.
+   - A képek hover-effektje lassú, kis mértékű közelítés és enyhe felemelkedés lesz, hirtelen skálázás nélkül.
+   - Az egymás melletti kép és szöveg vizuálisan összetartozó, folytonos egységet alkot majd.
 
-3. **Navigation**
-   - Restyle the desktop and mobile navigation for the paper/ink/red/yellow system.
-   - Preserve all current links, Facebook, cart count and dialog, theme behavior, dynamic hours, and the exact five-click logo route to `/auth`.
-   - Maintain compact mobile sizing and at least 44px interaction targets.
+3. **Gombok és kisebb vezérlők**
+   - A közös gombstílus lágyabb, 12 px körüli sarkot és finom lenyomási/kiemelkedési reakciót kap.
+   - A sárga elsődleges gombok megőrzik a nagy kontrasztot; az outline gombok áttetsző, enyhén üveges sötét felületet kapnak.
+   - Az ikon-gombok kör alakúak maradnak, a széles műveleti gombok nem lesznek túlzottan kapszula alakúak.
 
-4. **Homepage sections**
-   - Recompose the existing homepage bands with alternating paper, ink, yellow, and oversized gingham treatments.
-   - Improve spacing, headings, separators, image presentation, and calls to action without deleting sections or changing their data or business behavior.
-   - Reduce floating-card styling in the visible homepage components in favor of editorial rows and clear boundaries.
+4. **Heti dátumsáv és naptár**
+   - A napok különálló, lágy sarkú „dátumlapokká” válnak stabil mérettel.
+   - A kiválasztott nap sárga kiemelést, finom fényt és enyhe emelkedést kap; a mai nap vékony gyűrűvel jelenik meg.
+   - A navigációs nyilak és az „ez a hét lezárult” sáv ugyanazt a puha formanyelvet követik.
+   - A teljes havi naptár napjai és állapotjelölései is ugyanezzel a formával egységesülnek mobilon és asztali nézetben.
 
-5. **Verification**
-   - Run the project typecheck and focused lint checks.
-   - Test the homepage in Chromium at desktop and mobile widths, including overflow, hero source selection, links, cart/menu controls, and the five-click admin navigation.
-   - Confirm the current external Supabase 402 state fails gracefully and report it as an external limitation, not a design failure.
+5. **Modern, de visszafogott effektek**
+   - Finom, kurzort követő fény csak a fontos ételkártyákon, ahol nem zavarja az olvashatóságot.
+   - Rövid, ruganyos nélküli átmenetek: árnyék, keret, képzoom és 1–2 px-es elmozdulás.
+   - A `prefers-reduced-motion` beállítás minden új mozgást kikapcsol.
 
-## Scope safeguards
-- No database, Supabase, auth, RLS, order logic, prices, admin pages, or publishing changes.
-- No invented menu dishes, reviews, metrics, or operational claims.
-- Existing functionality and Hungarian content remain intact unless the brief explicitly supplies replacement wording.
+6. **Érintett nyilvános felületek**
+   - Nyitóoldali napi menü, reggeli, állandó kínálat, galéria és kiemelt akciók.
+   - Heti dátumválasztó és a vendégek havi ajánlati naptára.
+   - Közös gomb- és kártyaalapok úgy, hogy az adminfelület működése ne változzon.
+
+## Ellenőrzés
+- Asztali és mobil vizuális ellenőrzés, külön figyelve a képekre, gombokra és dátumokra.
+- Kattintható felületek, naptárválasztás, kosárgombok és route-ok működésének ellenőrzése.
+- Csökkentett mozgás, túlcsordulás, típusellenőrzés és célzott lint.
+
+## Korlátok
+- Nincs adatbázis-, Supabase-, RLS-, auth-, admin-, ár- vagy rendelési logika módosítás.
+- A sötét navy/ink alaphangulat, Kiscsibe-sárga akciószín és a hero videó változatlan marad.
+- A piros továbbra is kizárólag a hero fotó terítőjén jelenhet meg.
+- Csak preview; publikálás nem történik.
