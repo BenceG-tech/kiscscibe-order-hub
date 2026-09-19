@@ -1,14 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/components/ui/use-toast";
 import { capitalizeFirst } from "@/lib/utils";
-import { ShoppingCart, Package, Plus } from "lucide-react";
-import kiscsibeLogo from "@/assets/kiscsibe_logo_round.png";
+import { Package, Plus } from "lucide-react";
 import { PortionBadge } from "@/components/PortionBadge";
+import FoodCard from "@/components/FoodCard";
 
 interface AlwaysAvailableItem {
   id: string;
@@ -154,51 +153,17 @@ const AlwaysAvailableSection = ({
             )}
 
             {showImages ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {group.items.map((item) => (
-                  <Card
+                  <FoodCard
                     key={item.id}
-                     className="food-frame group bg-card/95 backdrop-blur-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
-                  >
-                    <CardContent className="p-0">
-                      <div className="aspect-[4/3] overflow-hidden">
-                        {item.image_url ? (
-                           <img
-                            src={item.image_url}
-                            alt={item.name}
-                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center">
-                            <img
-                              src={kiscsibeLogo}
-                              alt="Kiscsibe"
-                              className="h-[60%] w-auto object-contain opacity-60"
-                            />
-                          </div>
-                        )}
-                      </div>
-                      <div className="p-3 space-y-2">
-                        <h4 className="font-semibold text-sm leading-tight flex items-center gap-1.5 flex-wrap">
-                          <span>{capitalizeFirst(item.name)}</span>
-                          <PortionBadge size={item.portion_size} unit={item.portion_unit} />
-                        </h4>
-                        {item.description && (
-                          <p className="text-xs text-muted-foreground line-clamp-2">{item.description}</p>
-                        )}
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                          <Badge variant="secondary" className="self-start shrink-0 bg-primary/10 text-primary font-semibold text-xs">
-                            {item.price_huf} Ft
-                          </Badge>
-                          <Button onClick={() => handleAddToCart(item)} size="sm" className="h-8 px-2 text-xs w-full sm:w-auto min-w-0">
-                            <ShoppingCart className="h-3 w-3 mr-1 shrink-0" />
-                            <span className="truncate">Kosárba</span>
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                    name={capitalizeFirst(item.name)}
+                    description={item.description}
+                    priceHuf={item.price_huf}
+                    imageUrl={item.image_url}
+                    onAdd={() => handleAddToCart(item)}
+                    meta={<PortionBadge size={item.portion_size} unit={item.portion_unit} />}
+                  />
                 ))}
               </div>
             ) : (

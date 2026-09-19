@@ -11,10 +11,9 @@ import { hu } from "date-fns/locale";
 import { capitalizeFirst } from "@/lib/utils";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/components/ui/use-toast";
-import kiscsibeLogo from "@/assets/kiscsibe_logo_round.png";
 import StickyMenuCTA from "@/components/StickyMenuCTA";
 import { SidePickerModal } from "@/components/SidePickerModal";
-import { ShoppingCart } from "lucide-react";
+import FoodCard from "@/components/FoodCard";
 
 interface MenuItem {
   id: string;
@@ -27,6 +26,8 @@ interface MenuItem {
   item_allergens?: string[];
   item_image_url?: string;
 }
+
+type RawMenuItem = MenuItem;
 
 interface DailyOffersData {
   offer_id: string;
@@ -135,17 +136,20 @@ const UnifiedDailySection = () => {
         
         // Parse items from jsonb with proper typing
         const items: MenuItem[] = Array.isArray(result.items) 
-          ? result.items.map((item: any) => ({
-              id: item.id,
-              item_id: item.item_id,
-              is_menu_part: item.is_menu_part,
-              menu_role: item.menu_role,
-              item_name: item.item_name,
-              item_description: item.item_description,
-              item_price_huf: item.item_price_huf,
-              item_allergens: item.item_allergens,
-              item_image_url: item.item_image_url
-            }))
+          ? result.items.map((rawItem) => {
+              const item = rawItem as unknown as RawMenuItem;
+              return {
+                id: item.id,
+                item_id: item.item_id,
+                is_menu_part: item.is_menu_part,
+                menu_role: item.menu_role,
+                item_name: item.item_name,
+                item_description: item.item_description,
+                item_price_huf: item.item_price_huf,
+                item_allergens: item.item_allergens,
+                item_image_url: item.item_image_url
+              };
+            })
           : [];
         
         // Set daily offers data
@@ -165,7 +169,7 @@ const UnifiedDailySection = () => {
           .select('facebook_image_url')
           .eq('date', dateStr)
           .maybeSingle();
-        setFacebookImageUrl((offerRow as any)?.facebook_image_url || null);
+        setFacebookImageUrl(offerRow?.facebook_image_url || null);
 
         // Set menu data if exists
         if (result.menu_id) {
@@ -283,57 +287,21 @@ const UnifiedDailySection = () => {
             </Badge>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2">
             {extraItems.map((item) => (
-              <article
+              <FoodCard
                 key={item.id}
-                className="food-frame group grid min-h-[176px] grid-cols-[minmax(0,1fr)_108px] gap-3 border-primary/15 bg-card/95 p-3 sm:grid-cols-[minmax(0,1fr)_120px] md:min-h-[194px] md:gap-4 md:p-4"
-              >
-                <div className="flex min-w-0 flex-col">
-                  <div className="mb-2 flex min-h-5 items-center">
-                    {item.is_menu_part && (
-                      <Badge variant="outline" className="border-primary/35 bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
-                        Menüben is
-                      </Badge>
-                    )}
-                  </div>
-                  <h4 className="font-sofia text-[19px] font-bold leading-[1.18] text-card-foreground md:text-[22px]">
-                    {capitalizeFirst(item.item_name)}
-                  </h4>
-                  {item.item_description && (
-                    <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground md:text-sm">
-                      {item.item_description}
-                    </p>
-                  )}
-                  <div className="mt-auto flex flex-wrap items-center gap-2 pt-3">
-                    <p className="mr-auto whitespace-nowrap text-xl font-black text-primary md:text-2xl">
-                      {item.item_price_huf.toLocaleString('hu-HU')} Ft
-                    </p>
-                    <Button
-                      size="sm"
-                      className="h-10 rounded-xl px-3 text-sm shadow-warm"
-                      onClick={() => handleAddItemToCart(item)}
-                    >
-                      <ShoppingCart className="mr-1.5 h-4 w-4" />
-                      Kosárba
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="relative h-full min-h-[152px] overflow-hidden rounded-2xl border border-border/50 bg-muted shadow-soft md:min-h-[162px]">
-                  {item.item_image_url ? (
-                    <img
-                      src={item.item_image_url}
-                      alt={item.item_name}
-                      className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.035]"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-secondary/45">
-                      <img src={kiscsibeLogo} alt="Kiscsibe" className="h-2/3 w-auto object-contain opacity-60" />
-                    </div>
-                  )}
-                </div>
-              </article>
+                name={capitalizeFirst(item.item_name)}
+                description={item.item_description}
+                priceHuf={item.item_price_huf}
+                imageUrl={item.item_image_url}
+                onAdd={() => handleAddItemToCart(item)}
+                badge={item.is_menu_part ? (
+                  <Badge variant="outline" className="border-primary/35 bg-card/90 text-[10px] font-bold text-primary backdrop-blur-sm">
+                    Menüben is
+                  </Badge>
+                ) : undefined}
+              />
             ))}
           </div>
         </div>
