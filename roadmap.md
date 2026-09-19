@@ -19,3 +19,8 @@
 - [x] Lágyabb ételfotó-, kártya- és gombformák
 - [x] Heti dátumsáv és vendégoldali naptár finomítása
 - [x] Mobil, asztali és reduced-motion ellenőrzés
+
+# Prémium kompakt ételkártyák
+- [x] Nagyobb, olvashatóbb ételnevek és tisztább információs sorrend
+- [x] Modern kompakt kép–szöveg–ár–kosár elrendezés
+- [ ] Mobil, asztali és rendelési művelet ellenőrzése

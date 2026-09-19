@@ -36,8 +36,8 @@ interface DailyMenuPanelProps {
 }
 
 const MenuItemCard = ({ item, label }: { item: MenuItem; label: string }) => (
-  <div className="food-frame group">
-    <div className="aspect-square md:aspect-[4/3] w-full overflow-hidden">
+  <article className="food-frame group flex h-full flex-col border-primary/15 bg-card/95">
+    <div className="aspect-[5/4] w-full overflow-hidden bg-muted">
       {item.item_image_url ? (
         <img 
           src={item.item_image_url} 
@@ -45,19 +45,19 @@ const MenuItemCard = ({ item, label }: { item: MenuItem; label: string }) => (
           className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.035]"
         />
       ) : (
-        <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center">
+        <div className="flex h-full w-full items-center justify-center bg-secondary/50">
           <img src={kiscsibeLogo} alt="Kiscsibe" className="h-[60%] md:h-[70%] w-auto object-contain opacity-80 drop-shadow-lg" />
         </div>
       )}
     </div>
-    <div className="p-3 md:p-4">
-      <span className="text-[10px] md:text-xs font-medium text-primary uppercase tracking-wide">{label}</span>
-      <h4 className="font-semibold text-sm md:text-lg mt-0.5 md:mt-1 line-clamp-2">{capitalizeFirst(item.item_name)}</h4>
+    <div className="flex flex-1 flex-col p-3.5 md:p-5">
+      <span className="mb-1.5 w-fit rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase text-primary md:text-xs">{label}</span>
+      <h4 className="font-sofia text-[17px] font-bold leading-[1.2] text-card-foreground md:text-[22px]">{capitalizeFirst(item.item_name)}</h4>
       {item.item_description && (
-        <p className="text-xs md:text-sm text-muted-foreground line-clamp-1 md:line-clamp-2 mt-0.5 md:mt-1">{item.item_description}</p>
+        <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground md:text-sm">{item.item_description}</p>
       )}
     </div>
-  </div>
+  </article>
 );
 
 const DailyMenuPanel = ({ date, menuData, loading }: DailyMenuPanelProps) => {
@@ -162,7 +162,7 @@ const DailyMenuPanel = ({ date, menuData, loading }: DailyMenuPanelProps) => {
         
         {/* Food cards - 2 columns always */}
         <div className="p-3 md:p-6">
-          <div className="grid grid-cols-2 gap-3 md:gap-4">
+          <div className="grid grid-cols-2 items-stretch gap-3 md:gap-5">
             {menuData.soup && (
               <MenuItemCard item={menuData.soup} label="Leves" />
             )}
