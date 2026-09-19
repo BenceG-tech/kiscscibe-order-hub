@@ -31,7 +31,7 @@ const FavoriteOrderButton = ({ orderName, items, totalHuf }: Props) => {
       disabled={saved}
       className="flex-1"
     >
-      <Heart className={`mr-2 h-4 w-4 ${saved ? "fill-current text-red-500" : ""}`} />
+      <Heart className={`mr-2 h-4 w-4 ${saved ? "fill-current text-primary" : ""}`} />
       {saved ? "Elmentve" : "Mentés kedvencnek"}
     </Button>
   );

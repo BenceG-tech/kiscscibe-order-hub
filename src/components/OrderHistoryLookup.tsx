@@ -19,7 +19,7 @@ const statusMap: Record<string, { label: string; color: string }> = {
   preparing: { label: "Készül", color: "bg-yellow-100 text-yellow-800" },
   ready: { label: "Átvehető", color: "bg-green-100 text-green-800" },
   completed: { label: "Kész", color: "bg-gray-100 text-gray-800" },
-  cancelled: { label: "Lemondva", color: "bg-red-100 text-red-800" },
+  cancelled: { label: "Lemondva", color: "bg-destructive/15 text-destructive" },
 };
 
 const OrderHistoryLookup = () => {

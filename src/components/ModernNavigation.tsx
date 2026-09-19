@@ -100,7 +100,7 @@ const ModernNavigation = () => {
               <Button 
                 onClick={() => document.getElementById('napi-ajanlat')?.scrollIntoView({ behavior: 'smooth' })}
                 size={scrolled ? "sm" : "default"}
-                className="bg-accent text-accent-foreground hover:bg-accent/90 font-bold transition-all duration-300"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 font-bold transition-all duration-300"
                 asChild
               >
                 <Link to="/etlap">Rendelj most</Link>

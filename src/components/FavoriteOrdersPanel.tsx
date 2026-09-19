@@ -54,7 +54,7 @@ const FavoriteOrdersPanel = () => {
     <Card className="border-primary/20 bg-primary/5 rounded-2xl">
       <CardContent className="p-4 sm:p-6">
         <div className="flex items-center gap-2 mb-4">
-          <Heart className="h-5 w-5 text-red-500 fill-current" />
+          <Heart className="h-5 w-5 fill-current text-primary" />
           <h3 className="font-semibold text-lg">Kedvenc rendeléseid</h3>
         </div>
         <div className="space-y-3">

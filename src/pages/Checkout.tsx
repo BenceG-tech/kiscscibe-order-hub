@@ -1066,8 +1066,8 @@ const Checkout = () => {
                     )}
                     
                     {hasMultipleDailyDates() && (
-                      <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
-                        <p className="text-sm text-red-800 dark:text-red-200 font-medium">
+                      <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3">
+                        <p className="text-sm font-medium text-destructive">
                           ⚠️ A kosárban különböző dátumú napi ajánlatok/menük vannak. Kérjük távolítsa el az egyiket.
                         </p>
                       </div>

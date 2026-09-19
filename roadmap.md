@@ -10,6 +10,7 @@
 
 # Kiscsibe Modern Kifőzde homepage
 - [x] Feltöltött desktop és mobil hero-kép optimalizálása és bekötése
-- [x] Világos papír/ink/piros/sárga navigáció és hero
+- [x] Sötét ink/navy navigáció és mozgó hero Kiscsibe-sárga kiemelésekkel
 - [x] Főoldali szekciók egységes magazinos ritmusa
 - [x] Asztali és mobil ellenőrzés, hibák javítása
+- [x] Piros felületi elemek eltávolítása, videós hero és reduced-motion fallback
