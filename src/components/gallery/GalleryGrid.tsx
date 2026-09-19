@@ -106,7 +106,7 @@ const GalleryGrid = ({ images, onImageClick, compact = false, maxImages }: Galle
               <img
                 src={image.image_url}
                 alt={image.alt_text}
-                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                 className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.035]"
                 loading="lazy"
               />
               
@@ -138,7 +138,7 @@ const GalleryGrid = ({ images, onImageClick, compact = false, maxImages }: Galle
         <div className="flex justify-center">
           <Link
             to="/gallery"
-            className="inline-flex items-center gap-2 px-6 py-3 border border-primary/40 text-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-300 font-medium"
+            className="inline-flex items-center gap-2 rounded-xl border border-primary/40 px-6 py-3 font-medium text-foreground transition-all duration-300 hover:-translate-y-0.5 hover:border-primary hover:bg-primary hover:text-primary-foreground hover:shadow-warm"
           >
             Teljes galéria megtekintése
             <ArrowRight className="h-4 w-4" />

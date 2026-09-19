@@ -85,7 +85,7 @@ const BreakfastSection = ({ variant = "page" }: BreakfastSectionProps) => {
         {/* Compact header */}
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2.5">
-            <div className="h-11 w-11 bg-primary text-primary-foreground flex items-center justify-center">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-warm">
               <Coffee className="h-5 w-5" />
             </div>
             <div>
@@ -108,15 +108,15 @@ const BreakfastSection = ({ variant = "page" }: BreakfastSectionProps) => {
           {items.map((item) => (
             <div
               key={item.id}
-               className="group grid grid-cols-[5.5rem_1fr_auto] items-center gap-3 overflow-hidden border-t border-foreground/20 bg-transparent py-3 transition-colors duration-300 hover:bg-secondary/40"
+               className="group grid grid-cols-[5.5rem_1fr_auto] items-center gap-3 overflow-hidden rounded-2xl border border-transparent bg-transparent p-2 transition-[transform,background-color,border-color,box-shadow] duration-300 ease-out hover:-translate-y-0.5 hover:border-border/60 hover:bg-secondary/35 hover:shadow-soft"
             >
               {/* Small image */}
-               <div className="h-24 w-[5.5rem] shrink-0 overflow-hidden bg-muted">
+                <div className="h-24 w-[5.5rem] shrink-0 overflow-hidden rounded-xl bg-muted shadow-soft">
                 {item.image_url ? (
                   <img
                     src={item.image_url}
                     alt={item.name}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.035]"
                     loading="lazy"
                   />
                 ) : (

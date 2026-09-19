@@ -110,10 +110,10 @@ const HeroSection = () => {
             </div>
 
             <div className="mt-5 flex flex-row gap-2 sm:gap-3 md:mt-8">
-              <Button size="lg" asChild className="min-h-12 flex-1 bg-primary px-4 font-bold text-primary-foreground shadow-none hover:bg-primary/90 sm:flex-none sm:px-7">
+              <Button size="lg" asChild className="min-h-12 flex-1 bg-primary px-4 font-bold text-primary-foreground shadow-warm hover:bg-primary/90 hover:shadow-lg sm:flex-none sm:px-7">
                 <Link to="/etlap">Mai menü <ArrowRight className="ml-1 h-4 w-4" /></Link>
               </Button>
-              <Button size="lg" variant="outline" asChild className="min-h-12 flex-1 border-editorial-foreground/55 bg-editorial/35 px-3 font-bold text-editorial-foreground backdrop-blur-sm hover:border-primary hover:bg-primary hover:text-primary-foreground sm:flex-none sm:px-7">
+              <Button size="lg" variant="outline" asChild className="min-h-12 flex-1 border-editorial-foreground/45 bg-editorial/35 px-3 font-bold text-editorial-foreground shadow-soft backdrop-blur-md hover:border-primary hover:bg-primary hover:text-primary-foreground sm:flex-none sm:px-7">
                 <Link to="/etlap">Rendelés leadása</Link>
               </Button>
             </div>
@@ -124,7 +124,7 @@ const HeroSection = () => {
       <button
         type="button"
         onClick={() => document.getElementById("napi-ajanlat")?.scrollIntoView({ behavior: "smooth" })}
-        className="absolute inset-x-4 bottom-4 z-20 flex min-h-14 items-center justify-between border border-editorial-foreground/20 bg-editorial/92 px-4 py-3 text-left text-editorial-foreground shadow-lg backdrop-blur-md md:hidden"
+        className="absolute inset-x-4 bottom-4 z-20 flex min-h-14 items-center justify-between rounded-2xl border border-editorial-foreground/20 bg-editorial/92 px-4 py-3 text-left text-editorial-foreground shadow-xl backdrop-blur-md transition-transform active:scale-[0.99] md:hidden"
         aria-label="Ugrás a mai ajánlathoz"
       >
         <span>
@@ -134,8 +134,8 @@ const HeroSection = () => {
         <ArrowRight className="h-5 w-5 text-primary" />
       </button>
 
-      <button type="button" onClick={() => document.getElementById("napi-ajanlat")?.scrollIntoView({ behavior: "smooth" })} className="absolute bottom-6 left-1/2 z-20 hidden w-[min(48rem,calc(100%-3rem))] -translate-x-1/2 items-center gap-5 border border-editorial-foreground/20 bg-editorial/95 px-5 py-4 text-left text-editorial-foreground shadow-xl backdrop-blur-md transition-colors hover:border-primary md:flex" aria-label="Ugrás a mai ajánlathoz">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center bg-primary text-primary-foreground"><UtensilsCrossed className="h-5 w-5" /></span>
+      <button type="button" onClick={() => document.getElementById("napi-ajanlat")?.scrollIntoView({ behavior: "smooth" })} className="absolute bottom-6 left-1/2 z-20 hidden w-[min(48rem,calc(100%-3rem))] -translate-x-1/2 items-center gap-5 rounded-2xl border border-editorial-foreground/20 bg-editorial/95 px-5 py-4 text-left text-editorial-foreground shadow-xl backdrop-blur-md transition-[border-color,box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:border-primary hover:shadow-warm md:flex" aria-label="Ugrás a mai ajánlathoz">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-warm"><UtensilsCrossed className="h-5 w-5" /></span>
         <span className="min-w-0 flex-1">
           <span className="mb-1 block text-[10px] font-bold uppercase tracking-[0.16em] text-primary">Mai ajánlat</span>
           <span className="block truncate font-sofia text-lg font-bold text-editorial-foreground">{isLoading ? "A mai ajánlat betöltése…" : menuLines.map(capitalizeFirst).join(" · ") || "A napi ajánlat az étlapon érhető el"}</span>

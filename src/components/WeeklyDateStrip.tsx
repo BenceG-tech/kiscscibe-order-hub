@@ -70,7 +70,7 @@ const WeeklyDateStrip = ({
   };
 
   return (
-    <div className="border border-border/60 bg-card/90 p-3 shadow-xl backdrop-blur-sm md:p-5">
+    <div className="soft-panel p-3 md:p-5">
       {/* Month label */}
       <div className="text-center text-sm md:text-base font-semibold text-muted-foreground mb-3 md:mb-4 capitalize">
         {monthLabel}
@@ -88,7 +88,7 @@ const WeeklyDateStrip = ({
         </Button>
         
         {/* Days */}
-        <div className="flex gap-1 md:gap-2">
+        <div className="flex gap-1.5 md:gap-2.5">
           {weekDays.map((day) => {
             const isSelected = isSameDay(day, selectedDate);
             const hasContent = hasContentOnDate(day);
@@ -101,12 +101,12 @@ const WeeklyDateStrip = ({
                 onClick={() => !disabled && onSelect(day)}
                 disabled={disabled}
                 className={cn(
-                   "relative flex flex-col items-center justify-center p-1.5 md:p-3 transition-all duration-300 min-w-[48px] md:min-w-[72px]",
+                   "relative flex min-h-[58px] min-w-[48px] flex-col items-center justify-center rounded-xl border border-transparent p-1.5 transition-[transform,box-shadow,background-color,border-color] duration-300 ease-out md:min-h-[72px] md:min-w-[72px] md:p-3",
                   isSelected 
-                     ? "bg-primary text-primary-foreground shadow-lg scale-105 ring-2 ring-primary/60"
+                     ? "-translate-y-1 border-primary bg-primary text-primary-foreground shadow-warm ring-1 ring-primary/60"
                     : hasContent
-                      ? "bg-primary/15 hover:bg-primary/25 hover:scale-105"
-                      : "hover:bg-muted/80",
+                      ? "border-primary/15 bg-primary/10 hover:-translate-y-0.5 hover:border-primary/35 hover:bg-primary/20 hover:shadow-soft"
+                      : "bg-background/25 hover:-translate-y-0.5 hover:border-border/80 hover:bg-muted/70",
                   disabled && "opacity-40 cursor-not-allowed",
                   isTodayDate && !isSelected && "ring-2 ring-primary/50"
                 )}
@@ -114,7 +114,7 @@ const WeeklyDateStrip = ({
                 {/* "MA" badge for today */}
                 {isTodayDate && (
                   <span className={cn(
-                     "absolute -top-2 left-1/2 -translate-x-1/2 text-[9px] md:text-[10px] font-black px-1.5 py-0.5",
+                     "absolute -top-2 left-1/2 -translate-x-1/2 rounded-full px-2 py-0.5 text-[9px] font-black shadow-sm md:text-[10px]",
                     isSelected 
                       ? "bg-primary-foreground text-primary" 
                       : "bg-primary text-primary-foreground"
@@ -165,7 +165,7 @@ const WeeklyDateStrip = ({
       {allDaysPast && (
         <button
           onClick={handleNextWeek}
-           className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary/10 hover:bg-primary/20 border border-primary/30 transition-all text-sm font-semibold text-primary"
+           className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary transition-all hover:-translate-y-0.5 hover:bg-primary/20 hover:shadow-soft"
         >
           <span>Ez a hét lezárult — nézd a következő hetet!</span>
           <ArrowRight className="h-4 w-4" />
