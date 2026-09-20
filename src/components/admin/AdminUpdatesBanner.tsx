@@ -25,11 +25,11 @@ function entryId(e: ChangelogEntry): string {
 const typeStyle = (t: string) => {
   switch (t) {
     case "new":
-      return { label: "ÚJ", className: "bg-emerald-600 text-white" };
+      return { label: "ÚJ", className: "border-primary/30 bg-primary text-primary-foreground" };
     case "improved":
-      return { label: "FEJLESZTÉS", className: "bg-blue-600 text-white" };
+      return { label: "FEJLESZTÉS", className: "border-primary/30 bg-primary/20 text-primary" };
     case "fixed":
-      return { label: "JAVÍTÁS", className: "bg-amber-500 text-white" };
+      return { label: "JAVÍTÁS", className: "border-primary/35 bg-secondary text-secondary-foreground" };
     default:
       return { label: "FRISSÍTÉS", className: "bg-primary text-primary-foreground" };
   }
@@ -110,7 +110,7 @@ export const AdminUpdatesBanner = () => {
   };
 
   return (
-    <div className="border-b bg-primary/10">
+    <div className="border-b border-primary/20 bg-editorial text-editorial-foreground">
       <div className="mx-auto max-w-screen-xl px-3 sm:px-4">
         {/* Compact bar — single row, ~36px */}
         <button
@@ -123,16 +123,16 @@ export const AdminUpdatesBanner = () => {
           <Badge className={`${style.className} shrink-0 text-[10px] px-1.5 py-0 h-4`}>
             {style.label}
           </Badge>
-          <span className="text-xs sm:text-sm font-medium truncate flex-1 min-w-0">
+          <span className="text-xs sm:text-sm font-medium truncate flex-1 min-w-0 text-editorial-foreground">
             {current.title}
           </span>
           {visible.length > 1 && (
-            <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">
+            <span className="text-[11px] text-editorial-muted tabular-nums shrink-0">
               {index + 1}/{visible.length}
             </span>
           )}
           <ChevronDown
-            className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${expanded ? "rotate-180" : ""}`}
+            className={`h-4 w-4 text-editorial-muted shrink-0 transition-transform ${expanded ? "rotate-180" : ""}`}
           />
           <span
             role="button"
@@ -150,7 +150,7 @@ export const AdminUpdatesBanner = () => {
             }}
             aria-label="Sáv elrejtése"
             title="Sáv elrejtése"
-            className="h-6 w-6 inline-flex items-center justify-center rounded-md hover:bg-muted shrink-0"
+            className="h-6 w-6 inline-flex items-center justify-center rounded-md hover:bg-primary/10 shrink-0"
           >
             <X className="h-3.5 w-3.5" />
           </span>
@@ -159,8 +159,8 @@ export const AdminUpdatesBanner = () => {
         {/* Expanded panel */}
         {expanded && (
           <div className="pb-3 pl-6 pr-1 space-y-2">
-            <div className="text-[11px] text-muted-foreground">{current.date}</div>
-            <p className="text-sm text-foreground whitespace-pre-wrap break-words">
+            <div className="text-[11px] text-editorial-muted">{current.date}</div>
+            <p className="text-sm text-editorial-foreground whitespace-pre-wrap break-words">
               {current.description}
             </p>
             <div className="flex items-center justify-between gap-2 pt-1">

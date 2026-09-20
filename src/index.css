@@ -250,6 +250,23 @@
     letter-spacing: 0;
   }
 
+  .admin-shell main [data-admin-surface],
+  .admin-shell main .bg-card {
+    border-color: hsl(var(--primary) / 0.14);
+  }
+
+  .admin-shell main input,
+  .admin-shell main textarea,
+  .admin-shell main button[role="combobox"] {
+    background-color: hsl(var(--editorial) / 0.22);
+    border-color: hsl(var(--primary) / 0.18);
+  }
+
+  .admin-shell main h1,
+  .admin-shell main h2 {
+    letter-spacing: 0;
+  }
+
   .food-frame {
     @apply relative overflow-hidden rounded-2xl border border-border/60 bg-card;
     box-shadow: var(--shadow-soft);

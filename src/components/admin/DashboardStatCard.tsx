@@ -12,7 +12,7 @@ interface DashboardStatCardProps {
 
 const DashboardStatCard = ({ title, value, subtitle, icon: Icon, iconClassName }: DashboardStatCardProps) => {
   return (
-    <Card className="relative overflow-hidden">
+    <Card className="relative overflow-hidden border-primary/15 bg-card/90 shadow-soft">
       <CardContent className="p-4 sm:p-6">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
@@ -23,7 +23,7 @@ const DashboardStatCard = ({ title, value, subtitle, icon: Icon, iconClassName }
             )}
           </div>
           <div className={cn(
-            "flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10",
+            "flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10",
             iconClassName
           )}>
             <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />

@@ -12,6 +12,46 @@ export interface ChangelogEntry {
 // Newest first
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: "2026-09-20",
+    title: "Biztonságosabb rendeléskeresés és hétvégi időpontvédelem",
+    description:
+      "A vendégek rendelése mostantól csak a rendelési kód és a telefonszám együttes megadásával kereshető vissza. Szombatra és vasárnapra a rendszer egyik rendelési útvonalon sem kínál fel átvételi időpontot.",
+    type: "fixed",
+    tabGroup: "orders",
+  },
+  {
+    date: "2026-09-20",
+    title: "Lemondáskor automatikusan visszaáll a készlet és a kapacitás",
+    description:
+      "Az adminból vagy a személyzeti nézetből lemondott rendelés felszabadítja a lefoglalt időpontot és visszaadja a levont adagokat. Az ismételt lemondás nem növeli meg újra a készletet.",
+    type: "fixed",
+    tabGroup: "orders",
+  },
+  {
+    date: "2026-09-20",
+    title: "Stabilabb rendelési értesítések és e-mailek",
+    description:
+      "Az új rendelések Realtime mellett tartalék frissítéssel is megérkeznek, a hang külön tesztelhető, az e-mailek sikeres vagy sikertelen küldése pedig ellenőrizhető. A készre jelentő levélben közvetlen, biztonságos értékelési lehetőség található.",
+    type: "improved",
+    tabGroup: "orders",
+  },
+  {
+    date: "2026-09-20",
+    title: "Heti ajánlat duplikációvédelem",
+    description:
+      "Ugyanaz az étel ugyanarra a napra többé nem kerülhet be kétszer. Ha mégis ismételt hozzáadás történne, az admin felület érthető visszajelzést ad.",
+    type: "fixed",
+    tabGroup: "weekly",
+  },
+  {
+    date: "2026-09-20",
+    title: "Megújult nyitóképek és Kiscsibe webhelyikon",
+    description:
+      "A főoldal három optimalizált ételfotó között vált, mobilra külön képekkel. A böngészőfülön és a keresőkben a Kiscsibe saját emblémája jelenhet meg a korábbi általános ikon helyett.",
+    type: "new",
+    tabGroup: "content",
+  },
+  {
     date: "2026-07-13",
     title: "Rendelés-audit v2: 5 új kritikus javítás (idempotencia, realtime, email domain)",
     description:
@@ -265,15 +305,6 @@ export const CHANGELOG: ChangelogEntry[] = [
     type: "improved",
     tabGroup: "content",
     helpTopicId: "doc-vault",
-  },
-  {
-    date: "2026-04-22",
-    title: "Admin módosítási napló és kézikönyv jegyzetek",
-    description:
-      "Új Napló oldal készült: látható, ki mikor mit módosított a dokumentumokban, étlapon, napi ajánlatban, számlákban és partnereknél. A kézikönyv elején új jegyzet blokk is van, ahol használat közben lehet észrevételt írni.",
-    type: "new",
-    tabGroup: "content",
-    helpTopicId: "activity-log",
   },
   {
     date: "2026-04-22",

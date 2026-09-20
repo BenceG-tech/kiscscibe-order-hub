@@ -349,11 +349,11 @@ const Etlap = () => {
             {/* Favorite Orders */}
             <FavoriteOrdersPanel />
             {/* Date Title */}
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold">
+            <div className="flex flex-col items-start gap-2 border-y border-border/60 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+              <h2 className="min-w-0 text-2xl font-bold leading-tight">
                 {format(selectedDate, "MMMM d. (EEEE)", { locale: hu })}
               </h2>
-              <Badge variant="outline" className="text-sm">
+              <Badge variant="outline" className="shrink-0 whitespace-nowrap border-primary/35 bg-primary/10 px-3 py-1 text-sm text-primary">
                 {getContentLabel(selectedDate).title}
               </Badge>
             </div>
