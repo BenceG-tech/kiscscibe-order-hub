@@ -88,7 +88,7 @@ const HeroSection = () => {
     if (reducedMotion || !pageVisible || interactionPaused) return;
     const timer = window.setInterval(() => {
       setActiveSlide((current) => (current + 1) % HERO_SLIDES.length);
-    }, 6000);
+    }, 3000);
     return () => window.clearInterval(timer);
   }, [interactionPaused, pageVisible, reducedMotion]);
 

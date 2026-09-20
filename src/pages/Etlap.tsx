@@ -17,7 +17,10 @@ import { format, getDay, isPast } from "date-fns";
 import { hu } from "date-fns/locale";
 import { getSmartInitialDate, getContentLabel } from "@/lib/dateUtils";
 import { capitalizeFirst } from "@/lib/utils";
-import heroImage from "@/assets/kiscsibe-serving-plate.jpg";
+import lunchDesktopWebp from "@/assets/kiscsibe-hero-lunch-desktop-v2.webp.asset.json";
+import lunchMobileWebp from "@/assets/kiscsibe-hero-lunch-mobile-v2.webp.asset.json";
+import lunchDesktopAvif from "@/assets/kiscsibe-hero-lunch-desktop-v2.avif.asset.json";
+import lunchMobileAvif from "@/assets/kiscsibe-hero-lunch-mobile-v2.avif.asset.json";
 import SEO from "@/components/SEO";
 import DailyMenuPanel from "@/components/DailyMenuPanel";
 import AlwaysAvailableSection from "@/components/sections/AlwaysAvailableSection";
@@ -293,19 +296,31 @@ const Etlap = () => {
           </div>
         )}
         {/* Hero Section with image */}
-        <section className="relative h-[35vh] md:h-[40vh] overflow-hidden border-b border-primary/25">
-          <img 
-            src={heroImage} 
-            alt="Napi ajánlat"
-            className="w-full h-full object-cover"
-          />
-           <div className="absolute inset-0 bg-hero-shade" />
+        <section className="relative isolate h-[35vh] min-h-[18rem] overflow-hidden border-b border-primary/25 bg-editorial md:h-[40vh] md:min-h-[22rem]">
+          <picture className="absolute inset-0" aria-hidden="true">
+            <source media="(max-width: 767px)" type="image/avif" srcSet={lunchMobileAvif.url} />
+            <source type="image/avif" srcSet={lunchDesktopAvif.url} />
+            <source media="(max-width: 767px)" type="image/webp" srcSet={lunchMobileWebp.url} />
+            <source type="image/webp" srcSet={lunchDesktopWebp.url} />
+            <img
+              src={lunchDesktopWebp.url}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover"
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
+              width={1672}
+              height={941}
+            />
+          </picture>
+          <div className="absolute inset-0 bg-editorial/70" />
+          <div className="absolute inset-0 bg-hero-paper-shade" />
           <div className="absolute inset-0 flex items-center justify-center">
-             <div className="text-center text-editorial-foreground px-6">
-              <h1 className="text-3xl md:text-5xl font-sofia font-bold mb-2 animate-fade-in-up">
+             <div className="relative z-10 px-6 text-center text-editorial-foreground [text-shadow:0_2px_18px_hsl(var(--editorial)/0.9)]">
+              <h1 className="mb-3 font-sofia text-4xl font-bold leading-tight tracking-normal text-editorial-foreground animate-fade-in-up md:text-6xl">
                 Napi Ajánlat
               </h1>
-               <p className="text-lg md:text-xl text-editorial-muted animate-fade-in-up opacity-0" style={{ animationDelay: '0.2s', animationFillMode: 'forwards' }}>
+               <p className="text-base font-semibold text-editorial-foreground/95 animate-fade-in-up opacity-0 md:text-xl" style={{ animationDelay: '0.2s', animationFillMode: 'forwards' }}>
                 Friss, házias ételek minden nap
               </p>
             </div>

@@ -51,9 +51,10 @@
 
 ## Új nyitókép és GYIK helyreállítás
 - [x] Három reszponzív nyitókép WebP és AVIF optimalizálása
-- [x] Hat másodperces, akadálymentes képváltó beépítése
+- [x] Három másodperces, akadálymentes képváltó beépítése
 - [x] GYIK láthatóságának és hibás adat esetén alapértékeinek javítása
 - [x] Desktop, mobil, csökkentett mozgás és minőségellenőrzés
+- [x] Napi ajánlat fejléc főoldali képvilággal és erős szövegkontraszttal
 
 ## Megbízhatósági és biztonsági javítás (preview-only)
 - [x] Hétvégi (szombat+vasárnap) átvételi idők kizárása a pénztárban
