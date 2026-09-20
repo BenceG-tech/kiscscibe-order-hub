@@ -373,12 +373,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-motion-video {
-    display: none !important;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
   .homepage-editorial *,
   .homepage-editorial *::before,
   .homepage-editorial *::after {
