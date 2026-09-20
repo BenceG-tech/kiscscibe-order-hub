@@ -859,6 +859,13 @@ serve(async (req) => {
         throw new Error('Az időpont nem elérhető');
       }
 
+      reservationLedger.push({
+        resource_type: 'capacity_slot',
+        slot_date: date,
+        slot_time: time,
+        qty: 1,
+      });
+
       // Register rollback for capacity slot booking
       const slotDate = date;
       const slotTime = time;
