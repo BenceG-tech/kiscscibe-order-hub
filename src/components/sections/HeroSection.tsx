@@ -50,6 +50,7 @@ const HeroSection = () => {
   const [loadLaterSlides, setLoadLaterSlides] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [pageVisible, setPageVisible] = useState(() => document.visibilityState === "visible");
+  const [interactionPaused, setInteractionPaused] = useState(false);
 
   useEffect(() => {
     const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -72,12 +73,12 @@ const HeroSection = () => {
   }, []);
 
   useEffect(() => {
-    if (reducedMotion || !pageVisible) return;
+    if (reducedMotion || !pageVisible || interactionPaused) return;
     const timer = window.setInterval(() => {
       setActiveSlide((current) => (current + 1) % HERO_SLIDES.length);
     }, 6000);
     return () => window.clearInterval(timer);
-  }, [pageVisible, reducedMotion]);
+  }, [interactionPaused, pageVisible, reducedMotion]);
 
   const { data: dailyMenu, isLoading } = useQuery({
     queryKey: ["homepage-hero-menu"],
@@ -104,7 +105,15 @@ const HeroSection = () => {
   );
 
   return (
-    <section className="relative isolate min-h-[calc(100svh-5.25rem)] overflow-hidden bg-editorial text-editorial-foreground md:min-h-[min(850px,calc(100svh-6rem))]">
+    <section
+      className="relative isolate min-h-[calc(100svh-5.25rem)] overflow-hidden bg-editorial text-editorial-foreground md:min-h-[min(850px,calc(100svh-6rem))]"
+      onMouseEnter={() => setInteractionPaused(true)}
+      onMouseLeave={() => setInteractionPaused(false)}
+      onFocusCapture={() => setInteractionPaused(true)}
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setInteractionPaused(false);
+      }}
+    >
       <div className="absolute inset-0" aria-hidden="true">
         {HERO_SLIDES.map((slide, index) => {
           if (index > 0 && (!loadLaterSlides || reducedMotion)) return null;

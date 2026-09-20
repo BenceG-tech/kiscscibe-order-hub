@@ -12,12 +12,9 @@ export interface FaqItem {
 const DEFAULT_FAQS: FaqItem[] = [
   { id: "1", question: "Meddig lehet aznapra rendelni?", answer: "Az aznapi rendelést 15:30-ig tudod leadni." },
   { id: "2", question: "Mennyi a várható átfutás?", answer: "Átlagosan 15–25 perc." },
-  { id: "3", question: "Lehet kártyával fizetni?", answer: "Igen, átvételkor a helyszínen bankkártyával is fizethetsz." },
+  { id: "3", question: "Hogyan tudok fizetni?", answer: "Átvételkor készpénzzel vagy bankkártyával fizethetsz." },
   { id: "4", question: "Számla kérhető?", answer: "Igen, kérlek jelezd rendeléskor." },
   { id: "5", question: "Tudok időpontra kérni átvételt?", answer: "Igen, választhatsz idősávot." },
-  { id: "6", question: "Hol vehetem át a rendelést?", answer: "A rendelés személyesen vehető át a Kiscsibe Étteremben: 1141 Budapest, Vezér u. 110." },
-  { id: "7", question: "Mikor vagytok nyitva?", answer: "Hétfőtől péntekig 7:00 és 16:00 között várunk, hétvégén zárva tartunk." },
-  { id: "8", question: "Hol találom az allergéneket?", answer: "Az ételek mellett feltüntetjük az allergén információkat. Érzékenység vagy allergia esetén kérjük, rendelés előtt egyeztess velünk." },
 ];
 
 const isFaqItem = (value: unknown): value is FaqItem => {
@@ -32,7 +29,16 @@ const isFaqItem = (value: unknown): value is FaqItem => {
 
 const parseFaqItems = (value: unknown): FaqItem[] => {
   if (!Array.isArray(value) || value.length === 0 || !value.every(isFaqItem)) return DEFAULT_FAQS;
-  return value;
+  return value.map((item) => {
+    const normalizedQuestion = item.question.toLocaleLowerCase("hu-HU");
+    if (normalizedQuestion.includes("meddig") && normalizedQuestion.includes("rendel")) {
+      return { ...item, answer: "Az aznapi rendelést 15:30-ig tudod leadni." };
+    }
+    if (normalizedQuestion.includes("fizet") || normalizedQuestion.includes("kárty")) {
+      return { ...item, answer: "Átvételkor készpénzzel vagy bankkártyával fizethetsz." };
+    }
+    return item;
+  });
 };
 
 export const useFaqItems = () => {
