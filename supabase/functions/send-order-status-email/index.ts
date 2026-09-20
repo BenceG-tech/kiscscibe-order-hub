@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { Resend } from "npm:resend@2.0.0";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { hasInternalSecret, requireAdmin } from "../_shared/auth.ts";
+import { generateRatingToken, logEmailSend, maskEmail, ratingLinksHtml } from "../_shared/rating-token.ts";
 
 function escapeHtml(s: unknown): string {
   return String(s ?? '')
