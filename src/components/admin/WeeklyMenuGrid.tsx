@@ -923,6 +923,7 @@ export default function WeeklyMenuGrid() {
             topScrollRef.current.scrollLeft = scrollRef.current.scrollLeft;
           }
         }}
+        data-testid="weekly-grid-scroll"
         className="w-full overflow-x-auto rounded-lg border border-primary/15 bg-card/40 shadow-soft focus:outline-none focus:ring-2 focus:ring-ring"
       >
         <div className="min-w-[900px]">
@@ -1141,14 +1142,14 @@ function DayJumpBar({ weekDates, scrollRef, topScrollRef }: DayJumpBarProps) {
     setContentWidth(el.scrollWidth);
     setAtStart(el.scrollLeft <= 4);
     setAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 4);
-    // Determine which day is most centered
+    // Keep the active state aligned with the first day visible after the sticky category column.
     const ths = el.querySelectorAll<HTMLTableCellElement>("th[data-day-index]");
-    const center = el.scrollLeft + el.clientWidth / 2;
+    const stickyColumn = el.querySelector<HTMLTableCellElement>("th[data-sticky-column]");
+    const visibleStart = el.scrollLeft + (stickyColumn?.getBoundingClientRect().width ?? 0);
     let best = 0;
     let bestDist = Infinity;
     ths.forEach((th) => {
-      const mid = th.offsetLeft + th.offsetWidth / 2;
-      const d = Math.abs(mid - center);
+      const d = Math.abs(th.offsetLeft - visibleStart);
       if (d < bestDist) { bestDist = d; best = Number(th.dataset.dayIndex); }
     });
     setActiveIdx(best);

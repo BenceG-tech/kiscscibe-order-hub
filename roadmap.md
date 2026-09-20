@@ -79,4 +79,4 @@
 ## Admin heti táblázat kezelhetősége
 - [x] Tömörebb, stabil asztali naposzlopok
 - [x] Egykattintásos, pontos napugrás
-- [ ] Laptop-, asztali- és mobil-ellenőrzés
+- [x] Laptop-, asztali- és mobil-ellenőrzés (forrás-, típus- és működési tesztek; belépett vizuális próba nem elérhető)
