@@ -345,7 +345,13 @@ const Checkout = () => {
         .in("date", targetDates);
       
       const blackoutSet = new Set((blackoutData || []).map(b => b.date));
-      targetDates = targetDates.filter(d => !blackoutSet.has(d));
+      // Never offer a closed-day slot: drop blackout dates AND weekends (Sat/Sun),
+      // including dates that came from the cart's daily_date values.
+      targetDates = targetDates.filter(d => {
+        if (blackoutSet.has(d)) return false;
+        const dow = makeDate(d).getDay();
+        return dow !== 0 && dow !== 6;
+      });
       
       let allSlots: TimeSlot[] = [];
       for (const date of targetDates) {
