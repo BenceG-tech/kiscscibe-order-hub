@@ -102,7 +102,7 @@ const BreakfastSection = ({ variant = "page" }: BreakfastSectionProps) => {
           </Badge>
         </div>
 
-        <div className="grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2">
           {items.map((item) => (
             <FoodCard
               key={item.id}
@@ -112,7 +112,7 @@ const BreakfastSection = ({ variant = "page" }: BreakfastSectionProps) => {
               imageUrl={item.image_url}
               onAdd={() => handleAdd(item)}
               meta={<PortionBadge size={item.portion_size} unit={item.portion_unit} />}
-              compact
+              variant="compact"
             />
           ))}
         </div>

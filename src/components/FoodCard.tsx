@@ -15,7 +15,7 @@ interface FoodCardProps {
   disabled?: boolean;
   actionLabel?: string;
   className?: string;
-  compact?: boolean;
+  variant?: "standard" | "compact";
 }
 
 const FoodCard = ({
@@ -29,19 +29,25 @@ const FoodCard = ({
   disabled = false,
   actionLabel = "Kosárba",
   className,
-  compact = false,
-}: FoodCardProps) => (
-  <article
-    className={cn(
-      "food-frame group flex h-full flex-col border-border/70 bg-card/95",
-      disabled && "opacity-55",
-      className,
-    )}
-  >
+  variant = "standard",
+}: FoodCardProps) => {
+  const isCompact = variant === "compact";
+
+  return (
+    <article
+      className={cn(
+        "food-frame group flex h-full border-border/70 bg-card/95",
+        isCompact ? "min-h-[104px] flex-row sm:min-h-[148px]" : "flex-col",
+        disabled && "opacity-55",
+        className,
+      )}
+    >
     <div
       className={cn(
-        "relative w-full overflow-hidden border-b border-border/50 bg-muted",
-        compact ? "aspect-[16/9]" : "aspect-[16/10]",
+        "relative shrink-0 overflow-hidden bg-muted",
+        isCompact
+          ? "w-[104px] self-stretch border-r border-border/50 sm:w-[116px]"
+          : "aspect-[16/10] w-full border-b border-border/50",
       )}
     >
       {imageUrl ? (
@@ -56,7 +62,7 @@ const FoodCard = ({
           <div
             className={cn(
               "flex items-center justify-center rounded-full border border-primary/20 bg-background/35 shadow-soft backdrop-blur-sm",
-              compact ? "h-16 w-16" : "h-20 w-20",
+              isCompact ? "h-12 w-12" : "h-20 w-20",
             )}
           >
             <img
@@ -64,27 +70,27 @@ const FoodCard = ({
               alt=""
               className={cn(
                 "object-contain opacity-65",
-                compact ? "h-9 w-9" : "h-12 w-12",
+                isCompact ? "h-7 w-7" : "h-12 w-12",
               )}
             />
           </div>
         </div>
       )}
-      {badge && <div className="absolute left-3 top-3">{badge}</div>}
+      {badge && <div className={cn("absolute", isCompact ? "left-2 top-2" : "left-3 top-3")}>{badge}</div>}
     </div>
 
     <div
       className={cn(
         "flex flex-1 flex-col",
-        compact ? "p-3 sm:p-4" : "p-4 sm:p-5",
+        isCompact ? "min-w-0 p-2.5 sm:p-3" : "p-4 sm:p-5",
       )}
     >
       <div className="flex items-start gap-2">
         <h3
           className={cn(
             "min-w-0 flex-1 font-sofia font-bold leading-[1.22] text-card-foreground",
-            compact
-              ? "line-clamp-2 text-[16px] md:text-[18px]"
+            isCompact
+              ? "line-clamp-2 text-[17px] md:text-[18px]"
               : "line-clamp-3 text-[20px] md:text-[23px]",
           )}
         >
@@ -97,8 +103,8 @@ const FoodCard = ({
         <p
           className={cn(
             "leading-relaxed text-muted-foreground",
-            compact
-              ? "mt-1.5 line-clamp-1 text-[13px] md:text-[14px]"
+            isCompact
+              ? "mt-1 line-clamp-1 text-[12px] md:text-[13px]"
               : "mt-2 line-clamp-2 text-[14px] md:text-[15px]",
           )}
         >
@@ -108,14 +114,14 @@ const FoodCard = ({
 
       <div
         className={cn(
-          "mt-auto flex flex-col gap-3 border-t border-border/45 pt-4 sm:flex-row sm:items-center sm:justify-between",
-          compact && "gap-2 pt-3",
+          "mt-auto flex gap-3 border-t border-border/45 pt-4 sm:flex-row sm:items-center sm:justify-between",
+          isCompact ? "items-center justify-between gap-2 pt-2" : "flex-col",
         )}
       >
         <span
           className={cn(
             "font-bold text-foreground/90",
-            compact
+            isCompact
               ? "text-[15px] md:text-[16px]"
               : "text-[18px] md:text-[19px]",
           )}
@@ -126,20 +132,21 @@ const FoodCard = ({
           onClick={onAdd}
           disabled={disabled}
           className={cn(
-            "w-full rounded-xl font-bold shadow-warm sm:w-auto",
-            compact
-              ? "h-11 min-w-[8rem] px-4 text-sm"
+            "rounded-xl font-bold shadow-warm",
+            isCompact
+              ? "h-11 min-w-[7.25rem] px-3 text-sm"
               : "h-12 min-w-[9.5rem] px-5 text-base",
           )}
         >
           <ShoppingCart
-            className={cn("mr-2", compact ? "h-4 w-4" : "h-5 w-5")}
+            className={cn("mr-2", isCompact ? "h-4 w-4" : "h-5 w-5")}
           />
           {disabled ? "Elfogyott" : actionLabel}
         </Button>
       </div>
     </div>
-  </article>
-);
+    </article>
+  );
+};
 
 export default FoodCard;

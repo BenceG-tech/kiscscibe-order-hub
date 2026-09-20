@@ -163,7 +163,7 @@ const DailyMenuPanel = ({ date, menuData, loading }: DailyMenuPanelProps) => {
         
         {/* Food cards - 2 columns always */}
         <div className="p-3 md:p-6">
-          <div className="grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 md:gap-5">
+          <div className="mx-auto grid max-w-3xl grid-cols-1 items-stretch gap-4 sm:grid-cols-2 md:gap-5">
             {menuData.soup && (
               <MenuItemCard item={menuData.soup} label="Leves" />
             )}
