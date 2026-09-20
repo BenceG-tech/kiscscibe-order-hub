@@ -66,3 +66,4 @@
 - [x] Heti étlap: ugyanaz az étel egy naphoz csak egyszer kerülhet
 - [x] Admin „Teszt hang" gomb és zárolt hang üzenet
 - [x] Lemondás visszaadja a lefoglalt adagokat és időpontot (foglalási napló + szerveroldali művelet, ismételt lemondás nem ad vissza újra)
+- [x] Hero AVIF elsődleges forrás WebP fallbackkel (50–70 KB), eager/LCP + lazy diák, CLS-ellenőrzés 390/1440
