@@ -45,12 +45,23 @@ import { AdminUpdatesDialog } from "@/components/admin/AdminUpdatesDialog";
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const { profile, signOut } = useAuth();
-  const { newOrdersCount, clearNewOrdersCount } = useOrderNotifications();
+  const { newOrdersCount, clearNewOrdersCount, playNotificationSound, audioUnlocked } = useOrderNotifications();
   const { data: finData } = useOverdueInvoices();
   const overdueCount = finData?.overdueCount || 0;
 
   const handleSignOut = async () => {
     await signOut();
+  };
+
+  const handleTestSound = () => {
+    playNotificationSound();
+    if (!audioUnlocked) {
+      toast.warning(
+        "A böngésző még némítja a hangot. Kattints bárhová az oldalon, majd próbáld újra a Teszt hang gombot.",
+      );
+    } else {
+      toast.success("Teszt hang lejátszva.");
+    }
   };
 
   const handleOrdersClick = () => {
