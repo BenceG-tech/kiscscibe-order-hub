@@ -71,11 +71,8 @@ serve(async (req) => {
       if (s?.value_json) googleReviewUrl = String(s.value_json);
     } catch { /* fallback */ }
 
-    const stars = [1, 2, 3, 4, 5].map(r => {
-      const url = `${siteUrl}/rate?order=${order_id}&token=${token}&rating=${r}`;
-      const emoji = r <= 2 ? "😞" : r === 3 ? "😐" : r === 4 ? "😊" : "🤩";
-      return `<a href="${url}" style="text-decoration:none;font-size:32px;margin:0 4px;">${emoji}</a>`;
-    }).join("");
+    const stars = ratingLinksHtml(order_id, token);
+    void siteUrl;
 
     const emailHtml = `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
