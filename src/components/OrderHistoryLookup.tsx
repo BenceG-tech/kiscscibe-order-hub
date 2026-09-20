@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Search, ExternalLink, AlertCircle } from "lucide-react";
+import { normalizeLookupPhone, normalizeOrderCode, validateLookupInput } from "@/lib/orderLookup";
 
 interface OrderRow {
   id: string;

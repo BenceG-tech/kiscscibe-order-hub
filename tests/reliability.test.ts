@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { isClosedDay, nextBusinessDates, toDateStr } from "../src/lib/pickupDates";
-import { normalizeLookupPhone, normalizeOrderCode, validateLookupInput } from "../src/components/OrderHistoryLookup";
+import { normalizeLookupPhone, normalizeOrderCode, validateLookupInput } from "../src/lib/orderLookup";
 
 describe("weekday/weekend pickup slot rules", () => {
   test("Saturday and Sunday are closed days", () => {
