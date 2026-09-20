@@ -923,13 +923,20 @@ export default function WeeklyMenuGrid() {
             topScrollRef.current.scrollLeft = scrollRef.current.scrollLeft;
           }
         }}
-        className="w-full overflow-x-auto rounded-lg border focus:outline-none focus:ring-2 focus:ring-ring"
+        data-testid="weekly-grid-scroll"
+        className="w-full overflow-x-auto rounded-lg border border-primary/15 bg-card/40 shadow-soft focus:outline-none focus:ring-2 focus:ring-ring"
       >
         <div className="min-w-[900px]">
-          <table className="w-full border-separate border-spacing-0">
+          <table className="w-full table-fixed border-separate border-spacing-0">
+            <colgroup>
+              <col className="w-40" />
+              {weekDates.map((_, idx) => (
+                <col key={idx} className="w-[148px]" />
+              ))}
+            </colgroup>
             <thead>
-              <tr className="bg-muted">
-                <th className="sticky left-0 z-30 bg-muted border-b border-r p-3 text-left font-medium text-sm w-48">
+              <tr className="bg-editorial text-editorial-foreground">
+                <th data-sticky-column className="sticky left-0 z-30 border-b border-r border-primary/20 bg-editorial p-2.5 text-left text-sm font-medium">
                   Kategória
                 </th>
                 {weekDates.map((date, idx) => {
@@ -938,9 +945,9 @@ export default function WeeklyMenuGrid() {
                   const itemCount = Object.values(dayItems).reduce((acc, items) => acc + items.length, 0);
                   
                   return (
-                    <th key={idx} data-day-index={idx} className="border-b border-l p-3 text-center font-medium text-sm min-w-[140px]">
+                    <th key={idx} data-day-index={idx} className="border-b border-l border-primary/15 p-2.5 text-center text-sm font-medium">
                       <div>{WEEKDAYS[idx]}</div>
-                      <div className="text-xs text-muted-foreground font-normal">
+                      <div className="text-xs font-normal text-editorial-muted">
                         {format(date, "MM.dd.")}
                       </div>
                       {itemCount > 0 && (
@@ -1100,6 +1107,7 @@ export default function WeeklyMenuGrid() {
                             onImageUpdated={handleImageUpdated}
                             onPriceChange={handleItemPriceChange}
                             onMenuPartToggle={handleMenuPartToggle}
+                            compact
                           />
                         </td>
                       );
@@ -1134,14 +1142,14 @@ function DayJumpBar({ weekDates, scrollRef, topScrollRef }: DayJumpBarProps) {
     setContentWidth(el.scrollWidth);
     setAtStart(el.scrollLeft <= 4);
     setAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 4);
-    // Determine which day is most centered
+    // Keep the active state aligned with the first day visible after the sticky category column.
     const ths = el.querySelectorAll<HTMLTableCellElement>("th[data-day-index]");
-    const center = el.scrollLeft + el.clientWidth / 2;
+    const stickyColumn = el.querySelector<HTMLTableCellElement>("th[data-sticky-column]");
+    const visibleStart = el.scrollLeft + (stickyColumn?.getBoundingClientRect().width ?? 0);
     let best = 0;
     let bestDist = Infinity;
     ths.forEach((th) => {
-      const mid = th.offsetLeft + th.offsetWidth / 2;
-      const d = Math.abs(mid - center);
+      const d = Math.abs(th.offsetLeft - visibleStart);
       if (d < bestDist) { bestDist = d; best = Number(th.dataset.dayIndex); }
     });
     setActiveIdx(best);
@@ -1163,9 +1171,12 @@ function DayJumpBar({ weekDates, scrollRef, topScrollRef }: DayJumpBarProps) {
     if (!el) return;
     const th = el.querySelector<HTMLTableCellElement>(`th[data-day-index="${idx}"]`);
     if (!th) return;
-    // Sticky category column is w-48 = 192px
-    const target = th.offsetLeft - 192;
-    el.scrollTo({ left: Math.max(0, target), behavior: "smooth" });
+    const stickyColumn = el.querySelector<HTMLTableCellElement>("th[data-sticky-column]");
+    const stickyWidth = stickyColumn?.getBoundingClientRect().width ?? 0;
+    const maxScroll = Math.max(0, el.scrollWidth - el.clientWidth);
+    const target = Math.min(maxScroll, Math.max(0, th.offsetLeft - stickyWidth));
+    setActiveIdx(idx);
+    el.scrollTo({ left: target, behavior: "smooth" });
   };
 
   const scrollByAmount = (delta: number) => {
@@ -1173,7 +1184,7 @@ function DayJumpBar({ weekDates, scrollRef, topScrollRef }: DayJumpBarProps) {
   };
 
   return (
-    <div className="sticky top-14 z-20 -mx-1 px-1 py-2 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border/40 flex flex-col gap-2">
+    <div className="sticky top-14 z-20 -mx-1 flex flex-col gap-2 border-b border-primary/15 bg-background/95 px-1 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="flex items-center gap-2">
         <Button
           variant="outline"
@@ -1188,8 +1199,10 @@ function DayJumpBar({ weekDates, scrollRef, topScrollRef }: DayJumpBarProps) {
         <div className="flex items-center gap-1.5 overflow-x-auto flex-1">
           {weekDates.map((date, idx) => (
             <button
+              type="button"
               key={idx}
               onClick={() => jumpTo(idx)}
+              aria-pressed={activeIdx === idx}
               className={`shrink-0 px-3 h-8 rounded-md text-xs font-medium transition-colors border ${
                 activeIdx === idx
                   ? "bg-primary text-primary-foreground border-primary"

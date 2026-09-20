@@ -75,3 +75,8 @@
 - [x] Admin felület összehangolása a Kiscsibe sötét-sárga arculatával
 - [x] Mobil dátum és „Holnapi ajánlatok” címke elcsúszásának javítása
 - [x] Mobil és asztali vizuális, valamint minőségellenőrzés
+
+## Admin heti táblázat kezelhetősége
+- [x] Tömörebb, stabil asztali naposzlopok
+- [x] Egykattintásos, pontos napugrás
+- [x] Laptop-, asztali- és mobil-ellenőrzés (forrás-, típus- és működési tesztek; belépett vizuális próba nem elérhető)
