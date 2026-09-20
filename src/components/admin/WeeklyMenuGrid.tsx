@@ -926,12 +926,12 @@ export default function WeeklyMenuGrid() {
         data-testid="weekly-grid-scroll"
         className="w-full overflow-x-auto rounded-lg border border-primary/15 bg-card/40 shadow-soft focus:outline-none focus:ring-2 focus:ring-ring"
       >
-        <div className="min-w-[900px]">
+        <div className="min-w-[1120px]">
           <table className="w-full table-fixed border-separate border-spacing-0">
             <colgroup>
               <col className="w-40" />
               {weekDates.map((_, idx) => (
-                <col key={idx} className="w-[148px]" />
+                <col key={idx} className="w-48" />
               ))}
             </colgroup>
             <thead>
