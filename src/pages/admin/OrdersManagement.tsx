@@ -275,6 +275,46 @@ const OrdersManagement = () => {
     newStatus: string,
     opts: { silent?: boolean } = {}
   ) => {
+    // Cancellation must also release the reserved portions / capacity slot.
+    // The server-side RPC does this atomically and exactly once.
+    if (newStatus === "cancelled") {
+      const { data, error } = await supabase.rpc("cancel_order_with_restore", {
+        p_order_id: orderId,
+      });
+
+      if (error) {
+        toast({
+          title: "Hiba",
+          description: `Nem sikerült lemondani a rendelést: ${error.message}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const result = (data ?? {}) as {
+        already_cancelled?: boolean;
+        restored?: number;
+      };
+
+      toast({
+        title: result.already_cancelled ? "Már lemondva" : "Lemondva",
+        description: result.already_cancelled
+          ? "Ez a rendelés már lemondott állapotban van, készlet nem változott"
+          : `Rendelés lemondva, ${result.restored ?? 0} foglalás felszabadítva`,
+      });
+
+      if (!opts.silent) {
+        supabase.functions
+          .invoke("send-order-status-email", {
+            body: { order_id: orderId, new_status: newStatus },
+          })
+          .catch((err) => console.error("Status email error:", err));
+      }
+
+      fetchOrders();
+      return;
+    }
+
     const { error } = await supabase
       .from("orders")
       .update({ status: newStatus })

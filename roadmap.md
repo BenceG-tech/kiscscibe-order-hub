@@ -65,3 +65,4 @@
 - [ ] Jogosultság-visszavonás (get_customer_orders) — publikálás UTÁN alkalmazandó
 - [x] Heti étlap: ugyanaz az étel egy naphoz csak egyszer kerülhet
 - [x] Admin „Teszt hang" gomb és zárolt hang üzenet
+- [x] Lemondás visszaadja a lefoglalt adagokat és időpontot (foglalási napló + szerveroldali művelet, ismételt lemondás nem ad vissza újra)

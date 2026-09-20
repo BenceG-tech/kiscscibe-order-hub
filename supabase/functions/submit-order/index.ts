@@ -198,6 +198,16 @@ serve(async (req) => {
   // Rollback safety net: registered compensations run in reverse order if any step after
   // capacity/portion mutations throws. Prevents "ghost" bookings when the final INSERT fails.
   const compensations: Array<() => Promise<void>> = [];
+  // Reservation ledger: every resource this order consumes, so a later
+  // cancellation can restore it deterministically (exactly once).
+  const reservationLedger: Array<{
+    resource_type: 'daily_portions' | 'capacity_slot';
+    resource_table?: string;
+    resource_id?: string;
+    slot_date?: string;
+    slot_time?: string;
+    qty: number;
+  }> = [];
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -547,6 +557,13 @@ serve(async (req) => {
           throw new Error(updateError?.message || 'Hiba a készlet frissítése során - nincs elég adag');
         }
 
+        reservationLedger.push({
+          resource_type: 'daily_portions',
+          resource_table: tableName,
+          resource_id: item.daily_id!,
+          qty: item.qty,
+        });
+
         // Register rollback for this portion decrement
         const tblForRollback = tableName;
         const idForRollback = item.daily_id!;
@@ -842,6 +859,13 @@ serve(async (req) => {
         throw new Error('Az időpont nem elérhető');
       }
 
+      reservationLedger.push({
+        resource_type: 'capacity_slot',
+        slot_date: date,
+        slot_time: time,
+        qty: 1,
+      });
+
       // Register rollback for capacity slot booking
       const slotDate = date;
       const slotTime = time;
@@ -940,6 +964,40 @@ serve(async (req) => {
 
     const orderId = orderData.id;
     console.log('Created order:', orderId);
+
+    // Persist the reservation ledger (merged by resource) so cancellation can
+    // restore exactly what was reserved. Best-effort: never fail the order here,
+    // cancellation falls back to deriving reservations from the order itself.
+    if (reservationLedger.length > 0) {
+      try {
+        const merged = new Map<string, Record<string, unknown>>();
+        for (const r of reservationLedger) {
+          const key = [r.resource_type, r.resource_table ?? '', r.resource_id ?? '', r.slot_date ?? '', r.slot_time ?? ''].join('|');
+          const prev = merged.get(key);
+          if (prev) {
+            prev.qty = (prev.qty as number) + r.qty;
+          } else {
+            merged.set(key, {
+              order_id: orderId,
+              resource_type: r.resource_type,
+              resource_table: r.resource_table ?? null,
+              resource_id: r.resource_id ?? null,
+              slot_date: r.slot_date ?? null,
+              slot_time: r.slot_time ?? null,
+              qty: r.qty,
+            });
+          }
+        }
+        const { error: ledgerError } = await supabase
+          .from('order_reservations')
+          .insert([...merged.values()]);
+        if (ledgerError) {
+          console.error('Reservation ledger insert failed (non-fatal):', ledgerError.message);
+        }
+      } catch (e) {
+        console.error('Reservation ledger insert threw (non-fatal):', e);
+      }
+    }
 
     // Register rollback: if any downstream step (items, options) fails, DELETE this order
     // so we don't leave phantom rows with no items visible to staff.

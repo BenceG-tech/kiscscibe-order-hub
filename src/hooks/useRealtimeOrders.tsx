@@ -154,6 +154,21 @@ export const useRealtimeOrders = () => {
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
+      if (newStatus === 'cancelled') {
+        const { data, error } = await supabase.rpc('cancel_order_with_restore', {
+          p_order_id: orderId,
+        });
+        if (error) throw error;
+        const result = (data ?? {}) as { already_cancelled?: boolean; restored?: number };
+        toast({
+          title: result.already_cancelled ? "Már lemondva" : "Lemondva",
+          description: result.already_cancelled
+            ? "Ez a rendelés már lemondott, készlet nem változott"
+            : `Rendelés lemondva, ${result.restored ?? 0} foglalás felszabadítva`,
+        });
+        return;
+      }
+
       const { error } = await supabase
         .from('orders')
         .update({ status: newStatus })

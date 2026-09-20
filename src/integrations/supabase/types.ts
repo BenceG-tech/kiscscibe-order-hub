@@ -1426,6 +1426,53 @@ export type Database = {
         }
         Relationships: []
       }
+      order_reservations: {
+        Row: {
+          created_at: string
+          id: string
+          order_id: string
+          qty: number
+          resource_id: string | null
+          resource_table: string | null
+          resource_type: string
+          restored_at: string | null
+          slot_date: string | null
+          slot_time: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          order_id: string
+          qty: number
+          resource_id?: string | null
+          resource_table?: string | null
+          resource_type: string
+          restored_at?: string | null
+          slot_date?: string | null
+          slot_time?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          order_id?: string
+          qty?: number
+          resource_id?: string | null
+          resource_table?: string | null
+          resource_type?: string
+          restored_at?: string | null
+          slot_date?: string | null
+          slot_time?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_reservations_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           archived: boolean
@@ -1727,6 +1774,7 @@ export type Database = {
       }
       audit_module_for_table: { Args: { table_name: string }; Returns: string }
       bootstrap_first_admin: { Args: never; Returns: boolean }
+      cancel_order_with_restore: { Args: { p_order_id: string }; Returns: Json }
       claim_admin_access: { Args: never; Returns: boolean }
       cleanup_old_order_tracking: { Args: never; Returns: undefined }
       gen_order_code: { Args: never; Returns: string }
@@ -1816,6 +1864,10 @@ export type Database = {
       is_owner: { Args: { check_user_id?: string }; Returns: boolean }
       is_staff: { Args: { _user_id?: string }; Returns: boolean }
       is_weekend: { Args: { check_date: string }; Returns: boolean }
+      restore_daily_portions: {
+        Args: { daily_id: string; quantity: number; table_name: string }
+        Returns: boolean
+      }
       update_capacity_slot: {
         Args: { qty?: number; slot_date: string; slot_time: string }
         Returns: boolean
