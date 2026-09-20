@@ -10,6 +10,7 @@ import { QuickImageUpload } from "./QuickImageUpload";
 import { QuickPriceEdit } from "./QuickPriceEdit";
 import { MenuPartToggle } from "./MenuPartToggle";
 import { MenuItemEditDialog } from "./MenuItemEditDialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface MenuItem {
   id: string;
@@ -153,9 +154,22 @@ export function WeeklyGridCell({
             </div>
           )}
           
-          <span className={cn("min-w-0 flex-1 text-xs font-medium truncate", selectedItem.isSoldOut && "line-through")} title={selectedItem.itemName}>
-            {selectedItem.itemName}
-          </span>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span
+                tabIndex={0}
+                className={cn(
+                  "min-w-0 flex-1 cursor-help truncate text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  selectedItem.isSoldOut && "line-through",
+                )}
+              >
+                {selectedItem.itemName}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-72 break-words text-xs">
+              {selectedItem.itemName}
+            </TooltipContent>
+          </Tooltip>
 
           <div className={cn("flex min-w-0 items-center gap-0.5", compact && "col-span-2 justify-end border-t border-border/50 pt-1")}>
             {/* Sold Out Toggle */}
