@@ -965,6 +965,40 @@ serve(async (req) => {
     const orderId = orderData.id;
     console.log('Created order:', orderId);
 
+    // Persist the reservation ledger (merged by resource) so cancellation can
+    // restore exactly what was reserved. Best-effort: never fail the order here,
+    // cancellation falls back to deriving reservations from the order itself.
+    if (reservationLedger.length > 0) {
+      try {
+        const merged = new Map<string, Record<string, unknown>>();
+        for (const r of reservationLedger) {
+          const key = [r.resource_type, r.resource_table ?? '', r.resource_id ?? '', r.slot_date ?? '', r.slot_time ?? ''].join('|');
+          const prev = merged.get(key);
+          if (prev) {
+            prev.qty = (prev.qty as number) + r.qty;
+          } else {
+            merged.set(key, {
+              order_id: orderId,
+              resource_type: r.resource_type,
+              resource_table: r.resource_table ?? null,
+              resource_id: r.resource_id ?? null,
+              slot_date: r.slot_date ?? null,
+              slot_time: r.slot_time ?? null,
+              qty: r.qty,
+            });
+          }
+        }
+        const { error: ledgerError } = await supabase
+          .from('order_reservations')
+          .insert([...merged.values()]);
+        if (ledgerError) {
+          console.error('Reservation ledger insert failed (non-fatal):', ledgerError.message);
+        }
+      } catch (e) {
+        console.error('Reservation ledger insert threw (non-fatal):', e);
+      }
+    }
+
     // Register rollback: if any downstream step (items, options) fails, DELETE this order
     // so we don't leave phantom rows with no items visible to staff.
     compensations.push(async () => {
