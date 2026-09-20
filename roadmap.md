@@ -34,4 +34,4 @@
 # Célzott kártyaméret-finimítás
 - [x] Vízszintes, sűrű reggeli kártyavariáns
 - [x] Standard napi ajánlat és középre igazított napi menü kártyák
-- [ ] Desktop, mobil, kosár és köretválasztó ellenőrzése
+- [x] Desktop, mobil, kosár és köretválasztó ellenőrzése
