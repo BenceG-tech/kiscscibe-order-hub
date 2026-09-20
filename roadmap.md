@@ -68,3 +68,10 @@
 - [x] Admin „Teszt hang" gomb és zárolt hang üzenet
 - [x] Lemondás visszaadja a lefoglalt adagokat és időpontot (foglalási napló + szerveroldali művelet, ismételt lemondás nem ad vissza újra)
 - [x] Hero AVIF elsődleges forrás WebP fallbackkel (50–70 KB), eager/LCP + lazy diák, CLS-ellenőrzés 390/1440
+
+## Admin és napi ajánlat vizuális finomítás
+- [x] Módosítási napló látható felületének eltávolítása az auditadatok megtartásával
+- [x] Admin frissítési lista aktualizálása
+- [x] Admin felület összehangolása a Kiscsibe sötét-sárga arculatával
+- [x] Mobil dátum és „Holnapi ajánlatok” címke elcsúszásának javítása
+- [ ] Mobil és asztali vizuális, valamint minőségellenőrzés

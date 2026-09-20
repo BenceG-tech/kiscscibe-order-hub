@@ -71,7 +71,6 @@ export const HELP_PAGE_GROUPS: HelpPageGroup[] = [
   { id: "about-faq", tabGroup: "content", title: "Rólunk & GYIK", icon: "ℹ️", route: "/admin/about", description: "Rólunk oldal, GYIK, hirdetmény" },
   { id: "legal", tabGroup: "content", title: "Jogi oldalak", icon: "📜", route: "/admin/legal", description: "Impresszum, ÁSZF, Adatvédelem" },
   { id: "documents", tabGroup: "content", title: "Dokumentumok", icon: "📁", route: "/admin/documents", description: "Drive — szerződések, NAV iratok" },
-  { id: "activity-log", tabGroup: "content", title: "Módosítási napló", icon: "🧾", route: "/admin/activity", description: "Ki, mikor, mit módosított" },
   { id: "reviews", tabGroup: "content", title: "Vélemények", icon: "⭐", route: "/admin/reviews", description: "Főoldali vendég-vélemények szerkesztése" },
   { id: "pwa-push", tabGroup: "content", title: "Mobil app & értesítések", icon: "📱", description: "PWA telepítés, push értesítések" },
   { id: "troubleshoot", tabGroup: "content", title: "Mit tegyek ha…", icon: "🆘", description: "Hibakeresés, gyakori problémák" },
@@ -107,7 +106,6 @@ export const QUICK_MAP: QuickMapEntry[] = [
   { icon: "💰", title: "Számlák", route: "/admin/invoices", description: "Beszállítói számlák AI felismeréssel, ismétlődő számlák, fizetési emlékeztetők." },
   { icon: "🏢", title: "Partnerek", route: "/admin/partners", description: "Beszállítók adatai — automatikusan kapcsolódnak a számlákhoz." },
   { icon: "📁", title: "Dokumentumok", route: "/admin/documents", description: "Drive-szerű dokumentumtár — szerződések, NAV iratok, verziózva." },
-  { icon: "🧾", title: "Napló", route: "/admin/activity", description: "Minden fontos admin módosítás visszakereshető: ki, mikor, mit változtatott." },
   { icon: "📸", title: "Galéria", route: "/admin/gallery", description: "Ételek és Éttermünk képek a publikus galériához." },
   { icon: "ℹ️", title: "Rólunk", route: "/admin/about", description: "A Rólunk oldal tartalma — szöveg, számok, képek." },
   { icon: "❓", title: "GYIK", route: "/admin/faq", description: "Gyakori kérdések szerkesztése a publikus oldalon." },
@@ -727,21 +725,8 @@ export const HELP_CATEGORIES: HelpCategory[] = [
         whyItHelps: "Egy helyen minden papír — a gyors mappázás és címkézés miatt az asszisztens is könnyen rendben tudja tartani.",
       },
       {
-        id: "activity-log",
-        pageGroup: "activity-log",
-        title: "Módosítási napló",
-        routes: ["/admin/activity"],
-        whatItDoes: "Megmutatja, ki mikor mit módosított a fontos admin területeken: dokumentumok, étlap, napi ajánlat, számlák, partnerek és tartalmak.",
-        howToUse: [
-          "Nyisd meg a Napló oldalt az admin navigációból.",
-          "Szűrj modulra, felhasználóra, dátumra vagy műveletre.",
-          "Kattints a szem ikonra, ha látni szeretnéd az előtte/utána mezőváltozásokat.",
-        ],
-        whyItHelps: "Ha valami elállítódik, gyorsan visszakereshető, ki és mikor változtatott rajta.",
-      },
-      {
         id: "admin-notes",
-        pageGroup: "activity-log",
+        pageGroup: "documents",
         title: "Kézikönyv jegyzetek és észrevételek",
         whatItDoes: "A kézikönyv elején gyors jegyzetet lehet írni arról, mi nem egyértelmű, hibás vagy hiányzik.",
         howToUse: [

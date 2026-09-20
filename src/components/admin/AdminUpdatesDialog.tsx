@@ -21,11 +21,11 @@ const entryId = (e: ChangelogEntry) => `${e.date}|${e.title}`;
 const typeStyle = (t: string) => {
   switch (t) {
     case "new":
-      return { label: "ÚJ", className: "bg-emerald-600 text-white" };
+      return { label: "ÚJ", className: "border-primary/30 bg-primary text-primary-foreground" };
     case "improved":
-      return { label: "FEJLESZTÉS", className: "bg-blue-600 text-white" };
+      return { label: "FEJLESZTÉS", className: "border-primary/30 bg-primary/20 text-primary" };
     case "fixed":
-      return { label: "JAVÍTÁS", className: "bg-amber-500 text-white" };
+      return { label: "JAVÍTÁS", className: "border-primary/35 bg-secondary text-secondary-foreground" };
     default:
       return { label: "FRISSÍTÉS", className: "bg-primary text-primary-foreground" };
   }
