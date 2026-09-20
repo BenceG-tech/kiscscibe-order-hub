@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import ModernNavigation from "@/components/ModernNavigation";
 import { ArrowLeft, Check, Clock, CreditCard, ShoppingCart, User, FileText, AlertTriangle, RefreshCw } from "lucide-react";
 import { persistCheckoutSnapshot, useAbandonedCartTracking } from "@/hooks/useAbandonedCartTracking";
+import { isClosedDay, nextBusinessDates } from "@/lib/pickupDates";
 
 const DEV = import.meta.env.DEV;
 
