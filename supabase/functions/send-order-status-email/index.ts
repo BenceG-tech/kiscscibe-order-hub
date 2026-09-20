@@ -127,6 +127,12 @@ serve(async (req) => {
       ? `Átvétel: ${new Date(order.pickup_time).toLocaleString('hu-HU')}`
       : 'Átvétel: Amilyen hamar lehet';
 
+    // Completed orders carry the secure 1–5 emoji rating links inline — Edge Functions
+    // cannot reliably stay alive to send a delayed follow-up email.
+    const ratingLinks = new_status === 'completed'
+      ? ratingLinksHtml(order_id, await generateRatingToken(order_id))
+      : '';
+
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #333;">${config.emoji} ${config.heading}</h2>
