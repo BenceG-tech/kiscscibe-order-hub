@@ -48,3 +48,9 @@
 - [x] Napi menü külső dobozának eltávolítása és kompakt elrendezése
 - [x] Mobil ételkártyák vízszintes, kompakt megjelenítése
 - [x] Desktop/mobil működési és vizuális ellenőrzés
+
+## Új nyitókép és GYIK helyreállítás
+- [x] Három reszponzív nyitókép WebP és AVIF optimalizálása
+- [x] Hat másodperces, akadálymentes képváltó beépítése
+- [x] GYIK láthatóságának és hibás adat esetén alapértékeinek javítása
+- [ ] Desktop, mobil, csökkentett mozgás és minőségellenőrzés

@@ -6,7 +6,6 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { useScrollFadeIn } from "@/hooks/useScrollFadeIn";
-import { cn } from "@/lib/utils";
 import { useFaqItems } from "@/hooks/useFaqItems";
 
 const FAQSection = () => {
@@ -46,10 +45,7 @@ const FAQSection = () => {
         <span className="section-kicker">Hasznos tudnivalók</span>
         <h2 className="section-title mb-4 md:mb-6">Gyakori kérdések</h2>
         
-        <div className={cn(
-           "border-y border-border/60 bg-transparent transition-all duration-700",
-          isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-        )}>
+        <div className={`border-y border-border/60 bg-transparent transition-transform duration-500 motion-reduce:transition-none ${isVisible ? "translate-y-0" : "translate-y-1"}`}>
           <Accordion type="single" collapsible className="w-full">
             {faqs.map((faq, index) => (
               <AccordionItem key={faq.id || index} value={`item-${faq.id || index}`} className="border-border/50">

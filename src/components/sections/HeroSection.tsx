@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ArrowRight, Clock3, MapPin, UtensilsCrossed } from "lucide-react";
@@ -8,11 +8,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { getSmartInitialDate } from "@/lib/dateUtils";
 import { capitalizeFirst } from "@/lib/utils";
 import { formatOpeningHoursOneLiner, useRestaurantSettings } from "@/hooks/useRestaurantSettings";
-import desktopHeroAvif from "@/assets/kiscsibe-hero-gingham-desktop-v1.avif.asset.json";
-import desktopHeroWebp from "@/assets/kiscsibe-hero-gingham-desktop-v1.webp.asset.json";
-import mobileHeroAvif from "@/assets/kiscsibe-hero-gingham-mobile-v1.avif.asset.json";
-import mobileHeroWebp from "@/assets/kiscsibe-hero-gingham-mobile-v1.webp.asset.json";
-import heroMotion from "@/assets/kiscsibe-hero-motion-v2.mp4.asset.json";
+import lunchDesktopAvif from "@/assets/kiscsibe-hero-lunch-desktop-v2.avif.asset.json";
+import lunchDesktopWebp from "@/assets/kiscsibe-hero-lunch-desktop-v2.webp.asset.json";
+import lunchMobileAvif from "@/assets/kiscsibe-hero-lunch-mobile-v2.avif.asset.json";
+import lunchMobileWebp from "@/assets/kiscsibe-hero-lunch-mobile-v2.webp.asset.json";
+import breakfastDesktopAvif from "@/assets/kiscsibe-hero-breakfast-desktop-v2.avif.asset.json";
+import breakfastDesktopWebp from "@/assets/kiscsibe-hero-breakfast-desktop-v2.webp.asset.json";
+import breakfastMobileAvif from "@/assets/kiscsibe-hero-breakfast-mobile-v2.avif.asset.json";
+import breakfastMobileWebp from "@/assets/kiscsibe-hero-breakfast-mobile-v2.webp.asset.json";
+import counterDesktopAvif from "@/assets/kiscsibe-hero-counter-desktop-v2.avif.asset.json";
+import counterDesktopWebp from "@/assets/kiscsibe-hero-counter-desktop-v2.webp.asset.json";
+import counterMobileAvif from "@/assets/kiscsibe-hero-counter-mobile-v2.avif.asset.json";
+import counterMobileWebp from "@/assets/kiscsibe-hero-counter-mobile-v2.webp.asset.json";
 
 interface HeroMenuItem {
   item_name?: string;
@@ -25,8 +32,64 @@ interface HeroDailyRow {
   menu_price_huf?: number | null;
 }
 
+const HERO_SLIDES = [
+  {
+    desktopAvif: lunchDesktopAvif.url,
+    desktopWebp: lunchDesktopWebp.url,
+    mobileAvif: lunchMobileAvif.url,
+    mobileWebp: lunchMobileWebp.url,
+    label: "Házias ebéd",
+  },
+  {
+    desktopAvif: breakfastDesktopAvif.url,
+    desktopWebp: breakfastDesktopWebp.url,
+    mobileAvif: breakfastMobileAvif.url,
+    mobileWebp: breakfastMobileWebp.url,
+    label: "Friss reggeli",
+  },
+  {
+    desktopAvif: counterDesktopAvif.url,
+    desktopWebp: counterDesktopWebp.url,
+    mobileAvif: counterMobileAvif.url,
+    mobileWebp: counterMobileWebp.url,
+    label: "Kiscsibe pult",
+  },
+] as const;
+
 const HeroSection = () => {
   const { openingHours, address } = useRestaurantSettings();
+  const [activeSlide, setActiveSlide] = useState(0);
+  const [loadLaterSlides, setLoadLaterSlides] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  const [pageVisible, setPageVisible] = useState(() => document.visibilityState === "visible");
+
+  useEffect(() => {
+    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const updateMotionPreference = () => setReducedMotion(motionQuery.matches);
+    const updateVisibility = () => setPageVisible(document.visibilityState === "visible");
+
+    updateMotionPreference();
+    document.addEventListener("visibilitychange", updateVisibility);
+    motionQuery.addEventListener("change", updateMotionPreference);
+
+    const deferredLoad = window.setTimeout(() => {
+      if (!motionQuery.matches) setLoadLaterSlides(true);
+    }, 800);
+
+    return () => {
+      window.clearTimeout(deferredLoad);
+      document.removeEventListener("visibilitychange", updateVisibility);
+      motionQuery.removeEventListener("change", updateMotionPreference);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (reducedMotion || !pageVisible) return;
+    const timer = window.setInterval(() => {
+      setActiveSlide((current) => (current + 1) % HERO_SLIDES.length);
+    }, 6000);
+    return () => window.clearInterval(timer);
+  }, [pageVisible, reducedMotion]);
 
   const { data: dailyMenu, isLoading } = useQuery({
     queryKey: ["homepage-hero-menu"],
@@ -55,37 +118,29 @@ const HeroSection = () => {
   return (
     <section className="relative isolate min-h-[calc(100svh-5.25rem)] overflow-hidden bg-editorial text-editorial-foreground md:min-h-[min(850px,calc(100svh-6rem))]">
       <div className="absolute inset-0" aria-hidden="true">
-        <picture className="md:hidden motion-reduce:block">
-          <source media="(max-width: 767px)" type="image/avif" srcSet={mobileHeroAvif.url} />
-          <source media="(max-width: 767px)" type="image/webp" srcSet={mobileHeroWebp.url} />
-          <source type="image/avif" srcSet={desktopHeroAvif.url} />
-          <source type="image/webp" srcSet={desktopHeroWebp.url} />
-          <img
-            src={desktopHeroWebp.url}
-            alt="Házias Kiscsibe fogások piros-fehér kockás terítőn"
-            className="hero-food-image absolute inset-0 h-full w-full object-cover motion-reduce:animate-none"
-            loading="eager"
-            decoding="async"
-            width={1365}
-            height={768}
-          />
-        </picture>
-        <video
-          className="hero-motion-video absolute inset-0 hidden h-full w-full object-cover md:block"
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="metadata"
-          poster={desktopHeroWebp.url}
-        >
-          <source src={heroMotion.url} type="video/mp4" />
-        </video>
-        <picture className="hidden motion-reduce:block">
-          <source type="image/avif" srcSet={desktopHeroAvif.url} />
-          <source type="image/webp" srcSet={desktopHeroWebp.url} />
-          <img src={desktopHeroWebp.url} alt="" className="absolute inset-0 h-full w-full object-cover" width={1365} height={768} />
-        </picture>
+        {HERO_SLIDES.map((slide, index) => {
+          if (index > 0 && (!loadLaterSlides || reducedMotion)) return null;
+          return (
+            <picture
+              key={slide.label}
+              className={`absolute inset-0 transition-opacity duration-1000 ease-in-out motion-reduce:transition-none ${index === activeSlide ? "opacity-100" : "opacity-0"}`}
+            >
+              <source media="(max-width: 767px)" type="image/avif" srcSet={slide.mobileAvif} />
+              <source media="(max-width: 767px)" type="image/webp" srcSet={slide.mobileWebp} />
+              <source type="image/avif" srcSet={slide.desktopAvif} />
+              <source type="image/webp" srcSet={slide.desktopWebp} />
+              <img
+                src={slide.desktopWebp}
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover"
+                loading={index === 0 ? "eager" : "lazy"}
+                decoding="async"
+                width={1672}
+                height={941}
+              />
+            </picture>
+          );
+        })}
         <div className="absolute inset-0 bg-hero-paper-shade" />
       </div>
 
@@ -120,6 +175,24 @@ const HeroSection = () => {
           </div>
         </div>
       </div>
+
+      {!reducedMotion && (
+        <div className="absolute bottom-[5.75rem] left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 md:bottom-[6.75rem]" aria-label="Nyitóképek">
+          {HERO_SLIDES.map((slide, index) => (
+            <button
+              key={slide.label}
+              type="button"
+              onClick={() => {
+                setLoadLaterSlides(true);
+                setActiveSlide(index);
+              }}
+              className={`h-2.5 rounded-full border border-editorial-foreground/60 transition-[width,background-color] duration-300 ${index === activeSlide ? "w-8 bg-primary" : "w-2.5 bg-editorial/65 hover:bg-editorial-foreground/70"}`}
+              aria-label={`${index + 1}. nyitókép: ${slide.label}`}
+              aria-current={index === activeSlide ? "true" : undefined}
+            />
+          ))}
+        </div>
+      )}
 
       <button
         type="button"

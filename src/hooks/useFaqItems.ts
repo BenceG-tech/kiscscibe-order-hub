@@ -9,12 +9,30 @@ export interface FaqItem {
 }
 
 const DEFAULT_FAQS: FaqItem[] = [
-  { id: "1", question: "Meddig lehet rendelni?", answer: "Aznap 14:30-ig adható le rendelés." },
+  { id: "1", question: "Meddig lehet aznapra rendelni?", answer: "Az aznapi rendelést 15:30-ig tudod leadni." },
   { id: "2", question: "Mennyi a várható átfutás?", answer: "Átlagosan 15–25 perc." },
-  { id: "3", question: "Van kártyás fizetés?", answer: "Igen, a helyszínen és online is (hamarosan)." },
+  { id: "3", question: "Lehet kártyával fizetni?", answer: "Igen, átvételkor a helyszínen bankkártyával is fizethetsz." },
   { id: "4", question: "Számla kérhető?", answer: "Igen, kérlek jelezd rendeléskor." },
   { id: "5", question: "Tudok időpontra kérni átvételt?", answer: "Igen, választhatsz idősávot." },
+  { id: "6", question: "Hol vehetem át a rendelést?", answer: "A rendelés személyesen vehető át a Kiscsibe Étteremben: 1141 Budapest, Vezér u. 110." },
+  { id: "7", question: "Mikor vagytok nyitva?", answer: "Hétfőtől péntekig 7:00 és 16:00 között várunk, hétvégén zárva tartunk." },
+  { id: "8", question: "Hol találom az allergéneket?", answer: "Az ételek mellett feltüntetjük az allergén információkat. Érzékenység vagy allergia esetén kérjük, rendelés előtt egyeztess velünk." },
 ];
+
+const isFaqItem = (value: unknown): value is FaqItem => {
+  if (!value || typeof value !== "object") return false;
+  const item = value as Record<string, unknown>;
+  return typeof item.id === "string"
+    && typeof item.question === "string"
+    && item.question.trim().length > 0
+    && typeof item.answer === "string"
+    && item.answer.trim().length > 0;
+};
+
+const parseFaqItems = (value: unknown): FaqItem[] => {
+  if (!Array.isArray(value) || value.length === 0 || !value.every(isFaqItem)) return DEFAULT_FAQS;
+  return value;
+};
 
 export const useFaqItems = () => {
   const queryClient = useQueryClient();
@@ -30,7 +48,7 @@ export const useFaqItems = () => {
 
       if (error) throw error;
       if (!data) return DEFAULT_FAQS;
-      return (data.value_json as unknown as FaqItem[]) || DEFAULT_FAQS;
+      return parseFaqItems(data.value_json);
     },
   });
 
