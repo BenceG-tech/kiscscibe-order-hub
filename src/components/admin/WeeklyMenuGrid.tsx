@@ -299,6 +299,13 @@ export default function WeeklyMenuGrid() {
       
       if (existingOffer) {
         offerId = existingOffer.id;
+        // UI-level guard: the same item must not be added twice to the same day.
+        const alreadyThere = existingOffer.daily_offer_items?.some(
+          (oi) => oi.item_id === itemId,
+        );
+        if (alreadyThere) {
+          return { duplicate: true as const };
+        }
       } else {
         // Create new daily_offer
         const { data: newOffer, error: offerError } = await supabase
@@ -319,11 +326,22 @@ export default function WeeklyMenuGrid() {
           item_id: itemId,
         });
       
-      if (error) throw error;
+      if (error) {
+        // DB-level guard: unique index (daily_offer_id, item_id) → 23505
+        if ((error as any).code === "23505") {
+          return { duplicate: true as const };
+        }
+        throw error;
+      }
+      return { duplicate: false as const };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["daily-offers-week"] });
-      toast.success("Étel hozzáadva");
+      if (result?.duplicate) {
+        toast.info("Ez az étel már szerepel ezen a napon.");
+      } else {
+        toast.success("Étel hozzáadva");
+      }
     },
     onError: (error) => {
       console.error("Error adding item:", error);
