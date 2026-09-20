@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { useCart } from "@/contexts/CartContext";
 import { ChefHat, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
@@ -35,8 +34,8 @@ interface DailyMenuPanelProps {
 }
 
 const MenuItemCard = ({ item, label }: { item: MenuItem; label: string }) => (
-  <article className="food-frame group flex h-full flex-col border-primary/15 bg-card/95">
-    <div className="aspect-[16/10] w-full overflow-hidden border-b border-border/50 bg-muted">
+  <article className="food-frame group flex min-h-[118px] border-border/50 bg-card/85 sm:h-full sm:max-w-[340px] sm:flex-col">
+    <div className="w-[104px] shrink-0 overflow-hidden border-r border-border/40 bg-muted sm:aspect-[16/10] sm:w-full sm:border-b sm:border-r-0">
       {item.item_image_url ? (
         <img 
           src={item.item_image_url} 
@@ -45,17 +44,17 @@ const MenuItemCard = ({ item, label }: { item: MenuItem; label: string }) => (
         />
       ) : (
         <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-secondary/55 via-card to-background">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full border border-primary/20 bg-background/35 shadow-soft">
-            <img src={kiscsibeLogo} alt="" className="h-12 w-12 object-contain opacity-65" />
+          <div className="flex h-11 w-11 items-center justify-center rounded-full border border-primary/15 bg-background/35 sm:h-16 sm:w-16">
+            <img src={kiscsibeLogo} alt="" className="h-7 w-7 object-contain opacity-65 sm:h-10 sm:w-10" />
           </div>
         </div>
       )}
     </div>
-    <div className="flex flex-1 flex-col p-4 md:p-5">
-      <span className="mb-1.5 w-fit rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase text-primary md:text-xs">{label}</span>
-      <h4 className="line-clamp-3 font-sofia text-[20px] font-bold leading-[1.22] text-card-foreground md:text-[23px]">{capitalizeFirst(item.item_name)}</h4>
+    <div className="flex min-w-0 flex-1 flex-col p-3 sm:p-4">
+      <span className="mb-1 w-fit text-[10px] font-bold uppercase text-primary sm:mb-1.5 sm:text-xs">{label}</span>
+      <h4 className="line-clamp-2 font-sofia text-[17px] font-bold leading-[1.2] text-card-foreground sm:line-clamp-3 sm:text-[21px]">{capitalizeFirst(item.item_name)}</h4>
       {item.item_description && (
-        <p className="mt-2 line-clamp-2 text-[14px] leading-relaxed text-muted-foreground md:text-[15px]">{item.item_description}</p>
+        <p className="mt-1 line-clamp-1 text-[12px] leading-relaxed text-muted-foreground sm:mt-2 sm:line-clamp-2 sm:text-[14px]">{item.item_description}</p>
       )}
     </div>
   </article>
@@ -103,67 +102,39 @@ const DailyMenuPanel = ({ date, menuData, loading }: DailyMenuPanelProps) => {
 
   if (loading) {
     return (
-      <Card className="soft-panel overflow-hidden border-0">
-        <CardContent className="p-0">
-          <div className="bg-primary/10 px-6 py-4">
-            <div className="flex items-center gap-3">
-              <ChefHat className="h-6 w-6 text-primary" />
-              <h3 className="text-xl font-bold">Napi Menü</h3>
-            </div>
-          </div>
-          <div className="p-6">
-            <div className="animate-pulse space-y-4">
-              <div className="h-4 w-3/4 rounded-full bg-muted"></div>
-              <div className="h-4 w-1/2 rounded-full bg-muted"></div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="border-y border-border/50 py-5">
+        <div className="animate-pulse space-y-3"><div className="h-5 w-40 rounded bg-muted" /><div className="h-3 w-64 rounded bg-muted" /></div>
+      </div>
     );
   }
 
   if (!menuData) {
     return (
-      <Card className="soft-panel overflow-hidden border-0">
-        <CardContent className="p-0">
-          <div className="bg-primary/10 px-6 py-4">
-            <div className="flex items-center gap-3">
-              <ChefHat className="h-6 w-6 text-primary" />
-              <h3 className="text-xl font-bold">Napi Menü</h3>
-            </div>
-          </div>
-          <div className="p-6">
-            <p className="text-muted-foreground">Az adott napra még nincs teljes menü kijelölve.</p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex items-center gap-3 border-y border-border/50 py-5">
+        <ChefHat className="h-5 w-5 text-primary" />
+        <p className="text-sm text-muted-foreground">Az adott napra még nincs teljes menü kijelölve.</p>
+      </div>
     );
   }
 
   const isAvailable = menuData.menu_remaining_portions > 0;
 
   return (
-    <Card className="soft-panel overflow-hidden">
-      <CardContent className="p-0">
-        {/* Header with prominent price */}
-        <div className="chalkboard border-b border-primary/35 px-4 py-4 md:px-6 md:py-5">
-          <div className="flex items-center justify-between">
+    <section className="border-y border-border/55 py-4 sm:py-5" aria-label="Napi menü">
+        <div className="mb-3 flex items-center justify-between gap-4 sm:mb-4">
             <div className="flex items-center gap-2 md:gap-3">
-              <ChefHat className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary"><ChefHat className="h-5 w-5" /></span>
               <div>
-                <h3 className="font-sofia text-2xl font-bold text-primary md:text-3xl">Napi menü</h3>
-                <p className="text-xs md:text-sm text-editorial-muted">Leves + Főétel</p>
+                <h3 className="font-sofia text-xl font-bold text-foreground sm:text-2xl">Napi menü</h3>
+                <p className="text-[11px] text-muted-foreground sm:text-xs">Leves + Főétel</p>
               </div>
             </div>
-             <span className="whitespace-nowrap text-[18px] font-bold text-editorial-foreground md:text-[19px]">
+             <span className="whitespace-nowrap text-[16px] font-bold text-foreground sm:text-[18px]">
               {menuData.menu_price_huf.toLocaleString('hu-HU')} Ft
              </span>
-          </div>
         </div>
-        
-        {/* Food cards - 2 columns always */}
-        <div className="p-3 md:p-6">
-          <div className="mx-auto grid max-w-3xl grid-cols-1 items-stretch gap-4 sm:grid-cols-2 md:gap-5">
+
+          <div className="mx-auto grid max-w-[700px] grid-cols-1 items-stretch gap-3 sm:grid-cols-2 sm:justify-items-center sm:gap-4">
             {menuData.soup && (
               <MenuItemCard item={menuData.soup} label="Leves" />
             )}
@@ -172,13 +143,12 @@ const DailyMenuPanel = ({ date, menuData, loading }: DailyMenuPanelProps) => {
             )}
           </div>
 
-          {/* Premium CTA Section */}
-          <div className="mt-4 border-t border-border/50 pt-4 md:mt-6 md:pt-5">
+          <div className="mt-4 flex justify-center sm:mt-5">
             <div className="flex items-center justify-center">
               <Button 
                 onClick={handleAddMenuToCart}
                 size="lg"
-                 className="h-12 w-full bg-primary px-6 text-base font-bold shadow-warm transition-all hover:bg-primary/90 hover:shadow-lg"
+                 className="h-12 w-full max-w-[420px] bg-primary px-6 text-base font-bold shadow-warm transition-all hover:bg-primary/90 sm:min-w-[360px]"
                 disabled={!isAvailable}
               >
                 <ShoppingCart className="h-5 w-5 mr-2" />
@@ -191,9 +161,7 @@ const DailyMenuPanel = ({ date, menuData, loading }: DailyMenuPanelProps) => {
               </Button>
             </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+    </section>
   );
 };
 

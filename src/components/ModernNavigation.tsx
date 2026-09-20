@@ -85,12 +85,12 @@ const ModernNavigation = () => {
         : "-translate-y-full opacity-0"
     } ${scrolled ? "shadow-lg" : ""}`}>
       {/* Top info bar - Thinner */}
-      <div className={`border-b border-foreground/10 bg-primary transition-all duration-300 ${
+      <div className={`border-b border-primary/35 bg-chalkboard transition-all duration-300 ${
         scrolled ? "py-1" : "py-1 md:py-1.5"
       }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-1 md:gap-1.5">
-             <div className={`text-primary-foreground font-bold text-center md:text-left transition-all duration-300 ${
+             <div className={`text-primary font-bold text-center md:text-left transition-all duration-300 ${
               scrolled ? "text-[11px] md:text-xs" : "text-[11px] md:text-sm"
             }`}>
               Ma nyitva: {formatOpeningHoursOneLiner(openingHours)}
@@ -100,7 +100,7 @@ const ModernNavigation = () => {
               <Button 
                 onClick={() => document.getElementById('napi-ajanlat')?.scrollIntoView({ behavior: 'smooth' })}
                 size={scrolled ? "sm" : "default"}
-                className="bg-primary text-primary-foreground hover:bg-primary/90 font-bold transition-all duration-300"
+                className="bg-transparent text-primary hover:bg-primary/10 font-bold transition-all duration-300"
                 asChild
               >
                 <Link to="/etlap">Rendelj most</Link>
@@ -109,7 +109,7 @@ const ModernNavigation = () => {
               <Button 
                 variant="outline" 
                 size={scrolled ? "sm" : "default"}
-                className="border-primary-foreground/40 bg-transparent text-primary-foreground hover:bg-primary-foreground hover:text-primary transition-all duration-300"
+                className="border-primary/35 bg-transparent text-editorial-foreground hover:border-primary hover:bg-primary/10 hover:text-primary transition-all duration-300"
                 asChild
               >
                 <a href="https://www.facebook.com/kiscsibeetteremXIV" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2">

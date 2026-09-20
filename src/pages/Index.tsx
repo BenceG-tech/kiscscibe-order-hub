@@ -32,27 +32,27 @@ const Index = () => {
              <span>Frissen készül</span><span className="text-primary">•</span><span>Házias adagok</span><span className="hidden text-primary sm:inline">•</span><span className="hidden sm:inline">Zuglóban, hétköznap</span>
           </div>
         </div>
-        <div className="editorial-band editorial-band-compact dark-band">
+        <div className="editorial-band editorial-band-compact editorial-tone-a">
           <BreakfastSection variant="homepage" />
         </div>
-        <div className="editorial-band dark-band">
+        <div className="editorial-band editorial-tone-b">
           <DailyMenuSection />
         </div>
-        <div className="editorial-band editorial-band-compact bg-primary"><AlwaysAvailableTeaser /></div>
-        <div className="editorial-band bg-editorial text-editorial-foreground"><USPSection /></div>
-        <div className="editorial-band dark-band">
+        <div className="editorial-band editorial-band-compact editorial-tone-a"><AlwaysAvailableTeaser /></div>
+        <div className="editorial-band editorial-tone-b"><USPSection /></div>
+        <div className="editorial-band editorial-tone-a">
           <ReviewsSection />
         </div>
-        <div className="editorial-band dark-band"><GallerySection /></div>
-        <div className="editorial-band dark-band">
+        <div className="editorial-band editorial-tone-b"><GallerySection /></div>
+        <div className="editorial-band editorial-tone-a">
           <PromoSection />
         </div>
-        <div className="editorial-band dark-band"><AllergenSection /></div>
-        <div className="editorial-band bg-primary">
+        <div className="editorial-band editorial-tone-b"><AllergenSection /></div>
+        <div className="editorial-band editorial-tone-a">
           <MapSection />
         </div>
-        <div className="editorial-band paper-panel"><FAQSection /></div>
-        <div className="editorial-band bg-editorial text-editorial-foreground">
+        <div className="editorial-band editorial-tone-b"><FAQSection /></div>
+        <div className="editorial-band editorial-tone-a">
           <NewsletterSection />
         </div>
       </main>

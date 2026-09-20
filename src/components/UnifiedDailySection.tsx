@@ -236,7 +236,7 @@ const UnifiedDailySection = () => {
   return (
     <>
       {/* Weekly Date Strip - Compact inline picker */}
-      <div className="flex justify-center mb-6">
+      <div className="mb-5 flex justify-center">
         <WeeklyDateStrip
           selectedDate={selectedDate}
           onSelect={handleDateSelect}
@@ -267,7 +267,7 @@ const UnifiedDailySection = () => {
       )}
 
       {/* Daily Menu Panel */}
-      <div className="mb-6">
+      <div className="mb-5">
         <DailyMenuPanel 
           date={selectedDate}
           menuData={menuData}
@@ -287,7 +287,7 @@ const UnifiedDailySection = () => {
             </Badge>
           </div>
 
-          <div className="grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
             {extraItems.map((item) => (
               <FoodCard
                 key={item.id}

@@ -35,3 +35,16 @@
 - [x] Vízszintes, sűrű reggeli kártyavariáns
 - [x] Standard napi ajánlat és középre igazított napi menü kártyák
 - [x] Desktop, mobil, kosár és köretválasztó ellenőrzése
+## Homepage and menu visual refinement
+- [x] Replace full yellow bands with subtle dark section tones
+- [x] Tighten homepage gallery, location, FAQ, promo and allergen rhythm
+- [x] Remove DailyMenuPanel outer container and compact desktop/mobile layout
+- [x] Convert public food cards to compact horizontal mobile layout
+- [x] Verify homepage and /etlap desktop/mobile interactions and checks
+
+## Teljes vizuális finomítás – főoldal és étlap
+- [x] Nagy sárga hátterek megszüntetése
+- [x] Főoldali szekcióritmus és térközök tömörítése
+- [x] Napi menü külső dobozának eltávolítása és kompakt elrendezése
+- [x] Mobil ételkártyák vízszintes, kompakt megjelenítése
+- [x] Desktop/mobil működési és vizuális ellenőrzés

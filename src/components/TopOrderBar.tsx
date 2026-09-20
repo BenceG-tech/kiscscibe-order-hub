@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Facebook } from "lucide-react";
 
 const TopOrderBar = () => {
   const scrollToNapiAjanlat = () => {
@@ -7,11 +6,11 @@ const TopOrderBar = () => {
   };
 
   return (
-    <div className="sticky top-16 z-40 bg-primary/10 border-b border-primary/20 shadow-sm">
+    <div className="sticky top-16 z-40 border-b border-primary/35 bg-editorial/95 text-editorial-foreground shadow-sm backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
         <div className="flex flex-col md:flex-row items-center justify-between gap-3">
           {/* Nyitvatartás */}
-          <div className="text-sm text-foreground font-medium text-center md:text-left">
+          <div className="text-center text-sm font-medium text-editorial-foreground md:text-left">
             Ma nyitva: H–P 7:00–16:00 • Szo-V Zárva
           </div>
           

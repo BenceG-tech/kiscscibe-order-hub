@@ -36,8 +36,10 @@ const FoodCard = ({
   return (
     <article
       className={cn(
-        "food-frame group flex h-full border-border/70 bg-card/95",
-        isCompact ? "min-h-[104px] flex-row sm:min-h-[148px]" : "flex-col",
+        "food-frame group flex h-full border-border/55 bg-card/90",
+        isCompact
+          ? "min-h-[112px] flex-row sm:min-h-[140px]"
+          : "min-h-[136px] flex-row sm:flex-col",
         disabled && "opacity-55",
         className,
       )}
@@ -46,8 +48,8 @@ const FoodCard = ({
       className={cn(
         "relative shrink-0 overflow-hidden bg-muted",
         isCompact
-          ? "w-[104px] self-stretch border-r border-border/50 sm:w-[116px]"
-          : "aspect-[16/10] w-full border-b border-border/50",
+          ? "w-[96px] self-stretch border-r border-border/40 sm:w-[112px]"
+          : "w-[108px] self-stretch border-r border-border/40 sm:aspect-[16/10] sm:w-full sm:self-auto sm:border-b sm:border-r-0 sm:border-border/40",
       )}
     >
       {imageUrl ? (
@@ -62,7 +64,7 @@ const FoodCard = ({
           <div
             className={cn(
               "flex items-center justify-center rounded-full border border-primary/20 bg-background/35 shadow-soft backdrop-blur-sm",
-              isCompact ? "h-12 w-12" : "h-20 w-20",
+                isCompact ? "h-11 w-11" : "h-12 w-12 sm:h-20 sm:w-20",
             )}
           >
             <img
@@ -70,7 +72,7 @@ const FoodCard = ({
               alt=""
               className={cn(
                 "object-contain opacity-65",
-                isCompact ? "h-7 w-7" : "h-12 w-12",
+                isCompact ? "h-6 w-6" : "h-7 w-7 sm:h-12 sm:w-12",
               )}
             />
           </div>
@@ -82,7 +84,7 @@ const FoodCard = ({
     <div
       className={cn(
         "flex flex-1 flex-col",
-        isCompact ? "min-w-0 p-2.5 sm:p-3" : "p-4 sm:p-5",
+        isCompact ? "min-w-0 p-2.5 sm:p-3" : "min-w-0 p-3 sm:p-5",
       )}
     >
       <div className="flex items-start gap-2">
@@ -90,8 +92,8 @@ const FoodCard = ({
           className={cn(
             "min-w-0 flex-1 font-sofia font-bold leading-[1.22] text-card-foreground",
             isCompact
-              ? "line-clamp-2 text-[17px] md:text-[18px]"
-              : "line-clamp-3 text-[20px] md:text-[23px]",
+              ? "line-clamp-2 text-[16px] sm:text-[18px]"
+              : "line-clamp-2 text-[18px] sm:line-clamp-3 sm:text-[23px]",
           )}
         >
           {name}
@@ -104,8 +106,8 @@ const FoodCard = ({
           className={cn(
             "leading-relaxed text-muted-foreground",
             isCompact
-              ? "mt-1 line-clamp-1 text-[12px] md:text-[13px]"
-              : "mt-2 line-clamp-2 text-[14px] md:text-[15px]",
+              ? "mt-1 line-clamp-1 text-[12px] sm:text-[13px]"
+              : "mt-1 line-clamp-1 text-[12px] sm:mt-2 sm:line-clamp-2 sm:text-[15px]",
           )}
         >
           {description}
@@ -114,16 +116,16 @@ const FoodCard = ({
 
       <div
         className={cn(
-          "mt-auto flex gap-3 border-t border-border/45 pt-4 sm:flex-row sm:items-center sm:justify-between",
-          isCompact ? "items-center justify-between gap-2 pt-2" : "flex-col",
+          "mt-auto flex items-center justify-between gap-2 border-t border-border/35 pt-2 sm:gap-3",
+          !isCompact && "sm:pt-4",
         )}
       >
         <span
           className={cn(
             "font-bold text-foreground/90",
             isCompact
-              ? "text-[15px] md:text-[16px]"
-              : "text-[18px] md:text-[19px]",
+              ? "text-[14px] sm:text-[16px]"
+              : "text-[15px] sm:text-[19px]",
           )}
         >
           {priceHuf.toLocaleString("hu-HU")} Ft
@@ -134,8 +136,8 @@ const FoodCard = ({
           className={cn(
             "rounded-xl font-bold shadow-warm",
             isCompact
-              ? "h-11 min-w-[7.25rem] px-3 text-sm"
-              : "h-12 min-w-[9.5rem] px-5 text-base",
+              ? "h-11 min-w-[6.75rem] px-2.5 text-[13px] sm:min-w-[7.25rem] sm:px-3 sm:text-sm"
+              : "h-11 min-w-[6.75rem] px-2.5 text-[13px] sm:h-12 sm:min-w-[9.5rem] sm:px-5 sm:text-base",
           )}
         >
           <ShoppingCart

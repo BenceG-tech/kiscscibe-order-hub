@@ -38,21 +38,21 @@ const AlwaysAvailableTeaser = () => {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <Link
           to="/etlap#mindig-elerheto"
-          className="group relative block overflow-hidden rounded-2xl border border-primary-foreground/25 bg-primary-foreground/[0.04] text-primary-foreground shadow-soft backdrop-blur-sm transition-[transform,background-color,border-color,box-shadow] duration-300 hover:-translate-y-0.5 hover:border-primary-foreground/40 hover:bg-primary-foreground/10 hover:shadow-lg"
+          className="group relative block overflow-hidden rounded-2xl border border-border/60 bg-card/65 text-card-foreground shadow-soft backdrop-blur-sm transition-[transform,background-color,border-color,box-shadow] duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-card/90"
           aria-label="Mindig elérhető tételek megtekintése"
         >
           <div className="relative flex items-center gap-4 p-4 sm:p-5">
             {/* Icon */}
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-foreground text-background shadow-soft">
+             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
               <Package className="h-6 w-6" />
             </div>
 
             {/* Text */}
             <div className="flex-1 min-w-0">
-               <h3 className="font-sofia font-bold text-lg sm:text-xl leading-tight text-primary-foreground">
+                <h3 className="font-sofia font-bold text-lg sm:text-xl leading-tight text-card-foreground">
                 Mindig elérhető kedvenceink
               </h3>
-               <p className="text-xs sm:text-sm text-primary-foreground/75 mt-0.5 line-clamp-2">
+                <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground sm:text-sm">
                 Italok, reggeli, savanyúságok és további fix tételek — bármikor rendelhetők
               </p>
             </div>
@@ -89,7 +89,7 @@ const AlwaysAvailableTeaser = () => {
             </div>
 
             {/* Arrow */}
-            <ArrowRight className="shrink-0 h-5 w-5 text-primary-foreground group-hover:translate-x-1 transition-transform" />
+             <ArrowRight className="h-5 w-5 shrink-0 text-primary transition-transform group-hover:translate-x-1" />
           </div>
 
           {/* Mobile preview row */}

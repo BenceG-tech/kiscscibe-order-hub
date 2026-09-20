@@ -53,7 +53,7 @@ const PromoSection = () => {
   return (
     <section className="py-8 md:py-10">
       <div className="max-w-5xl mx-auto px-4">
-         <div className="relative overflow-hidden border-y border-foreground/25">
+         <div className="relative overflow-hidden rounded-2xl border border-border/55 bg-card/45">
           
           {/* Background image with blur */}
           <div className="absolute inset-0" style={{ transform: 'translateZ(0)' }}>
@@ -70,7 +70,7 @@ const PromoSection = () => {
             <div className="absolute inset-0 bg-background/90" />
 
           {/* Content */}
-          <div className="relative z-10 p-5 md:p-8">
+            <div className="relative z-10 p-4 md:p-6">
 
             {/* Desktop layout */}
             <div className="hidden md:flex items-center justify-between gap-6">

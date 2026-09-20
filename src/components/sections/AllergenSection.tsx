@@ -20,13 +20,13 @@ const AllergenSection = () => {
   ];
 
   return (
-    <section className="py-8 md:py-16">
+    <section className="py-10 md:py-14">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <span className="section-kicker">Biztonságos választás</span>
-        <h2 className="section-title mb-6 md:mb-8">Allergén jelmagyarázat</h2>
+        <h2 className="section-title mb-5 md:mb-6">Allergén jelmagyarázat</h2>
         
          <Card className="border-y border-border/60 bg-transparent shadow-none">
-          <CardContent className="p-4 md:p-6">
+          <CardContent className="px-0 py-4 md:py-5">
             {/* Mobile: 2 columns */}
             <div className="grid grid-cols-2 gap-3 md:hidden">
               {allergens.map((allergen) => {
