@@ -32,8 +32,11 @@ import {
   ChevronDown,
   Pin,
   Star,
-  AlertTriangle
+  AlertTriangle,
+  Volume2,
+  VolumeX
 } from "lucide-react";
+import { toast } from "sonner";
 import { HelpFloatingButton } from "@/components/admin/HelpFloatingButton";
 import { AdminUpdatesBanner } from "@/components/admin/AdminUpdatesBanner";
 import { AdminUpdatesDialog } from "@/components/admin/AdminUpdatesDialog";
