@@ -557,6 +557,13 @@ serve(async (req) => {
           throw new Error(updateError?.message || 'Hiba a készlet frissítése során - nincs elég adag');
         }
 
+        reservationLedger.push({
+          resource_type: 'daily_portions',
+          resource_table: tableName,
+          resource_id: item.daily_id!,
+          qty: item.qty,
+        });
+
         // Register rollback for this portion decrement
         const tblForRollback = tableName;
         const idForRollback = item.daily_id!;
