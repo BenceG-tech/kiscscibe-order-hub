@@ -32,8 +32,11 @@ import {
   ChevronDown,
   Pin,
   Star,
-  AlertTriangle
+  AlertTriangle,
+  Volume2,
+  VolumeX
 } from "lucide-react";
+import { toast } from "sonner";
 import { HelpFloatingButton } from "@/components/admin/HelpFloatingButton";
 import { AdminUpdatesBanner } from "@/components/admin/AdminUpdatesBanner";
 import { AdminUpdatesDialog } from "@/components/admin/AdminUpdatesDialog";
@@ -42,12 +45,23 @@ import { AdminUpdatesDialog } from "@/components/admin/AdminUpdatesDialog";
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const { profile, signOut } = useAuth();
-  const { newOrdersCount, clearNewOrdersCount } = useOrderNotifications();
+  const { newOrdersCount, clearNewOrdersCount, playNotificationSound, audioUnlocked } = useOrderNotifications();
   const { data: finData } = useOverdueInvoices();
   const overdueCount = finData?.overdueCount || 0;
 
   const handleSignOut = async () => {
     await signOut();
+  };
+
+  const handleTestSound = () => {
+    playNotificationSound();
+    if (!audioUnlocked) {
+      toast.warning(
+        "A böngésző még némítja a hangot. Kattints bárhová az oldalon, majd próbáld újra a Teszt hang gombot.",
+      );
+    } else {
+      toast.success("Teszt hang lejátszva.");
+    }
   };
 
   const handleOrdersClick = () => {
@@ -134,6 +148,20 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
                 {profile.role}
               </Badge>
             )}
+            {/* Sound test — verify notification audio without creating a real order */}
+            <Button
+              variant="outline"
+              size="sm"
+              data-testid="admin-test-sound"
+              onClick={handleTestSound}
+              title={audioUnlocked ? "Értesítési hang tesztelése" : "Kattints a hang engedélyezéséhez"}
+              className="h-9 w-9 sm:w-auto sm:px-3"
+            >
+              {audioUnlocked
+                ? <Volume2 className="h-4 w-4 text-green-600" />
+                : <VolumeX className="h-4 w-4 text-yellow-500" />}
+              <span className="hidden sm:inline ml-2 text-sm">Teszt hang</span>
+            </Button>
             <AdminUpdatesDialog />
             <Button 
               variant="outline" 

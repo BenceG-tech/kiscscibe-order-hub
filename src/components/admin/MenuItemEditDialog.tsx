@@ -180,8 +180,8 @@ import DuplicateResolverDialog, { DuplicateCandidate } from "./DuplicateResolver
        onOpenChange(false);
      },
      onError: (error) => {
-       console.error("Error saving menu item:", error);
-       toast.error("Hiba történt a mentéskor");
+      console.error("Error saving menu item:", error);
+       toast.error(`Hiba történt a mentéskor: ${(error as { message?: string })?.message || "ismeretlen hiba"}`);
      },
    });
  

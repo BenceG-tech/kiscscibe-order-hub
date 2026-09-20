@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { Resend } from "npm:resend@2.0.0";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { hasInternalSecret, requireAdmin } from "../_shared/auth.ts";
+import { generateRatingToken, logEmailSend, maskEmail, ratingLinksHtml } from "../_shared/rating-token.ts";
 
 function escapeHtml(s: unknown): string {
   return String(s ?? '')
@@ -95,10 +96,17 @@ serve(async (req) => {
       throw new Error('Order not found');
     }
 
-    console.log(`Order found: ${order.code}, email: ${order.email || 'none'}`);
+    console.log(`Order found: ${order.code}, email: ${maskEmail(order.email)}`);
 
     if (!order.email) {
       console.log(`No email address for order ${order.code} — skipping email`);
+      await logEmailSend(supabase as any, {
+        order_id,
+        email_type: `status_${new_status}`,
+        recipient: '(none)',
+        status: 'skipped',
+        error: 'No customer email',
+      });
       return new Response(
         JSON.stringify({ success: true, skipped: true, reason: 'No customer email' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -126,6 +134,12 @@ serve(async (req) => {
       ? `Átvétel: ${new Date(order.pickup_time).toLocaleString('hu-HU')}`
       : 'Átvétel: Amilyen hamar lehet';
 
+    // Completed orders carry the secure 1–5 emoji rating links inline — Edge Functions
+    // cannot reliably stay alive to send a delayed follow-up email.
+    const ratingLinks = new_status === 'completed'
+      ? ratingLinksHtml(order_id, await generateRatingToken(order_id))
+      : '';
+
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #333;">${config.emoji} ${config.heading}</h2>
@@ -152,13 +166,12 @@ serve(async (req) => {
 
         ${new_status === 'completed' ? `
         <div style="background: #fff3e0; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
-          <p style="margin: 0 0 10px 0; font-size: 16px;">⭐ Tetszett az élmény?</p>
+          <p style="margin: 0 0 10px 0; font-size: 16px;">⭐ Hogy ízlett? Értékeld egy kattintással:</p>
+          <div style="margin: 14px 0;">${ratingLinks}</div>
+          <p style="margin: 0 0 16px; font-size: 13px; color: #888;">Kattints egy emojira az értékeléshez!</p>
           <a href="${googleReviewUrl}" style="display: inline-block; background: #4285f4; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">
             Értékeld a tapasztalatod Google-ön!
           </a>
-          <p style="margin: 10px 0 0; font-size: 13px; color: #888;">
-            📝 1 órán belül küldünk egy rövid kérdőívet is az élményedről.
-          </p>
         </div>
         ` : ''}
 
@@ -180,43 +193,41 @@ serve(async (req) => {
 
     const resend = new Resend(resendApiKey);
 
-    const emailResult = await resend.emails.send({
+    const { data: sendData, error: sendError } = await resend.emails.send({
       from: 'Kiscsibe Étterem <rendeles@kiscsibe-etterem.hu>',
       to: [order.email],
       subject: `Kiscsibe – ${config.subject} #${order.code}`,
       html: emailHtml,
     });
 
-    console.log(`Status email sent successfully: ${new_status} → ${order.email} (order ${order.code})`, emailResult);
+    const emailType = `status_${new_status}`;
 
-    // Schedule rating request email for completed orders (60 min delay via setTimeout)
-    if (new_status === 'completed') {
-      try {
-        const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-        const internalSecret = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-        setTimeout(async () => {
-          try {
-            await fetch(`${supabaseUrl}/functions/v1/send-rating-request`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${internalSecret}`,
-                'x-internal-secret': internalSecret,
-              },
-              body: JSON.stringify({ order_id }),
-            });
-            console.log(`Rating request triggered for order ${order.code}`);
-          } catch (e) {
-            console.error('Rating request trigger failed:', e);
-          }
-        }, 60 * 60 * 1000);
-      } catch (e) {
-        console.error('Failed to schedule rating request:', e);
-      }
+    if (sendError) {
+      console.error(`Status email FAILED: ${new_status} → ${maskEmail(order.email)} (order ${order.code})`, sendError);
+      await logEmailSend(supabase as any, {
+        order_id,
+        email_type: emailType,
+        recipient: order.email,
+        status: 'failed',
+        error: (sendError as any)?.message || JSON.stringify(sendError),
+      });
+      return new Response(
+        JSON.stringify({ success: false, error: (sendError as any)?.message || 'Resend error' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 502 }
+      );
     }
 
+    console.log(`Status email sent: ${new_status} → ${maskEmail(order.email)} (order ${order.code}) id=${sendData?.id ?? 'n/a'}`);
+    await logEmailSend(supabase as any, {
+      order_id,
+      email_type: emailType,
+      recipient: order.email,
+      status: 'sent',
+      resend_message_id: sendData?.id ?? null,
+    });
+
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ success: true, id: sendData?.id ?? null }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error: any) {

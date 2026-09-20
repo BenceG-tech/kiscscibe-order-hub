@@ -2,29 +2,12 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { Resend } from "npm:resend@2.0.0";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
+import { generateRatingToken, logEmailSend, maskEmail, ratingLinksHtml, SITE_URL } from "../_shared/rating-token.ts";
 
 function escapeHtml(s: unknown): string {
   return String(s ?? '')
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-}
-
-async function generateToken(orderId: string): Promise<string> {
-  const secret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-  const enc = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    "raw",
-    enc.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-  const sig = await crypto.subtle.sign("HMAC", key, enc.encode(`rating:${orderId}`));
-  // base64url, truncated to 32 chars
-  const bytes = new Uint8Array(sig);
-  let bin = "";
-  for (const b of bytes) bin += String.fromCharCode(b);
-  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "").slice(0, 32);
 }
 
 serve(async (req) => {
@@ -65,13 +48,21 @@ serve(async (req) => {
 
     if (orderError || !order) throw new Error("Order not found");
     if (!order.email) {
+      await logEmailSend(supabase as any, {
+        order_id,
+        email_type: "rating_request",
+        recipient: "(none)",
+        status: "skipped",
+        error: "No customer email",
+      });
       return new Response(JSON.stringify({ success: true, skipped: true, reason: "No email" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const token = await generateToken(order_id);
-    const siteUrl = "https://kiscscibe-order-hub.lovable.app";
+    const token = await generateRatingToken(order_id);
+    const siteUrl = SITE_URL;
+
 
     // Fetch Google Review URL
     let googleReviewUrl = "https://g.page/review/kiscsibe";
@@ -80,11 +71,8 @@ serve(async (req) => {
       if (s?.value_json) googleReviewUrl = String(s.value_json);
     } catch { /* fallback */ }
 
-    const stars = [1, 2, 3, 4, 5].map(r => {
-      const url = `${siteUrl}/rate?order=${order_id}&token=${token}&rating=${r}`;
-      const emoji = r <= 2 ? "😞" : r === 3 ? "😐" : r === 4 ? "😊" : "🤩";
-      return `<a href="${url}" style="text-decoration:none;font-size:32px;margin:0 4px;">${emoji}</a>`;
-    }).join("");
+    const stars = ratingLinksHtml(order_id, token);
+    void siteUrl;
 
     const emailHtml = `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
@@ -106,14 +94,36 @@ serve(async (req) => {
     `;
 
     const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-    await resend.emails.send({
+    const { data: sendData, error: sendError } = await resend.emails.send({
       from: "Kiscsibe Étterem <rendeles@kiscsibe-etterem.hu>",
       to: [order.email],
       subject: `Kiscsibe – Hogy ízlett? #${order.code}`,
       html: emailHtml,
     });
 
-    console.log(`Rating request email sent to ${order.email} for order ${order.code}`);
+    if (sendError) {
+      console.error(`Rating request FAILED for order ${order.code} → ${maskEmail(order.email)}`, sendError);
+      await logEmailSend(supabase as any, {
+        order_id,
+        email_type: "rating_request",
+        recipient: order.email,
+        status: "failed",
+        error: (sendError as any)?.message || JSON.stringify(sendError),
+      });
+      return new Response(
+        JSON.stringify({ success: false, error: (sendError as any)?.message || "Resend error" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 502 },
+      );
+    }
+
+    console.log(`Rating request email sent to ${maskEmail(order.email)} for order ${order.code} id=${sendData?.id ?? "n/a"}`);
+    await logEmailSend(supabase as any, {
+      order_id,
+      email_type: "rating_request",
+      recipient: order.email,
+      status: "sent",
+      resend_message_id: sendData?.id ?? null,
+    });
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

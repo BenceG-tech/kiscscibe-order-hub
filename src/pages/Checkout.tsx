@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import ModernNavigation from "@/components/ModernNavigation";
 import { ArrowLeft, Check, Clock, CreditCard, ShoppingCart, User, FileText, AlertTriangle, RefreshCw } from "lucide-react";
 import { persistCheckoutSnapshot, useAbandonedCartTracking } from "@/hooks/useAbandonedCartTracking";
+import { isClosedDay, nextBusinessDates } from "@/lib/pickupDates";
 
 const DEV = import.meta.env.DEV;
 
@@ -314,28 +315,10 @@ const Checkout = () => {
       let targetDates: string[] = [];
       
       if (dailyDates.length > 0) {
-        targetDates = dailyDates;
+        targetDates = [...dailyDates];
       } else {
-        const currentDate = new Date(today);
-        currentDate.setDate(currentDate.getDate() + 1);
-        let daysAdded = 0;
-        let maxDays = 10;
-        
-        while (daysAdded < 5 && maxDays > 0) {
-          const year = currentDate.getFullYear();
-          const month = String(currentDate.getMonth() + 1).padStart(2, '0');
-          const day = String(currentDate.getDate()).padStart(2, '0');
-          const dateStr = `${year}-${month}-${day}`;
-          const dayOfWeek = currentDate.getDay();
-          
-          if (dayOfWeek !== 0) {
-            targetDates.push(dateStr);
-            daysAdded++;
-          }
-          
-          currentDate.setDate(currentDate.getDate() + 1);
-          maxDays--;
-        }
+        // Closed on weekends: nextBusinessDates skips both Saturday and Sunday.
+        targetDates = nextBusinessDates(today, 5);
       }
       
       const { data: blackoutData } = await supabase
@@ -344,7 +327,9 @@ const Checkout = () => {
         .in("date", targetDates);
       
       const blackoutSet = new Set((blackoutData || []).map(b => b.date));
-      targetDates = targetDates.filter(d => !blackoutSet.has(d));
+      // Never offer a closed-day slot: drop blackout dates AND weekends (Sat/Sun),
+      // including dates that came from the cart's daily_date values.
+      targetDates = targetDates.filter(d => !blackoutSet.has(d) && !isClosedDay(d));
       
       let allSlots: TimeSlot[] = [];
       for (const date of targetDates) {

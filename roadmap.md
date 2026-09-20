@@ -54,3 +54,14 @@
 - [x] Hat másodperces, akadálymentes képváltó beépítése
 - [x] GYIK láthatóságának és hibás adat esetén alapértékeinek javítása
 - [x] Desktop, mobil, csökkentett mozgás és minőségellenőrzés
+
+## Megbízhatósági és biztonsági javítás (preview-only)
+- [x] Hétvégi (szombat+vasárnap) átvételi idők kizárása a pénztárban
+- [x] Státusz-e-mail: 1 órás késleltetés helyett beágyazott, aláírt értékelő linkek
+- [x] Értékeléskérő e-mail helyes webcíme
+- [x] E-mail küldés sikeressége naplózva, cím soha nem kerül naplóba teljesen
+- [x] „Házias ízek, újragondolva" elgépelés javítva
+- [x] Rendeléskeresés: kód + telefonszám együtt kötelező
+- [ ] Jogosultság-visszavonás (get_customer_orders) — publikálás UTÁN alkalmazandó
+- [x] Heti étlap: ugyanaz az étel egy naphoz csak egyszer kerülhet
+- [x] Admin „Teszt hang" gomb és zárolt hang üzenet
