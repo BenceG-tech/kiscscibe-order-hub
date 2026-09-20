@@ -96,10 +96,17 @@ serve(async (req) => {
       throw new Error('Order not found');
     }
 
-    console.log(`Order found: ${order.code}, email: ${order.email || 'none'}`);
+    console.log(`Order found: ${order.code}, email: ${maskEmail(order.email)}`);
 
     if (!order.email) {
       console.log(`No email address for order ${order.code} — skipping email`);
+      await logEmailSend(supabase as any, {
+        order_id,
+        email_type: `status_${new_status}`,
+        recipient: '(none)',
+        status: 'skipped',
+        error: 'No customer email',
+      });
       return new Response(
         JSON.stringify({ success: true, skipped: true, reason: 'No customer email' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
