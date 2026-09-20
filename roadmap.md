@@ -74,4 +74,4 @@
 - [x] Admin frissítési lista aktualizálása
 - [x] Admin felület összehangolása a Kiscsibe sötét-sárga arculatával
 - [x] Mobil dátum és „Holnapi ajánlatok” címke elcsúszásának javítása
-- [ ] Mobil és asztali vizuális, valamint minőségellenőrzés
+- [x] Mobil és asztali vizuális, valamint minőségellenőrzés
