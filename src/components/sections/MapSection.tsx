@@ -8,20 +8,20 @@ const MapSection = () => {
   const mapsQuery = encodeURIComponent(address.full);
 
   return (
-    <section className="py-8 md:py-16">
+    <section className="py-10 md:py-16">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <span className="section-kicker">{address.full}</span>
-        <h2 className="section-title mb-6 md:mb-8">Találkozzunk a Kiscsibében</h2>
+        <h2 className="section-title mb-5 md:mb-7">Találkozzunk a Kiscsibében</h2>
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 items-center">
+        <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-[1.35fr_0.65fr] lg:gap-5">
           {/* Térkép - mobile: order-2 (after info) */}
            <div className="relative order-2 lg:order-none">
-             <div className="overflow-hidden border-2 border-foreground bg-background p-2">
+             <div className="h-full overflow-hidden rounded-2xl border border-border/60 bg-card/70 p-1.5 shadow-soft">
                 <iframe
                   src={`https://www.google.com/maps?q=${mapsQuery}&hl=hu&z=17&output=embed`}
                 width="100%"
                 height="300"
-                className="h-[220px] md:h-[300px]"
+                className="h-[220px] rounded-xl md:h-[300px]"
                 style={{ border: 0 }}
                 allowFullScreen
                 loading="lazy"
@@ -32,19 +32,19 @@ const MapSection = () => {
           </div>
           
           {/* Információk - mobile: order-1 (before map) */}
-            <Card className="order-1 border-y border-primary-foreground/25 bg-foreground text-background shadow-none lg:order-none">
+            <Card className="order-1 rounded-2xl border border-border/60 bg-card/75 text-card-foreground shadow-soft lg:order-none">
             <CardContent className="p-5 md:p-6">
               <div className="flex items-start gap-3 mb-4">
                  <MapPin className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
                 <div>
-                   <h3 className="font-bold text-background text-lg mb-2">Kiscsibe Reggeliző & Étterem</h3>
-                   <p className="text-background/70 mb-1">{address.zip} {address.city}</p>
-                   <p className="text-background/70 mb-4">{address.street}</p>
+                   <h3 className="mb-2 text-lg font-bold text-card-foreground">Kiscsibe Reggeliző & Étterem</h3>
+                   <p className="mb-1 text-muted-foreground">{address.zip} {address.city}</p>
+                   <p className="mb-4 text-muted-foreground">{address.street}</p>
                 </div>
               </div>
               
               <div className="mb-5 md:mb-6">
-                 <p className="text-background text-sm md:text-base leading-relaxed">
+                  <p className="text-sm leading-relaxed text-card-foreground md:text-base">
                   Könnyű megközelítés és ingyenes parkolás.
                 </p>
               </div>

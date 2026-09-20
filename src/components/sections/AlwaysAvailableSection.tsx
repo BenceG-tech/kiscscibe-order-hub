@@ -128,7 +128,7 @@ const AlwaysAvailableSection = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="flex items-center gap-2 border-b border-border/60 pb-3">
         <Package className="h-5 w-5 text-primary" />
         <h3 className="text-xl font-bold">{title}</h3>
@@ -153,7 +153,7 @@ const AlwaysAvailableSection = ({
             )}
 
             {showImages ? (
-              <div className="grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
                 {group.items.map((item) => (
                   <FoodCard
                     key={item.id}

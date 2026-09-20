@@ -313,7 +313,7 @@ const Etlap = () => {
         </section>
 
         {/* Compact Date Picker */}
-        <section className="py-6 bg-background">
+        <section className="border-b border-border/45 bg-background py-4 md:py-5">
           <div className="max-w-4xl mx-auto px-4">
             <div className="flex justify-center">
               <WeeklyDateStrip
@@ -327,8 +327,8 @@ const Etlap = () => {
         </section>
 
         {/* Content Section */}
-        <section className="py-6 pb-24">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+        <section className="py-5 pb-24 md:py-8">
+          <div className="mx-auto max-w-5xl space-y-5 px-4 sm:px-6 lg:space-y-6 lg:px-8">
             {/* Breakfast - prominent always-on block */}
             <BreakfastSection />
             {/* Favorite Orders */}
@@ -392,7 +392,7 @@ const Etlap = () => {
                 {extraItems.length > 0 && (
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold">További napi ételek</h3>
-                    <div className="grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
                       {extraItems.map((item) => {
                         const itemSoldOut = isSoldOut || item.is_sold_out;
                         return (

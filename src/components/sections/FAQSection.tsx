@@ -41,19 +41,19 @@ const FAQSection = () => {
   if (isLoading || !faqs.length) return null;
 
   return (
-    <section className="py-8 md:py-16" ref={ref}>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="py-10 md:py-14" ref={ref}>
+      <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
         <span className="section-kicker">Hasznos tudnivalók</span>
-        <h2 className="section-title mb-6 md:mb-8">Gyakori kérdések</h2>
+        <h2 className="section-title mb-4 md:mb-6">Gyakori kérdések</h2>
         
         <div className={cn(
-           "border-y border-border/60 bg-transparent p-1 md:p-2 transition-all duration-700",
+           "border-y border-border/60 bg-transparent transition-all duration-700",
           isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
         )}>
           <Accordion type="single" collapsible className="w-full">
             {faqs.map((faq, index) => (
               <AccordionItem key={faq.id || index} value={`item-${faq.id || index}`} className="border-border/50">
-                <AccordionTrigger className="text-left font-semibold text-foreground hover:text-primary story-link transition-colors duration-200">
+                <AccordionTrigger className="py-4 text-left font-semibold text-foreground transition-colors duration-200 hover:text-primary">
                   {faq.question}
                 </AccordionTrigger>
                 <AccordionContent className="text-muted-foreground leading-relaxed">

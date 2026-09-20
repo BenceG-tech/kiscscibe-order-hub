@@ -79,8 +79,8 @@ const BreakfastSection = ({ variant = "page" }: BreakfastSectionProps) => {
 
   return (
     <Wrapper>
-      <div className="border-y border-foreground/20 py-5 md:py-7">
-      <div className="space-y-6">
+      <div className="border-y border-foreground/20 py-4 md:py-6">
+      <div className="space-y-4 md:space-y-5">
         {/* Compact header */}
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2.5">
