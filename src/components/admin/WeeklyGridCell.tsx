@@ -47,6 +47,7 @@ interface WeeklyGridCellProps {
   onPriceChange?: (itemId: string, newPrice: number) => void;
   onMenuPartToggle?: (offerItemId: string, isMenuPart: boolean, menuRole: string | null) => void;
   onItemEdit?: (itemId: string) => void;
+  compact?: boolean;
 }
 
 export function WeeklyGridCell({
@@ -62,6 +63,7 @@ export function WeeklyGridCell({
   onPriceChange,
   onMenuPartToggle,
   onItemEdit,
+  compact = false,
 }: WeeklyGridCellProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -133,7 +135,8 @@ export function WeeklyGridCell({
         <div
           key={selectedItem.offerItemId}
           className={cn(
-            "flex items-center gap-1 p-1 rounded border group",
+            "min-w-0 rounded border p-1 group",
+            compact ? "grid grid-cols-[24px_minmax(0,1fr)] gap-x-1 gap-y-1" : "flex items-center gap-1",
             selectedItem.isSoldOut ? "bg-destructive/10 border-destructive/30 opacity-60" : "bg-background"
           )}
         >
@@ -150,84 +153,82 @@ export function WeeklyGridCell({
             </div>
           )}
           
-          <span className={cn("flex-1 text-xs font-medium truncate", selectedItem.isSoldOut && "line-through")} title={selectedItem.itemName}>
+          <span className={cn("min-w-0 flex-1 text-xs font-medium truncate", selectedItem.isSoldOut && "line-through")} title={selectedItem.itemName}>
             {selectedItem.itemName}
           </span>
-          
-          {/* Sold Out Toggle */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className={cn(
-              "h-5 w-5 shrink-0",
-              selectedItem.isSoldOut 
-                ? "text-destructive opacity-100 hover:bg-destructive/10" 
-                : "opacity-40 hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
+
+          <div className={cn("flex min-w-0 items-center gap-0.5", compact && "col-span-2 justify-end border-t border-border/50 pt-1")}>
+            {/* Sold Out Toggle */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "h-5 w-5 shrink-0",
+                selectedItem.isSoldOut 
+                  ? "text-destructive opacity-100 hover:bg-destructive/10" 
+                  : "opacity-40 hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
+              )}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleToggleSoldOut(selectedItem.offerItemId, !!selectedItem.isSoldOut);
+              }}
+              title={selectedItem.isSoldOut ? "Újra elérhetővé tesz" : "Elfogyottnak jelöl"}
+            >
+              <Ban className="h-3 w-3" />
+            </Button>
+
+            {onMenuPartToggle && (
+              <MenuPartToggle
+                offerItemId={selectedItem.offerItemId}
+                isMenuPart={selectedItem.isMenuPart}
+                menuRole={selectedItem.menuRole ?? null}
+                categoryName={categoryName}
+                onToggle={onMenuPartToggle}
+              />
             )}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleToggleSoldOut(selectedItem.offerItemId, !!selectedItem.isSoldOut);
-            }}
-            title={selectedItem.isSoldOut ? "Újra elérhetővé tesz" : "Elfogyottnak jelöl"}
-          >
-            <Ban className="h-3 w-3" />
-          </Button>
-          
-          {/* Menu Part Toggle */}
-          {onMenuPartToggle && (
-            <MenuPartToggle
-              offerItemId={selectedItem.offerItemId}
-              isMenuPart={selectedItem.isMenuPart}
-              menuRole={selectedItem.menuRole ?? null}
-              categoryName={categoryName}
-              onToggle={onMenuPartToggle}
-            />
-          )}
-          
-          {/* Edit Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-5 w-5 shrink-0 opacity-60 hover:opacity-100 hover:bg-primary/10 hover:text-primary"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleEditClick(selectedItem.itemId);
-            }}
-            title="Szerkesztés"
-          >
-            <Pencil className="h-3 w-3" />
-          </Button>
-          
-          {/* Quick Price Edit */}
-          {onPriceChange && selectedItem.price !== undefined && (
-            <QuickPriceEdit
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-5 w-5 shrink-0 opacity-60 hover:opacity-100 hover:bg-primary/10 hover:text-primary"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEditClick(selectedItem.itemId);
+              }}
+              title="Szerkesztés"
+            >
+              <Pencil className="h-3 w-3" />
+            </Button>
+
+            {onPriceChange && selectedItem.price !== undefined && (
+              <QuickPriceEdit
+                itemId={selectedItem.itemId}
+                itemName={selectedItem.itemName}
+                currentPrice={selectedItem.price}
+                onPriceChange={onPriceChange}
+              />
+            )}
+
+            <QuickImageUpload
               itemId={selectedItem.itemId}
               itemName={selectedItem.itemName}
-              currentPrice={selectedItem.price}
-              onPriceChange={onPriceChange}
+              currentImageUrl={selectedItem.imageUrl || null}
+              onImageUploaded={() => onImageUpdated?.()}
             />
-          )}
-          
-          {/* Quick Image Upload */}
-          <QuickImageUpload
-            itemId={selectedItem.itemId}
-            itemName={selectedItem.itemName}
-            currentImageUrl={selectedItem.imageUrl || null}
-            onImageUploaded={() => onImageUpdated?.()}
-          />
-          
-          {/* Remove Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-5 w-5 shrink-0 opacity-60 hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
-            onClick={(e) => {
-              e.stopPropagation();
-              onRemoveItem(selectedItem.offerItemId);
-            }}
-          >
-            <X className="h-3 w-3" />
-          </Button>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-5 w-5 shrink-0 opacity-60 hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
+              onClick={(e) => {
+                e.stopPropagation();
+                onRemoveItem(selectedItem.offerItemId);
+              }}
+              title="Eltávolítás"
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
         </div>
       ))}
 
