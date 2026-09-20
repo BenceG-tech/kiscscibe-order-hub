@@ -198,6 +198,16 @@ serve(async (req) => {
   // Rollback safety net: registered compensations run in reverse order if any step after
   // capacity/portion mutations throws. Prevents "ghost" bookings when the final INSERT fails.
   const compensations: Array<() => Promise<void>> = [];
+  // Reservation ledger: every resource this order consumes, so a later
+  // cancellation can restore it deterministically (exactly once).
+  const reservationLedger: Array<{
+    resource_type: 'daily_portions' | 'capacity_slot';
+    resource_table?: string;
+    resource_id?: string;
+    slot_date?: string;
+    slot_time?: string;
+    qty: number;
+  }> = [];
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
