@@ -94,14 +94,36 @@ serve(async (req) => {
     `;
 
     const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-    await resend.emails.send({
+    const { data: sendData, error: sendError } = await resend.emails.send({
       from: "Kiscsibe Étterem <rendeles@kiscsibe-etterem.hu>",
       to: [order.email],
       subject: `Kiscsibe – Hogy ízlett? #${order.code}`,
       html: emailHtml,
     });
 
-    console.log(`Rating request email sent to ${order.email} for order ${order.code}`);
+    if (sendError) {
+      console.error(`Rating request FAILED for order ${order.code} → ${maskEmail(order.email)}`, sendError);
+      await logEmailSend(supabase as any, {
+        order_id,
+        email_type: "rating_request",
+        recipient: order.email,
+        status: "failed",
+        error: (sendError as any)?.message || JSON.stringify(sendError),
+      });
+      return new Response(
+        JSON.stringify({ success: false, error: (sendError as any)?.message || "Resend error" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 502 },
+      );
+    }
+
+    console.log(`Rating request email sent to ${maskEmail(order.email)} for order ${order.code} id=${sendData?.id ?? "n/a"}`);
+    await logEmailSend(supabase as any, {
+      order_id,
+      email_type: "rating_request",
+      recipient: order.email,
+      status: "sent",
+      resend_message_id: sendData?.id ?? null,
+    });
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
