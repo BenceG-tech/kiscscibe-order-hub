@@ -41,3 +41,10 @@
 - [ ] Remove DailyMenuPanel outer container and compact desktop/mobile layout
 - [ ] Convert public food cards to compact horizontal mobile layout
 - [ ] Verify homepage and /etlap desktop/mobile interactions and checks
+
+## Teljes vizuális finomítás – főoldal és étlap
+- [ ] Nagy sárga hátterek megszüntetése
+- [ ] Főoldali szekcióritmus és térközök tömörítése
+- [ ] Napi menü külső dobozának eltávolítása és kompakt elrendezése
+- [ ] Mobil ételkártyák vízszintes, kompakt megjelenítése
+- [ ] Desktop/mobil működési és vizuális ellenőrzés
