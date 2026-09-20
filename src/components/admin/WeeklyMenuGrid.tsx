@@ -328,7 +328,7 @@ export default function WeeklyMenuGrid() {
       
       if (error) {
         // DB-level guard: unique index (daily_offer_id, item_id) → 23505
-        if ((error as any).code === "23505") {
+        if ((error as { code?: string }).code === "23505") {
           return { duplicate: true as const };
         }
         throw error;
