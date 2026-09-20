@@ -328,7 +328,8 @@ const Checkout = () => {
           const dateStr = `${year}-${month}-${day}`;
           const dayOfWeek = currentDate.getDay();
           
-          if (dayOfWeek !== 0) {
+          // Closed on weekends: exclude both Sunday (0) and Saturday (6)
+          if (dayOfWeek !== 0 && dayOfWeek !== 6) {
             targetDates.push(dateStr);
             daysAdded++;
           }
