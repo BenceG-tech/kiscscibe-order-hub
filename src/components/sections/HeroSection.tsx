@@ -86,11 +86,11 @@ const HeroSection = () => {
 
   useEffect(() => {
     if (reducedMotion || !pageVisible || interactionPaused) return;
-    const timer = window.setInterval(() => {
+    const timer = window.setTimeout(() => {
       setActiveSlide((current) => (current + 1) % HERO_SLIDES.length);
     }, 3000);
-    return () => window.clearInterval(timer);
-  }, [interactionPaused, pageVisible, reducedMotion]);
+    return () => window.clearTimeout(timer);
+  }, [activeSlide, interactionPaused, pageVisible, reducedMotion]);
 
   const { data: dailyMenu, isLoading } = useQuery({
     queryKey: ["homepage-hero-menu"],
@@ -119,12 +119,6 @@ const HeroSection = () => {
   return (
     <section
       className="relative isolate min-h-[calc(100svh-5.25rem)] overflow-hidden bg-editorial text-editorial-foreground md:min-h-[min(850px,calc(100svh-6rem))]"
-      onMouseEnter={() => setInteractionPaused(true)}
-      onMouseLeave={() => setInteractionPaused(false)}
-      onFocusCapture={() => setInteractionPaused(true)}
-      onBlurCapture={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget)) setInteractionPaused(false);
-      }}
     >
       <div className="absolute inset-0" aria-hidden="true">
         {HERO_SLIDES.map((slide, index) => {
@@ -187,7 +181,14 @@ const HeroSection = () => {
       </div>
 
       {!reducedMotion && (
-        <div className="absolute bottom-[5.75rem] left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 md:bottom-[6.75rem]" aria-label="Nyitóképek">
+        <div
+          className="absolute bottom-[5.75rem] left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 md:bottom-[6.75rem]"
+          aria-label="Nyitóképek"
+          onFocusCapture={() => setInteractionPaused(true)}
+          onBlurCapture={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget)) setInteractionPaused(false);
+          }}
+        >
           {HERO_SLIDES.map((slide, index) => (
             <button
               key={slide.label}
