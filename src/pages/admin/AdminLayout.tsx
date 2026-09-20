@@ -134,6 +134,20 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
                 {profile.role}
               </Badge>
             )}
+            {/* Sound test — verify notification audio without creating a real order */}
+            <Button
+              variant="outline"
+              size="sm"
+              data-testid="admin-test-sound"
+              onClick={handleTestSound}
+              title={audioUnlocked ? "Értesítési hang tesztelése" : "Kattints a hang engedélyezéséhez"}
+              className="h-9 w-9 sm:w-auto sm:px-3"
+            >
+              {audioUnlocked
+                ? <Volume2 className="h-4 w-4 text-green-600" />
+                : <VolumeX className="h-4 w-4 text-yellow-500" />}
+              <span className="hidden sm:inline ml-2 text-sm">Teszt hang</span>
+            </Button>
             <AdminUpdatesDialog />
             <Button 
               variant="outline" 
