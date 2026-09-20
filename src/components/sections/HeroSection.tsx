@@ -8,17 +8,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { getSmartInitialDate } from "@/lib/dateUtils";
 import { capitalizeFirst } from "@/lib/utils";
 import { formatOpeningHoursOneLiner, useRestaurantSettings } from "@/hooks/useRestaurantSettings";
-import lunchDesktopAvif from "@/assets/kiscsibe-hero-lunch-desktop-v2.avif.asset.json";
 import lunchDesktopWebp from "@/assets/kiscsibe-hero-lunch-desktop-v2.webp.asset.json";
-import lunchMobileAvif from "@/assets/kiscsibe-hero-lunch-mobile-v2.avif.asset.json";
 import lunchMobileWebp from "@/assets/kiscsibe-hero-lunch-mobile-v2.webp.asset.json";
-import breakfastDesktopAvif from "@/assets/kiscsibe-hero-breakfast-desktop-v2.avif.asset.json";
 import breakfastDesktopWebp from "@/assets/kiscsibe-hero-breakfast-desktop-v2.webp.asset.json";
-import breakfastMobileAvif from "@/assets/kiscsibe-hero-breakfast-mobile-v2.avif.asset.json";
 import breakfastMobileWebp from "@/assets/kiscsibe-hero-breakfast-mobile-v2.webp.asset.json";
-import counterDesktopAvif from "@/assets/kiscsibe-hero-counter-desktop-v2.avif.asset.json";
 import counterDesktopWebp from "@/assets/kiscsibe-hero-counter-desktop-v2.webp.asset.json";
-import counterMobileAvif from "@/assets/kiscsibe-hero-counter-mobile-v2.avif.asset.json";
 import counterMobileWebp from "@/assets/kiscsibe-hero-counter-mobile-v2.webp.asset.json";
 
 interface HeroMenuItem {
@@ -34,23 +28,17 @@ interface HeroDailyRow {
 
 const HERO_SLIDES = [
   {
-    desktopAvif: lunchDesktopAvif.url,
     desktopWebp: lunchDesktopWebp.url,
-    mobileAvif: lunchMobileAvif.url,
     mobileWebp: lunchMobileWebp.url,
     label: "Házias ebéd",
   },
   {
-    desktopAvif: breakfastDesktopAvif.url,
     desktopWebp: breakfastDesktopWebp.url,
-    mobileAvif: breakfastMobileAvif.url,
     mobileWebp: breakfastMobileWebp.url,
     label: "Friss reggeli",
   },
   {
-    desktopAvif: counterDesktopAvif.url,
     desktopWebp: counterDesktopWebp.url,
-    mobileAvif: counterMobileAvif.url,
     mobileWebp: counterMobileWebp.url,
     label: "Kiscsibe pult",
   },
@@ -125,9 +113,7 @@ const HeroSection = () => {
               key={slide.label}
               className={`absolute inset-0 transition-opacity duration-1000 ease-in-out motion-reduce:transition-none ${index === activeSlide ? "opacity-100" : "opacity-0"}`}
             >
-              <source media="(max-width: 767px)" type="image/avif" srcSet={slide.mobileAvif} />
               <source media="(max-width: 767px)" type="image/webp" srcSet={slide.mobileWebp} />
-              <source type="image/avif" srcSet={slide.desktopAvif} />
               <source type="image/webp" srcSet={slide.desktopWebp} />
               <img
                 src={slide.desktopWebp}

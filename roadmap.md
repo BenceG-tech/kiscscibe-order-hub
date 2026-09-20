@@ -53,4 +53,4 @@
 - [x] Három reszponzív nyitókép WebP és AVIF optimalizálása
 - [x] Hat másodperces, akadálymentes képváltó beépítése
 - [x] GYIK láthatóságának és hibás adat esetén alapértékeinek javítása
-- [ ] Desktop, mobil, csökkentett mozgás és minőségellenőrzés
+- [x] Desktop, mobil, csökkentett mozgás és minőségellenőrzés
