@@ -43,8 +43,8 @@
 - [ ] Verify homepage and /etlap desktop/mobile interactions and checks
 
 ## Teljes vizuális finomítás – főoldal és étlap
-- [ ] Nagy sárga hátterek megszüntetése
-- [ ] Főoldali szekcióritmus és térközök tömörítése
-- [ ] Napi menü külső dobozának eltávolítása és kompakt elrendezése
-- [ ] Mobil ételkártyák vízszintes, kompakt megjelenítése
-- [ ] Desktop/mobil működési és vizuális ellenőrzés
+- [x] Nagy sárga hátterek megszüntetése
+- [x] Főoldali szekcióritmus és térközök tömörítése
+- [x] Napi menü külső dobozának eltávolítása és kompakt elrendezése
+- [x] Mobil ételkártyák vízszintes, kompakt megjelenítése
+- [x] Desktop/mobil működési és vizuális ellenőrzés
