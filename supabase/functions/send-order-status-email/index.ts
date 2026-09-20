@@ -186,43 +186,41 @@ serve(async (req) => {
 
     const resend = new Resend(resendApiKey);
 
-    const emailResult = await resend.emails.send({
+    const { data: sendData, error: sendError } = await resend.emails.send({
       from: 'Kiscsibe Étterem <rendeles@kiscsibe-etterem.hu>',
       to: [order.email],
       subject: `Kiscsibe – ${config.subject} #${order.code}`,
       html: emailHtml,
     });
 
-    console.log(`Status email sent successfully: ${new_status} → ${order.email} (order ${order.code})`, emailResult);
+    const emailType = `status_${new_status}`;
 
-    // Schedule rating request email for completed orders (60 min delay via setTimeout)
-    if (new_status === 'completed') {
-      try {
-        const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-        const internalSecret = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-        setTimeout(async () => {
-          try {
-            await fetch(`${supabaseUrl}/functions/v1/send-rating-request`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${internalSecret}`,
-                'x-internal-secret': internalSecret,
-              },
-              body: JSON.stringify({ order_id }),
-            });
-            console.log(`Rating request triggered for order ${order.code}`);
-          } catch (e) {
-            console.error('Rating request trigger failed:', e);
-          }
-        }, 60 * 60 * 1000);
-      } catch (e) {
-        console.error('Failed to schedule rating request:', e);
-      }
+    if (sendError) {
+      console.error(`Status email FAILED: ${new_status} → ${maskEmail(order.email)} (order ${order.code})`, sendError);
+      await logEmailSend(supabase as any, {
+        order_id,
+        email_type: emailType,
+        recipient: order.email,
+        status: 'failed',
+        error: (sendError as any)?.message || JSON.stringify(sendError),
+      });
+      return new Response(
+        JSON.stringify({ success: false, error: (sendError as any)?.message || 'Resend error' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 502 }
+      );
     }
 
+    console.log(`Status email sent: ${new_status} → ${maskEmail(order.email)} (order ${order.code}) id=${sendData?.id ?? 'n/a'}`);
+    await logEmailSend(supabase as any, {
+      order_id,
+      email_type: emailType,
+      recipient: order.email,
+      status: 'sent',
+      resend_message_id: sendData?.id ?? null,
+    });
+
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ success: true, id: sendData?.id ?? null }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error: any) {
