@@ -19,7 +19,6 @@ import {
   User,
   Image,
   FileText,
-  FileClock,
   Info,
   LayoutDashboard,
   BarChart3,
@@ -84,7 +83,6 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   const secondaryNavItems: typeof primaryNavItems = [
     
     { href: "/admin/coupons", label: "Kuponok", mobileLabel: "Kupon", icon: Tag, badgeCount: 0 },
-    { href: "/admin/activity", label: "Napló", mobileLabel: "Napló", icon: FileClock, badgeCount: 0 },
     { href: "/admin/partners", label: "Partnerek", mobileLabel: "Partner", icon: Users, badgeCount: 0 },
     { href: "/admin/gallery", label: "Galéria", mobileLabel: "Galéria", icon: Image, badgeCount: 0 },
     { href: "/admin/about", label: "Rólunk oldal", mobileLabel: "Rólunk", icon: Info, badgeCount: 0 },
@@ -113,9 +111,9 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="admin-shell min-h-screen bg-background">
       {/* Sticky Admin Header */}
-      <header className="sticky top-0 z-50 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 border-b h-14">
+      <header className="sticky top-0 z-50 h-14 border-b border-primary/20 bg-editorial/95 text-editorial-foreground shadow-soft backdrop-blur supports-[backdrop-filter]:bg-editorial/90">
         <div className="mx-auto max-w-screen-xl px-3 sm:px-4 flex items-center gap-2 sm:gap-4 h-full">
           <div className="flex items-center gap-2 min-w-0">
             <Button variant="ghost" size="sm" asChild className="hidden sm:flex">
@@ -138,7 +136,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
 
           <div className="ml-auto flex items-center gap-1 sm:gap-2">
             {profile && (
-              <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="hidden sm:flex items-center gap-2 text-sm text-editorial-muted">
                 <User className="h-4 w-4" />
                 <span className="font-medium truncate max-w-[120px]">{profile.full_name || profile.email}</span>
               </div>
@@ -158,8 +156,8 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
               className="h-9 w-9 sm:w-auto sm:px-3"
             >
               {audioUnlocked
-                ? <Volume2 className="h-4 w-4 text-green-600" />
-                : <VolumeX className="h-4 w-4 text-yellow-500" />}
+                ? <Volume2 className="h-4 w-4 text-primary" />
+                : <VolumeX className="h-4 w-4 text-editorial-muted" />}
               <span className="hidden sm:inline ml-2 text-sm">Teszt hang</span>
             </Button>
             <AdminUpdatesDialog />
@@ -178,7 +176,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
       </header>
 
       {/* Sticky Navigation Tabs */}
-      <nav className="sticky top-14 z-40 bg-card/95 backdrop-blur border-b">
+      <nav className="sticky top-14 z-40 border-b border-primary/15 bg-editorial/95 text-editorial-foreground shadow-soft backdrop-blur">
         {/* DESKTOP: primary items + "Több" dropdown */}
         <div className="hidden md:block">
           <ul className="flex items-center gap-1 px-3 py-2 max-w-screen-xl mx-auto">
@@ -190,7 +188,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
                   className={`relative flex items-center gap-2 px-3 py-2 rounded-md font-medium transition-all duration-200 whitespace-nowrap min-h-[36px] text-sm ${
                     location.pathname === item.href 
                       ? "bg-primary text-primary-foreground shadow-sm" 
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                      : "text-editorial-muted hover:bg-primary/10 hover:text-editorial-foreground"
                   }`}
                 >
                   <item.icon className="h-4 w-4" />
@@ -208,7 +206,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
                     className={`relative flex items-center gap-2 px-3 py-2 rounded-md font-medium transition-all duration-200 whitespace-nowrap min-h-[36px] text-sm ${
                       isSecondaryActive
                         ? "bg-primary text-primary-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                        : "text-editorial-muted hover:bg-primary/10 hover:text-editorial-foreground"
                     }`}
                   >
                     <MoreHorizontal className="h-4 w-4" />
@@ -253,7 +251,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
                   className={`relative flex items-center gap-1 px-2.5 py-1.5 rounded-md font-medium transition-all duration-200 whitespace-nowrap text-xs ${
                     location.pathname === item.href 
                       ? "bg-primary text-primary-foreground" 
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                      : "text-editorial-muted hover:bg-primary/10 hover:text-editorial-foreground"
                   }`}
                 >
                   <item.icon className="h-3.5 w-3.5" />
