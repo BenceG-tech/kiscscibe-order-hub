@@ -48,13 +48,21 @@ serve(async (req) => {
 
     if (orderError || !order) throw new Error("Order not found");
     if (!order.email) {
+      await logEmailSend(supabase as any, {
+        order_id,
+        email_type: "rating_request",
+        recipient: "(none)",
+        status: "skipped",
+        error: "No customer email",
+      });
       return new Response(JSON.stringify({ success: true, skipped: true, reason: "No email" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const token = await generateToken(order_id);
-    const siteUrl = "https://kiscscibe-order-hub.lovable.app";
+    const token = await generateRatingToken(order_id);
+    const siteUrl = SITE_URL;
+
 
     // Fetch Google Review URL
     let googleReviewUrl = "https://g.page/review/kiscsibe";
