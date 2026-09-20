@@ -153,13 +153,12 @@ serve(async (req) => {
 
         ${new_status === 'completed' ? `
         <div style="background: #fff3e0; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
-          <p style="margin: 0 0 10px 0; font-size: 16px;">⭐ Tetszett az élmény?</p>
+          <p style="margin: 0 0 10px 0; font-size: 16px;">⭐ Hogy ízlett? Értékeld egy kattintással:</p>
+          <div style="margin: 14px 0;">${ratingLinks}</div>
+          <p style="margin: 0 0 16px; font-size: 13px; color: #888;">Kattints egy emojira az értékeléshez!</p>
           <a href="${googleReviewUrl}" style="display: inline-block; background: #4285f4; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">
             Értékeld a tapasztalatod Google-ön!
           </a>
-          <p style="margin: 10px 0 0; font-size: 13px; color: #888;">
-            📝 1 órán belül küldünk egy rövid kérdőívet is az élményedről.
-          </p>
         </div>
         ` : ''}
 
