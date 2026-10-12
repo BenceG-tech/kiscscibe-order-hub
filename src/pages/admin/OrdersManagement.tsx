@@ -93,6 +93,7 @@ interface Order {
   items?: OrderItem[];
   coupon_code?: string | null;
   discount_huf?: number;
+  packaging_fee_huf?: number;
   email_status?: EmailStatusSummary;
 }
 
