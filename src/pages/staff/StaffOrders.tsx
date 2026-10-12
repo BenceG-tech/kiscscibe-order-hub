@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { sendStatusEmail } from "@/lib/statusEmail";
 import { toast } from "sonner";
 import StaffLayout from "./StaffLayout";
 import KanbanColumn from "@/components/staff/KanbanColumn";
@@ -214,11 +215,7 @@ const StaffOrders = () => {
       );
       toast.success(statusLabels[newStatus] || "Státusz frissítve");
 
-      supabase.functions
-        .invoke("send-order-status-email", {
-          body: { order_id: orderId, new_status: newStatus },
-        })
-        .catch((err) => console.error("Status email error:", err));
+      void sendStatusEmail(orderId, newStatus);
     } catch (err) {
       console.error(`[KDS] Exception:`, err);
       toast.error("Váratlan hiba – kérlek próbáld újra.");

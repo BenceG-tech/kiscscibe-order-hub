@@ -5,8 +5,6 @@ const ALLOWED_ORIGINS = [
   "https://kiscscibe-order-hub.lovable.app",
   "https://id-preview--98ed56c3-1480-48d1-93ba-37af09bab92a.lovable.app",
   // Production custom domains
-  "https://kiscsibe-etterem.hu",
-  "https://www.kiscsibe-etterem.hu",
   "https://kiscsibeetterem.hu",
   "https://www.kiscsibeetterem.hu",
   // Development
@@ -20,7 +18,6 @@ export function getCorsHeaders(req: Request): Record<string, string> {
   const isAllowed = ALLOWED_ORIGINS.some((allowed) => origin === allowed)
     || origin.endsWith(".lovable.app")
     || origin.endsWith(".lovableproject.com")
-    || origin.endsWith(".kiscsibe-etterem.hu")
     || origin.endsWith(".kiscsibeetterem.hu");
 
   return {

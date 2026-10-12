@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
+import { EMAIL_REPLY_TO, sendEmail } from "../_shared/email.ts";
 
 function escapeHtml(str: string): string {
   return str
@@ -61,9 +62,8 @@ const handler = async (req: Request): Promise<Response> => {
     const timestamp = new Date().toLocaleString("hu-HU", { timeZone: "Europe/Budapest" });
 
     // Send notification to restaurant
-    const adminSend = await resend.emails.send({
-      from: "Kiscsibe Étterem <rendeles@kiscsibe-etterem.hu>",
-      to: ["info@kiscsibeetterem.hu"],
+    const adminSend = await sendEmail(resend, {
+      to: [EMAIL_REPLY_TO],
       reply_to: email,
       subject: `Új üzenet a weboldalról - ${safeName}`,
       html: `
@@ -98,10 +98,8 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     // Send confirmation to sender
-    const customerSend = await resend.emails.send({
-      from: "Kiscsibe Reggeliző & Étterem <rendeles@kiscsibe-etterem.hu>",
+    const customerSend = await sendEmail(resend, {
       to: [email],
-      reply_to: "info@kiscsibeetterem.hu",
       subject: "Kiscsibe - Megkaptuk üzenetét",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -124,19 +122,24 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     console.log(
-      `[send-contact-email] admin_id=${adminSend?.data?.id ?? 'n/a'} err=${adminSend?.error?.message ?? 'none'} | customer_id=${customerSend?.data?.id ?? 'n/a'} err=${customerSend?.error?.message ?? 'none'}`,
+      `[send-contact-email] admin=${adminSend.ok ? adminSend.id : "FAILED " + adminSend.error} | customer=${customerSend.ok ? customerSend.id : "FAILED " + customerSend.error}`,
     );
+
+    // The restaurant notification is the essential delivery; without it the message is lost.
+    if (!adminSend.ok) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Az üzenetet most nem sikerült elküldeni. Kérjük, próbálja újra később, vagy írjon az info@kiscsibeetterem.hu címre." }),
+        { status: 502, headers: { "Content-Type": "application/json", ...corsHeaders } },
+      );
+    }
 
     return new Response(
       JSON.stringify({
         success: true,
-        admin_message_id: adminSend?.data?.id ?? null,
-        customer_message_id: customerSend?.data?.id ?? null,
+        admin_message_id: adminSend.id,
+        customer_message_id: customerSend.ok ? customerSend.id : null,
       }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
+      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } },
     );
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Ismeretlen hiba történt.";

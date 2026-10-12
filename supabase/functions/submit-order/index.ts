@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { Resend } from "npm:resend@2.0.0";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
+import { sendEmail } from "../_shared/email.ts";
 
 function escapeHtml(s: unknown): string {
   return String(s ?? '')
@@ -58,7 +59,10 @@ function budapestDayOfWeek(dateStr: string): number {
 //   Breakfast pickup window: 07:00 – 10:00
 //   Lunch pickup window:     10:30 – 16:00
 //   Same-day order cutoff:   11:00 (after which "today" is not accepted)
-...
+const BREAKFAST_START_MIN = 7 * 60;
+const BREAKFAST_END_MIN = 10 * 60;
+const LUNCH_START_MIN = 10 * 60 + 30;
+const LUNCH_END_MIN = 16 * 60;
 const TODAY_ORDER_CUTOFF_MIN = 11 * 60;
 
 function isWithinPickupWindow(dateStr: string, timeStr: string, isBreakfastOnly: boolean): boolean {
@@ -810,7 +814,11 @@ serve(async (req) => {
         }
 
         // Same-day cutoff: after 11:00 no more today-orders (owner rule).
-...
+        const nowBp = getBudapestParts();
+        if (date === nowBp.date) {
+          const [nowH, nowM] = nowBp.time.split(':').map(Number);
+          const nowMin = nowH * 60 + nowM;
+          if (nowMin >= TODAY_ORDER_CUTOFF_MIN) {
             console.error(`[${requestId}] Rejected: past today's 11:00 cutoff (now=${nowBp.time})`);
             throw new Error('A mai napra az online rendelés 11:00-ig volt lehetséges. Kérjük, válasszon későbbi napot, vagy rendeljen személyesen a pultnál.');
           }
@@ -1312,17 +1320,15 @@ ${adminItemsText}
     const sendAdminEmails = async () => {
       for (const recipient of ADMIN_RECIPIENTS) {
         try {
-          const { data, error } = await resend.emails.send({
-            from: 'Kiscsibe Étterem <rendeles@kiscsibe-etterem.hu>',
+          const out = await sendEmail(resend, {
             to: [recipient],
-            reply_to: 'info@kiscsibeetterem.hu',
             subject: `Új rendelés #${orderCode} — ${customer.name}`,
             html: adminHtml,
             text: adminText,
           });
-          if (error) throw error;
-          console.log(`[${requestId}] Admin notification sent to ${recipient} (id=${data?.id ?? 'n/a'})`);
-          await logEmailAttempt('admin_notification', recipient, 'sent', data?.id ?? null, null);
+          if (!out.ok) throw new Error(out.error);
+          console.log(`[${requestId}] Admin notification accepted for ${recipient} (id=${out.id})`);
+          await logEmailAttempt('admin_notification', recipient, 'sent', out.id, null);
         } catch (err) {
           const msg = String((err as any)?.message ?? err);
           console.error(`[${requestId}] Admin notification to ${recipient} failed:`, msg);
@@ -1415,20 +1421,18 @@ Kiscsibe Reggeliző & Étterem
 `;
 
       try {
-        const { data, error } = await resend.emails.send({
-          from: 'Kiscsibe Étterem <rendeles@kiscsibe-etterem.hu>',
+        const out = await sendEmail(resend, {
           to: [customer.email],
-          reply_to: 'info@kiscsibeetterem.hu',
           subject: `Kiscsibe – rendelés visszaigazolás #${orderCode}`,
           html: customerHtml,
           text: customerText,
         });
-        if (error) throw error;
-        console.log(`[${requestId}] Customer confirmation sent to ${customer.email} (id=${data?.id ?? 'n/a'})`);
-        await logEmailAttempt('customer_confirmation', customer.email, 'sent', data?.id ?? null, null);
+        if (!out.ok) throw new Error(out.error);
+        console.log(`[${requestId}] Customer confirmation accepted (id=${out.id})`);
+        await logEmailAttempt('customer_confirmation', customer.email, 'sent', out.id, null);
       } catch (err) {
         const msg = String((err as any)?.message ?? err);
-        console.error(`[${requestId}] Customer confirmation to ${customer.email} failed:`, msg);
+        console.error(`[${requestId}] Customer confirmation failed:`, msg);
         await logEmailAttempt('customer_confirmation', customer.email, 'failed', null, msg);
       }
     };

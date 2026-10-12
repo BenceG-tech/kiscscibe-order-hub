@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { Resend } from "npm:resend@2.0.0";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
+import { sendEmail } from "../_shared/email.ts";
 
 const handler = async (req: Request): Promise<Response> => {
   const corsHeaders = getCorsHeaders(req);
@@ -41,16 +42,14 @@ const handler = async (req: Request): Promise<Response> => {
       .maybeSingle();
 
     if (subErr || !sub) {
-      console.warn("send-welcome-newsletter: no recent subscriber row for", email);
+      console.warn("send-welcome-newsletter: no recent subscriber row");
       return new Response(
         JSON.stringify({ error: "Nem található friss feliratkozás ezzel az email címmel." }),
         { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } },
       );
     }
 
-    const sendResult = await resend.emails.send({
-      from: "Kiscsibe Étterem <rendeles@kiscsibe-etterem.hu>",
-      reply_to: "info@kiscsibeetterem.hu",
+    const sendResult = await sendEmail(resend, {
       to: [email],
 
       subject: "Köszönjük a feliratkozást! - Kiscsibe Étterem",
@@ -91,8 +90,14 @@ const handler = async (req: Request): Promise<Response> => {
       `,
     });
 
-    const messageId = (sendResult as any)?.data?.id || (sendResult as any)?.id || null;
-    console.log(`Welcome newsletter sent to: ${email} | Resend message_id: ${messageId}`);
+    if (!sendResult.ok) {
+      console.error(`send-welcome-newsletter provider rejected: ${sendResult.error}`);
+      return new Response(
+        JSON.stringify({ success: false, error: "Az üdvözlő levelet nem sikerült elküldeni." }),
+        { status: 502, headers: { "Content-Type": "application/json", ...corsHeaders } },
+      );
+    }
+    console.log(`Welcome newsletter accepted | message_id: ${sendResult.id}`);
 
 
     return new Response(

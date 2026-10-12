@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { Resend } from "npm:resend@2.0.0";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
+import { sendEmail } from "../_shared/email.ts";
 import { requireAdminOrInternal } from "../_shared/auth.ts";
 
 serve(async (req) => {
@@ -203,14 +204,14 @@ serve(async (req) => {
 
     const resend = new Resend(resendApiKey);
 
-    await resend.emails.send({
-      from: 'Kiscsibe Rendszer <rendeles@kiscsibe-etterem.hu>',
+    const sendOut = await sendEmail(resend, {
       to: ['info@kiscsibeetterem.hu', 'gataibence@gmail.com'],
       subject: `Kiscsibe napi riport — ${reportDate} — ${totalRevenue.toLocaleString()} Ft`,
       html: emailHtml,
     });
 
-    console.log(`Daily report sent for ${reportDate}`);
+    if (!sendOut.ok) throw new Error(`Email provider rejected report: ${sendOut.error}`);
+    console.log(`Daily report sent (id=${sendOut.id}) for ${reportDate}`);
 
     return new Response(
       JSON.stringify({ success: true, date: reportDate, revenue: totalRevenue, orders: completedOrders.length }),
