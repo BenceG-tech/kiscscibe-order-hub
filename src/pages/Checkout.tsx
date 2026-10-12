@@ -23,10 +23,10 @@ import { usePackagingFees } from "@/hooks/usePackagingFees";
 const DEV = import.meta.env.DEV;
 
 // ─── Opening-hours business rules (single source of truth) ─────────────────
-// Mon–Fri only. Weekends closed. Same-day orders accepted only until 15:30.
+// Mon–Fri only. Weekends closed. Same-day orders accepted only until 11:00.
 //   Breakfast pickup window: 07:00 – 10:00
 //   Lunch pickup window:     10:30 – 16:00
-const TODAY_ORDER_CUTOFF_MIN = 15 * 60 + 30;
+const TODAY_ORDER_CUTOFF_MIN = 11 * 60;
 const BREAKFAST_START_MIN = 7 * 60;
 const BREAKFAST_END_MIN = 10 * 60;
 const LUNCH_START_MIN = 10 * 60 + 30;

@@ -57,12 +57,9 @@ function budapestDayOfWeek(dateStr: string): number {
 // Mon–Fri only, weekends closed.
 //   Breakfast pickup window: 07:00 – 10:00
 //   Lunch pickup window:     10:30 – 16:00
-//   Same-day order cutoff:   15:30 (after which "today" is not accepted)
-const BREAKFAST_START_MIN = 7 * 60;
-const BREAKFAST_END_MIN = 10 * 60;
-const LUNCH_START_MIN = 10 * 60 + 30;
-const LUNCH_END_MIN = 16 * 60;
-const TODAY_ORDER_CUTOFF_MIN = 15 * 60 + 30;
+//   Same-day order cutoff:   11:00 (after which "today" is not accepted)
+...
+const TODAY_ORDER_CUTOFF_MIN = 11 * 60;
 
 function isWithinPickupWindow(dateStr: string, timeStr: string, isBreakfastOnly: boolean): boolean {
   const dow = budapestDayOfWeek(dateStr);
