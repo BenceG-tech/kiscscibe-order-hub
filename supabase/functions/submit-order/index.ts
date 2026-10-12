@@ -57,12 +57,9 @@ function budapestDayOfWeek(dateStr: string): number {
 // Mon–Fri only, weekends closed.
 //   Breakfast pickup window: 07:00 – 10:00
 //   Lunch pickup window:     10:30 – 16:00
-//   Same-day order cutoff:   15:30 (after which "today" is not accepted)
-const BREAKFAST_START_MIN = 7 * 60;
-const BREAKFAST_END_MIN = 10 * 60;
-const LUNCH_START_MIN = 10 * 60 + 30;
-const LUNCH_END_MIN = 16 * 60;
-const TODAY_ORDER_CUTOFF_MIN = 15 * 60 + 30;
+//   Same-day order cutoff:   11:00 (after which "today" is not accepted)
+...
+const TODAY_ORDER_CUTOFF_MIN = 11 * 60;
 
 function isWithinPickupWindow(dateStr: string, timeStr: string, isBreakfastOnly: boolean): boolean {
   const dow = budapestDayOfWeek(dateStr);
@@ -609,7 +606,7 @@ serve(async (req) => {
       }
       const [nowH, nowM] = nowBudapest.time.split(':').map(Number);
       if (nowH * 60 + nowM >= TODAY_ORDER_CUTOFF_MIN) {
-        throw new Error('Ma már nem tudunk új rendelést fogadni (15:30 után).');
+        throw new Error('A mai napra az online rendelés 11:00-ig volt lehetséges. Kérjük, válasszon későbbi napot, vagy rendeljen személyesen a pultnál.');
       }
     }
 
@@ -629,7 +626,7 @@ serve(async (req) => {
       }
       const [nowH, nowM] = nowBudapest.time.split(':').map(Number);
       if (nowH * 60 + nowM >= TODAY_ORDER_CUTOFF_MIN) {
-        throw new Error('Ma már nem tudunk új rendelést fogadni (15:30 után). Kérjük válassz holnapi időpontot.');
+        throw new Error('A mai napra az online rendelés 11:00-ig volt lehetséges. Kérjük, válasszon későbbi napot, vagy rendeljen személyesen a pultnál.');
       }
     }
 
@@ -812,14 +809,10 @@ serve(async (req) => {
           throw new Error(`A kiválasztott időpont nyitvatartási időn kívül esik (${win})`);
         }
 
-        // Same-day cutoff: after 15:30 no more today-orders (owner rule).
-        const nowBp = getBudapestParts();
-        if (date === nowBp.date) {
-          const [nowH, nowM] = nowBp.time.split(':').map(Number);
-          const nowMin = nowH * 60 + nowM;
-          if (nowMin >= TODAY_ORDER_CUTOFF_MIN) {
-            console.error(`[${requestId}] Rejected: past today's 15:30 cutoff (now=${nowBp.time})`);
-            throw new Error('Ma már nem tudunk új rendelést fogadni (15:30 után). Kérjük válassz holnapi vagy későbbi időpontot.');
+        // Same-day cutoff: after 11:00 no more today-orders (owner rule).
+...
+            console.error(`[${requestId}] Rejected: past today's 11:00 cutoff (now=${nowBp.time})`);
+            throw new Error('A mai napra az online rendelés 11:00-ig volt lehetséges. Kérjük, válasszon későbbi napot, vagy rendeljen személyesen a pultnál.');
           }
         }
 

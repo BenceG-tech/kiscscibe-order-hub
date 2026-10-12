@@ -23,10 +23,10 @@ import { usePackagingFees } from "@/hooks/usePackagingFees";
 const DEV = import.meta.env.DEV;
 
 // ─── Opening-hours business rules (single source of truth) ─────────────────
-// Mon–Fri only. Weekends closed. Same-day orders accepted only until 15:30.
+// Mon–Fri only. Weekends closed. Same-day orders accepted only until 11:00.
 //   Breakfast pickup window: 07:00 – 10:00
 //   Lunch pickup window:     10:30 – 16:00
-const TODAY_ORDER_CUTOFF_MIN = 15 * 60 + 30;
+const TODAY_ORDER_CUTOFF_MIN = 11 * 60;
 const BREAKFAST_START_MIN = 7 * 60;
 const BREAKFAST_END_MIN = 10 * 60;
 const LUNCH_START_MIN = 10 * 60 + 30;
@@ -406,7 +406,7 @@ const Checkout = () => {
           const bp = getBudapestNowParts();
           if (slot.date < bp.date) return false;
           if (slot.date === bp.date) {
-            // Same-day cutoff: after 15:30 no more today-slots at all.
+            // Same-day cutoff: after 11:00 no more today-slots at all.
             if (minutesFromTime(bp.time) >= TODAY_ORDER_CUTOFF_MIN) return false;
             const slotMinutes = minutesFromTime(slot.timeslot);
             // 10-min lead time.
@@ -675,9 +675,9 @@ const Checkout = () => {
         return;
       }
 
-      // Same-day cutoff: after 15:30 no more today-orders.
+      // Same-day cutoff: after 11:00 no more today-orders.
       if (formData.pickup_date === bp.date && minutesFromTime(bp.time) >= TODAY_ORDER_CUTOFF_MIN) {
-        const msg = "Ma már nem tudunk új rendelést fogadni (15:30 után). Kérjük válassz holnapi vagy későbbi időpontot.";
+        const msg = "A mai napra az online rendelés 11:00-ig volt lehetséges. Kérjük, válasszon későbbi napot, vagy rendeljen személyesen a pultnál.";
         await persistValidationBlock(msg);
         toast({ title: "Rendelési határidő lejárt", description: msg, variant: "destructive" });
         releaseLock();
@@ -1081,6 +1081,18 @@ const Checkout = () => {
                       </div>
                     )}
                     
+                    <p className="text-xs text-muted-foreground">
+                      Online előrendelés aznap 11:00-ig — utána személyesen a pultnál.
+                    </p>
+
+                    {!canOrderForToday() && (
+                      <div className="rounded-lg border border-primary/30 bg-primary/10 p-3">
+                        <p className="text-sm font-medium">
+                          A mai napra az online rendelés már lezárult (11:00). Ma már csak személyesen a pultnál tud rendelni — holnapra itt is leadhatja.
+                        </p>
+                      </div>
+                    )}
+
                     <RadioGroup
                       value={formData.pickup_type}
                       onValueChange={(value: "asap" | "scheduled") => 

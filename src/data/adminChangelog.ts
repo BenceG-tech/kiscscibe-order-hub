@@ -13,6 +13,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-10-12",
+    title: "Online rendelés aznap 11:00-ig",
+    description:
+      "Aznapi online rendelés mostantól csak 11:00-ig (korábban 15:30-ig) adható le. 11:00 után a mai nap már nem választható, a vendég tájékoztatást kap, hogy a mai rendelés már csak személyesen a pultnál lehetséges — holnapi és későbbi napokra továbbra is rendelhet. A szabály a szerveren is érvényesül, így nem kerülhető meg.",
+    type: "new",
+    tabGroup: "orders",
+  },
+  {
+    date: "2026-10-12",
     title: "Csomagolási (doboz) díj a rendelésekhez",
     description:
       "Elviteles rendelésnél a főételekhez és reggelikhez adagonként 150 Ft, az elviteles menühöz 200 Ft dobozdíj számítódik automatikusan. Salátáknál, savanyúságoknál, leveseknél, italoknál és desszerteknél nincs külön díj. A kosárban, a pénztárban, a visszaigazoláson, a nyomtatott bizonylaton és az admin rendeléslistán is külön sorban jelenik meg.",
