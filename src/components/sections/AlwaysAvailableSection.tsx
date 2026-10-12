@@ -113,6 +113,7 @@ const AlwaysAvailableSection = ({
   }
 
   const handleAddToCart = (item: AlwaysAvailableItem) => {
+    const categoryName = categories.find((c) => c.id === item.category_id)?.name;
     addItem({
       id: item.id,
       name: item.name,
@@ -120,6 +121,7 @@ const AlwaysAvailableSection = ({
       modifiers: [],
       sides: [],
       image_url: item.image_url || undefined,
+      packaging: categoryNeedsBox(categoryName) ? 'main' : 'none',
     });
     toast({
       title: "Kosárba tetve",

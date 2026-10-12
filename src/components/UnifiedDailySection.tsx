@@ -85,6 +85,7 @@ const UnifiedDailySection = () => {
       })),
       image_url: pendingItem.item_image_url,
       daily_date: dateStr,
+      packaging: packagingKindForMenuRole(pendingItem.menu_role),
     });
     
     toast({
