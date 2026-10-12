@@ -104,3 +104,9 @@
 ## Köretválasztó leveseknél
 - [x] UnifiedDailySection: leves/köret menu_role → közvetlen kosárba, picker nélkül
 - [x] Főételeknél a köretválasztó továbbra is megnyílik (Playwright 20/20 gomb ellenőrizve)
+
+## Napi menü helyreállítása
+- [x] Tranzakciós menüszinkron, meglévő azonosítók és készlet megőrzése
+- [x] Admin figyelmeztetés hiányos vagy többszörös kijelölésre
+- [ ] Hiányzó helyes menük visszaállítása és adatbázistesztek
+- [ ] Főoldali és étlapi menü kosárpróba, automata tesztek

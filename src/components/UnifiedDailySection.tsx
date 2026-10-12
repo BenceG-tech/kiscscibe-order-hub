@@ -15,6 +15,7 @@ import { useToast } from "@/components/ui/use-toast";
 import StickyMenuCTA from "@/components/StickyMenuCTA";
 import { SidePickerModal } from "@/components/SidePickerModal";
 import FoodCard from "@/components/FoodCard";
+import { menuComposition } from "@/lib/menuComposition";
 
 interface MenuItem {
   id: string;

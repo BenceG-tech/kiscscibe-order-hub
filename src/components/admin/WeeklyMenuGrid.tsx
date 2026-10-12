@@ -634,6 +634,28 @@ export default function WeeklyMenuGrid() {
   const syncingRef = useRef(false);
 
   // Reusable publish banner (shown above grid on both mobile + desktop)
+  const renderMenuWarnings = () => {
+    const warnings = weekDates.flatMap(date => {
+      const dateStr = format(date, "yyyy-MM-dd");
+      const offer = dailyOffers.find(o => o.date === dateStr);
+      const { warning } = menuComposition(offer?.daily_offer_items ?? []);
+      return warning ? [{ date, warning }] : [];
+    });
+    if (warnings.length === 0) return null;
+    return (
+      <div role="status" className="space-y-2 border-y border-primary/30 bg-primary/10 px-3 py-3">
+        {warnings.map(({ date, warning }) => (
+          <div key={format(date, "yyyy-MM-dd")} className="flex items-start gap-2 text-sm">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+            <p className="min-w-0 break-words text-foreground">
+              <strong>{format(date, "EEEE (MM. dd.)", { locale: hu })}: </strong>{warning}
+            </p>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   const renderPublishBanner = () => {
     const weekDateStrs = weekDates.map(d => format(d, "yyyy-MM-dd"));
     const offersInWeek = weekDateStrs.filter(d => publishData[d]);
