@@ -122,6 +122,10 @@ const validateEmail = (v: string): string | undefined => {
 
 const Checkout = () => {
   const { state: cart, clearCart, applyCoupon, removeCoupon, isCartLoaded } = useCart();
+  const packagingFees = usePackagingFees();
+  const packagingFee = computePackagingFee(cart.items, packagingFees);
+  // Végösszeg = tételek - kupon + dobozdíj (a dobozdíjra kupon nem vonatkozik)
+  const finalTotalHuf = (cart.totalAfterDiscount || cart.total) + packagingFee;
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const tableNumber = searchParams.get('table');
@@ -710,6 +714,7 @@ const Checkout = () => {
           : (dailyDates.length === 1 ? dailyDates[0] : formData.pickup_date),
         pickup_time_slot: formData.pickup_type === "asap" ? null : formData.pickup_time,
         coupon_code: cart.coupon?.code || null,
+        packaging_fee_huf: packagingFee,
         session_id: cartSessionId,
         idempotency_bucket: idempotencyBucket,
         items: cart.items.map(item => ({
@@ -940,14 +945,21 @@ const Checkout = () => {
                 </div>
                 
                 <Separator />
-                
+
+                {packagingFee > 0 && (
+                  <div className="flex justify-between items-center text-sm text-muted-foreground">
+                    <span>Csomagolás (doboz):</span>
+                    <span>{packagingFee.toLocaleString()} Ft</span>
+                  </div>
+                )}
+
                 <div className="flex justify-between items-center text-lg font-bold">
                   <span>Végösszeg:</span>
                   <div className="text-right">
                     {cart.coupon && (
                       <span className="text-sm line-through text-muted-foreground mr-2">{cart.total.toLocaleString()} Ft</span>
                     )}
-                    <span className="text-primary">{cart.totalAfterDiscount.toLocaleString()} Ft</span>
+                    <span className="text-primary">{finalTotalHuf.toLocaleString()} Ft</span>
                   </div>
                 </div>
               </CardContent>
@@ -1227,10 +1239,10 @@ const Checkout = () => {
                       ) : networkError ? (
                         <>
                           <RefreshCw className="h-4 w-4 mr-2" />
-                          Próbáld újra - {cart.totalAfterDiscount.toLocaleString()} Ft
+                          Próbáld újra - {finalTotalHuf.toLocaleString()} Ft
                         </>
                       ) : (
-                        `Rendelés véglegesítése - ${cart.totalAfterDiscount.toLocaleString()} Ft`
+                        `Rendelés véglegesítése - ${finalTotalHuf.toLocaleString()} Ft`
                       )}
                     </Button>
 
