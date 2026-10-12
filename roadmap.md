@@ -100,3 +100,7 @@
 - [x] Állandó tájékoztató sor a pénztárban + 11:00 utáni figyelmeztető doboz
 - [x] AdminChangelog bejegyzés
 - [x] Tesztek 32/32, build OK, Playwright 10:30/11:30 ellenőrizve
+
+## Köretválasztó leveseknél
+- [x] UnifiedDailySection: leves/köret menu_role → közvetlen kosárba, picker nélkül
+- [x] Főételeknél a köretválasztó továbbra is megnyílik (Playwright 20/20 gomb ellenőrizve)
