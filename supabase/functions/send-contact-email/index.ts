@@ -63,7 +63,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send notification to restaurant
     const adminSend = await sendEmail(resend, {
-      to: ["gataibence@gmail.com"], // TEMP-TEST: restore [EMAIL_REPLY_TO]
+      to: [EMAIL_REPLY_TO],
       reply_to: email,
       subject: `Új üzenet a weboldalról - ${safeName}`,
       html: `
