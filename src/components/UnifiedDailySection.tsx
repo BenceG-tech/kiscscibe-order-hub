@@ -66,8 +66,8 @@ const UnifiedDailySection = () => {
   const extraItems = dailyData?.items || [];
 
   const handleAddItemToCart = (item: MenuItem) => {
-    // Soups (and other non-main items) go straight to cart — no side picker
-    if (item.menu_role !== 'főétel') {
+    // Soups and side dishes go straight to cart — no side picker
+    if (item.menu_role === 'leves' || item.menu_role === 'köret') {
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
       addItem({
         id: item.item_id,
