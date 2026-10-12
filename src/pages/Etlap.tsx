@@ -202,7 +202,8 @@ const Etlap = () => {
         price_huf: item.item_price_huf,
         modifiers: [],
         sides: [],
-        image_url: item.item_image_url
+        image_url: item.item_image_url,
+        packaging: packagingKindForMenuRole(item.menu_role)
       });
       toast({
         title: "Kosárba tetve",
@@ -229,7 +230,8 @@ const Etlap = () => {
         name: side.name,
         price_huf: 0 // Sides included in price
       })),
-      image_url: pendingCartItem.item_image_url
+      image_url: pendingCartItem.item_image_url,
+      packaging: packagingKindForMenuRole(pendingCartItem.menu_role)
     });
     
     const sideText = selectedSides.length > 0 
@@ -498,7 +500,8 @@ const Etlap = () => {
               price_huf: pendingCartItem.item_price_huf,
               modifiers: [],
               sides: [],
-              image_url: pendingCartItem.item_image_url
+              image_url: pendingCartItem.item_image_url,
+              packaging: packagingKindForMenuRole(pendingCartItem.menu_role)
             });
             toast({
               title: "Kosárba tetve",
