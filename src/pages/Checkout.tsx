@@ -1081,6 +1081,18 @@ const Checkout = () => {
                       </div>
                     )}
                     
+                    <p className="text-xs text-muted-foreground">
+                      Online előrendelés aznap 11:00-ig — utána személyesen a pultnál.
+                    </p>
+
+                    {!canOrderForToday() && (
+                      <div className="rounded-lg border border-primary/30 bg-primary/10 p-3">
+                        <p className="text-sm font-medium">
+                          A mai napra az online rendelés már lezárult (11:00). Ma már csak személyesen a pultnál tud rendelni — holnapra itt is leadhatja.
+                        </p>
+                      </div>
+                    )}
+
                     <RadioGroup
                       value={formData.pickup_type}
                       onValueChange={(value: "asap" | "scheduled") => 
