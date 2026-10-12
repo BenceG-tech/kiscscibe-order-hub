@@ -42,7 +42,6 @@ import {
   Download,
   X,
   Tag,
-  Package,
   Undo2,
   RotateCcw,
   Printer,

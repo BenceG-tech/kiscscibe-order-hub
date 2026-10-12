@@ -25,6 +25,7 @@ interface DailyOfferItem {
 
 interface DailyMenuItems {
   id: string;
+  menu_role?: string;
   menu_items?: MenuItem;
 }
 
