@@ -296,14 +296,14 @@ export const HELP_CATEGORIES: HelpCategory[] = [
         whatItDoes:
           "A Rendelések oldalon két új fül látja, ki próbált rendelni de hibára futott (Sikertelen), és ki rakott össze egy kosarat de nem véglegesítette (Félbehagyott).",
         howToUse: [
-          "Rendelések oldal → 'Sikertelen' fül: itt látod, ha valakinek hibaüzenet jött a Rendelés leadásakor (rossz időpont, telített idősáv, érvénytelen kupon stb.). Hívd vissza és segíts neki!",
+          "Rendelések oldal → 'Sikertelen' fül: itt látod, ha valakinek hibaüzenet jött a Rendelés véglegesítésekor (rossz időpont, telített idősáv, érvénytelen kupon stb.). Hívd vissza és segíts neki!",
           "Rendelések oldal → 'Félbehagyott' fül: 5+ perce nem aktív, befejezetlen kosarak. A vendég neve és telefonszáma látható, ha eljutott odáig hogy beírta.",
           "A telefonszámra kattintva azonnal indul a hívás.",
           "A kuka ikonnal törölheted az adott bejegyzést.",
           "A bejegyzések 30 nap után automatikusan törlődnek.",
         ],
         whyItHelps:
-          "Nem vesznek el a fél-rendelések. Pl. ha valaki béna volt és nem kattintott a Rendelés leadása gombra, vissza tudod hívni és felvenni a rendelést.",
+          "Nem vesznek el a fél-rendelések. Pl. ha valaki béna volt és nem kattintott a Rendelés véglegesítése gombra, vissza tudod hívni és felvenni a rendelést.",
         commonMistake:
           "Ne aggódj minden félbehagyott kosár miatt — sokan csak nézelődnek. Ha látsz egy 4-5000 Ft-os kosarat valódi adatokkal, az érdemes egy hívásra.",
       },

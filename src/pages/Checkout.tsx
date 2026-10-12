@@ -805,7 +805,7 @@ const Checkout = () => {
       setNetworkError(userMessage);
 
       toast({
-        title: isNetworkIssue ? "Hálózati hiba" : "Hiba a rendelés leadásakor",
+        title: isNetworkIssue ? "Hálózati hiba" : "Hiba a rendelés véglegesítésekor",
         description: userMessage,
         variant: "destructive"
       });
@@ -1205,7 +1205,7 @@ const Checkout = () => {
                       <div className="flex gap-3 rounded-lg border-2 border-destructive bg-destructive/10 p-4">
                         <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
                         <div className="flex-1 space-y-2">
-                          <p className="font-semibold text-destructive text-sm">Nem sikerült leadni a rendelést</p>
+                          <p className="font-semibold text-destructive text-sm">Nem sikerült véglegesíteni a rendelést</p>
                           <p className="text-sm text-destructive/90">{networkError}</p>
                           <p className="text-xs text-muted-foreground">
                             Nyugodtan próbáld újra — dupla rendelés nem jöhet létre, a rendszer felismeri az ismétlést.
@@ -1230,7 +1230,7 @@ const Checkout = () => {
                           Próbáld újra - {cart.totalAfterDiscount.toLocaleString()} Ft
                         </>
                       ) : (
-                        `Rendelés leadása - ${cart.totalAfterDiscount.toLocaleString()} Ft`
+                        `Rendelés véglegesítése - ${cart.totalAfterDiscount.toLocaleString()} Ft`
                       )}
                     </Button>
 

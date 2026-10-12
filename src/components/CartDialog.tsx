@@ -112,7 +112,7 @@ export const CartDialog = ({ open, onOpenChange }: CartDialogProps) => {
                   className="w-full mt-4 bg-gradient-to-r from-primary to-primary-glow"
                   onClick={handleCheckout}
                 >
-                  Tovább a fizetéshez
+                  Rendelés véglegesítése
                 </Button>
                 <Button
                   variant="ghost"
