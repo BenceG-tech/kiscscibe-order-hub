@@ -161,7 +161,7 @@ const Checkout = () => {
   // Track abandoned carts while the user fills in checkout
   const cartSessionId = useAbandonedCartTracking({
     cartItems: cart.items,
-    totalHuf: cart.totalAfterDiscount || cart.total,
+    totalHuf: finalTotalHuf,
     name: formData.name,
     phone: formData.phone,
     email: formData.email,
@@ -545,7 +545,7 @@ const Checkout = () => {
     await persistCheckoutSnapshot({
       sessionId: cartSessionId,
       cartItems: cart.items,
-      totalHuf: cart.totalAfterDiscount || cart.total,
+      totalHuf: finalTotalHuf,
       name: formData.name,
       phone: trackingPhone,
       email: formData.email,
@@ -556,7 +556,7 @@ const Checkout = () => {
       await persistCheckoutSnapshot({
         sessionId: cartSessionId,
         cartItems: cart.items,
-        totalHuf: cart.totalAfterDiscount || cart.total,
+        totalHuf: finalTotalHuf,
         name: formData.name,
         phone: trackingPhone,
         email: formData.email,
@@ -798,7 +798,7 @@ const Checkout = () => {
       await persistCheckoutSnapshot({
         sessionId: cartSessionId,
         cartItems: cart.items,
-        totalHuf: cart.totalAfterDiscount || cart.total,
+        totalHuf: finalTotalHuf,
         name: formData.name,
         phone: normalizedPhone ? `+36${normalizedPhone}` : formData.phone,
         email: formData.email,
