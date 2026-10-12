@@ -62,6 +62,7 @@ const UnifiedDailySection = () => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [sidePickerOpen, setSidePickerOpen] = useState(false);
   const [pendingItem, setPendingItem] = useState<MenuItem | null>(null);
+  const dailyRequest = useRef(0);
 
   // Show all items individually (including menu-part items) so they can be ordered separately
   const extraItems = dailyData?.items || [];
@@ -218,12 +219,13 @@ const UnifiedDailySection = () => {
         setFacebookImageUrl(null);
       }
     } catch (error) {
+      if (request !== dailyRequest.current) return;
       console.error('Error fetching daily data:', error);
       setDailyData(null);
       setMenuData(null);
       setFacebookImageUrl(null);
     } finally {
-      setLoading(false);
+      if (request === dailyRequest.current) setLoading(false);
     }
   };
 

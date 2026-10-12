@@ -157,12 +157,13 @@ const Etlap = () => {
         setFacebookImageUrl(null);
       }
     } catch (error) {
+      if (request !== dailyRequest.current) return;
       console.error('Error fetching daily data:', error);
       setDailyData(null);
       setMenuData(null);
       setFacebookImageUrl(null);
     } finally {
-      setLoading(false);
+      if (request === dailyRequest.current) setLoading(false);
     }
   };
 
