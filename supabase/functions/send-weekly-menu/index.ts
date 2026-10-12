@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { Resend } from "npm:resend@2.0.0";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
+import { EMAIL_FROM, EMAIL_REPLY_TO, SITE_URL as EMAIL_SITE_URL, sendEmail, interpretResendResult } from "../_shared/email.ts";
 
 const HU_DAYS = ["Vasárnap", "Hétfő", "Kedd", "Szerda", "Csütörtök", "Péntek", "Szombat"];
 const HU_MONTHS = [
@@ -121,7 +122,7 @@ function generateEmailHtml(days: DayData[], dateRange: string): string {
     </div>
 
     <div style="text-align: center; margin-top: 24px;">
-      <a href="https://kiscscibe-order-hub.lovable.app" style="display: inline-block; background-color: #d97706; color: #ffffff; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">Rendelés leadása →</a>
+      <a href="${EMAIL_SITE_URL}" style="display: inline-block; background-color: #d97706; color: #ffffff; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">Rendelés leadása →</a>
     </div>
 
     <hr style="border: none; border-top: 1px solid #fde68a; margin: 24px 0;" />
@@ -284,25 +285,16 @@ const handler = async (req: Request): Promise<Response> => {
 
     for (let i = 0; i < subscribers.length; i += batchSize) {
       const batch = subscribers.slice(i, i + batchSize);
-      const emailPromises = batch.map((sub) =>
-        resend.emails
-          .send({
-            from: "Kiscsibe Étterem <rendeles@kiscsibe-etterem.hu>",
-            reply_to: "info@kiscsibeetterem.hu",
-            to: [sub.email],
-            subject,
-            html: emailHtml,
-          })
-          .then((res) => {
-            totalSent++;
-            const mid = (res as any)?.data?.id || (res as any)?.id || null;
-            console.log(`weekly-menu sent to ${sub.email} | message_id: ${mid}`);
-          })
-          .catch((err: Error) => {
-            totalErrors++;
-            errors.push(`${sub.email}: ${err.message}`);
-          })
-      );
+      const emailPromises = batch.map(async (sub) => {
+        const out = await sendEmail(resend, { to: [sub.email], subject, html: emailHtml });
+        if (out.ok) {
+          totalSent++;
+        } else {
+          totalErrors++;
+          const [u, d] = String(sub.email).split("@");
+          errors.push(`${u?.slice(0, 1) ?? ""}***@${d ?? ""}: ${out.error}`);
+        }
+      });
       await Promise.all(emailPromises);
 
     }
@@ -323,7 +315,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     return new Response(
       JSON.stringify({
-        success: true,
+        success: totalSent > 0,
         sent: totalSent,
         errors: totalErrors,
         error_details: errors.length > 0 ? errors.slice(0, 10) : undefined,

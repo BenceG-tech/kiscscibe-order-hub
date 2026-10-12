@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { Resend } from "npm:resend@2.0.0";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
+import { EMAIL_FROM, EMAIL_REPLY_TO, SITE_URL as EMAIL_SITE_URL, sendEmail, interpretResendResult } from "../_shared/email.ts";
 import { generateRatingToken, logEmailSend, maskEmail, ratingLinksHtml, SITE_URL } from "../_shared/rating-token.ts";
 
 function escapeHtml(s: unknown): string {
@@ -94,12 +95,14 @@ serve(async (req) => {
     `;
 
     const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-    const { data: sendData, error: sendError } = await resend.emails.send({
-      from: "Kiscsibe Étterem <rendeles@kiscsibe-etterem.hu>",
+    const sendOut = await sendEmail(resend, {
       to: [order.email],
       subject: `Kiscsibe – Hogy ízlett? #${order.code}`,
       html: emailHtml,
     });
+
+    const sendError = sendOut.ok ? null : sendOut.error;
+    const sendData = sendOut.ok ? { id: sendOut.id } : null;
 
     if (sendError) {
       console.error(`Rating request FAILED for order ${order.code} → ${maskEmail(order.email)}`, sendError);
@@ -108,10 +111,10 @@ serve(async (req) => {
         email_type: "rating_request",
         recipient: order.email,
         status: "failed",
-        error: (sendError as any)?.message || JSON.stringify(sendError),
+        error: sendError,
       });
       return new Response(
-        JSON.stringify({ success: false, error: (sendError as any)?.message || "Resend error" }),
+        JSON.stringify({ success: false, error: sendError }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 502 },
       );
     }

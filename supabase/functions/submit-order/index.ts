@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { Resend } from "npm:resend@2.0.0";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
+import { EMAIL_FROM, EMAIL_REPLY_TO, SITE_URL as EMAIL_SITE_URL, sendEmail, interpretResendResult } from "../_shared/email.ts";
 
 function escapeHtml(s: unknown): string {
   return String(s ?? '')
@@ -1312,17 +1313,15 @@ ${adminItemsText}
     const sendAdminEmails = async () => {
       for (const recipient of ADMIN_RECIPIENTS) {
         try {
-          const { data, error } = await resend.emails.send({
-            from: 'Kiscsibe Étterem <rendeles@kiscsibe-etterem.hu>',
+          const out = await sendEmail(resend, {
             to: [recipient],
-            reply_to: 'info@kiscsibeetterem.hu',
             subject: `Új rendelés #${orderCode} — ${customer.name}`,
             html: adminHtml,
             text: adminText,
           });
-          if (error) throw error;
-          console.log(`[${requestId}] Admin notification sent to ${recipient} (id=${data?.id ?? 'n/a'})`);
-          await logEmailAttempt('admin_notification', recipient, 'sent', data?.id ?? null, null);
+          if (!out.ok) throw new Error(out.error);
+          console.log(`[${requestId}] Admin notification accepted for ${recipient} (id=${out.id})`);
+          await logEmailAttempt('admin_notification', recipient, 'sent', out.id, null);
         } catch (err) {
           const msg = String((err as any)?.message ?? err);
           console.error(`[${requestId}] Admin notification to ${recipient} failed:`, msg);
@@ -1415,20 +1414,18 @@ Kiscsibe Reggeliző & Étterem
 `;
 
       try {
-        const { data, error } = await resend.emails.send({
-          from: 'Kiscsibe Étterem <rendeles@kiscsibe-etterem.hu>',
+        const out = await sendEmail(resend, {
           to: [customer.email],
-          reply_to: 'info@kiscsibeetterem.hu',
           subject: `Kiscsibe – rendelés visszaigazolás #${orderCode}`,
           html: customerHtml,
           text: customerText,
         });
-        if (error) throw error;
-        console.log(`[${requestId}] Customer confirmation sent to ${customer.email} (id=${data?.id ?? 'n/a'})`);
-        await logEmailAttempt('customer_confirmation', customer.email, 'sent', data?.id ?? null, null);
+        if (!out.ok) throw new Error(out.error);
+        console.log(`[${requestId}] Customer confirmation accepted (id=${out.id})`);
+        await logEmailAttempt('customer_confirmation', customer.email, 'sent', out.id, null);
       } catch (err) {
         const msg = String((err as any)?.message ?? err);
-        console.error(`[${requestId}] Customer confirmation to ${customer.email} failed:`, msg);
+        console.error(`[${requestId}] Customer confirmation failed:`, msg);
         await logEmailAttempt('customer_confirmation', customer.email, 'failed', null, msg);
       }
     };
