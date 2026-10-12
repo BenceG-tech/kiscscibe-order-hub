@@ -7,6 +7,7 @@ import { ShoppingCart, Package, Coffee, Clock, AlertCircle, Plus, Minus, Utensil
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "sonner";
 import { capitalizeFirst } from "@/lib/utils";
+import { packagingKindForMenuRole } from "@/lib/packagingFee";
 
 interface MenuItem {
   id: string;
@@ -18,11 +19,13 @@ interface MenuItem {
 
 interface DailyOfferItem {
   id: string;
+  menu_role?: string;
   menu_items?: MenuItem;
 }
 
 interface DailyMenuItems {
   id: string;
+  menu_role?: string;
   menu_items?: MenuItem;
 }
 
@@ -163,6 +166,7 @@ const DailyItemSelector = ({ type, data, canOrder, showDetails = false, deadline
                 modifiers: [],
                 sides: [],
                 image_url: item.menu_items.image_url,
+                packaging: packagingKindForMenuRole(item.menu_role),
               });
             }
           }

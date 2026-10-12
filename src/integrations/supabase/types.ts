@@ -1485,6 +1485,7 @@ export type Database = {
           idempotency_key: string | null
           name: string
           notes: string | null
+          packaging_fee_huf: number
           payment_method: string
           phone: string
           pickup_time: string | null
@@ -1502,6 +1503,7 @@ export type Database = {
           idempotency_key?: string | null
           name: string
           notes?: string | null
+          packaging_fee_huf?: number
           payment_method?: string
           phone: string
           pickup_time?: string | null
@@ -1519,6 +1521,7 @@ export type Database = {
           idempotency_key?: string | null
           name?: string
           notes?: string | null
+          packaging_fee_huf?: number
           payment_method?: string
           phone?: string
           pickup_time?: string | null
@@ -1812,6 +1815,7 @@ export type Database = {
           id: string
           name: string
           notes: string
+          packaging_fee_huf: number
           payment_method: string
           phone: string
           pickup_time: string

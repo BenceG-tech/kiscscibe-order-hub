@@ -16,6 +16,8 @@ import {
 import { Plus, Minus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { capitalizeFirst } from "@/lib/utils";
+import { computePackagingFee } from "@/lib/packagingFee";
+import { usePackagingFees } from "@/hooks/usePackagingFees";
 
 interface CartDialogProps {
   open: boolean;
@@ -26,6 +28,8 @@ export const CartDialog = ({ open, onOpenChange }: CartDialogProps) => {
   const navigate = useNavigate();
   const { state: cart, updateQuantity, removeItem, clearCart, validateCartSides } = useCart();
   const { toast } = useToast();
+  const packagingFees = usePackagingFees();
+  const packagingFee = computePackagingFee(cart.items, packagingFees);
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
 
   const handleUpdateCartQuantity = (id: string, change: number) => {
@@ -103,10 +107,16 @@ export const CartDialog = ({ open, onOpenChange }: CartDialogProps) => {
                   </div>
                 ))}
               </div>
-              <div className="border-t pt-4">
+              <div className="border-t pt-4 space-y-1.5">
+                {packagingFee > 0 && (
+                  <div className="flex justify-between items-center text-sm text-muted-foreground">
+                    <span>Csomagolás (doboz):</span>
+                    <span>{packagingFee.toLocaleString("hu-HU")} Ft</span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center text-lg font-bold">
                   <span>Összesen:</span>
-                  <span>{cart.total} Ft</span>
+                  <span>{(cart.total + packagingFee).toLocaleString("hu-HU")} Ft</span>
                 </div>
                 <Button 
                   className="w-full mt-4 bg-gradient-to-r from-primary to-primary-glow"

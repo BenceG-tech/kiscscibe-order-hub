@@ -61,6 +61,7 @@ const BreakfastSection = ({ variant = "page" }: BreakfastSectionProps) => {
       sides: [],
       image_url: item.image_url || undefined,
       is_breakfast: true,
+      packaging: 'main',
     });
     toast({
       title: "Kosárba téve",

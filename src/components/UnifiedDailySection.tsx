@@ -9,6 +9,7 @@ import { format, isPast, getDay } from "date-fns";
 import { getSmartInitialDate, getContentLabel } from "@/lib/dateUtils";
 import { hu } from "date-fns/locale";
 import { capitalizeFirst } from "@/lib/utils";
+import { packagingKindForMenuRole } from "@/lib/packagingFee";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/components/ui/use-toast";
 import StickyMenuCTA from "@/components/StickyMenuCTA";
@@ -85,6 +86,7 @@ const UnifiedDailySection = () => {
       })),
       image_url: pendingItem.item_image_url,
       daily_date: dateStr,
+      packaging: packagingKindForMenuRole(pendingItem.menu_role),
     });
     
     toast({

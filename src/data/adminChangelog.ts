@@ -13,6 +13,14 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-10-12",
+    title: "Csomagolási (doboz) díj a rendelésekhez",
+    description:
+      "Elviteles rendelésnél a főételekhez és reggelikhez adagonként 150 Ft, az elviteles menühöz 200 Ft dobozdíj számítódik automatikusan. Salátáknál, savanyúságoknál, leveseknél, italoknál és desszerteknél nincs külön díj. A kosárban, a pénztárban, a visszaigazoláson, a nyomtatott bizonylaton és az admin rendeléslistán is külön sorban jelenik meg.",
+    type: "new",
+    tabGroup: "orders",
+  },
+  {
+    date: "2026-10-12",
     title: "Egységes rendelés-megerősítés megnevezés",
     description:
       "A kosár és a pénztár megerősítő gombja is „Rendelés véglegesítése” feliratú, a hozzá tartozó visszajelző üzenetekkel együtt. A vendég számára így végig ugyanaz a kifejezés kíséri a rendelési folyamatot.",
