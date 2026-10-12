@@ -81,3 +81,9 @@
 - [x] Egykattintásos, pontos napugrás
 - [x] Laptop-, asztali- és mobil-ellenőrzés (forrás-, típus- és működési tesztek; belépett vizuális próba nem elérhető)
 - [x] Ikonsornak elegendő naposzlopszélesség és teljes ételnév rámutatáskor
+
+# Rendelési gombfeliratok egységesítése
+- [x] Kosár gombja: „Rendelés véglegesítése”
+- [x] Pénztár gombja és a visszajelző üzenetek ugyanerre igazítása
+- [x] Staff súgó és frissítési napló aktualizálása
+- [x] Asztali és mobil ellenőrzés
