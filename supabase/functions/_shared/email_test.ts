@@ -19,7 +19,7 @@ Deno.test("no function references the obsolete domain or hardcodes a from addres
     assertFalse(src.includes("kiscsibe-etterem.hu"), `${f} still has hyphenated domain`);
     assertFalse(src.includes("kiscscibe-order-hub"), `${f} still links lovable.app`);
     assertFalse(/resend\.emails\.send\(/.test(src), `${f} bypasses shared sendEmail`);
-    assert(src.includes("sendEmail("), `${f} must use sendEmail`);
+    assert(src.includes("sendEmail(") || src.includes("sendToMany("), `${f} must use shared sender`);
   }
 });
 
