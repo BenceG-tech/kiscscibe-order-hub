@@ -458,7 +458,7 @@ const Checkout = () => {
       return;
     }
     
-    if (dailyDates.length > 0 && formData.pickup_type === "asap" && !canUseAsap()) {
+    if (formData.pickup_type === "asap" && !canUseAsap()) {
       setFormData(prev => ({ ...prev, pickup_type: "scheduled" }));
     }
     
@@ -507,6 +507,15 @@ const Checkout = () => {
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (formData.pickup_type === "asap" && !canUseAsap()) {
+      setFormData(prev => ({ ...prev, pickup_type: "scheduled" }));
+      toast({
+        title: "Válassz átvételi időpontot",
+        description: "Most azonnali átvétel nem lehetséges — kérjük, válassz egy időpontot.",
+      });
+      return;
+    }
 
     // ── Hard duplicate-submit lock ──
     // Runs BEFORE any React state update, so back-to-back native submit events
