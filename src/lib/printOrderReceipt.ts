@@ -27,6 +27,7 @@ interface PrintableOrder {
   items?: OrderItem[];
   coupon_code?: string | null;
   discount_huf?: number | null;
+  packaging_fee_huf?: number | null;
 }
 
 const escapeHtml = (s: string) =>
@@ -129,6 +130,11 @@ export function printOrderReceipt(order: PrintableOrder) {
   ${
     order.coupon_code && order.discount_huf
       ? `<div class="row coupon"><span>Kupon ${escapeHtml(order.coupon_code)}:</span><span>-${order.discount_huf.toLocaleString("hu-HU")} Ft</span></div>`
+      : ""
+  }
+  ${
+    order.packaging_fee_huf
+      ? `<div class="row"><span>Csomagolás (doboz):</span><span>${order.packaging_fee_huf.toLocaleString("hu-HU")} Ft</span></div>`
       : ""
   }
   <div class="row total"><span>ÖSSZESEN:</span><span>${order.total_huf.toLocaleString("hu-HU")} Ft</span></div>
