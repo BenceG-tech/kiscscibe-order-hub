@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -144,12 +144,15 @@ const UnifiedDailySection = () => {
   };
 
   const fetchDailyData = async (date: Date) => {
+    const request = ++dailyRequest.current;
     setLoading(true);
+    setMenuData(null);
     try {
       const dateStr = format(date, 'yyyy-MM-dd');
       const { data, error } = await supabase.rpc('get_daily_data', {
         target_date: dateStr
       });
+      if (request !== dailyRequest.current) return;
 
       if (error) throw error;
 
@@ -194,6 +197,7 @@ const UnifiedDailySection = () => {
         setFacebookImageUrl(offerRow?.facebook_image_url || null);
 
         // Set menu data if exists
+        if (request !== dailyRequest.current) return;
         const { complete, soup, main } = menuComposition(items);
         if (result.menu_id && complete) {
           

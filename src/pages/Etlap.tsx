@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { packagingKindForMenuRole } from "@/lib/packagingFee";
@@ -82,14 +82,18 @@ const Etlap = () => {
   const [pendingCartItem, setPendingCartItem] = useState<MenuItem | null>(null);
   const [facebookImageUrl, setFacebookImageUrl] = useState<string | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const dailyRequest = useRef(0);
 
   const fetchDailyData = async (date: Date) => {
+    const request = ++dailyRequest.current;
     setLoading(true);
+    setMenuData(null);
     try {
       const dateStr = format(date, 'yyyy-MM-dd');
       const { data, error } = await supabase.rpc('get_daily_data', {
         target_date: dateStr
       });
+      if (request !== dailyRequest.current) return;
 
       if (error) throw error;
 
@@ -132,6 +136,7 @@ const Etlap = () => {
           .maybeSingle();
         setFacebookImageUrl(offerRow?.facebook_image_url || null);
 
+        if (request !== dailyRequest.current) return;
         const { complete, soup, main } = menuComposition(items);
         if (result.menu_id && complete) {
           
@@ -402,7 +407,7 @@ const Etlap = () => {
                 )}
 
                 {/* Daily Menu Card - Using shared component for consistency */}
-                {menuData && menuData.soup && menuData.main && !isSoldOut && (
+                {!loading && menuData && menuData.soup && menuData.main && !isSoldOut && (
                   <DailyMenuPanel date={selectedDate} menuData={menuData} loading={false} />
                 )}
 
