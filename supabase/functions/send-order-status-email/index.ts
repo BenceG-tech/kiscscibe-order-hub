@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { Resend } from "npm:resend@2.0.0";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
-import { EMAIL_FROM, EMAIL_REPLY_TO, SITE_URL as EMAIL_SITE_URL, sendEmail, interpretResendResult } from "../_shared/email.ts";
+import { sendEmail } from "../_shared/email.ts";
 import { hasInternalSecret, requireAdmin } from "../_shared/auth.ts";
 import { generateRatingToken, logEmailSend, maskEmail, ratingLinksHtml } from "../_shared/rating-token.ts";
 
@@ -190,6 +190,23 @@ serve(async (req) => {
     if (!resendApiKey) {
       console.error('RESEND_API_KEY not configured');
       throw new Error('RESEND_API_KEY not configured');
+    }
+
+    // Idempotency: never resend an email the provider already accepted for this order+type.
+    {
+      const { data: prior } = await supabase
+        .from("email_send_log")
+        .select("id")
+        .eq("order_id", order_id)
+        .eq("email_type", `status_${new_status}`)
+        .eq("status", "sent")
+        .limit(1);
+      if (prior && prior.length > 0) {
+        console.log(`Email already accepted earlier for order ${order.code} (`status_${new_status}`) — not resending`);
+        return new Response(JSON.stringify({ success: true, already_sent: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     const resend = new Resend(resendApiKey);

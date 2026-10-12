@@ -100,7 +100,7 @@ serve(async (req) => {
     const url = `${supabaseUrl}/functions/v1/submit-order`;
     const r = await fetch(url, {
       method: "OPTIONS",
-      headers: { Origin: "https://kiscsibe-etterem.hu" },
+      headers: { Origin: "https://kiscsibeetterem.hu" },
     });
     checks.push({
       id: "submit_order",
