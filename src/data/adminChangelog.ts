@@ -12,6 +12,14 @@ export interface ChangelogEntry {
 // Newest first
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: "2026-10-12",
+    title: "Egységes rendelés-megerősítés megnevezés",
+    description:
+      "A kosár és a pénztár megerősítő gombja is „Rendelés véglegesítése” feliratú, a hozzá tartozó visszajelző üzenetekkel együtt. A vendég számára így végig ugyanaz a kifejezés kíséri a rendelési folyamatot.",
+    type: "improved",
+    tabGroup: "orders",
+  },
+  {
     date: "2026-09-20",
     title: "Biztonságosabb rendeléskeresés és hétvégi időpontvédelem",
     description:
