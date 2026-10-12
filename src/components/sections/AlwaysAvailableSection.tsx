@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/components/ui/use-toast";
 import { capitalizeFirst } from "@/lib/utils";
+import { categoryNeedsBox } from "@/lib/packagingFee";
 import { Package, Plus } from "lucide-react";
 import { PortionBadge } from "@/components/PortionBadge";
 import FoodCard from "@/components/FoodCard";
