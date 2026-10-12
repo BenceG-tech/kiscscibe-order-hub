@@ -108,5 +108,7 @@
 ## Napi menü helyreállítása
 - [x] Tranzakciós menüszinkron, meglévő azonosítók és készlet megőrzése
 - [x] Admin figyelmeztetés hiányos vagy többszörös kijelölésre
-- [ ] Hiányzó helyes menük visszaállítása és adatbázistesztek
-- [ ] Főoldali és étlapi menü kosárpróba, automata tesztek
+- [x] Hiányzó helyes menük visszaállítása és visszagörgetett adatbázistesztek
+- [x] Főoldali és étlapi menü kosárpróba, 45 automata teszt, build OK
+- [ ] Belépett admin vizuális ellenőrzés — külső Supabase-hoz nincs tesztmunkamenet
+- [ ] Csütörtöki főétel kijelölésének felülvizsgálata — az adminnak kell választania a két étel közül
