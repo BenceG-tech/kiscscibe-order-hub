@@ -16,6 +16,8 @@ import {
 import { Plus, Minus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { capitalizeFirst } from "@/lib/utils";
+import { computePackagingFee } from "@/lib/packagingFee";
+import { usePackagingFees } from "@/hooks/usePackagingFees";
 
 interface CartDialogProps {
   open: boolean;
@@ -26,6 +28,8 @@ export const CartDialog = ({ open, onOpenChange }: CartDialogProps) => {
   const navigate = useNavigate();
   const { state: cart, updateQuantity, removeItem, clearCart, validateCartSides } = useCart();
   const { toast } = useToast();
+  const packagingFees = usePackagingFees();
+  const packagingFee = computePackagingFee(cart.items, packagingFees);
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
 
   const handleUpdateCartQuantity = (id: string, change: number) => {
