@@ -66,6 +66,25 @@ const UnifiedDailySection = () => {
   const extraItems = dailyData?.items || [];
 
   const handleAddItemToCart = (item: MenuItem) => {
+    // Soups and side dishes go straight to cart — no side picker
+    if (item.menu_role === 'leves' || item.menu_role === 'köret') {
+      const dateStr = format(selectedDate, 'yyyy-MM-dd');
+      addItem({
+        id: item.item_id,
+        name: item.item_name,
+        price_huf: item.item_price_huf,
+        modifiers: [],
+        sides: [],
+        image_url: item.item_image_url,
+        daily_date: dateStr,
+        packaging: packagingKindForMenuRole(item.menu_role),
+      });
+      toast({
+        title: "Kosárba tetve",
+        description: `${item.item_name} hozzáadva a kosárhoz`
+      });
+      return;
+    }
     // Open side picker modal so user can choose a side dish
     setPendingItem(item);
     setSidePickerOpen(true);
