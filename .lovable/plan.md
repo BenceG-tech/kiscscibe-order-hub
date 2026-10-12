@@ -1,30 +1,23 @@
-# E-mail küldés ellenőrzése – csak gataibence@gmail.com címre
+# E-mail küldés tesztelése – ideiglenesen csak gataibence@gmail.com
 
-## Mit találtam eddig
-- Feladó: `rendeles@kiscsibeetterem.hu`, válaszcím: `info@kiscsibeetterem.hu`.
-- Rendelésnél az admin értesítő két címre megy: `info@kiscsibeetterem.hu` és `gataibence@gmail.com`. Egy valódi próbarendelés tehát Krisztiánhoz is eljutna — ezért **nem adok le próbarendelést**.
-- A napi és havi jelentés szintén mindkét címre megy, ezeket sem indítom el.
+## Lényeg
+A teszt idejére minden admin értesítő **csak a gataibence@gmail.com** címre megy, Krisztián (info@kiscsibeetterem.hu) nem kap semmit. A teszt után visszaállítom az eredeti két címet.
 
-## Hogyan tesztelek
-1. **Napló átnézése**: az e-mail naplóban megnézem az elmúlt napok sorait (sikeres / sikertelen / kihagyott, hibaüzenet), hogy a Resend elfogadja-e már a kiscsibeetterem.hu feladót.
-2. **Külön teszt-küldő**: ideiglenes, jelszóval védett háttérfunkció, ami **kizárólag a gataibence@gmail.com címre** küld — a cím be van égetve, más címre nem tud küldeni. Ugyanazzal a beállítással és sablonokkal küld, mint az éles levelek:
-   - admin „új rendelés” értesítő (mintaadatokkal),
+## Lépések
+1. **Átállítás**: rendelés-értesítő, napi és havi jelentés címzettje ideiglenesen csak `gataibence@gmail.com`. Mivel a Resend most lett újracsatlakoztatva, a régi naplóhibákat nem vesszük figyelembe.
+2. **Valódi próbarendelés** az előnézetben, a vásárlói e-mail mezőben is a te címed. Ellenőrzöm:
+   - admin „új rendelés” levél,
    - vásárlói visszaigazolás,
-   - státusz levelek (készül / átvehető / elkészült értékelő linkkel),
-   - kapcsolatfelvételi üzenet,
-   - hírlevél üdvözlő.
-3. Minden küldés eredménye bekerül a naplóba (Resend azonosítóval vagy a pontos hibával), adatbázisban rendelés nem jön létre, készlet nem változik.
-4. Eredmény alapján:
-   - ha a Resend elfogadja: megkérlek, nézd meg a Gmail fiókodat (beérkezett + spam), és jelezd, megjöttek-e;
-   - ha elutasítja (pl. a domain még nincs igazolva): pontosan leírom, mi hiányzik.
-5. Teszt után a teszt-küldőt törlöm, hogy ne maradjon kiskapu.
+   - státusz levelek: készül → átvehető → elkészült (értékelő linkkel), valamint lemondás.
+3. **Kapcsolatfelvételi űrlap** egy üzenettel (ez is csak hozzád megy az átállítás alatt).
+4. Minden küldés eredményét kiolvasom az e-mail naplóból (sikeres + Resend azonosító, vagy a pontos hiba). Megkérlek, nézd meg a Gmailt (beérkezett + spam).
+5. **Takarítás**: a próbarendelést lemondom (a készlet visszaáll) és törlöm, a teszt naplósorok megmaradnak.
+6. **Visszaállítás**: az admin címzettek újra `info@kiscsibeetterem.hu` + `gataibence@gmail.com`, újratelepítés, és ellenőrzöm, hogy a kód valóban az eredeti állapotban van.
 
-## Amit nem csinálok
-- Nem adok le próbarendelést, nem futtatok napi/havi jelentést, nem küldök hírlevelet a feliratkozóknak.
-- Nem változtatok az éles levelek címzettjein, sablonjain, a rendelési folyamaton.
-- Nem publikálok.
+## Fontos
+- Az átállítás az élő háttérrendszert érinti: ha a teszt alatt valódi vendég rendel, annak értesítője is csak hozzád megy. Ezért gyorsan (kb. 15–20 perc) végzek, és késő este van, így kicsi a kockázat.
+- Nem publikálok, a rendelési folyamaton nem változtatok.
 
 ## Technikai részletek
-- Új edge function `email-selftest`: `TEST_RECIPIENT = "gataibence@gmail.com"` konstans, a kérésből címet nem fogad el; védelem `generate_secret`-tel létrehozott `EMAIL_SELFTEST_TOKEN` fejléccel.
-- A `_shared/email.ts` `sendEmail` és a meglévő sablon-építők újrahasznosítása, `email_send_log` sor `sent/failed` státusszal, tárgy elején „[TESZT]”.
-- Hívás `supabase--curl_edge_functions`-szel, majd naplólekérdezés; végül `supabase--delete_edge_functions` + fájl törlés.
+- `supabase/functions/submit-order/index.ts` `ADMIN_RECIPIENTS`, `send-contact-email` címzett, `send-daily-report`, `send-monthly-report` `to` tömbje → ideiglenesen `['gataibence@gmail.com']`; deploy, teszt, majd vissza és újra deploy.
+- Ellenőrzés: `email_send_log` lekérdezés, `edge_function_logs`.
