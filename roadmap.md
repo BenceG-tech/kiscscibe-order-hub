@@ -93,3 +93,10 @@
 - [x] Kosár, pénztár, visszaigazolás, nyomtatás, admin külön sor
 - [x] settings.packaging_fees + orders.packaging_fee_huf migráció
 - [x] submit-order szerveroldali clamp, 11 dobozdíj-teszt
+
+## Online rendelés határideje: aznap 11:00-ig
+- [x] TODAY_ORDER_CUTOFF_MIN 15:30 → 11:00 (Checkout + submit-order)
+- [x] Magyar hibaüzenetek frissítve (személyes rendelés említése)
+- [x] Állandó tájékoztató sor a pénztárban + 11:00 utáni figyelmeztető doboz
+- [x] AdminChangelog bejegyzés
+- [x] Tesztek 32/32, build OK, Playwright 10:30/11:30 ellenőrizve
