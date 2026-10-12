@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { sendStatusEmail } from "@/lib/statusEmail";
 import AdminLayout from "./AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -305,11 +306,7 @@ const OrdersManagement = () => {
       });
 
       if (!opts.silent) {
-        supabase.functions
-          .invoke("send-order-status-email", {
-            body: { order_id: orderId, new_status: newStatus },
-          })
-          .catch((err) => console.error("Status email error:", err));
+        void sendStatusEmail(orderId, newStatus);
       }
 
       fetchOrders();
@@ -338,11 +335,7 @@ const OrdersManagement = () => {
     });
 
     if (!opts.silent) {
-      supabase.functions
-        .invoke("send-order-status-email", {
-          body: { order_id: orderId, new_status: newStatus },
-        })
-        .catch((err) => console.error("Status email error:", err));
+      void sendStatusEmail(orderId, newStatus);
     }
 
     fetchOrders();
