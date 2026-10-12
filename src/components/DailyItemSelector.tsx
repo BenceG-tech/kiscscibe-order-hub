@@ -18,6 +18,7 @@ interface MenuItem {
 
 interface DailyOfferItem {
   id: string;
+  menu_role?: string;
   menu_items?: MenuItem;
 }
 
@@ -163,6 +164,7 @@ const DailyItemSelector = ({ type, data, canOrder, showDetails = false, deadline
                 modifiers: [],
                 sides: [],
                 image_url: item.menu_items.image_url,
+                packaging: packagingKindForMenuRole(item.menu_role),
               });
             }
           }

@@ -136,6 +136,7 @@ const DailyOfferCalendar = ({ onDateSelect, selectedDate }: DailyOfferCalendarPr
             *,
             daily_offer_items (
               id,
+              menu_role,
               menu_items (
                 id,
                 name,
