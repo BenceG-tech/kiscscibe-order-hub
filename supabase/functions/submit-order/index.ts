@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { Resend } from "npm:resend@2.0.0";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
-import { sendEmail } from "../_shared/email.ts";
+import { lazyResend, sendEmail } from "../_shared/email.ts";
 
 function escapeHtml(s: unknown): string {
   return String(s ?? '')
@@ -1217,7 +1217,8 @@ serve(async (req) => {
     }
 
     // Initialize Resend client
-    const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
+    // Lazy: a missing key or constructor error must only mark emails failed, never fail the saved order.
+    const resend = lazyResend((k) => new Resend(k), () => Deno.env.get('RESEND_API_KEY'));
 
     // ============================================================
     // Email dispatch — M4/M5

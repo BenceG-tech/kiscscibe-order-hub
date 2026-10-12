@@ -97,6 +97,15 @@ const handler = async (req: Request): Promise<Response> => {
       `,
     });
 
+    if (!adminSend.ok) console.error(`[send-contact-email] restaurant send FAILED: ${adminSend.error}`);
+    // The restaurant notification is the essential delivery; without it the message is lost.
+    if (!adminSend.ok) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Az üzenetet most nem sikerült elküldeni. Kérjük, próbálja újra később, vagy írjon az info@kiscsibeetterem.hu címre." }),
+        { status: 502, headers: { "Content-Type": "application/json", ...corsHeaders } },
+      );
+    }
+
     // Send confirmation to sender
     const customerSend = await sendEmail(resend, {
       to: [email],
@@ -122,22 +131,15 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     console.log(
-      `[send-contact-email] admin=${adminSend.ok ? adminSend.id : "FAILED " + adminSend.error} | customer=${customerSend.ok ? customerSend.id : "FAILED " + customerSend.error}`,
+      `[send-contact-email] admin=${adminSend.id} | customer=${customerSend.ok ? customerSend.id : "FAILED " + customerSend.error}`,
     );
-
-    // The restaurant notification is the essential delivery; without it the message is lost.
-    if (!adminSend.ok) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Az üzenetet most nem sikerült elküldeni. Kérjük, próbálja újra később, vagy írjon az info@kiscsibeetterem.hu címre." }),
-        { status: 502, headers: { "Content-Type": "application/json", ...corsHeaders } },
-      );
-    }
 
     return new Response(
       JSON.stringify({
         success: true,
         admin_message_id: adminSend.id,
         customer_message_id: customerSend.ok ? customerSend.id : null,
+        customer_copy_sent: customerSend.ok,
       }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } },
     );
