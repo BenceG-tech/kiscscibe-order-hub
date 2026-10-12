@@ -31,6 +31,7 @@ import OrderHistoryLookup from "@/components/OrderHistoryLookup";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { History } from "lucide-react";
 import FoodCard from "@/components/FoodCard";
+import { menuComposition } from "@/lib/menuComposition";
 
 interface MenuItem {
   id: string;
@@ -131,9 +132,8 @@ const Etlap = () => {
           .maybeSingle();
         setFacebookImageUrl(offerRow?.facebook_image_url || null);
 
-        if (result.menu_id) {
-          const soup = items.find(item => item.is_menu_part && item.menu_role === 'leves') || null;
-          const main = items.find(item => item.is_menu_part && item.menu_role === 'főétel') || null;
+        const { complete, soup, main } = menuComposition(items);
+        if (result.menu_id && complete) {
           
           setMenuData({
             menu_id: result.menu_id,

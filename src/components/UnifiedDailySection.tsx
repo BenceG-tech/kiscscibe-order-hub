@@ -193,9 +193,8 @@ const UnifiedDailySection = () => {
         setFacebookImageUrl(offerRow?.facebook_image_url || null);
 
         // Set menu data if exists
-        if (result.menu_id) {
-          const soup = items.find(item => item.is_menu_part && item.menu_role === 'leves') || null;
-          const main = items.find(item => item.is_menu_part && item.menu_role === 'főétel') || null;
+        const { complete, soup, main } = menuComposition(items);
+        if (result.menu_id && complete) {
           
           setMenuData({
             menu_id: result.menu_id,
