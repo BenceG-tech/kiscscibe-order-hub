@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { packagingKindForMenuRole } from "@/lib/packagingFee";
@@ -31,6 +31,7 @@ import OrderHistoryLookup from "@/components/OrderHistoryLookup";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { History } from "lucide-react";
 import FoodCard from "@/components/FoodCard";
+import { menuComposition } from "@/lib/menuComposition";
 
 interface MenuItem {
   id: string;
@@ -81,14 +82,18 @@ const Etlap = () => {
   const [pendingCartItem, setPendingCartItem] = useState<MenuItem | null>(null);
   const [facebookImageUrl, setFacebookImageUrl] = useState<string | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const dailyRequest = useRef(0);
 
   const fetchDailyData = async (date: Date) => {
+    const request = ++dailyRequest.current;
     setLoading(true);
+    setMenuData(null);
     try {
       const dateStr = format(date, 'yyyy-MM-dd');
       const { data, error } = await supabase.rpc('get_daily_data', {
         target_date: dateStr
       });
+      if (request !== dailyRequest.current) return;
 
       if (error) throw error;
 
@@ -131,9 +136,9 @@ const Etlap = () => {
           .maybeSingle();
         setFacebookImageUrl(offerRow?.facebook_image_url || null);
 
-        if (result.menu_id) {
-          const soup = items.find(item => item.is_menu_part && item.menu_role === 'leves') || null;
-          const main = items.find(item => item.is_menu_part && item.menu_role === 'főétel') || null;
+        if (request !== dailyRequest.current) return;
+        const { complete, soup, main } = menuComposition(items);
+        if (result.menu_id && complete) {
           
           setMenuData({
             menu_id: result.menu_id,
@@ -152,12 +157,13 @@ const Etlap = () => {
         setFacebookImageUrl(null);
       }
     } catch (error) {
+      if (request !== dailyRequest.current) return;
       console.error('Error fetching daily data:', error);
       setDailyData(null);
       setMenuData(null);
       setFacebookImageUrl(null);
     } finally {
-      setLoading(false);
+      if (request === dailyRequest.current) setLoading(false);
     }
   };
 
@@ -402,7 +408,7 @@ const Etlap = () => {
                 )}
 
                 {/* Daily Menu Card - Using shared component for consistency */}
-                {menuData && menuData.soup && menuData.main && !isSoldOut && (
+                {!loading && menuData && menuData.soup && menuData.main && !isSoldOut && (
                   <DailyMenuPanel date={selectedDate} menuData={menuData} loading={false} />
                 )}
 

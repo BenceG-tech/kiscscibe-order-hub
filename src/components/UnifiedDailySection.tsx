@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,7 @@ import { useToast } from "@/components/ui/use-toast";
 import StickyMenuCTA from "@/components/StickyMenuCTA";
 import { SidePickerModal } from "@/components/SidePickerModal";
 import FoodCard from "@/components/FoodCard";
+import { menuComposition } from "@/lib/menuComposition";
 
 interface MenuItem {
   id: string;
@@ -61,6 +62,7 @@ const UnifiedDailySection = () => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [sidePickerOpen, setSidePickerOpen] = useState(false);
   const [pendingItem, setPendingItem] = useState<MenuItem | null>(null);
+  const dailyRequest = useRef(0);
 
   // Show all items individually (including menu-part items) so they can be ordered separately
   const extraItems = dailyData?.items || [];
@@ -143,12 +145,15 @@ const UnifiedDailySection = () => {
   };
 
   const fetchDailyData = async (date: Date) => {
+    const request = ++dailyRequest.current;
     setLoading(true);
+    setMenuData(null);
     try {
       const dateStr = format(date, 'yyyy-MM-dd');
       const { data, error } = await supabase.rpc('get_daily_data', {
         target_date: dateStr
       });
+      if (request !== dailyRequest.current) return;
 
       if (error) throw error;
 
@@ -193,9 +198,9 @@ const UnifiedDailySection = () => {
         setFacebookImageUrl(offerRow?.facebook_image_url || null);
 
         // Set menu data if exists
-        if (result.menu_id) {
-          const soup = items.find(item => item.is_menu_part && item.menu_role === 'leves') || null;
-          const main = items.find(item => item.is_menu_part && item.menu_role === 'főétel') || null;
+        if (request !== dailyRequest.current) return;
+        const { complete, soup, main } = menuComposition(items);
+        if (result.menu_id && complete) {
           
           setMenuData({
             menu_id: result.menu_id,
@@ -214,12 +219,13 @@ const UnifiedDailySection = () => {
         setFacebookImageUrl(null);
       }
     } catch (error) {
+      if (request !== dailyRequest.current) return;
       console.error('Error fetching daily data:', error);
       setDailyData(null);
       setMenuData(null);
       setFacebookImageUrl(null);
     } finally {
-      setLoading(false);
+      if (request === dailyRequest.current) setLoading(false);
     }
   };
 

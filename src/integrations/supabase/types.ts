@@ -1872,6 +1872,10 @@ export type Database = {
         Args: { daily_id: string; quantity: number; table_name: string }
         Returns: boolean
       }
+      sync_daily_offer_menu_internal: {
+        Args: { p_offer_id: string }
+        Returns: undefined
+      }
       update_capacity_slot: {
         Args: { qty?: number; slot_date: string; slot_time: string }
         Returns: boolean
