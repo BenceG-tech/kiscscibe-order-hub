@@ -154,6 +154,8 @@ interface OrderRequest {
   pickup_time_slot?: string | null;
   items: OrderItem[];
   coupon_code?: string | null;
+  // Client-computed packaging (box) fee; server clamps it to a sane range.
+  packaging_fee_huf?: number | null;
   session_id?: string | null;
   // Optional 15-min bucket sent by the client so retries of the SAME customer
   // intent (network error/timeout) collapse into a single order via the
@@ -231,6 +233,7 @@ serve(async (req) => {
       pickup_time_slot,
       items,
       coupon_code,
+      packaging_fee_huf: clientPackagingFee,
       session_id,
       idempotency_bucket: clientIdempotencyBucket,
     }: OrderRequest = await req.json();
@@ -697,6 +700,16 @@ serve(async (req) => {
       console.log(`Coupon ${coupon.code} applied: -${discountHuf} Ft`);
     }
 
+    // Packaging (box) fee: applied AFTER the coupon discount (coupons never
+    // discount the box fee). Clamped defensively to 0..200 Ft per item so a
+    // tampered client cannot inject an arbitrary surcharge.
+    const totalQty = validatedItems.reduce((s: number, it: any) => s + (Number(it?.qty) || 0), 0);
+    const packagingFeeHuf = Math.max(0, Math.min(Math.round(Number(clientPackagingFee) || 0), 200 * Math.max(totalQty, 1)));
+    calculatedTotal += packagingFeeHuf;
+    if (packagingFeeHuf > 0) {
+      console.log(`Packaging fee applied: +${packagingFeeHuf} Ft`);
+    }
+
     console.log('Server-calculated total:', calculatedTotal);
 
     // Generate order code
@@ -908,6 +921,7 @@ serve(async (req) => {
           notes: customer.notes || null,
           coupon_code: appliedCouponCode,
           discount_huf: discountHuf,
+          packaging_fee_huf: packagingFeeHuf,
           idempotency_key: idempotency_key,
         })
         .select('id')
