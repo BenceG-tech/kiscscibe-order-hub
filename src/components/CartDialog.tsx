@@ -103,10 +103,16 @@ export const CartDialog = ({ open, onOpenChange }: CartDialogProps) => {
                   </div>
                 ))}
               </div>
-              <div className="border-t pt-4">
+              <div className="border-t pt-4 space-y-1.5">
+                {packagingFee > 0 && (
+                  <div className="flex justify-between items-center text-sm text-muted-foreground">
+                    <span>Csomagolás (doboz):</span>
+                    <span>{packagingFee.toLocaleString("hu-HU")} Ft</span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center text-lg font-bold">
                   <span>Összesen:</span>
-                  <span>{cart.total} Ft</span>
+                  <span>{(cart.total + packagingFee).toLocaleString("hu-HU")} Ft</span>
                 </div>
                 <Button 
                   className="w-full mt-4 bg-gradient-to-r from-primary to-primary-glow"

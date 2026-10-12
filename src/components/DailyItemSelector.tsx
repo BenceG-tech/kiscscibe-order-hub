@@ -7,6 +7,7 @@ import { ShoppingCart, Package, Coffee, Clock, AlertCircle, Plus, Minus, Utensil
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "sonner";
 import { capitalizeFirst } from "@/lib/utils";
+import { packagingKindForMenuRole } from "@/lib/packagingFee";
 
 interface MenuItem {
   id: string;
