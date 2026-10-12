@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -203,16 +204,30 @@ const WeeklyNewsletterPanel = () => {
 
       const { data, error } = await supabase.functions.invoke("send-weekly-menu", { body });
 
-      if (error) throw error;
+      let result = data;
+      if (error) {
+        // Non-2xx (e.g. all emails rejected) still carries the JSON body with counts.
+        try {
+          result = error instanceof FunctionsHttpError ? await error.context.json() : null;
+        } catch { result = null; }
+        if (!result) throw error;
+      }
 
-      if (data?.success) {
-        toast.success(`Heti menü kiküldve ${data.sent} feliratkozónak!`);
-        if (data.errors > 0) {
-          toast.warning(`${data.errors} email küldése sikertelen.`);
+      const sent = Number(result?.sent ?? 0);
+      const failed = Number(result?.errors ?? 0);
+      if (result?.success === true && sent > 0) {
+        if (failed > 0) {
+          toast.warning(`Részben kiküldve: ${sent} elfogadva, ${failed} sikertelen.`);
+        } else {
+          toast.success(`Heti menü kiküldve ${sent} feliratkozónak!`);
         }
         refetchLastSent();
       } else {
-        throw new Error(data?.error || "Ismeretlen hiba.");
+        throw new Error(
+          failed > 0
+            ? `A kiküldés sikertelen: egyetlen e-mailt sem fogadott el a szolgáltató (${failed} sikertelen).`
+            : result?.error || "Ismeretlen hiba.",
+        );
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Hiba történt a küldés során.";

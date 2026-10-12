@@ -1,11 +1,9 @@
 import { CheckCircle2, AlertTriangle, MailX, Mail, MailCheck, Clock } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 
-export type EmailStatusSummary = {
-  admin: "sent" | "partial" | "failed" | "pending";
-  customer: "sent" | "failed" | "skipped" | "pending";
-  lastAt?: string;
-};
+import type { EmailStatusSummary } from "@/lib/emailLogAggregate";
+export type { EmailStatusSummary } from "@/lib/emailLogAggregate";
+export { aggregateEmailLogs } from "@/lib/emailLogAggregate";
 
 /** Compact inline icon pair showing admin + customer email dispatch status. */
 export const EmailStatusBadge = ({ status }: { status?: EmailStatusSummary }) => {
@@ -60,40 +58,3 @@ export const EmailStatusBadge = ({ status }: { status?: EmailStatusSummary }) =>
     </TooltipProvider>
   );
 };
-
-/** Aggregate raw email_send_log rows into a per-order summary. */
-export function aggregateEmailLogs(
-  rows: Array<{ order_id: string | null; email_type: string; status: string; created_at: string }>,
-): Map<string, EmailStatusSummary> {
-  const byOrder = new Map<string, EmailStatusSummary>();
-  for (const row of rows) {
-    if (!row.order_id) continue;
-    const existing = byOrder.get(row.order_id) || {
-      admin: "pending" as const,
-      customer: "pending" as const,
-    };
-
-    if (row.email_type === "admin_notification") {
-      // Two recipients expected. Track sent/failed counts implicitly.
-      if (existing.admin === "pending") {
-        existing.admin = row.status === "sent" ? "sent" : row.status === "failed" ? "failed" : "pending";
-      } else if (existing.admin === "sent" && row.status === "failed") {
-        existing.admin = "partial";
-      } else if (existing.admin === "failed" && row.status === "sent") {
-        existing.admin = "partial";
-      } else if (existing.admin === "sent" && row.status === "sent") {
-        existing.admin = "sent";
-      } else if (existing.admin === "failed" && row.status === "failed") {
-        existing.admin = "failed";
-      }
-    } else if (row.email_type === "customer_confirmation") {
-      if (row.status === "sent") existing.customer = "sent";
-      else if (row.status === "failed") existing.customer = "failed";
-      else if (row.status === "skipped") existing.customer = "skipped";
-    }
-
-    if (!existing.lastAt || row.created_at > existing.lastAt) existing.lastAt = row.created_at;
-    byOrder.set(row.order_id, existing);
-  }
-  return byOrder;
-}

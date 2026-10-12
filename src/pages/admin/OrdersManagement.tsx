@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { sendStatusEmail } from "@/lib/statusEmail";
+import { sendStatusEmail, STATUS_EMAIL_WARNING } from "@/lib/statusEmail";
 import AdminLayout from "./AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -233,7 +233,7 @@ const OrdersManagement = () => {
     if (orderIds.length > 0) {
       const { data: logs, error: logErr } = await supabase
         .from("email_send_log" as any)
-        .select("order_id, email_type, status, created_at")
+        .select("order_id, email_type, status, created_at, recipient")
         .in("order_id", orderIds);
       if (!logErr && logs) {
         const summaryMap = aggregateEmailLogs(logs as any);
@@ -306,7 +306,9 @@ const OrdersManagement = () => {
       });
 
       if (!opts.silent) {
-        void sendStatusEmail(orderId, newStatus);
+        void sendStatusEmail(orderId, newStatus).then((err) => {
+          if (err) toast({ title: "Figyelem", description: STATUS_EMAIL_WARNING, variant: "destructive" });
+        });
       }
 
       fetchOrders();
@@ -335,7 +337,9 @@ const OrdersManagement = () => {
     });
 
     if (!opts.silent) {
-      void sendStatusEmail(orderId, newStatus);
+      void sendStatusEmail(orderId, newStatus).then((err) => {
+          if (err) toast({ title: "Figyelem", description: STATUS_EMAIL_WARNING, variant: "destructive" });
+        });
     }
 
     fetchOrders();

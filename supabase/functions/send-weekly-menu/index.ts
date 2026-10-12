@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { Resend } from "npm:resend@2.0.0";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
-import { sendEmail, SITE_URL as EMAIL_SITE_URL } from "../_shared/email.ts";
+import { campaignOutcome, sendToMany, SITE_URL as EMAIL_SITE_URL } from "../_shared/email.ts";
 
 const HU_DAYS = ["Vasárnap", "Hétfő", "Kedd", "Szerda", "Csütörtök", "Péntek", "Szombat"];
 const HU_MONTHS = [
@@ -278,26 +278,11 @@ const handler = async (req: Request): Promise<Response> => {
 
     // 6. Send in batches of 50
     const resend = new Resend(resendApiKey);
-    const batchSize = 50;
-    let totalSent = 0;
-    let totalErrors = 0;
-    const errors: string[] = [];
-
-    for (let i = 0; i < subscribers.length; i += batchSize) {
-      const batch = subscribers.slice(i, i + batchSize);
-      const emailPromises = batch.map(async (sub) => {
-        const out = await sendEmail(resend, { to: [sub.email], subject, html: emailHtml });
-        if (out.ok) {
-          totalSent++;
-        } else {
-          totalErrors++;
-          const [u, d] = String(sub.email).split("@");
-          errors.push(`${u?.slice(0, 1) ?? ""}***@${d ?? ""}: ${out.error}`);
-        }
-      });
-      await Promise.all(emailPromises);
-
-    }
+    const bulk = await sendToMany(resend, subscribers.map((sub) => sub.email), { subject, html: emailHtml });
+    const totalSent = bulk.sent;
+    const totalErrors = bulk.failed;
+    const errors = bulk.errors;
+    const outcome = campaignOutcome(bulk);
 
     // 7. Save last sent info to settings
     const sentInfo = {
@@ -307,20 +292,25 @@ const handler = async (req: Request): Promise<Response> => {
       errors: totalErrors,
     };
 
-    await adminClient
-      .from("settings")
-      .upsert({ key: "newsletter_last_sent", value_json: sentInfo }, { onConflict: "key" });
+    // Only record the campaign as sent when at least one email was accepted.
+    if (outcome.success) {
+      await adminClient
+        .from("settings")
+        .upsert({ key: "newsletter_last_sent", value_json: { ...sentInfo, partial: outcome.partial } }, { onConflict: "key" });
+    }
 
     console.log(`Weekly menu sent: ${totalSent} successful, ${totalErrors} errors`);
 
     return new Response(
       JSON.stringify({
-        success: totalSent > 0,
+        success: outcome.success,
+        partial: outcome.partial,
+        error: outcome.success ? undefined : `Egyetlen e-mailt sem fogadott el a szolgáltató (${totalErrors} sikertelen).`,
         sent: totalSent,
         errors: totalErrors,
         error_details: errors.length > 0 ? errors.slice(0, 10) : undefined,
       }),
-      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      { status: outcome.status, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Ismeretlen hiba.";

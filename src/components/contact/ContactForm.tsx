@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 import { z } from "zod";
 
 const contactSchema = z.object({
@@ -47,7 +48,11 @@ const ContactForm = () => {
       });
 
       if (error) {
-        throw new Error(error.message || "Hálózati hiba történt.");
+        let msg = error.message || "Hálózati hiba történt.";
+        if (error instanceof FunctionsHttpError) {
+          try { msg = (await error.context.json())?.error || msg; } catch { /* keep default */ }
+        }
+        throw new Error(msg);
       }
 
       if (data?.error) {

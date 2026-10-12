@@ -36,12 +36,28 @@ export interface ResendLike {
 }
 
 /** Sends with canonical from/reply_to (caller may override reply_to) and never throws. */
+export type ResendSource = ResendLike | (() => ResendLike);
+
+/** Lazy client factory: missing key / constructor errors surface as a failed send, never a throw. */
+export function lazyResend(make: (key: string) => ResendLike, getKey: () => string | undefined): () => ResendLike {
+  let client: ResendLike | null = null;
+  return () => {
+    if (!client) {
+      const key = getKey();
+      if (!key) throw new Error("RESEND_API_KEY not configured");
+      client = make(key);
+    }
+    return client;
+  };
+}
+
 export async function sendEmail(
-  resend: ResendLike,
+  resend: ResendSource,
   payload: { to: string[]; subject: string; html: string; text?: string; reply_to?: string },
 ): Promise<SendOutcome> {
   try {
-    const res = await resend.emails.send({
+    const client = typeof resend === "function" ? resend() : resend;
+    const res = await client.emails.send({
       from: EMAIL_FROM,
       reply_to: EMAIL_REPLY_TO,
       ...payload,
@@ -56,4 +72,30 @@ export function maskEmail(email: string): string {
   const [u, d] = String(email || "").split("@");
   if (!d) return "***";
   return `${u.slice(0, 1)}***@${d}`;
+}
+
+export interface BulkResult { sent: number; failed: number; errors: string[] }
+
+/** Sends one email per recipient (batched); counts only strict provider acceptances. */
+export async function sendToMany(
+  resend: ResendSource,
+  recipients: string[],
+  payload: { subject: string; html: string },
+  batchSize = 50,
+): Promise<BulkResult> {
+  const result: BulkResult = { sent: 0, failed: 0, errors: [] };
+  for (let i = 0; i < recipients.length; i += batchSize) {
+    await Promise.all(recipients.slice(i, i + batchSize).map(async (to) => {
+      const out = await sendEmail(resend, { to: [to], ...payload });
+      if (out.ok) result.sent++;
+      else { result.failed++; result.errors.push(`${maskEmail(to)}: ${out.error}`); }
+    }));
+  }
+  return result;
+}
+
+/** Campaign outcome: all-failed is a failure; partial is flagged. */
+export function campaignOutcome(r: BulkResult): { success: boolean; partial: boolean; status: number } {
+  if (r.sent === 0) return { success: false, partial: false, status: 502 };
+  return { success: true, partial: r.failed > 0, status: 200 };
 }
