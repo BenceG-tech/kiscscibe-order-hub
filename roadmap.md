@@ -87,3 +87,9 @@
 - [x] Pénztár gombja és a visszajelző üzenetek ugyanerre igazítása
 - [x] Staff súgó és frissítési napló aktualizálása
 - [x] Asztali és mobil ellenőrzés
+
+## Csomagolási (doboz) díj
+- [x] 150 Ft/főétel+reggeli, 200 Ft/menü, saláta/savanyúság 0 Ft
+- [x] Kosár, pénztár, visszaigazolás, nyomtatás, admin külön sor
+- [x] settings.packaging_fees + orders.packaging_fee_huf migráció
+- [x] submit-order szerveroldali clamp, 11 dobozdíj-teszt
