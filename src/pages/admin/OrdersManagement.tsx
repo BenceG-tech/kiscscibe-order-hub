@@ -847,6 +847,12 @@ const ActiveOrderCard = ({
                 {order.coupon_code} (-{order.discount_huf.toLocaleString("hu-HU")} Ft)
               </p>
             )}
+            {(order.packaging_fee_huf ?? 0) > 0 && (
+              <p className="text-xs text-muted-foreground flex items-center justify-end gap-1 mt-0.5">
+                <Package className="h-3 w-3" />
+                Doboz: +{order.packaging_fee_huf!.toLocaleString("hu-HU")} Ft
+              </p>
+            )}
             <p className="text-sm text-muted-foreground">
               <CreditCard className="h-4 w-4 inline mr-1" />
               {order.payment_method === "cash" ? "Készpénz" : order.payment_method === "card_online" ? "Online kártya" : "Bankkártya"}
