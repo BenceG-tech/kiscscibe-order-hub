@@ -59,7 +59,6 @@ function budapestDayOfWeek(dateStr: string): number {
 //   Breakfast pickup window: 07:00 – 10:00
 //   Lunch pickup window:     10:30 – 16:00
 //   Same-day order cutoff:   11:00 (after which "today" is not accepted)
-...
 const TODAY_ORDER_CUTOFF_MIN = 11 * 60;
 
 function isWithinPickupWindow(dateStr: string, timeStr: string, isBreakfastOnly: boolean): boolean {

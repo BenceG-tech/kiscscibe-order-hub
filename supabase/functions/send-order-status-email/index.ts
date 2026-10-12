@@ -202,7 +202,7 @@ serve(async (req) => {
         .eq("status", "sent")
         .limit(1);
       if (prior && prior.length > 0) {
-        console.log(`Email already accepted earlier for order ${order.code} (`status_${new_status}`) — not resending`);
+        console.log(`Email already accepted earlier for order ${order.code} (status_${new_status}) — not resending`);
         return new Response(JSON.stringify({ success: true, already_sent: true }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
