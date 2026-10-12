@@ -13,6 +13,46 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-10-12",
+    title: "Admin felület megújult megjelenése",
+    description:
+      "Az admin felület fejléce, navigációja, kártyái és űrlapjai a főoldal sötét, arany-kripta stílusához igazodtak. A felesleges módosítási napló oldal eltűnt, helyette itt, a Frissítések sávban és a Kézikönyv „Mi változott?\" részében látod az újdonságokat. A heti táblázat napjai egy kattintással, közvetlenül elérhetők, és az ételnevek teljes hosszában megjelennek rámutatáskor.",
+    type: "improved",
+    tabGroup: "overview",
+  },
+  {
+    date: "2026-10-12",
+    title: "Levesek kosárba tétele köretválasztó nélkül",
+    description:
+      "A levesek mostantól a főoldali napi ajánlatban is egyből a kosárba kerülnek, felugró köretválasztó ablak nélkül — ahogy az étlap oldalon már eddig is működött. A főételeknél a köretválasztó továbbra is megnyílik.",
+    type: "fixed",
+    tabGroup: "menu",
+  },
+  {
+    date: "2026-10-12",
+    title: "Minél hamarabb átvétel hibájának javítása",
+    description:
+      "Nyitás előtt (pl. reggel 8 körül) a „Minél hamarabb\" opció ki volt választható, pedig akkor még nem lehetett azonnal átvenni — így a rendelés hibával elakadt. Mostantól ilyenkor a rendszer automatikusan időpontfoglalásra vált, és érthető üzenet kéri az átvételi időpont kiválasztását.",
+    type: "fixed",
+    tabGroup: "orders",
+  },
+  {
+    date: "2026-10-12",
+    title: "Nyitóképek megbízható 3 másodperces váltása",
+    description:
+      "A főoldal nyitóképei egérhasználat mellett is pontosan 3 másodpercenként váltanak — korábban már az egér a kép fölé helyezése leállította a váltást, ezért tűnhetett úgy, hogy nem működik.",
+    type: "fixed",
+    tabGroup: "content",
+  },
+  {
+    date: "2026-10-12",
+    title: "Fehér képernyő automatikus helyreállása frissítés után",
+    description:
+      "Ha frissítés után a böngésző a régi verzió fájljait keresi, az oldal fehér képernyőt mutatott. Mostantól a rendszer maga próbálja újra a betöltést (legfeljebb háromszor), és ha ez sem sikerül, érthető üzenetet és újratöltés gombot kap a vendég a fehér képernyő helyett.",
+    type: "fixed",
+    tabGroup: "overview",
+  },
+  {
+    date: "2026-10-12",
     title: "Online rendelés aznap 11:00-ig",
     description:
       "Aznapi online rendelés mostantól csak 11:00-ig (korábban 15:30-ig) adható le. 11:00 után a mai nap már nem választható, a vendég tájékoztatást kap, hogy a mai rendelés már csak személyesen a pultnál lehetséges — holnapi és későbbi napokra továbbra is rendelhet. A szabály a szerveren is érvényesül, így nem kerülhető meg.",
