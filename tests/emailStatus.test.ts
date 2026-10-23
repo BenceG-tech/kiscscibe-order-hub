@@ -3,29 +3,29 @@ import { aggregateEmailLogs } from "../src/lib/emailLogAggregate";
 import { interpretStatusEmailResponse } from "../src/lib/statusEmail";
 
 const INFO = "info@kiscsibeetterem.hu";
-const OWNER = "gataibence@gmail.com";
+const OTHER = "other@example.com";
 const row = (recipient: string, status: string, at: string, type = "admin_notification") =>
   ({ order_id: "o1", email_type: type, recipient, status, created_at: `2026-10-12T10:00:${at}Z` });
 
 describe("aggregateEmailLogs", () => {
-  it("one sent recipient only is partial, not full success", () => {
-    expect(aggregateEmailLogs([row(INFO, "sent", "01")]).get("o1")!.admin).toBe("partial");
+  it("expected recipient sent is full success", () => {
+    expect(aggregateEmailLogs([row(INFO, "sent", "01")]).get("o1")!.admin).toBe("sent");
   });
-  it("both accepted is sent", () => {
-    expect(aggregateEmailLogs([row(OWNER, "sent", "02"), row(INFO, "sent", "01")]).get("o1")!.admin).toBe("sent");
+  it("unexpected-only recipient does not count as success", () => {
+    expect(aggregateEmailLogs([row(OTHER, "sent", "01")]).get("o1")!.admin).toBe("pending");
   });
   it("later retry supersedes older failure regardless of input order", () => {
-    const logs = [row(INFO, "sent", "05"), row(OWNER, "sent", "06"), row(INFO, "failed", "01"), row(OWNER, "failed", "02")];
+    const logs = [row(INFO, "sent", "05"), row(INFO, "failed", "01")];
     expect(aggregateEmailLogs(logs).get("o1")!.admin).toBe("sent");
     expect(aggregateEmailLogs([...logs].reverse()).get("o1")!.admin).toBe("sent");
   });
   it("all failed is failed; missing all is pending", () => {
-    expect(aggregateEmailLogs([row(INFO, "failed", "01"), row(OWNER, "failed", "02")]).get("o1")!.admin).toBe("failed");
+    expect(aggregateEmailLogs([row(INFO, "failed", "01")]).get("o1")!.admin).toBe("failed");
     expect(aggregateEmailLogs([row("", "skipped", "01", "customer_confirmation")]).get("o1")!.admin).toBe("pending");
   });
-  it("one failed + other missing is failed; failed+retry missing other is partial", () => {
+  it("failed + retry missing still counts as partial-ish failed state", () => {
     expect(aggregateEmailLogs([row(INFO, "failed", "01")]).get("o1")!.admin).toBe("failed");
-    expect(aggregateEmailLogs([row(INFO, "sent", "09"), row(INFO, "failed", "01")]).get("o1")!.admin).toBe("partial");
+    expect(aggregateEmailLogs([row(INFO, "sent", "09"), row(INFO, "failed", "01")]).get("o1")!.admin).toBe("sent");
   });
   it("customer uses latest state independent of order", () => {
     const c = [row("a@b.hu", "sent", "09", "customer_confirmation"), row("a@b.hu", "failed", "01", "customer_confirmation")];

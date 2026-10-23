@@ -137,7 +137,7 @@ serve(async (req) => {
     const resend = new Resend(resendApiKey);
 
     const sendOut = await sendEmail(resend, {
-      to: ["info@kiscsibeetterem.hu", "gataibence@gmail.com"],
+      to: ["info@kiscsibeetterem.hu"],
       subject: `Kiscsibe havi riport — ${monthLabel} — Eredmény: ${result.toLocaleString()} Ft`,
       html: emailHtml,
     });

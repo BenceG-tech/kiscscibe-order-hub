@@ -205,7 +205,7 @@ serve(async (req) => {
     const resend = new Resend(resendApiKey);
 
     const sendOut = await sendEmail(resend, {
-      to: ['info@kiscsibeetterem.hu', 'gataibence@gmail.com'],
+      to: ['info@kiscsibeetterem.hu'],
       subject: `Kiscsibe napi riport — ${reportDate} — ${totalRevenue.toLocaleString()} Ft`,
       html: emailHtml,
     });
