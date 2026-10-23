@@ -24,11 +24,11 @@ const DEV = import.meta.env.DEV;
 
 // ─── Opening-hours business rules (single source of truth) ─────────────────
 // Mon–Fri only. Weekends closed. Same-day orders accepted only until 11:00.
-//   Breakfast pickup window: 07:00 – 10:00
+//   Breakfast pickup window: 07:00 – 16:00
 //   Lunch pickup window:     10:30 – 16:00
 const TODAY_ORDER_CUTOFF_MIN = 11 * 60;
 const BREAKFAST_START_MIN = 7 * 60;
-const BREAKFAST_END_MIN = 10 * 60;
+const BREAKFAST_END_MIN = 16 * 60;
 const LUNCH_START_MIN = 10 * 60 + 30;
 const LUNCH_END_MIN = 16 * 60;
 
@@ -293,7 +293,7 @@ const Checkout = () => {
     if (dayOfWeek === 0 || dayOfWeek === 6) return [];
 
     const slots: TimeSlot[] = [];
-    // Cart-aware windows: breakfast-only carts → 07:00–10:00,
+    // Cart-aware windows: breakfast-only carts → 07:00–16:00,
     // everything else → 10:30–16:00.
     const startMinutes = cartIsBreakfastOnly ? BREAKFAST_START_MIN : LUNCH_START_MIN;
     const endMinutes = cartIsBreakfastOnly ? BREAKFAST_END_MIN : LUNCH_END_MIN;
@@ -424,19 +424,20 @@ const Checkout = () => {
       setTimeSlots(finalSlots);
       
       const availableSlots = finalSlots.filter(s => s.available_capacity > 0);
-      if (availableSlots.length > 0 && !formData.pickup_time) {
-        // If there is exactly one daily-item date in cart, force the auto-selected
-        // slot to that date so pickup_date can never diverge from the daily date.
-        const forcedDate = dailyDates.length === 1 ? dailyDates[0] : null;
+      // Keep the current selection only if it is still a valid slot for this
+      // cart (e.g. breakfast ↔ lunch cart change); otherwise pick the first one.
+      const forcedDate = dailyDates.length === 1 ? dailyDates[0] : null;
+      setFormData(prev => {
+        const stillValid = availableSlots.some(s => s.date === prev.pickup_date && s.timeslot === prev.pickup_time);
+        if (stillValid) return prev;
+        if (availableSlots.length === 0) {
+          return prev.pickup_time ? { ...prev, pickup_time: "" } : prev;
+        }
         const firstSlot = forcedDate
           ? (availableSlots.find(s => s.date === forcedDate) || availableSlots[0])
           : availableSlots[0];
-        setFormData(prev => ({
-          ...prev,
-          pickup_date: firstSlot.date,
-          pickup_time: firstSlot.timeslot
-        }));
-      }
+        return { ...prev, pickup_date: firstSlot.date, pickup_time: firstSlot.timeslot };
+      });
       
       if (finalSlots.length === 0) {
         toast({
@@ -456,7 +457,7 @@ const Checkout = () => {
     } finally {
       setLoading(false);
     }
-  }, [dailyDates, toast, formData.pickup_time]);
+  }, [dailyDates, toast, cartIsBreakfastOnly]);
 
   useEffect(() => {
     if (isCartLoaded && cart.items.length === 0) {
