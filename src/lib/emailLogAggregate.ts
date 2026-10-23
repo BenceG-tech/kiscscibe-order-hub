@@ -12,7 +12,7 @@ export type EmailLogRow = {
   recipient?: string | null;
 };
 
-export const ADMIN_EXPECTED_RECIPIENTS = ["info@kiscsibeetterem.hu", "gataibence@gmail.com"];
+export const ADMIN_EXPECTED_RECIPIENTS = ["info@kiscsibeetterem.hu"];
 
 /**
  * Order-independent aggregation. Per (order, admin recipient) a later accepted send

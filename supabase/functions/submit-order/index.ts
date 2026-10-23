@@ -1278,7 +1278,7 @@ ${adminItemsText}
 Összesen: ${calculatedTotal.toLocaleString()} Ft
 `;
 
-    const ADMIN_RECIPIENTS = ['info@kiscsibeetterem.hu', 'gataibence@gmail.com'];
+    const ADMIN_RECIPIENTS = ['info@kiscsibeetterem.hu'];
 
     const sendAdminEmails = async () => {
       for (const recipient of ADMIN_RECIPIENTS) {
