@@ -21,7 +21,7 @@ interface CartItem {
   modifiers: CartModifier[];
   sides: CartSide[];
   image_url?: string;
-  // Breakfast-only tag → drives 07:00–10:00 pickup window in Checkout.
+  // Breakfast-only tag → drives 07:00–16:00 pickup window in Checkout.
   is_breakfast?: boolean;
   // Packaging (box) fee classification: 'main' = 150 Ft/adag, 'none'/undefined = 0 Ft.
   // Complete menus are priced separately (200 Ft/menü) in computePackagingFee.

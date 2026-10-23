@@ -13,7 +13,7 @@ import { mapDbErrorToHungarian } from "./mapper.ts";
 // ---- (a) Hungarian passthrough — must not be rewritten -----------------
 
 Deno.test("passthrough: breakfast window Hungarian message", () => {
-  const raw = "A kiválasztott időpont nyitvatartási időn kívül esik (07:00 – 10:00 (reggeli))";
+  const raw = "A kiválasztott időpont nyitvatartási időn kívül esik (07:00 – 16:00 (reggeli))";
   assertEquals(mapDbErrorToHungarian({ message: raw }), raw);
 });
 
