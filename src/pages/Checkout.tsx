@@ -664,7 +664,7 @@ const Checkout = () => {
       }
 
       if (!isWithinPickupWindow(formData.pickup_date, formData.pickup_time)) {
-        const window = cartIsBreakfastOnly ? "07:00–10:00 (reggeli)" : "10:30–16:00 (ebéd)";
+        const window = cartIsBreakfastOnly ? "07:00–16:00 (reggeli)" : "10:30–16:00 (ebéd)";
         const msg = `A kiválasztott időpont nyitvatartási időn kívül esik (${window})`;
         await persistValidationBlock(msg);
         toast({
