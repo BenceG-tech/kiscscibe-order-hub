@@ -97,9 +97,9 @@ const BreakfastSection = ({ variant = "page" }: BreakfastSectionProps) => {
               </p>
             </div>
           </div>
-          <Badge className="bg-primary text-primary-foreground gap-1 px-3 py-1.5 text-[11px] font-bold">
-            <Clock className="h-3 w-3" />
-            H–P 7–10
+          <Badge className="bg-primary text-primary-foreground gap-1 px-3 py-1.5 text-[11px] font-bold whitespace-normal text-right">
+            <Clock className="h-3 w-3 shrink-0" />
+            H–P · Online rendelés 11:00-ig · Átvétel 7:00–16:00
           </Badge>
         </div>
 
