@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { Resend } from "npm:resend@2.0.0";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { lazyResend, sendEmail } from "../_shared/email.ts";
+import { resolvePickupTime, formatPickupTime } from "../_shared/pickupTime.ts";
 
 function escapeHtml(s: unknown): string {
   return String(s ?? '')
@@ -11,23 +12,6 @@ function escapeHtml(s: unknown): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
-}
-
-// Interpret a YYYY-MM-DD HH:mm wall-clock time as Europe/Budapest and return its UTC ISO string.
-function budapestWallTimeToUtcIso(date: string, time: string): string {
-  const naive = new Date(`${date}T${time}:00Z`);
-  const dtf = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Europe/Budapest',
-    timeZoneName: 'longOffset',
-  });
-  const parts = dtf.formatToParts(naive);
-  const offsetPart = parts.find((p) => p.type === 'timeZoneName')?.value || 'GMT+01:00';
-  const m = offsetPart.match(/GMT([+-])(\d{2}):?(\d{2})?/);
-  const sign = m && m[1] === '-' ? -1 : 1;
-  const hh = m ? parseInt(m[2], 10) : 0;
-  const mm = m && m[3] ? parseInt(m[3], 10) : 0;
-  const offsetMin = sign * (hh * 60 + mm);
-  return new Date(naive.getTime() - offsetMin * 60_000).toISOString();
 }
 
 // Return the date (YYYY-MM-DD) and time (HH:MM) in Europe/Budapest for a given Date (or now).
@@ -866,6 +850,8 @@ serve(async (req) => {
       });
     }
 
+    const canonicalPickupTime = resolvePickupTime(pickup_time, date, time);
+
     // Insert order with retry on unique code collision (max 3 attempts)
     let orderData: any = null;
     let orderInsertError: any = null;
@@ -880,7 +866,7 @@ serve(async (req) => {
           total_huf: calculatedTotal,
           status: 'new',
           payment_method: payment_method_final,
-          pickup_time: pickup_time || (date && time ? budapestWallTimeToUtcIso(date, time.slice(0, 5)) : null),
+          pickup_time: canonicalPickupTime,
           notes: customer.notes || null,
           coupon_code: appliedCouponCode,
           discount_huf: discountHuf,
@@ -1232,9 +1218,7 @@ serve(async (req) => {
       `- ${item.name_snapshot} × ${item.qty}: ${item.line_total_huf.toLocaleString()} Ft${item.modifiers.length > 0 ? ` (+ ${item.modifiers.map(mod => mod.label_snapshot).join(', ')})` : ''}`
     ).join('\n');
 
-    const pickupDisplay = pickup_time
-      ? new Date(pickup_time).toLocaleString('hu-HU', { timeZone: 'Europe/Budapest' })
-      : 'Amilyen hamar lehet';
+    const pickupDisplay = formatPickupTime(canonicalPickupTime);
     const paymentLabel = payment_method_final === 'cash' ? 'Készpénz' : 'Kártya';
 
     // ----- (A) Admin notification email (mindig) -----

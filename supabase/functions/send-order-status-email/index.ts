@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { Resend } from "npm:resend@2.0.0";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { sendEmail } from "../_shared/email.ts";
+import { formatPickupTime } from "../_shared/pickupTime.ts";
 import { hasInternalSecret, requireAdmin } from "../_shared/auth.ts";
 import { generateRatingToken, logEmailSend, maskEmail, ratingLinksHtml } from "../_shared/rating-token.ts";
 
@@ -131,9 +132,7 @@ serve(async (req) => {
       </tr>
     `).join('');
 
-    const pickupInfo = order.pickup_time
-      ? `Átvétel: ${new Date(order.pickup_time).toLocaleString('hu-HU')}`
-      : 'Átvétel: Amilyen hamar lehet';
+    const pickupInfo = `Átvétel: ${formatPickupTime(order.pickup_time)}`;
 
     // Completed orders carry the secure 1–5 emoji rating links inline — Edge Functions
     // cannot reliably stay alive to send a delayed follow-up email.
